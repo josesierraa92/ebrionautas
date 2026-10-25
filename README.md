@@ -10,3 +10,14 @@ Ficha de Ebrionauta.
 Plan completo: [docs/plan-ebrionautas.md](docs/plan-ebrionautas.md)
 
 > Juego para mayores de 18 años. Bebe con moderación.
+
+## Desarrollo
+
+```bash
+npm install
+npm run dev     # http://localhost:3000
+npm run lint
+npm run build
+```
+
+Stack: Next.js 15 (App Router) + TypeScript + Tailwind CSS v4. Deploy en Vercel.
