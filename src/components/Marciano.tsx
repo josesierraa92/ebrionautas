@@ -10,19 +10,30 @@ type Props = {
   size?: number;
   className?: string;
   title?: string;
+  /** Parpadea (y respira, según la clase que se le pase). */
+  animated?: boolean;
 };
 
 /**
  * El Marciano en SVG por capas (de atrás hacia delante): sombra, aura, patas y
  * brazos, cuerpo + patrón, disfraz (parte trasera), cara, disfraz (parte delantera).
  */
-export default function Marciano({ avatar, expression = "normal", size = 64, className, title }: Props) {
+export default function Marciano({ avatar, expression = "normal", size = 64, className, title, animated = false }: Props) {
   const clip = `body-${useId().replace(/:/g, "")}`;
   const dark = shade(avatar.skin, -0.25);
   const { costume } = avatar;
 
   return (
-    <svg viewBox="-4 -14 108 128" width={size} height={size * (128 / 108)} className={className} role="img" aria-label={title ?? "Marciano"}>
+    <svg
+      viewBox="-4 -14 108 128"
+      width={size}
+      height={size * (128 / 108)}
+      className={`${animated ? "mc-anim" : ""} ${className ?? ""}`}
+      // Cada marciano parpadea a su ritmo: el retraso sale de su color.
+      style={animated ? ({ "--blink-delay": `${(parseInt(avatar.skin.slice(1), 16) % 40) / 10}s` } as React.CSSProperties) : undefined}
+      role="img"
+      aria-label={title ?? "Marciano"}
+    >
       {title && <title>{title}</title>}
       <defs>
         <clipPath id={clip}>
@@ -158,7 +169,7 @@ function Eyes({ type, expression, patch }: { type: AvatarConfig["eyes"]; express
   const r = type === "saltones" ? 12 : type === "ciclope" ? 14 : 9;
   const pupil = type === "saltones" ? 5 : type === "ciclope" ? 6 : 4.5;
   return (
-    <g>
+    <g className="mc-eyes">
       {xs.map((x) => (
         <g key={x}>
           <circle cx={x} cy="46" r={r} fill="#fff" stroke={INK} strokeWidth="3" />

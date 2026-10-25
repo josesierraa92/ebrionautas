@@ -49,6 +49,7 @@ export type GameState = {
   rule: { text: string; by: string } | null;
   slave: { master: string; slave: string } | null;
   lastRoll: number | null;
+  rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
   winner: string | null;
   log: LogEntry[];
@@ -93,6 +94,7 @@ export function createGame(players: { name: string; color: string; avatar?: Avat
     rule: null,
     slave: null,
     lastRoll: null,
+    rollSeq: 0,
     extraRoll: false,
     winner: null,
     log: [],
@@ -173,6 +175,7 @@ function roll(s: GameState, rng: Rng) {
   const p = currentPlayer(s);
   const r = d6(rng);
   s.lastRoll = r;
+  s.rollSeq = (s.rollSeq ?? 0) + 1;
 
   if (p.status.laberinto) {
     if (r >= 5) {

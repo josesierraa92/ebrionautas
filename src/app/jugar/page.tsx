@@ -3,16 +3,19 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Board from "@/components/Board";
+import { BannerOverlay, Confetti, DiceOverlay } from "@/components/Fx";
 import DecisionPanel from "@/components/DecisionPanel";
 import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
 import RuleBanner from "@/components/RuleBanner";
+import SoundToggle from "@/components/SoundToggle";
 import Setup from "@/components/Setup";
 import TurnHeader from "@/components/TurnHeader";
 import Winner from "@/components/Winner";
 import { defaultAvatar } from "@/game/avatar";
 import { applyAction, createGame, currentPlayer, type Action, type GameState } from "@/game/engine";
 import { PLAYER_COLORS } from "@/game/tileStyle";
+import { useGameFx } from "@/lib/useGameFx";
 
 const STORAGE_KEY = "ebrionautas:partida";
 
@@ -20,6 +23,7 @@ const STORAGE_KEY = "ebrionautas:partida";
 export default function JugarPage() {
   const [game, setGame] = useState<GameState | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const fx = useGameFx(game);
 
   // La partida se guarda en el navegador para sobrevivir a una recarga.
   useEffect(() => {
@@ -60,6 +64,7 @@ export default function JugarPage() {
           <Link href="/" className="title-game text-2xl sm:text-3xl">
             EBRIONAUTAS
           </Link>
+          <SoundToggle />
           <button
             onClick={() => confirm("¿Terminar esta partida y empezar otra?") && setGame(null)}
             className="btn-game bg-btn-red px-3 py-1.5 text-sm text-white"
@@ -68,7 +73,13 @@ export default function JugarPage() {
           </button>
         </div>
         {game.rule && <RuleBanner text={game.rule.text} />}
-        <Board players={game.players} current={me.id} />
+        <div className="mx-auto w-full" style={{ maxWidth: "calc(100dvh - 7rem)" }}>
+          <Board players={game.players} current={me.id} winner={game.winner} shown={fx.shown} flying={fx.flying}>
+            <DiceOverlay dice={fx.dice} />
+            <BannerOverlay banner={fx.banner} />
+          </Board>
+        </div>
+        {winner && <Confetti />}
       </section>
 
       <aside className="flex flex-col gap-4 lg:w-96">

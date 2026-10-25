@@ -4,13 +4,16 @@ import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import { use, useEffect, useState } from "react";
 import Board from "@/components/Board";
+import { BannerOverlay, Confetti, DiceOverlay } from "@/components/Fx";
 import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
 import RuleBanner from "@/components/RuleBanner";
+import SoundToggle from "@/components/SoundToggle";
 import TurnHeader from "@/components/TurnHeader";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Decision } from "@/game/engine";
 import { api, hostKey, saved, useRoom } from "@/lib/room-client";
+import { useGameFx } from "@/lib/useGameFx";
 
 /** Pantalla grande (TV / portátil): QR para el control, tablero y marcador. Solo muestra. */
 export default function MesaPage({ params }: { params: Promise<{ code: string }> }) {
@@ -18,6 +21,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const { room, error, refresh } = useRoom(code);
   const [hostSecret, setHostSecret] = useState<string | null>(null);
   const [controlUrl, setControlUrl] = useState("");
+  const fx = useGameFx(room?.game ?? null);
 
   useEffect(() => {
     setHostSecret(saved.get<string>(hostKey(code)));
@@ -78,7 +82,8 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
       <section className="flex flex-col gap-3 lg:flex-1">
         <div className="flex items-center justify-between gap-2">
           <span className="title-game text-3xl">EBRIONAUTAS</span>
-          <span className="font-display text-white/70">
+          <span className="flex items-center gap-3 font-display text-white/70">
+            <SoundToggle />
             Mesa {code}
             {hostSecret && (
               <button onClick={release} className="ml-3 text-xs text-white/40 underline">
@@ -90,8 +95,12 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
         {game.rule && <RuleBanner text={game.rule.text} />}
         {/* El tablero es cuadrado: que quepa entero en el alto de la TV. */}
         <div className="mx-auto w-full" style={{ maxWidth: "calc(100dvh - 8rem)" }}>
-          <Board players={game.players} current={me.id} />
+          <Board players={game.players} current={me.id} winner={game.winner} shown={fx.shown} flying={fx.flying}>
+            <DiceOverlay dice={fx.dice} />
+            <BannerOverlay banner={fx.banner} />
+          </Board>
         </div>
+        {winner && <Confetti />}
       </section>
       <aside className="flex flex-col gap-4 lg:w-[28rem]">
         <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">

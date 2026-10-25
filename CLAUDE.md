@@ -29,3 +29,11 @@ léelo antes de implementar algo nuevo.
 - Almacén: Upstash Redis por REST (`src/server/store.ts`), con las variables
   `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` o `KV_REST_API_URL`/`KV_REST_API_TOKEN`.
   Sin ellas, en desarrollo usa memoria (las mesas se pierden al reiniciar).
+
+## Tablero, animaciones y sonido (Fase 6)
+
+- `src/game/spiral.ts`: tablero en espiral de 9×9 (salida abajo a la izquierda, la 62 ocupa el centro).
+- `src/components/Board.tsx`: casillas + capa de fichas (marcianos) posicionadas por % y animadas con transiciones.
+- `src/lib/useGameFx.ts`: a partir de los cambios de estado anima el dado (`rollSeq`), el paso a paso de
+  la ficha, vuelos (Oca, agujero negro…), títulos grandes y dispara los sonidos (`src/lib/sfx.ts`, Web Audio
+  sintetizado, sin archivos). Capas visuales en `src/components/Fx.tsx`. Se usa en la TV y en `/jugar`.
