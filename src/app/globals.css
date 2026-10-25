@@ -145,3 +145,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .mc-bob, .mc-hop, .earth-glow, .mc-anim .mc-eyes, .confetti { animation: none; }
 }
+
+/* Íconos con sombra sólida, como en la referencia de UI */
+.game-icon { filter: drop-shadow(0 4px 0 var(--color-ink)); overflow: visible; }
