@@ -1,8 +1,8 @@
 import { handle, readJson } from "@/server/http";
-import { joinRoom } from "@/server/rooms";
+import { resetRoom } from "@/server/rooms";
 
 export async function POST(req: Request, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const body = await readJson(req);
-  return handle(() => joinRoom(code, String(body.name ?? ""), body.avatar));
+  return handle(() => resetRoom(code, String(body.secret ?? "")));
 }

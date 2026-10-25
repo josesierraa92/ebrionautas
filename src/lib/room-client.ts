@@ -6,9 +6,9 @@ import type { PublicRoom } from "@/server/rooms";
 
 const POLL_MS = 1000;
 
-export async function api<T>(path: string, body?: unknown): Promise<T> {
+export async function api<T>(path: string, body?: unknown, method = body === undefined ? "GET" : "POST"): Promise<T> {
   const res = await fetch(path, {
-    method: body === undefined ? "GET" : "POST",
+    method,
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
@@ -36,7 +36,7 @@ export const saved = {
 };
 
 export const hostKey = (code: string) => `ebrionautas:host:${code}`;
-export const playerKey = (code: string) => `ebrionautas:jugador:${code}`;
+export const controlKey = (code: string) => `ebrionautas:control:${code}`;
 
 /** Sigue el estado de una sala consultando al servidor cada segundo. */
 export function useRoom(code: string) {
@@ -48,7 +48,8 @@ export function useRoom(code: string) {
     try {
       const r = await api<PublicRoom>(`/api/rooms/${code}`);
       setError(null);
-      if (r.version !== version.current) {
+      // Solo versiones más nuevas: una respuesta lenta no puede devolver la mesa a un estado viejo.
+      if (r.version > version.current) {
         version.current = r.version;
         setRoom(r);
       }

@@ -43,27 +43,11 @@ export const DEFAULT_AVATAR: AvatarConfig = {
   costume: "marciano",
 };
 
-const oneOf = <T extends string>(list: readonly T[], v: unknown, fallback: T): T =>
-  list.includes(v as T) ? (v as T) : fallback;
-
-/** Valida un avatar recibido del cliente: cualquier valor desconocido vuelve al de por defecto. */
-export function sanitizeAvatar(raw: unknown, fallbackSkin: string = DEFAULT_AVATAR.skin): AvatarConfig {
-  const a = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
-  return {
-    skin: oneOf(SKINS, a.skin, oneOf(SKINS, fallbackSkin, DEFAULT_AVATAR.skin)),
-    eyes: oneOf(EYES, a.eyes, DEFAULT_AVATAR.eyes),
-    mouth: oneOf(MOUTHS, a.mouth, DEFAULT_AVATAR.mouth),
-    pattern: oneOf(PATTERNS, a.pattern, DEFAULT_AVATAR.pattern),
-    costume: oneOf(COSTUMES, a.costume, DEFAULT_AVATAR.costume),
-  };
-}
-
-/** Avatar de relleno para jugadores sin perfil (modo local): cada uno con un disfraz distinto. */
+/** La ficha de cada jugador: un marciano del color de su asiento, con ojos y boca variados. */
 export function defaultAvatar(index: number, skin: string): AvatarConfig {
   return {
     ...DEFAULT_AVATAR,
-    skin: oneOf(SKINS, skin, SKINS[index % SKINS.length]),
-    costume: COSTUMES[index % COSTUMES.length],
+    skin,
     eyes: EYES[index % EYES.length],
     mouth: MOUTHS[(index + 1) % MOUTHS.length],
   };

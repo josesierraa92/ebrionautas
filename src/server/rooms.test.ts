@@ -1,79 +1,75 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { actInRoom, createRoom, getRoom, joinRoom, startRoom } from "./rooms";
+import { actInRoom, claimControl, createRoom, getRoom, releaseControl, resetRoom, startRoom, type NewPlayer } from "./rooms";
 import { resetMemoryStore } from "./store";
 
 beforeEach(() => {
   resetMemoryStore();
 });
 
-async function roomWith(...names: string[]) {
+const CREW: NewPlayer[] = [
+  { name: "Ana", gender: "mujer" },
+  { name: "Beto", gender: "hombre" },
+];
+
+async function playing() {
   const { code, hostSecret } = await createRoom();
-  const players = [];
-  for (const n of names) players.push(await joinRoom(code, n));
-  return { code, hostSecret, players };
+  const { secret } = await claimControl(code);
+  await startRoom(code, secret, CREW);
+  return { code, hostSecret, secret };
 }
 
-describe("salas", () => {
-  it("crea una sala con código de 4 letras y sin secretos en la vista pública", async () => {
-    const { code } = await roomWith("Ana");
+describe("mesas", () => {
+  it("crea una mesa con código de 4 letras y sin secretos en la vista pública", async () => {
+    const { code } = await createRoom();
     expect(code).toMatch(/^[A-Z]{4}$/);
     const room = await getRoom(code.toLowerCase());
-    expect(room.members).toEqual([{ id: "p1", name: "Ana", color: expect.any(String), avatar: expect.any(Object) }]);
-    expect(JSON.stringify(room)).not.toContain("secret");
+    expect(room).toMatchObject({ status: "LOBBY", hasController: false, game: null });
+    await claimControl(code);
+    expect(JSON.stringify(await getRoom(code))).not.toMatch(/secret/i);
   });
 
-  it("guarda el avatar validado y usa su color para la ficha si está libre", async () => {
+  it("solo un celular controla la mesa hasta que la TV lo libera", async () => {
+    const { code, hostSecret } = await createRoom();
+    await claimControl(code);
+    await expect(claimControl(code)).rejects.toThrow("Otro celular");
+    await expect(releaseControl(code, "otra-tv")).rejects.toThrow("Solo la pantalla");
+    await releaseControl(code, hostSecret);
+    expect((await getRoom(code)).hasController).toBe(false);
+    await claimControl(code);
+  });
+
+  it("valida la tripulación al empezar", async () => {
     const { code } = await createRoom();
-    await joinRoom(code, "Ana", { skin: "#e53fd6", costume: "pirata", eyes: "laser" });
-    await joinRoom(code, "Beto", { skin: "#e53fd6" });
-    const [ana, beto] = (await getRoom(code)).members;
-    expect(ana.avatar).toMatchObject({ skin: "#e53fd6", costume: "pirata", eyes: "redondos" });
-    expect(ana.color).toBe("#e53fd6");
-    expect(beto.color).not.toBe("#e53fd6");
+    const { secret } = await claimControl(code);
+    await expect(startRoom(code, "intruso", CREW)).rejects.toThrow("no controla");
+    await expect(startRoom(code, secret, [CREW[0]])).rejects.toThrow("al menos 2");
+    await expect(startRoom(code, secret, [CREW[0], { name: "ana", gender: "mujer" }])).rejects.toThrow("repetidos");
+    await expect(startRoom(code, secret, [CREW[0], { name: "Beto" } as NewPlayer])).rejects.toThrow("hombre o mujer");
+    await startRoom(code, secret, CREW);
+    const { game } = await getRoom(code);
+    expect(game?.players.map((p) => [p.name, p.gender])).toEqual([
+      ["Ana", "mujer"],
+      ["Beto", "hombre"],
+    ]);
   });
 
-  it("no permite nombres repetidos ni unirse tras empezar", async () => {
-    const { code, hostSecret } = await roomWith("Ana", "Beto");
-    await expect(joinRoom(code, "ana")).rejects.toThrow("Ese nombre");
-    await startRoom(code, hostSecret);
-    await expect(joinRoom(code, "Caro")).rejects.toThrow("ya empezó");
-  });
-
-  it("empieza la pantalla anfitriona o el primer jugador, con al menos 2", async () => {
-    const { code, players } = await roomWith("Ana");
-    await expect(startRoom(code, players[0].secret)).rejects.toThrow("al menos 2");
-    const b = await joinRoom(code, "Beto");
-    await expect(startRoom(code, b.secret)).rejects.toThrow("Solo");
-    await startRoom(code, players[0].secret);
-    expect((await getRoom(code)).status).toBe("PLAYING");
-  });
-
-  it("solo tira quien tiene el turno; cualquiera puede penalizar", async () => {
-    const { code, hostSecret, players } = await roomWith("Ana", "Beto");
-    await startRoom(code, hostSecret);
-    await expect(actInRoom(code, players[1].secret, { type: "ROLL" })).rejects.toThrow("No es tu turno");
-    await expect(actInRoom(code, "intruso", { type: "ROLL" })).rejects.toThrow("No eres parte");
-    await actInRoom(code, players[0].secret, { type: "ROLL" });
+  it("solo el control juega, y puede empezar otra partida al terminar", async () => {
+    const { code, secret } = await playing();
+    await expect(actInRoom(code, "intruso", { type: "ROLL" })).rejects.toThrow("no controla");
+    await actInRoom(code, secret, { type: "ROLL" });
     expect((await getRoom(code)).game?.lastRoll).toBeGreaterThan(0);
-    await actInRoom(code, players[1].secret, { type: "PENALTY", id: "p1" });
+    await resetRoom(code, secret);
+    expect(await getRoom(code)).toMatchObject({ status: "LOBBY", game: null, hasController: true });
   });
 
-  it("cada uno vota y confirma lo bebido solo por sí mismo", async () => {
-    const { code, hostSecret, players } = await roomWith("Ana", "Beto");
-    await startRoom(code, hostSecret);
-    await expect(actInRoom(code, players[1].secret, { type: "VOTE", id: "p1", yes: true })).rejects.toThrow("por ti");
-    await expect(actInRoom(code, players[1].secret, { type: "DRANK", id: "p1" })).rejects.toThrow("por ti");
-  });
-
-  it("rechaza jugadas inválidas y sube la versión con cada cambio", async () => {
-    const { code, hostSecret, players } = await roomWith("Ana", "Beto");
-    await startRoom(code, hostSecret);
+  it("rechaza jugadas inválidas sin cambiar la versión", async () => {
+    const { code, secret } = await playing();
     const v = (await getRoom(code)).version;
-    await expect(actInRoom(code, players[0].secret, { type: "SET_RULE", text: "x" })).rejects.toThrow("no es válida");
+    await expect(actInRoom(code, secret, { type: "SET_RULE", text: "x" })).rejects.toThrow("no es válida");
     expect((await getRoom(code)).version).toBe(v);
   });
 
-  it("da error claro si la sala no existe", async () => {
+  it("da error claro si la mesa no existe", async () => {
     await expect(getRoom("ZZZZ")).rejects.toThrow("no existe");
   });
 });

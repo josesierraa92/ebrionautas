@@ -12,23 +12,20 @@ léelo antes de implementar algo nuevo.
   `src/app/globals.css` (guía en el plan §5.1).
 - Textos en español. Deploy: push a `main` → Vercel (https://ebrionautas.vercel.app/).
 
-## Multijugador (Fase 2)
+## Modo de juego actual: TV + un solo celular de control
 
-- `/mesa/[code]`: pantalla grande (TV) con QR y tablero. `/j/[code]`: celular de
-  cada jugador. `/jugar`: modo local en un solo dispositivo.
-- El servidor es la autoridad: `src/server/rooms.ts` guarda la sala, ejecuta el
-  motor (dados incluidos) y valida que actúe quien tiene el turno. API en
-  `src/app/api/rooms/`. Los clientes consultan la sala cada 1 s (`src/lib/room-client.ts`).
+- `/mesa/[code]`: la TV crea la mesa, muestra un QR y luego el tablero y el marcador. Solo muestra.
+- `/c/[code]`: el único celular que controla la mesa (el primero que la reclama; la TV puede
+  liberarlo con "cambiar de celular"). Agrega la tripulación (nombre + hombre/mujer), tira y decide.
+- `/jugar`: sin TV, todo en una misma pantalla (partida guardada en localStorage).
+- El género resuelve solas las casillas Machos (2) y Hembras (11); el resto de casillas de
+  "quién bebe" las marca el control.
+- Las fichas son marcianos de colores (`src/components/Marciano.tsx`, `defaultAvatar`).
+  Perfiles, disfraces, accesorios y votación por celular se quitaron a propósito
+  (decisión del usuario); no reintroducirlos sin que lo pida.
+- El servidor es la autoridad: `src/server/rooms.ts` guarda la mesa, ejecuta el motor
+  (dados incluidos) y solo acepta jugadas con la clave del control. API en `src/app/api/rooms/`.
+  Los clientes consultan la mesa cada 1 s (`src/lib/room-client.ts`) y solo aceptan versiones nuevas.
 - Almacén: Upstash Redis por REST (`src/server/store.ts`), con las variables
   `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` o `KV_REST_API_URL`/`KV_REST_API_TOKEN`.
-  Sin ellas, en desarrollo usa memoria (las salas se pierden al reiniciar).
-- Identidad sin login: al unirse, el celular recibe un `secret` que guarda en
-  localStorage; nunca se envía en la vista pública de la sala.
-
-## Marciano y perfil (Fase 4)
-
-- `src/game/avatar.ts`: opciones del avatar (colores, ojos, bocas, patrones, disfraces),
-  `sanitizeAvatar` (el servidor valida lo que manda el cliente) y `expressionFor`
-  (cara según el estado del jugador). `src/components/Marciano.tsx` lo dibuja en SVG por capas.
-- Perfil sin login en localStorage (`src/lib/profile.ts`, página `/perfil`): nombre,
-  avatar, rasgos opcionales (para votar solo en casillas de rasgos) y estadísticas.
+  Sin ellas, en desarrollo usa memoria (las mesas se pierden al reiniciar).

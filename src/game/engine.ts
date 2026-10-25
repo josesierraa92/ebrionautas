@@ -2,7 +2,7 @@
 // No toca la UI ni la red; la Fase 2 lo ejecutará en el servidor.
 
 import type { AvatarConfig } from "./avatar";
-import { BOARD, TILE_NAMES, TRAIT_LABELS, getTile, type Trait } from "./board";
+import { BOARD, TILE_NAMES, TRAIT_LABELS, getTile } from "./board";
 import { CATEGORIES, TONGUE_TWISTERS, pick } from "./content";
 
 export const LAST_TILE = BOARD.length;
@@ -14,11 +14,14 @@ export type PlayerStatus = {
   carcel: { bail: number; at: number } | null;
 };
 
+export type Gender = "hombre" | "mujer";
+
 export type Player = {
   id: string;
   name: string;
   color: string;
   avatar?: AvatarConfig;
+  gender?: Gender; // las casillas "Machos" y "Hembras" se resuelven solas con esto
   pos: number;
   drunk: number; // total bebido en la partida
   pending: number; // vasos que debe y aún no ha confirmado con "¡Bebido!"
@@ -30,16 +33,8 @@ export type Decision =
   | { kind: "DUEL"; amount: number }
   | { kind: "PATINAZO"; drinks: number; backTo: number }
   | { kind: "RULE" }
-  // vote: cada jugador responde por sí mismo; judge: decide quien tiene el turno.
-  | {
-      kind: "SELECT_DRINKERS";
-      drinks: number;
-      title: string;
-      text: string;
-      mode: "vote" | "judge";
-      votes: Record<string, boolean>;
-      traits?: Trait[]; // rasgos que se preguntan: el celular puede votar solo según el perfil
-    }
+  // Quien controla la mesa marca quiénes beben.
+  | { kind: "SELECT_DRINKERS"; drinks: number; title: string; text: string }
   | { kind: "SLAVE" }
   | { kind: "CARCEL"; bail: number };
 
@@ -69,7 +64,6 @@ export type Action =
   | { type: "SELECT_DRINKERS"; ids: string[] }
   | { type: "CHOOSE_SLAVE"; id: string }
   | { type: "CARCEL"; choice: "pay" | "wait" }
-  | { type: "VOTE"; id: string; yes: boolean }
   | { type: "DRANK"; id: string }
   | { type: "PENALTY"; id: string };
 
@@ -79,13 +73,14 @@ const MAX_LOG = 60;
 
 const d6 = (rng: Rng) => Math.floor(rng() * 6) + 1;
 
-export function createGame(players: { name: string; color: string; avatar?: AvatarConfig }[]): GameState {
+export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender }[]): GameState {
   const state: GameState = {
     players: players.map((p, i) => ({
       id: `p${i + 1}`,
       name: p.name,
       color: p.color,
       avatar: p.avatar,
+      gender: p.gender,
       pos: 1,
       drunk: 0,
       pending: 0,
@@ -258,8 +253,6 @@ function landOn(s: GameState, p: Player, rng: Rng) {
         drinks: 1,
         title: TILE_NAMES.CULTURAL,
         text: `Categoría: "${pick(CATEGORIES, rng)}" (o ${p.name} elige otra). Por turnos decís una cada uno; quien se quede en blanco o repita, bebe.`,
-        mode: "judge",
-        votes: {},
       });
 
     case "HIPNOSIS":
@@ -296,16 +289,19 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       return endTurn(s);
     }
 
-    case "RASGO":
-      return decide(s, {
-        kind: "SELECT_DRINKERS",
-        drinks: tile.drinks,
-        title: tile.title,
-        text: `Estudio de especímenes humanos: beben ${tile.drinks} ${vasos(tile.drinks)} ${tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ")}.`,
-        mode: "vote",
-        votes: {},
-        traits: tile.traits,
-      });
+    case "RASGO": {
+      const text = `Estudio de especímenes humanos: beben ${tile.drinks} ${vasos(tile.drinks)} ${tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ")}.`;
+      // Machos / Hembras: el género de cada jugador ya se conoce, no hace falta preguntar.
+      const byGender = tile.traits.every((t) => t === "hombre" || t === "mujer");
+      if (byGender && s.players.every((q) => q.gender)) {
+        const targets = s.players.filter((q) => tile.traits.includes(q.gender!));
+        log(s, `🔬 ${tile.title}: ${text.replace("Estudio de especímenes humanos: ", "")}`);
+        if (targets.length === 0) log(s, `${tile.title}: esta vez nadie bebe.`);
+        for (const q of targets) drink(s, q.id, tile.drinks, q.id === p.id ? null : p.id);
+        return endTurn(s);
+      }
+      return decide(s, { kind: "SELECT_DRINKERS", drinks: tile.drinks, title: tile.title, text });
+    }
 
     case "RETO":
       return decide(s, {
@@ -313,8 +309,6 @@ function landOn(s: GameState, p: Player, rng: Rng) {
         drinks: tile.drinks,
         title: tile.title,
         text: tile.twister ? `${tile.text} «${pick(TONGUE_TWISTERS, rng)}»` : tile.text,
-        mode: tile.mode,
-        votes: {},
       });
 
     case "ESCLAVO":
@@ -377,15 +371,6 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
     s.rule = { text, by: p.id };
     log(s, `⚖️ Nueva ley de ${p.name}: "${text}"`);
     endTurn(s);
-    return true;
-  }
-
-  if (d.kind === "SELECT_DRINKERS" && action.type === "VOTE") {
-    if (d.mode !== "vote" || !ids.has(action.id)) return false;
-    d.votes = { ...d.votes, [action.id]: action.yes };
-    if (Object.keys(d.votes).length === s.players.length) {
-      resolveDrinkers(s, Object.keys(d.votes).filter((id) => d.votes[id]));
-    }
     return true;
   }
 

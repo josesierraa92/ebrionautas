@@ -2,38 +2,70 @@
 
 import { useState } from "react";
 import Marciano from "@/components/Marciano";
-import { defaultAvatar, type AvatarConfig } from "@/game/avatar";
+import { defaultAvatar } from "@/game/avatar";
+import type { Gender } from "@/game/engine";
 import { PLAYER_COLORS } from "@/game/tileStyle";
 
-type Props = { onStart: (players: { name: string; color: string; avatar: AvatarConfig }[]) => void };
+type Draft = { name: string; gender: Gender | null };
+type Props = {
+  onStart: (players: { name: string; gender: Gender }[]) => void;
+  busy?: boolean;
+  /** Texto bajo el título (ej. dónde se verá el tablero). */
+  hint?: string;
+};
 
-export default function Setup({ onStart }: Props) {
-  const [names, setNames] = useState(["", ""]);
-  const filled = names.map((n) => n.trim()).filter(Boolean);
+/** Alta de participantes: nombre y hombre/mujer (se usa en las casillas Machos y Hembras). */
+export default function Setup({ onStart, busy = false, hint }: Props) {
+  const [players, setPlayers] = useState<Draft[]>([
+    { name: "", gender: null },
+    { name: "", gender: null },
+  ]);
+  const set = (i: number, patch: Partial<Draft>) => setPlayers(players.map((p, j) => (j === i ? { ...p, ...patch } : p)));
+
+  const filled = players.filter((p) => p.name.trim());
+  const names = filled.map((p) => p.name.trim().toLowerCase());
+  const duplicated = new Set(names).size !== names.length;
+  const missingGender = filled.some((p) => !p.gender);
+  const ready = filled.length >= 2 && !duplicated && !missingGender;
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-4 py-10">
-      <h1 className="title-game text-center text-5xl">NUEVA MESA</h1>
-      <p className="text-center text-white/70">
-        Juego en una sola pantalla: pasaos el celular o ponedlo en la TV.
-      </p>
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 px-4 py-8">
+      <h1 className="title-game text-center text-5xl">TRIPULACIÓN</h1>
+      {hint && <p className="text-center text-white/70">{hint}</p>}
 
       <ol className="flex flex-col gap-3">
-        {names.map((name, i) => (
-          <li key={i} className="flex items-center gap-3">
-            <Marciano avatar={defaultAvatar(i, PLAYER_COLORS[i])} size={44} className="shrink-0" />
-            <input
-              value={name}
-              maxLength={16}
-              placeholder={`Ebrionauta ${i + 1}`}
-              onChange={(e) => setNames(names.map((n, j) => (j === i ? e.target.value : n)))}
-              className="min-w-0 flex-1 rounded-xl border-[3px] border-ink bg-white px-3 py-2 text-lg text-ink outline-none"
-            />
-            {names.length > 2 && (
+        {players.map((p, i) => (
+          <li key={i} className="flex items-center gap-2 rounded-2xl border-[3px] border-ink bg-ink/70 p-2">
+            <Marciano avatar={defaultAvatar(i, PLAYER_COLORS[i])} size={42} className="shrink-0" />
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <input
+                value={p.name}
+                maxLength={16}
+                placeholder={`Ebrionauta ${i + 1}`}
+                aria-label={`Nombre del jugador ${i + 1}`}
+                onChange={(e) => set(i, { name: e.target.value })}
+                className="min-w-0 rounded-xl border-[3px] border-ink bg-white px-3 py-1.5 text-lg text-ink outline-none"
+              />
+              <div className="grid grid-cols-2 gap-1.5" role="group" aria-label={`Género del jugador ${i + 1}`}>
+                {(["hombre", "mujer"] as const).map((g) => (
+                  <button
+                    key={g}
+                    aria-pressed={p.gender === g}
+                    onClick={() => set(i, { gender: g })}
+                    className={`rounded-lg border-2 border-ink py-1 font-display text-sm ${
+                      p.gender === g ? (g === "hombre" ? "bg-btn-blue text-white" : "bg-btn-special text-white") : "bg-space text-white/60"
+                    }`}
+                  >
+                    {g === "hombre" ? "♂ HOMBRE" : "♀ MUJER"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {players.length > 2 && (
               <button
                 aria-label={`Quitar jugador ${i + 1}`}
-                onClick={() => setNames(names.filter((_, j) => j !== i))}
-                className="btn-game size-11 shrink-0 bg-btn-red text-white"
+                onClick={() => setPlayers(players.filter((_, j) => j !== i))}
+                className="btn-game size-10 shrink-0 bg-btn-red text-white"
               >
                 ✕
               </button>
@@ -42,26 +74,28 @@ export default function Setup({ onStart }: Props) {
         ))}
       </ol>
 
-      {names.length < PLAYER_COLORS.length && (
-        <button onClick={() => setNames([...names, ""])} className="btn-game bg-btn-blue py-3 text-xl text-white">
+      {players.length < PLAYER_COLORS.length && (
+        <button onClick={() => setPlayers([...players, { name: "", gender: null }])} className="btn-game bg-btn-blue py-3 text-xl text-white">
           + AÑADIR EBRIONAUTA
         </button>
       )}
 
       <button
-        disabled={filled.length < 2}
-        onClick={() =>
-          onStart(
-            names
-              .map((n, i) => ({ name: n.trim(), color: PLAYER_COLORS[i], avatar: defaultAvatar(i, PLAYER_COLORS[i]) }))
-              .filter((p) => p.name),
-          )
-        }
+        disabled={!ready || busy}
+        onClick={() => onStart(filled.map((p) => ({ name: p.name.trim(), gender: p.gender! })))}
         className="btn-game bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey"
       >
-        ¡DESPEGAR!
+        {busy ? "DESPEGANDO…" : "¡DESPEGAR!"}
       </button>
-      {filled.length < 2 && <p className="text-center text-sm text-white/60">Hacen falta al menos 2 jugadores.</p>}
+      <p className="text-center text-sm text-white/60">
+        {filled.length < 2
+          ? "Hacen falta al menos 2 jugadores."
+          : duplicated
+            ? "Hay nombres repetidos."
+            : missingGender
+              ? "Marca hombre o mujer para cada jugador."
+              : "Juego para mayores de 18 años. Bebe con moderación."}
+      </p>
     </main>
   );
 }

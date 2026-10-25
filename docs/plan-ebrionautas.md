@@ -13,6 +13,16 @@ perfil, su ficha con accesorios y sus beneficios/penitencias activos.
 
 ---
 
+> **Cambio de rumbo (octubre 2026):** el juego se juega con **la TV + un solo
+> celular de control**. El celular agrega a los participantes (nombre y
+> hombre/mujer), tira los dados y decide; la TV muestra tablero y marcador.
+> Las fichas son marcianos de colores. Quedan **cancelados por ahora**: el
+> perfil por persona, la entrada de cada jugador con su celular, las
+> votaciones por celular, los disfraces, accesorios, logros y cofres
+> (secciones §2.3, §3.2–3.4 y Fase 5 de este plan).
+
+---
+
 ## 0. Lore: extraterrestres borrachos 👽🍷
 
 ### 0.1 La historia

@@ -169,29 +169,27 @@ describe("estados", () => {
   });
 });
 
-describe("votaciones y deudas", () => {
-  it("en casillas de votación cada uno responde y se resuelve al votar todos", () => {
-    let s = rollFrom(game(), 1, 2); // 3 Cegatos
-    expect(s.decision).toMatchObject({ kind: "SELECT_DRINKERS", mode: "vote" });
-    s = act(s, { type: "VOTE", id: "p1", yes: true });
-    s = act(s, { type: "VOTE", id: "p2", yes: false });
-    expect(s.phase).toBe("DECISION");
-    s = act(s, { type: "VOTE", id: "p3", yes: true });
-    expect(s.players.map((p) => p.drunk)).toEqual([1, 0, 1]);
-    expect(s.turn).toBe(1);
+describe("retos, género y deudas", () => {
+  const withGender = () =>
+    createGame([
+      { name: "Ana", color: "#fff", gender: "mujer" },
+      { name: "Beto", color: "#fff", gender: "hombre" },
+      { name: "Caro", color: "#fff", gender: "mujer" },
+    ]);
+
+  it("Machos y Hembras se resuelven solos con el género de cada jugador", () => {
+    const machos = rollFrom(withGender(), 1, 1); // 2 Machos
+    expect(machos.players.map((p) => p.drunk)).toEqual([0, 1, 0]);
+    expect(machos.turn).toBe(1);
+    const hembras = rollFrom(withGender(), 9, 2); // 11 Hembras: 2 vasos
+    expect(hembras.players.map((p) => p.drunk)).toEqual([2, 0, 2]);
   });
 
-  it("quien tiene el turno puede cerrar la votación con lo que haya", () => {
-    let s = rollFrom(game(), 1, 2);
-    s = act(s, { type: "VOTE", id: "p2", yes: true });
-    s = act(s, { type: "SELECT_DRINKERS", ids: ["p2"] });
-    expect(s.players[1].drunk).toBe(1);
-  });
-
-  it("no se puede votar en un reto que decide el juez", () => {
-    const s = rollFrom(game(), 12, 3); // 15 Cómicos
-    expect(s.decision).toMatchObject({ mode: "judge" });
-    expect(act(s, { type: "VOTE", id: "p1", yes: true })).toBe(s);
+  it("los demás rasgos los decide quien controla la mesa", () => {
+    let s = rollFrom(withGender(), 1, 2); // 3 Cegatos
+    expect(s.decision).toMatchObject({ kind: "SELECT_DRINKERS", title: "Cegatos" });
+    s = act(s, { type: "SELECT_DRINKERS", ids: ["p2", "p3"] });
+    expect(s.players.map((p) => p.drunk)).toEqual([0, 1, 1]);
   });
 
   it("el Examen de Humanología propone una categoría y Lenguados un trabalenguas", () => {

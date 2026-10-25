@@ -10,11 +10,13 @@ import RuleBanner from "@/components/RuleBanner";
 import Setup from "@/components/Setup";
 import TurnHeader from "@/components/TurnHeader";
 import Winner from "@/components/Winner";
+import { defaultAvatar } from "@/game/avatar";
 import { applyAction, createGame, currentPlayer, type Action, type GameState } from "@/game/engine";
+import { PLAYER_COLORS } from "@/game/tileStyle";
 
 const STORAGE_KEY = "ebrionautas:partida";
 
-/** Partida local: todos juegan desde la misma pantalla. */
+/** Partida sin TV: el tablero y el control en la misma pantalla. */
 export default function JugarPage() {
   const [game, setGame] = useState<GameState | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -37,7 +39,15 @@ export default function JugarPage() {
   }, [game, loaded]);
 
   if (!loaded) return null;
-  if (!game) return <Setup onStart={(players) => setGame(createGame(players))} />;
+  if (!game)
+    return (
+      <Setup
+        hint="Sin TV: el tablero se ve en esta misma pantalla."
+        onStart={(players) =>
+          setGame(createGame(players.map((p, i) => ({ ...p, color: PLAYER_COLORS[i], avatar: defaultAvatar(i, PLAYER_COLORS[i]) }))))
+        }
+      />
+    );
 
   const act = (a: Action) => setGame((g) => (g ? applyAction(g, a) : g));
   const me = currentPlayer(game);

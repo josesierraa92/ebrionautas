@@ -1,3 +1,5 @@
+import Marciano from "@/components/Marciano";
+import { avatarOf, expressionFor } from "@/game/avatar";
 import { BOARD } from "@/game/board";
 import type { Player } from "@/game/engine";
 import { TILE_STYLE } from "@/game/tileStyle";
@@ -34,20 +36,21 @@ export default function Board({ players, current }: { players: Player[]; current
               <span className={`absolute top-0.5 left-1 font-display text-[10px] leading-none sm:text-xs ${dark ? "text-white" : "text-ink"}`}>
                 {tile.n}
               </span>
-              <span className="text-base leading-none sm:text-2xl" aria-hidden>
+              <span className={`text-base leading-none sm:text-2xl ${here.length ? "opacity-35" : ""}`} aria-hidden>
                 {style.icon}
               </span>
               {here.length > 0 && (
-                <div className="absolute inset-x-0 bottom-0.5 flex flex-wrap justify-center gap-px">
+                // Las fichas son los marcianos de colores; se encogen si comparten casilla.
+                <div className="absolute inset-0 flex flex-wrap content-end items-end justify-center p-0.5">
                   {here.map((p) => (
-                    <span
+                    <Marciano
                       key={p.id}
+                      avatar={avatarOf(p)}
+                      expression={expressionFor(p, { isTurn: p.id === current })}
                       title={p.name}
-                      className={`grid size-3.5 place-items-center rounded-full border-2 border-ink font-display text-[7px] text-ink sm:size-5 sm:text-[10px] ${p.id === current ? "animate-bounce" : ""}`}
-                      style={{ background: p.color }}
-                    >
-                      {p.name[0].toUpperCase()}
-                    </span>
+                      size={40}
+                      className={`h-auto ${here.length <= 2 ? "w-[48%]" : here.length <= 4 ? "w-[42%]" : "w-[31%]"} ${p.id === current ? "animate-bounce" : ""}`}
+                    />
                   ))}
                 </div>
               )}

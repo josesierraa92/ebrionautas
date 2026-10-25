@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Marciano from "@/components/Marciano";
-import { titleFor, useProfile } from "@/lib/profile";
 import { api, hostKey, saved } from "@/lib/room-client";
 
 export default function HomeActions() {
@@ -12,7 +10,6 @@ export default function HomeActions() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { profile } = useProfile();
 
   const create = async () => {
     setBusy(true);
@@ -34,13 +31,13 @@ export default function HomeActions() {
       <button disabled={busy} onClick={create} className="btn-game bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey">
         {busy ? "CREANDO…" : "CREAR MESA"}
       </button>
-      <p className="-mt-2 text-sm text-white/60">Pon esta pantalla en la TV y que cada uno se una con su celular.</p>
+      <p className="-mt-2 text-sm text-white/60">Ábrelo en la TV o el portátil: ahí se verá el tablero.</p>
 
       <form
         className="flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          if (clean.length === 4) router.push(`/j/${clean}`);
+          if (clean.length === 4) router.push(`/c/${clean}`);
         }}
       >
         <input
@@ -52,20 +49,13 @@ export default function HomeActions() {
           className="w-32 min-w-0 rounded-2xl border-[3px] border-ink bg-white px-3 text-center font-display text-2xl tracking-widest text-ink uppercase outline-none"
         />
         <button disabled={clean.length !== 4} className="btn-game flex-1 bg-btn-blue py-3 text-xl text-white disabled:bg-btn-grey">
-          UNIRSE
+          CONTROLAR
         </button>
       </form>
+      <p className="-mt-2 text-sm text-white/60">En el celular: pon el código que sale en la TV (o escanea el QR).</p>
 
       <Link href="/jugar" className="btn-game bg-btn-yellow py-3 text-lg text-white">
-        JUGAR EN UN SOLO CELULAR
-      </Link>
-
-      <Link href="/perfil" className="btn-game flex items-center gap-3 bg-btn-special px-3 py-2 text-left text-white">
-        {profile ? <Marciano avatar={profile.avatar} expression="feliz" size={44} /> : <span className="text-4xl">👽</span>}
-        <span className="flex flex-col leading-tight">
-          <span className="text-lg">{profile?.name ? profile.name.toUpperCase() : "MI EBRIONAUTA"}</span>
-          <span className="font-sans text-xs text-white/80">{profile ? titleFor(profile.stats) : "Crea y viste a tu Marciano"}</span>
-        </span>
+        JUGAR SIN TV
       </Link>
       {error && <p className="rounded-xl border-[3px] border-ink bg-btn-red px-3 py-2 text-white">{error}</p>}
     </div>
