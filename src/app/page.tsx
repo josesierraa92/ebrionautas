@@ -5,7 +5,7 @@ export default function Home() {
         👽🍷
       </div>
       <div>
-        <h1 className="title-game text-6xl leading-none sm:text-7xl">
+        <h1 className="title-game text-[13vw] leading-none sm:text-7xl">
           EBRIONAUTAS
         </h1>
         <p className="mt-4 font-display text-xl text-btn-yellow">
