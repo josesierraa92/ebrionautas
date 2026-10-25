@@ -1,6 +1,7 @@
 // Salas multijugador. El servidor es la autoridad: guarda el estado, tira los
 // dados y valida que cada acción venga del jugador al que le toca.
 
+import { sanitizeAvatar, type AvatarConfig } from "@/game/avatar";
 import { applyAction, createGame, currentPlayer, type Action, type GameState } from "@/game/engine";
 import { PLAYER_COLORS } from "@/game/tileStyle";
 import { getStore } from "./store";
@@ -9,7 +10,7 @@ const ROOM_TTL = 60 * 60 * 24; // 24 h
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // sin I ni O para no confundir
 export const MAX_PLAYERS = PLAYER_COLORS.length;
 
-type Member = { id: string; name: string; color: string; secret: string };
+type Member = { id: string; name: string; color: string; avatar: AvatarConfig; secret: string };
 
 type Room = {
   code: string;
@@ -23,7 +24,7 @@ type Room = {
 export type PublicRoom = {
   code: string;
   status: Room["status"];
-  members: { id: string; name: string; color: string }[];
+  members: { id: string; name: string; color: string; avatar: AvatarConfig }[];
   game: GameState | null;
   version: number;
 };
@@ -48,7 +49,7 @@ export function toPublic(room: Room): PublicRoom {
   return {
     code: room.code,
     status: room.status,
-    members: room.members.map(({ id, name, color }) => ({ id, name, color })),
+    members: room.members.map(({ id, name, color, avatar }) => ({ id, name, color, avatar })),
     game: room.game,
     version: room.version,
   };
@@ -101,7 +102,7 @@ export async function createRoom(): Promise<{ code: string; hostSecret: string }
   throw new RoomError("No se pudo crear la mesa, inténtalo de nuevo.", 500);
 }
 
-export async function joinRoom(code: string, name: string): Promise<{ playerId: string; secret: string }> {
+export async function joinRoom(code: string, name: string, rawAvatar?: unknown): Promise<{ playerId: string; secret: string }> {
   const clean = name.trim().slice(0, 16);
   if (!clean) throw new RoomError("Escribe tu nombre.");
   return withRoom(code, (room) => {
@@ -109,12 +110,12 @@ export async function joinRoom(code: string, name: string): Promise<{ playerId: 
     if (room.members.length >= MAX_PLAYERS) throw new RoomError("La mesa está llena.", 409);
     if (room.members.some((m) => m.name.toLowerCase() === clean.toLowerCase()))
       throw new RoomError("Ese nombre ya está en la mesa.", 409);
-    const member: Member = {
-      id: `p${room.members.length + 1}`,
-      name: clean,
-      color: PLAYER_COLORS[room.members.length],
-      secret: secret(),
-    };
+    const seatColor = PLAYER_COLORS[room.members.length];
+    const avatar = sanitizeAvatar(rawAvatar, seatColor);
+    // La ficha del tablero usa el color del Marciano si nadie más lo tiene; si no, uno libre.
+    const taken = new Set(room.members.map((m) => m.color));
+    const color = taken.has(avatar.skin) ? PLAYER_COLORS.find((c) => !taken.has(c))! : avatar.skin;
+    const member: Member = { id: `p${room.members.length + 1}`, name: clean, color, avatar, secret: secret() };
     room.members.push(member);
     return { playerId: member.id, secret: member.secret };
   });
@@ -127,7 +128,7 @@ export async function startRoom(code: string, who: string): Promise<void> {
     if (!allowed) throw new RoomError("Solo la pantalla de la mesa o el primer jugador pueden empezar.", 403);
     if (room.status !== "LOBBY") throw new RoomError("La partida ya empezó.", 409);
     if (room.members.length < 2) throw new RoomError("Hacen falta al menos 2 jugadores.");
-    room.game = createGame(room.members.map(({ name, color }) => ({ name, color })));
+    room.game = createGame(room.members.map(({ name, color, avatar }) => ({ name, color, avatar })));
     room.status = "PLAYING";
   });
 }

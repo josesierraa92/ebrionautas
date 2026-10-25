@@ -18,8 +18,18 @@ describe("salas", () => {
     const { code } = await roomWith("Ana");
     expect(code).toMatch(/^[A-Z]{4}$/);
     const room = await getRoom(code.toLowerCase());
-    expect(room.members).toEqual([{ id: "p1", name: "Ana", color: expect.any(String) }]);
+    expect(room.members).toEqual([{ id: "p1", name: "Ana", color: expect.any(String), avatar: expect.any(Object) }]);
     expect(JSON.stringify(room)).not.toContain("secret");
+  });
+
+  it("guarda el avatar validado y usa su color para la ficha si está libre", async () => {
+    const { code } = await createRoom();
+    await joinRoom(code, "Ana", { skin: "#e53fd6", costume: "pirata", eyes: "laser" });
+    await joinRoom(code, "Beto", { skin: "#e53fd6" });
+    const [ana, beto] = (await getRoom(code)).members;
+    expect(ana.avatar).toMatchObject({ skin: "#e53fd6", costume: "pirata", eyes: "redondos" });
+    expect(ana.color).toBe("#e53fd6");
+    expect(beto.color).not.toBe("#e53fd6");
   });
 
   it("no permite nombres repetidos ni unirse tras empezar", async () => {

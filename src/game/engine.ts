@@ -1,7 +1,8 @@
 // Motor de reglas: función pura applyAction(state, action, rng) -> nuevo estado.
 // No toca la UI ni la red; la Fase 2 lo ejecutará en el servidor.
 
-import { BOARD, TILE_NAMES, TRAIT_LABELS, getTile } from "./board";
+import type { AvatarConfig } from "./avatar";
+import { BOARD, TILE_NAMES, TRAIT_LABELS, getTile, type Trait } from "./board";
 import { CATEGORIES, TONGUE_TWISTERS, pick } from "./content";
 
 export const LAST_TILE = BOARD.length;
@@ -17,6 +18,7 @@ export type Player = {
   id: string;
   name: string;
   color: string;
+  avatar?: AvatarConfig;
   pos: number;
   drunk: number; // total bebido en la partida
   pending: number; // vasos que debe y aún no ha confirmado con "¡Bebido!"
@@ -36,6 +38,7 @@ export type Decision =
       text: string;
       mode: "vote" | "judge";
       votes: Record<string, boolean>;
+      traits?: Trait[]; // rasgos que se preguntan: el celular puede votar solo según el perfil
     }
   | { kind: "SLAVE" }
   | { kind: "CARCEL"; bail: number };
@@ -76,12 +79,13 @@ const MAX_LOG = 60;
 
 const d6 = (rng: Rng) => Math.floor(rng() * 6) + 1;
 
-export function createGame(players: { name: string; color: string }[]): GameState {
+export function createGame(players: { name: string; color: string; avatar?: AvatarConfig }[]): GameState {
   const state: GameState = {
     players: players.map((p, i) => ({
       id: `p${i + 1}`,
       name: p.name,
       color: p.color,
+      avatar: p.avatar,
       pos: 1,
       drunk: 0,
       pending: 0,
@@ -300,6 +304,7 @@ function landOn(s: GameState, p: Player, rng: Rng) {
         text: `Estudio de especímenes humanos: beben ${tile.drinks} ${vasos(tile.drinks)} ${tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ")}.`,
         mode: "vote",
         votes: {},
+        traits: tile.traits,
       });
 
     case "RETO":

@@ -1,3 +1,5 @@
+import Marciano from "@/components/Marciano";
+import { avatarOf, expressionFor } from "@/game/avatar";
 import type { GameState } from "@/game/engine";
 
 type Props = {
@@ -17,7 +19,10 @@ export default function PlayersList({ game, highlight, onPenalty, onDrank }: Pro
       <ul className="flex flex-col gap-2">
         {game.players.map((p) => (
           <li key={p.id} className={`flex items-center gap-2 rounded-xl px-2 py-1 ${p.id === current ? "bg-white/10" : ""}`}>
-            <span className="size-4 shrink-0 rounded-full border-2 border-ink" style={{ background: p.color }} />
+            <span className="relative shrink-0">
+              <Marciano avatar={avatarOf(p)} expression={expressionFor(p, { winner: game.winner, isTurn: p.id === current })} size={30} />
+              <span className="absolute -right-0.5 bottom-0 size-2.5 rounded-full border-2 border-ink" style={{ background: p.color }} title="Color de su ficha" />
+            </span>
             <span className="min-w-0 flex-1 truncate">
               {p.name}
               {p.id === highlight && " (tú)"} <span className="text-xs text-white/60">· {p.pos}</span>{" "}

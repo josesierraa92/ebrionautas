@@ -5,6 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { use, useEffect, useState } from "react";
 import Board from "@/components/Board";
 import GameLog from "@/components/GameLog";
+import MemberChips from "@/components/MemberChips";
 import PlayersList from "@/components/PlayersList";
 import RuleBanner from "@/components/RuleBanner";
 import TurnHeader from "@/components/TurnHeader";
@@ -58,13 +59,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
         <div className="w-full max-w-md rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
           <h2 className="mb-3 font-display text-xl">Ebrionautas a bordo ({room.members.length}/8)</h2>
           {room.members.length === 0 && <p className="text-white/60">Todavía nadie… 👽</p>}
-          <ul className="flex flex-wrap justify-center gap-2">
-            {room.members.map((m) => (
-              <li key={m.id} className="rounded-full border-[3px] border-ink px-3 py-1 font-display text-ink" style={{ background: m.color }}>
-                {m.name}
-              </li>
-            ))}
-          </ul>
+          <MemberChips members={room.members} size={72} />
         </div>
 
         {hostSecret ? (

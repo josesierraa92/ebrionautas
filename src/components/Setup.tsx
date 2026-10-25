@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Marciano from "@/components/Marciano";
+import { defaultAvatar, type AvatarConfig } from "@/game/avatar";
 import { PLAYER_COLORS } from "@/game/tileStyle";
 
-type Props = { onStart: (players: { name: string; color: string }[]) => void };
+type Props = { onStart: (players: { name: string; color: string; avatar: AvatarConfig }[]) => void };
 
 export default function Setup({ onStart }: Props) {
   const [names, setNames] = useState(["", ""]);
@@ -19,13 +21,7 @@ export default function Setup({ onStart }: Props) {
       <ol className="flex flex-col gap-3">
         {names.map((name, i) => (
           <li key={i} className="flex items-center gap-3">
-            <span
-              className="grid size-11 shrink-0 place-items-center rounded-full border-[3px] border-ink text-xl"
-              style={{ background: PLAYER_COLORS[i] }}
-              aria-hidden
-            >
-              👽
-            </span>
+            <Marciano avatar={defaultAvatar(i, PLAYER_COLORS[i])} size={44} className="shrink-0" />
             <input
               value={name}
               maxLength={16}
@@ -57,7 +53,7 @@ export default function Setup({ onStart }: Props) {
         onClick={() =>
           onStart(
             names
-              .map((n, i) => ({ name: n.trim(), color: PLAYER_COLORS[i] }))
+              .map((n, i) => ({ name: n.trim(), color: PLAYER_COLORS[i], avatar: defaultAvatar(i, PLAYER_COLORS[i]) }))
               .filter((p) => p.name),
           )
         }

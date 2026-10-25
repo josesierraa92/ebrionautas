@@ -24,3 +24,11 @@ léelo antes de implementar algo nuevo.
   Sin ellas, en desarrollo usa memoria (las salas se pierden al reiniciar).
 - Identidad sin login: al unirse, el celular recibe un `secret` que guarda en
   localStorage; nunca se envía en la vista pública de la sala.
+
+## Marciano y perfil (Fase 4)
+
+- `src/game/avatar.ts`: opciones del avatar (colores, ojos, bocas, patrones, disfraces),
+  `sanitizeAvatar` (el servidor valida lo que manda el cliente) y `expressionFor`
+  (cara según el estado del jugador). `src/components/Marciano.tsx` lo dibuja en SVG por capas.
+- Perfil sin login en localStorage (`src/lib/profile.ts`, página `/perfil`): nombre,
+  avatar, rasgos opcionales (para votar solo en casillas de rasgos) y estadísticas.

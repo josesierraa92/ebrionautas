@@ -1,4 +1,6 @@
 import { TILE_NAMES, getTile } from "@/game/board";
+import Marciano from "@/components/Marciano";
+import { avatarOf, expressionFor } from "@/game/avatar";
 import { currentPlayer, type GameState } from "@/game/engine";
 
 const DICE = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
@@ -10,9 +12,7 @@ export default function TurnHeader({ game, you }: { game: GameState; you?: strin
   return (
     <>
       <div className="flex items-center gap-3">
-        <span className="grid size-12 shrink-0 place-items-center rounded-full border-[3px] border-ink text-2xl" style={{ background: me.color }}>
-          👽
-        </span>
+        <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={56} className="shrink-0" />
         <div className="min-w-0">
           <p className="text-sm text-white/70">{me.id === you ? "¡Te toca!" : "Turno de"}</p>
           <h2 className="truncate font-display text-2xl">{me.name}</h2>

@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Board from "@/components/Board";
 import DecisionPanel from "@/components/DecisionPanel";
 import GameLog from "@/components/GameLog";
+import Marciano from "@/components/Marciano";
+import MemberChips from "@/components/MemberChips";
 import PlayersList from "@/components/PlayersList";
 import RuleBanner from "@/components/RuleBanner";
 import TurnHeader from "@/components/TurnHeader";
 import VotePanel from "@/components/VotePanel";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Action } from "@/game/engine";
+import { emptyProfile, recordGame, traitAnswer, useProfile } from "@/lib/profile";
 import { api, playerKey, saved, sendAction, useRoom } from "@/lib/room-client";
 
 type Creds = { playerId: string; secret: string };
@@ -24,11 +27,46 @@ export default function JugadorPage({ params }: { params: Promise<{ code: string
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const { profile, loaded: profileLoaded, update: updateProfile } = useProfile();
 
   useEffect(() => {
     setCreds(saved.get<Creds>(playerKey(code)));
     setLoaded(true);
   }, [code]);
+
+  // Cada celular tiene su Ebrionauta: se crea uno al azar la primera vez.
+  useEffect(() => {
+    if (profileLoaded && !profile) updateProfile(emptyProfile());
+  }, [profileLoaded, profile, updateProfile]);
+  const profileName = profile?.name;
+  useEffect(() => {
+    if (profileName) setName((n) => n || profileName);
+  }, [profileName]);
+
+  // Voto automático en casillas de rasgos que el perfil ya contestó (ej. "Cegatos").
+  const g = room?.game;
+  const d = g?.decision;
+  let autoVote: boolean | undefined;
+  if (g && creds && profile && d?.kind === "SELECT_DRINKERS" && d.mode === "vote" && d.traits && !(creds.playerId in d.votes)) {
+    const answers = d.traits.map((t) => traitAnswer(profile.traits, t));
+    if (answers.every((a) => a !== undefined)) autoVote = answers.some(Boolean);
+  }
+  const autoVoteSeq = autoVote === undefined ? -1 : g!.decisionSeq;
+  const votedSeq = useRef(-1);
+  useEffect(() => {
+    if (autoVote === undefined || !creds || votedSeq.current === autoVoteSeq) return;
+    votedSeq.current = autoVoteSeq;
+    sendAction(code, creds.secret, { type: "VOTE", id: creds.playerId, yes: autoVote })
+      .then(refresh)
+      .catch(() => {});
+  }, [autoVote, autoVoteSeq, code, creds, refresh]);
+
+  // Al terminar la partida, se suma a las estadísticas del perfil.
+  useEffect(() => {
+    if (!g?.winner || !profile || !creds) return;
+    const next = recordGame(profile, code, g, creds.playerId);
+    if (next) updateProfile(next);
+  }, [g, profile, creds, code, updateProfile]);
 
   // Vibra cuando empieza tu turno (si el celular lo permite).
   const myTurnNow = !!(room?.game && creds && !room.game.winner && currentPlayer(room.game).id === creds.playerId);
@@ -63,13 +101,15 @@ export default function JugadorPage({ params }: { params: Promise<{ code: string
     if (room.status !== "LOBBY") return <Shell><ErrorBox text="Esta partida ya empezó. Pide que creen otra mesa." /></Shell>;
     const join = () =>
       run(async () => {
-        const c = await api<Creds>(`/api/rooms/${code}/join`, { name });
+        const c = await api<Creds>(`/api/rooms/${code}/join`, { name, avatar: profile?.avatar });
+        if (profile) updateProfile({ ...profile, name: name.trim() });
         saved.set(playerKey(code), c);
         setCreds(c);
       });
     return (
       <Shell>
         <p className="text-white/70">Mesa <b className="font-display text-btn-yellow">{code}</b></p>
+        {profile && <Marciano avatar={profile.avatar} expression="feliz" size={110} />}
         <h2 className="font-display text-3xl">¿Cómo te llamas, Ebrionauta?</h2>
         <input
           value={name}
@@ -83,6 +123,9 @@ export default function JugadorPage({ params }: { params: Promise<{ code: string
         <button disabled={!name.trim() || busy} onClick={join} className="btn-game w-full bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey">
           ¡SUBIR A BORDO!
         </button>
+        <Link href={`/perfil?volver=/j/${code}`} className="btn-game w-full bg-btn-special py-2 text-lg text-white">
+          🎨 PERSONALIZAR MI EBRIONAUTA
+        </Link>
         <p className="text-xs text-white/50">Juego para mayores de 18 años. Bebe con moderación.</p>
         {actionError && <ErrorBox text={actionError} />}
       </Shell>
@@ -94,16 +137,10 @@ export default function JugadorPage({ params }: { params: Promise<{ code: string
     const isFirst = room.members[0]?.id === member.id;
     return (
       <Shell>
-        <Avatar color={member.color} />
+        <Marciano avatar={member.avatar} expression="euforico" size={130} />
         <h2 className="font-display text-3xl">¡Hola, {member.name}!</h2>
         <p className="text-white/70">Esperando a que despegue la nave…</p>
-        <ul className="flex flex-wrap justify-center gap-2">
-          {room.members.map((m) => (
-            <li key={m.id} className="rounded-full border-[3px] border-ink px-3 py-1 font-display text-ink" style={{ background: m.color }}>
-              {m.name}
-            </li>
-          ))}
-        </ul>
+        <MemberChips members={room.members} size={48} />
         {isFirst && (
           <button
             disabled={room.members.length < 2 || busy}
@@ -185,14 +222,6 @@ export default function JugadorPage({ params }: { params: Promise<{ code: string
 
 function Shell({ children }: { children: React.ReactNode }) {
   return <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-5 px-4 py-10 text-center">{children}</main>;
-}
-
-function Avatar({ color }: { color: string }) {
-  return (
-    <span className="grid size-24 place-items-center rounded-full border-4 border-ink text-5xl" style={{ background: color }}>
-      👽
-    </span>
-  );
 }
 
 function ErrorBox({ text }: { text: string }) {

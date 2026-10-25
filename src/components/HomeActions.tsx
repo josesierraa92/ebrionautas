@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Marciano from "@/components/Marciano";
+import { titleFor, useProfile } from "@/lib/profile";
 import { api, hostKey, saved } from "@/lib/room-client";
 
 export default function HomeActions() {
@@ -10,6 +12,7 @@ export default function HomeActions() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { profile } = useProfile();
 
   const create = async () => {
     setBusy(true);
@@ -55,6 +58,14 @@ export default function HomeActions() {
 
       <Link href="/jugar" className="btn-game bg-btn-yellow py-3 text-lg text-white">
         JUGAR EN UN SOLO CELULAR
+      </Link>
+
+      <Link href="/perfil" className="btn-game flex items-center gap-3 bg-btn-special px-3 py-2 text-left text-white">
+        {profile ? <Marciano avatar={profile.avatar} expression="feliz" size={44} /> : <span className="text-4xl">👽</span>}
+        <span className="flex flex-col leading-tight">
+          <span className="text-lg">{profile?.name ? profile.name.toUpperCase() : "MI EBRIONAUTA"}</span>
+          <span className="font-sans text-xs text-white/80">{profile ? titleFor(profile.stats) : "Crea y viste a tu Marciano"}</span>
+        </span>
       </Link>
       {error && <p className="rounded-xl border-[3px] border-ink bg-btn-red px-3 py-2 text-white">{error}</p>}
     </div>
