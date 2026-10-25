@@ -10,4 +10,4 @@ léelo antes de implementar algo nuevo.
   el motor (pendiente) en `src/game/engine.ts` como función pura.
 - Estilo UI: tokens y clases `.btn-game` / `.title-game` en
   `src/app/globals.css` (guía en el plan §5.1).
-- Textos en español. Deploy: push a `main` → Vercel.
+- Textos en español. Deploy: push a `main` → Vercel (https://ebrionautas.vercel.app/).
