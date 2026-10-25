@@ -2,6 +2,7 @@
 // No toca la UI ni la red; la Fase 2 lo ejecutará en el servidor.
 
 import { BOARD, TILE_NAMES, TRAIT_LABELS, getTile } from "./board";
+import { CATEGORIES, TONGUE_TWISTERS, pick } from "./content";
 
 export const LAST_TILE = BOARD.length;
 
@@ -17,7 +18,8 @@ export type Player = {
   name: string;
   color: string;
   pos: number;
-  drunk: number;
+  drunk: number; // total bebido en la partida
+  pending: number; // vasos que debe y aún no ha confirmado con "¡Bebido!"
   status: PlayerStatus;
 };
 
@@ -26,7 +28,15 @@ export type Decision =
   | { kind: "DUEL"; amount: number }
   | { kind: "PATINAZO"; drinks: number; backTo: number }
   | { kind: "RULE" }
-  | { kind: "SELECT_DRINKERS"; drinks: number; title: string; text: string }
+  // vote: cada jugador responde por sí mismo; judge: decide quien tiene el turno.
+  | {
+      kind: "SELECT_DRINKERS";
+      drinks: number;
+      title: string;
+      text: string;
+      mode: "vote" | "judge";
+      votes: Record<string, boolean>;
+    }
   | { kind: "SLAVE" }
   | { kind: "CARCEL"; bail: number };
 
@@ -37,6 +47,7 @@ export type GameState = {
   turn: number;
   phase: "ROLL" | "DECISION" | "FINISHED";
   decision: Decision | null;
+  decisionSeq: number; // sube con cada decisión nueva; la UI lo usa para reiniciar su panel
   rule: { text: string; by: string } | null;
   slave: { master: string; slave: string } | null;
   lastRoll: number | null;
@@ -55,6 +66,8 @@ export type Action =
   | { type: "SELECT_DRINKERS"; ids: string[] }
   | { type: "CHOOSE_SLAVE"; id: string }
   | { type: "CARCEL"; choice: "pay" | "wait" }
+  | { type: "VOTE"; id: string; yes: boolean }
+  | { type: "DRANK"; id: string }
   | { type: "PENALTY"; id: string };
 
 export type Rng = () => number;
@@ -71,11 +84,13 @@ export function createGame(players: { name: string; color: string }[]): GameStat
       color: p.color,
       pos: 1,
       drunk: 0,
+      pending: 0,
       status: { inmune: false, hipnosis: false, laberinto: false, carcel: null },
     })),
     turn: 0,
     phase: "ROLL",
     decision: null,
+    decisionSeq: 0,
     rule: null,
     slave: null,
     lastRoll: null,
@@ -93,6 +108,16 @@ export function currentPlayer(state: GameState): Player {
 }
 
 export function applyAction(state: GameState, action: Action, rng: Rng = Math.random): GameState {
+  if (action.type === "DRANK") {
+    const target = state.players.find((p) => p.id === action.id);
+    if (!target?.pending) return state;
+    const s = structuredClone(state);
+    const p = s.players.find((q) => q.id === action.id)!;
+    log(s, `✅ ${p.name} se bebió ${p.pending} ${vasos(p.pending)}.`);
+    p.pending = 0;
+    return s;
+  }
+
   if (state.phase === "FINISHED") return state;
   const s = structuredClone(state);
 
@@ -121,8 +146,7 @@ function startTurn(s: GameState) {
   p.status.inmune = false;
   p.status.hipnosis = false;
   if (p.status.carcel) {
-    s.phase = "DECISION";
-    s.decision = { kind: "CARCEL", bail: p.status.carcel.bail };
+    decide(s, { kind: "CARCEL", bail: p.status.carcel.bail });
   } else {
     s.phase = "ROLL";
     s.decision = null;
@@ -141,6 +165,7 @@ function endTurn(s: GameState) {
 }
 
 function decide(s: GameState, decision: Decision) {
+  s.decisionSeq = (s.decisionSeq ?? 0) + 1;
   s.phase = "DECISION";
   s.decision = decision;
 }
@@ -228,7 +253,9 @@ function landOn(s: GameState, p: Player, rng: Rng) {
         kind: "SELECT_DRINKERS",
         drinks: 1,
         title: TILE_NAMES.CULTURAL,
-        text: `${p.name} elige una categoría (ej. "marcas de cerveza"). Por turnos decís una cada uno; quien se quede en blanco o repita, bebe.`,
+        text: `Categoría: "${pick(CATEGORIES, rng)}" (o ${p.name} elige otra). Por turnos decís una cada uno; quien se quede en blanco o repita, bebe.`,
+        mode: "judge",
+        votes: {},
       });
 
     case "HIPNOSIS":
@@ -271,10 +298,19 @@ function landOn(s: GameState, p: Player, rng: Rng) {
         drinks: tile.drinks,
         title: tile.title,
         text: `Estudio de especímenes humanos: beben ${tile.drinks} ${vasos(tile.drinks)} ${tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ")}.`,
+        mode: "vote",
+        votes: {},
       });
 
     case "RETO":
-      return decide(s, { kind: "SELECT_DRINKERS", drinks: tile.drinks, title: tile.title, text: tile.text });
+      return decide(s, {
+        kind: "SELECT_DRINKERS",
+        drinks: tile.drinks,
+        title: tile.title,
+        text: tile.twister ? `${tile.text} «${pick(TONGUE_TWISTERS, rng)}»` : tile.text,
+        mode: tile.mode,
+        votes: {},
+      });
 
     case "ESCLAVO":
       if (others.length === 0) return endTurn(s);
@@ -339,12 +375,19 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
     return true;
   }
 
+  if (d.kind === "SELECT_DRINKERS" && action.type === "VOTE") {
+    if (d.mode !== "vote" || !ids.has(action.id)) return false;
+    d.votes = { ...d.votes, [action.id]: action.yes };
+    if (Object.keys(d.votes).length === s.players.length) {
+      resolveDrinkers(s, Object.keys(d.votes).filter((id) => d.votes[id]));
+    }
+    return true;
+  }
+
   if (d.kind === "SELECT_DRINKERS" && action.type === "SELECT_DRINKERS") {
     const chosen = [...new Set(action.ids)];
     if (chosen.some((id) => !ids.has(id))) return false;
-    if (chosen.length === 0) log(s, `${d.title}: esta vez nadie bebe.`);
-    for (const id of chosen) drink(s, id, d.drinks, id === p.id ? null : p.id);
-    endTurn(s);
+    resolveDrinkers(s, chosen);
     return true;
   }
 
@@ -374,6 +417,14 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
   return false;
 }
 
+function resolveDrinkers(s: GameState, chosen: string[]) {
+  const p = currentPlayer(s);
+  const d = s.decision as Extract<Decision, { kind: "SELECT_DRINKERS" }>;
+  if (chosen.length === 0) log(s, `${d.title}: esta vez nadie bebe.`);
+  for (const id of chosen) drink(s, id, d.drinks, id === p.id ? null : p.id);
+  endTurn(s);
+}
+
 // --- Bebida -----------------------------------------------------------------
 
 /** Aplica una bebida respetando Estación Abstemia, Abducción mental y Esclavo. */
@@ -391,19 +442,24 @@ function drink(s: GameState, targetId: string, n: number, sourceId: string | nul
   if (hypnotized) {
     const half = Math.ceil(n / 2);
     own = n - half;
-    hypnotized.drunk += half;
+    addDrinks(hypnotized, half);
     log(s, `🌀 ${hypnotized.name} absorbe ${half} ${vasos(half)} de ${target.name}.`);
   }
   if (own > 0) {
-    target.drunk += own;
+    addDrinks(target, own);
     log(s, `🍷 ${target.name} bebe ${own} ${vasos(own)}.`);
   }
 
   if (s.slave?.master === targetId) {
     const slave = s.players.find((q) => q.id === s.slave!.slave)!;
-    slave.drunk += n;
+    addDrinks(slave, n);
     log(s, `⛓️ ${slave.name}, como buen esclavo, bebe ${n} ${vasos(n)}.`);
   }
+}
+
+function addDrinks(p: Player, n: number) {
+  p.drunk += n;
+  p.pending = (p.pending ?? 0) + n; // ?? : partidas locales guardadas antes de existir `pending`
 }
 
 function vasos(n: number) {

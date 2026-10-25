@@ -137,9 +137,13 @@ export async function actInRoom(code: string, who: string, action: Action): Prom
     const member = room.members.find((m) => m.secret === who);
     if (!member) throw new RoomError("No eres parte de esta mesa.", 403);
     if (!room.game) throw new RoomError("La partida no ha empezado.", 409);
-    // Cualquiera puede denunciar que alguien rompió la ley; lo demás, solo quien tiene el turno.
-    if (action.type !== "PENALTY" && currentPlayer(room.game).id !== member.id)
+    // Votar y confirmar "¡Bebido!" solo por uno mismo; denunciar a quien rompe la ley, cualquiera;
+    // el resto de jugadas, solo quien tiene el turno.
+    if (action.type === "VOTE" || action.type === "DRANK") {
+      if (action.id !== member.id) throw new RoomError("Solo puedes responder por ti.", 403);
+    } else if (action.type !== "PENALTY" && currentPlayer(room.game).id !== member.id) {
       throw new RoomError("No es tu turno.", 403);
+    }
     const next = applyAction(room.game, action);
     if (next === room.game) throw new RoomError("Esa jugada no es válida ahora.", 409);
     room.game = next;

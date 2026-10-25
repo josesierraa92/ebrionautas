@@ -111,9 +111,19 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
           ) : (
             <div className="flex flex-col gap-3">
               <TurnHeader game={game} />
-              <p className="font-display text-btn-yellow">
-                {game.phase === "ROLL" ? `📱 ${me.name}, tira desde tu celular` : `📱 ${me.name} está decidiendo…`}
-              </p>
+              {game.decision?.kind === "SELECT_DRINKERS" && game.decision.mode === "vote" ? (
+                <div className="flex flex-col gap-1">
+                  <p className="font-display text-xl text-btn-yellow">🗳️ {game.decision.title}</p>
+                  <p className="text-white/85">{game.decision.text}</p>
+                  <p className="font-display">
+                    📱 Responded en el celular: {Object.keys(game.decision.votes).length}/{game.players.length}
+                  </p>
+                </div>
+              ) : (
+                <p className="font-display text-btn-yellow">
+                  {game.phase === "ROLL" ? `📱 ${me.name}, tira desde tu celular` : `📱 ${me.name} está decidiendo…`}
+                </p>
+              )}
             </div>
           )}
         </div>

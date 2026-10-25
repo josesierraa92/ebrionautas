@@ -78,12 +78,12 @@ export default function JugarPage() {
                 </button>
               )}
               {game.phase === "DECISION" && game.decision && (
-                <DecisionPanel key={game.logSeq} decision={game.decision} me={me} players={game.players} onAction={act} />
+                <DecisionPanel key={game.decisionSeq} decision={game.decision} me={me} players={game.players} onAction={act} />
               )}
             </div>
           )}
         </div>
-        <PlayersList game={game} onPenalty={(id) => act({ type: "PENALTY", id })} />
+        <PlayersList game={game} onPenalty={(id) => act({ type: "PENALTY", id })} onDrank={(id) => act({ type: "DRANK", id })} />
         <GameLog log={game.log} />
       </aside>
     </main>

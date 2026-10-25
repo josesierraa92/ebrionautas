@@ -11,6 +11,8 @@ const ACTION_TYPES = new Set<Action["type"]>([
   "SELECT_DRINKERS",
   "CHOOSE_SLAVE",
   "CARCEL",
+  "VOTE",
+  "DRANK",
   "PENALTY",
 ]);
 

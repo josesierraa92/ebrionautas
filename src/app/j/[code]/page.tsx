@@ -8,6 +8,7 @@ import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
 import RuleBanner from "@/components/RuleBanner";
 import TurnHeader from "@/components/TurnHeader";
+import VotePanel from "@/components/VotePanel";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Action } from "@/game/engine";
 import { api, playerKey, saved, sendAction, useRoom } from "@/lib/room-client";
@@ -28,6 +29,15 @@ export default function JugadorPage({ params }: { params: Promise<{ code: string
     setCreds(saved.get<Creds>(playerKey(code)));
     setLoaded(true);
   }, [code]);
+
+  // Vibra cuando empieza tu turno (si el celular lo permite).
+  const myTurnNow = !!(room?.game && creds && !room.game.winner && currentPlayer(room.game).id === creds.playerId);
+  useEffect(() => {
+    if (!myTurnNow) return;
+    try {
+      navigator.vibrate?.([150, 80, 150]);
+    } catch {}
+  }, [myTurnNow]);
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -114,6 +124,8 @@ export default function JugadorPage({ params }: { params: Promise<{ code: string
   const myTurn = turnOf.id === member.id && !game.winner;
   const winner = game.players.find((p) => p.id === game.winner);
   const act = (a: Action) => run(() => sendAction(code, creds!.secret, a));
+  const mine = game.players.find((p) => p.id === member.id)!;
+  const vote = game.decision?.kind === "SELECT_DRINKERS" && game.decision.mode === "vote" ? game.decision : null;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 py-4">
@@ -122,6 +134,18 @@ export default function JugadorPage({ params }: { params: Promise<{ code: string
         <span className="font-display text-white/70">Mesa {code}</span>
       </div>
       {game.rule && <RuleBanner text={game.rule.text} />}
+
+      {mine.pending > 0 && (
+        <div className="flex items-center gap-3 rounded-2xl border-[3px] border-ink bg-btn-red p-3">
+          <span className="text-4xl">🍷</span>
+          <p className="flex-1 font-display text-xl">
+            Debes {mine.pending} {mine.pending === 1 ? "vaso" : "vasos"}
+          </p>
+          <button disabled={busy} onClick={() => act({ type: "DRANK", id: member.id })} className="btn-game bg-btn-green px-4 py-3 text-lg text-white">
+            ¡BEBIDO!
+          </button>
+        </div>
+      )}
 
       <div className={`rounded-2xl border-[3px] border-ink p-4 ${myTurn ? "bg-btn-green/25" : "bg-ink/80"}`}>
         {winner ? (
@@ -133,15 +157,19 @@ export default function JugadorPage({ params }: { params: Promise<{ code: string
         ) : (
           <div className="flex flex-col gap-3">
             <TurnHeader game={game} you={member.id} />
+            {vote && <VotePanel decision={vote} players={game.players} myId={member.id} isMyTurn={myTurn} busy={busy} onAction={act} />}
             {myTurn && game.phase === "ROLL" && (
               <button disabled={busy} onClick={() => act({ type: "ROLL" })} className="btn-game bg-btn-green py-6 text-3xl text-white disabled:bg-btn-grey">
                 {turnOf.status.laberinto ? "TIRAR (5 o 6 para salir)" : "🎲 TIRAR"}
               </button>
             )}
-            {myTurn && game.phase === "DECISION" && game.decision && (
-              <DecisionPanel key={game.logSeq} decision={game.decision} me={turnOf} players={game.players} onAction={act} />
+            {myTurn && !vote && game.phase === "DECISION" && game.decision && (
+              // fieldset deshabilitado: evita enviar la misma jugada dos veces mientras llega la respuesta
+              <fieldset disabled={busy} className="contents">
+                <DecisionPanel key={game.decisionSeq} decision={game.decision} me={turnOf} players={game.players} onAction={act} />
+              </fieldset>
             )}
-            {!myTurn && <p className="text-white/70">{game.log[0]?.text}</p>}
+            {!myTurn && !vote && <p className="text-white/70">{game.log[0]?.text}</p>}
           </div>
         )}
         {actionError && <ErrorBox text={actionError} />}

@@ -48,6 +48,13 @@ describe("salas", () => {
     await actInRoom(code, players[1].secret, { type: "PENALTY", id: "p1" });
   });
 
+  it("cada uno vota y confirma lo bebido solo por sí mismo", async () => {
+    const { code, hostSecret, players } = await roomWith("Ana", "Beto");
+    await startRoom(code, hostSecret);
+    await expect(actInRoom(code, players[1].secret, { type: "VOTE", id: "p1", yes: true })).rejects.toThrow("por ti");
+    await expect(actInRoom(code, players[1].secret, { type: "DRANK", id: "p1" })).rejects.toThrow("por ti");
+  });
+
   it("rechaza jugadas inválidas y sube la versión con cada cambio", async () => {
     const { code, hostSecret, players } = await roomWith("Ana", "Beto");
     await startRoom(code, hostSecret);

@@ -5,9 +5,11 @@ type Props = {
   highlight?: string;
   /** Si se pasa, muestra el botón +1 para penalizar a quien rompa la ley vigente. */
   onPenalty?: (id: string) => void;
+  /** Si se pasa, la deuda de cada jugador es un botón para marcarla como bebida (modo local). */
+  onDrank?: (id: string) => void;
 };
 
-export default function PlayersList({ game, highlight, onPenalty }: Props) {
+export default function PlayersList({ game, highlight, onPenalty, onDrank }: Props) {
   const current = game.players[game.turn]?.id;
   return (
     <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-3">
@@ -25,7 +27,21 @@ export default function PlayersList({ game, highlight, onPenalty }: Props) {
               {p.status.carcel && <span title={`En el calabozo (fianza ${p.status.carcel.bail})`}>🚔</span>}
               {game.slave?.slave === p.id && <span title="Esclavo">⛓️</span>}
             </span>
-            <span className="rounded-full border-2 border-ink bg-space px-2 font-display text-sm">🍷 {p.drunk}</span>
+            {p.pending > 0 &&
+              (onDrank ? (
+                <button
+                  title="Marcar como bebido"
+                  onClick={() => onDrank(p.id)}
+                  className="btn-game animate-pulse bg-btn-red px-2 text-xs text-white"
+                >
+                  DEBE {p.pending} ✓
+                </button>
+              ) : (
+                <span className="animate-pulse rounded-full border-2 border-ink bg-btn-red px-2 font-display text-xs">DEBE {p.pending}</span>
+              ))}
+            <span className="rounded-full border-2 border-ink bg-space px-2 font-display text-sm" title="Total bebido">
+              🍷 {p.drunk}
+            </span>
             {onPenalty && game.rule && !game.winner && (
               <button
                 title="Rompió la ley: bebe 1"
