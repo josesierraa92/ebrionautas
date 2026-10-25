@@ -1,4 +1,4 @@
-import Link from "next/link";
+import HomeActions from "@/components/HomeActions";
 
 export default function Home() {
   return (
@@ -15,14 +15,7 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="flex w-full flex-col gap-4">
-        <Link href="/jugar" className="btn-game bg-btn-green py-4 text-2xl text-white">
-          CREAR MESA
-        </Link>
-        <button className="btn-game bg-btn-grey py-3 text-lg text-white" disabled>
-          UNIRSE CON CÓDIGO (próximamente)
-        </button>
-      </div>
+      <HomeActions />
 
       <p className="text-sm text-white/60">
         Juego para mayores de 18 años. Bebe con moderación.
