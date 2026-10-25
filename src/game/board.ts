@@ -29,7 +29,20 @@ export type Tile =
   | { n: number; type: "PATINAZO"; drinks: number; backTo: number }
   | { n: number; type: "POSICION"; who: "detras" | "delante"; drinks: number; title: string }
   | { n: number; type: "RASGO"; traits: Trait[]; drinks: number; title: string }
-  | { n: number; type: "RETO"; title: string; text: string };
+  | { n: number; type: "ESCLAVO" }
+  | { n: number; type: "RETO"; title: string; text: string; drinks: number };
+
+export const TRAIT_LABELS: Record<Trait, string> = {
+  hombre: "los hombres",
+  mujer: "las mujeres",
+  gafas: "quienes lleven gafas o lentillas",
+  melena_gomina: "quienes lleven melena o el pelo con gomina",
+  tatuaje_piercing: "quienes lleven tatuaje o piercing",
+  mascota: "quienes tengan mascota",
+  deportista: "quienes vayan al gimnasio o hagan deporte",
+  anio_par: "los nacidos en año par",
+  anio_impar: "los nacidos en año impar",
+};
 
 export const TILE_NAMES: Record<Tile["type"], string> = {
   SALIDA: "Plataforma de despegue",
@@ -47,6 +60,7 @@ export const TILE_NAMES: Record<Tile["type"], string> = {
   PATINAZO: "Resbalón en los anillos de Saturno",
   POSICION: "Estudio de especímenes humanos",
   RASGO: "Estudio de especímenes humanos",
+  ESCLAVO: "Esclavos",
   RETO: "Reto humano",
 };
 
@@ -67,8 +81,8 @@ export const BOARD: Tile[] = [
   { n: 12, type: "POSICION", who: "detras", drinks: 1, title: "Pa' los de atrás" },
   { n: 13, type: "CULTURAL" },
   { n: 14, type: "A_BEBER", amount: 2 },
-  { n: 15, type: "RETO", title: "Cómicos", text: "Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos." },
-  { n: 16, type: "RETO", title: "Pastosos", text: "Quien lleve mucho dinero en la cartera bebe por cada billete de más." },
+  { n: 15, type: "RETO", title: "Cómicos", text: "Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos.", drinks: 2 },
+  { n: 16, type: "RETO", title: "Pastosos", text: "Quien lleve mucho dinero en la cartera bebe por cada billete de más.", drinks: 1 },
   { n: 17, type: "HIPNOSIS" },
   { n: 18, type: "OCA", next: 28 },
   { n: 19, type: "DUELO", amount: 2 },
@@ -78,10 +92,10 @@ export const BOARD: Tile[] = [
   { n: 22, type: "A_BEBER", amount: 3 },
   { n: 23, type: "REGLA" },
   // TODO validar texto exacto de la casilla 24
-  { n: 24, type: "RETO", title: "Esclavos", text: "Escoge un esclavo: beberá cada vez que tú bebas hasta que alguien lo libere." },
+  { n: 24, type: "ESCLAVO" },
   { n: 25, type: "CULTURAL" },
   { n: 26, type: "CARCEL" },
-  { n: 27, type: "RETO", title: "Meones", text: "Quien haya ido al baño bebe 2 vasos." },
+  { n: 27, type: "RETO", title: "Meones", text: "Quien haya ido al baño bebe 2 vasos.", drinks: 2 },
   { n: 28, type: "OCA", next: 38 },
   { n: 29, type: "DUELO", amount: 3 },
   { n: 30, type: "A_BEBER", amount: 4 },
@@ -90,28 +104,28 @@ export const BOARD: Tile[] = [
   { n: 32, type: "RASGO", traits: ["anio_par"], drinks: 2, title: "Pares" },
   { n: 33, type: "CULTURAL" },
   // TODO validar texto exacto de la casilla 34
-  { n: 34, type: "RETO", title: "Guerra de sexos", text: "Reto por equipos: el equipo perdedor bebe." },
+  { n: 34, type: "RETO", title: "Guerra de sexos", text: "Reto por equipos: el equipo perdedor bebe.", drinks: 1 },
   { n: 35, type: "LABERINTO" },
   { n: 36, type: "HIPNOSIS" },
   { n: 37, type: "DUELO", amount: 4 },
   { n: 38, type: "OCA", next: 48 },
   { n: 39, type: "CULTURAL" },
-  { n: 40, type: "RETO", title: "Corleone", text: "Quien tenga un pariente en la mesa bebe 3 vasos." },
+  { n: 40, type: "RETO", title: "Corleone", text: "Quien tenga un pariente en la mesa bebe 3 vasos.", drinks: 3 },
   { n: 41, type: "REGLA" },
-  { n: 42, type: "RETO", title: "Tardones", text: "Quien no tenga el vaso vacío se lo termina y bebe otro." },
+  { n: 42, type: "RETO", title: "Tardones", text: "Quien no tenga el vaso vacío se lo termina y bebe otro.", drinks: 1 },
   { n: 43, type: "PATINAZO", drinks: 4, backTo: 12 },
   // TODO validar texto exacto de la casilla 44
-  { n: 44, type: "RETO", title: "Descuido", text: "Quien no lleve condón encima bebe 1 vaso." },
+  { n: 44, type: "RETO", title: "Descuido", text: "Quien no lleve condón encima bebe 1 vaso.", drinks: 1 },
   { n: 45, type: "CARCEL" },
   { n: 46, type: "RASGO", traits: ["tatuaje_piercing"], drinks: 2, title: "Tatuados" },
   { n: 47, type: "DUELO", amount: 5 },
   { n: 48, type: "OCA", next: 58 },
   { n: 49, type: "A_BEBER", amount: 5 },
-  { n: 50, type: "RETO", title: "Escoceses", text: "Si llevas ropa de cuadros, bebe 1 chupito." },
+  { n: 50, type: "RETO", title: "Escoceses", text: "Si llevas ropa de cuadros, bebe 1 chupito.", drinks: 1 },
   { n: 51, type: "RASGO", traits: ["deportista"], drinks: 2, title: "Musculitos" },
   { n: 52, type: "CULTURAL" },
   // TODO validar texto exacto de la casilla 53
-  { n: 53, type: "RETO", title: "Sedientos", text: "Te bebes lo que les queda en el vaso a tus compañeros." },
+  { n: 53, type: "RETO", title: "Sedientos", text: "Te bebes lo que les queda en el vaso a tus compañeros.", drinks: 1 },
   { n: 54, type: "RASGO", traits: ["mascota"], drinks: 1, title: "Zoofílicos" },
   { n: 55, type: "POSADA" },
   // TODO validar bebida y destino de la casilla 56
@@ -120,7 +134,7 @@ export const BOARD: Tile[] = [
   { n: 58, type: "OCA", next: null },
   { n: 59, type: "A_BEBER", amount: 6 },
   { n: 60, type: "MUERTE" },
-  { n: 61, type: "RETO", title: "Lenguados", text: "Recita un trabalenguas. Quien no lo repita bien bebe 2 vasos." },
+  { n: 61, type: "RETO", title: "Lenguados", text: "Recita un trabalenguas. Quien no lo repita bien bebe 2 vasos.", drinks: 2 },
   { n: 62, type: "META" },
 ];
 

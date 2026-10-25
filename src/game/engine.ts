@@ -1,0 +1,416 @@
+// Motor de reglas: función pura applyAction(state, action, rng) -> nuevo estado.
+// No toca la UI ni la red; la Fase 2 lo ejecutará en el servidor.
+
+import { BOARD, TILE_NAMES, TRAIT_LABELS, getTile } from "./board";
+
+export const LAST_TILE = BOARD.length;
+
+export type PlayerStatus = {
+  inmune: boolean; // Estación Abstemia: nadie le puede mandar beber
+  hipnosis: boolean; // Abducción mental: absorbe la mitad de lo que beben los demás
+  laberinto: boolean; // Cinturón de asteroides: sale con 5 o 6
+  carcel: { bail: number; at: number } | null;
+};
+
+export type Player = {
+  id: string;
+  name: string;
+  color: string;
+  pos: number;
+  drunk: number;
+  status: PlayerStatus;
+};
+
+export type Decision =
+  | { kind: "DISTRIBUTE"; amount: number }
+  | { kind: "DUEL"; amount: number }
+  | { kind: "PATINAZO"; drinks: number; backTo: number }
+  | { kind: "RULE" }
+  | { kind: "SELECT_DRINKERS"; drinks: number; title: string; text: string }
+  | { kind: "SLAVE" }
+  | { kind: "CARCEL"; bail: number };
+
+export type LogEntry = { id: number; text: string };
+
+export type GameState = {
+  players: Player[];
+  turn: number;
+  phase: "ROLL" | "DECISION" | "FINISHED";
+  decision: Decision | null;
+  rule: { text: string; by: string } | null;
+  slave: { master: string; slave: string } | null;
+  lastRoll: number | null;
+  extraRoll: boolean;
+  winner: string | null;
+  log: LogEntry[];
+  logSeq: number;
+};
+
+export type Action =
+  | { type: "ROLL" }
+  | { type: "DISTRIBUTE"; drinks: Record<string, number> }
+  | { type: "DUEL"; opponents: string[] }
+  | { type: "PATINAZO"; choice: "drink" | "back" }
+  | { type: "SET_RULE"; text: string }
+  | { type: "SELECT_DRINKERS"; ids: string[] }
+  | { type: "CHOOSE_SLAVE"; id: string }
+  | { type: "CARCEL"; choice: "pay" | "wait" }
+  | { type: "PENALTY"; id: string };
+
+export type Rng = () => number;
+
+const MAX_LOG = 60;
+
+const d6 = (rng: Rng) => Math.floor(rng() * 6) + 1;
+
+export function createGame(players: { name: string; color: string }[]): GameState {
+  const state: GameState = {
+    players: players.map((p, i) => ({
+      id: `p${i + 1}`,
+      name: p.name,
+      color: p.color,
+      pos: 1,
+      drunk: 0,
+      status: { inmune: false, hipnosis: false, laberinto: false, carcel: null },
+    })),
+    turn: 0,
+    phase: "ROLL",
+    decision: null,
+    rule: null,
+    slave: null,
+    lastRoll: null,
+    extraRoll: false,
+    winner: null,
+    log: [],
+    logSeq: 0,
+  };
+  log(state, "🚀 ¡Despegan los Ebrionautas! Que empiece la fiesta galáctica.");
+  return state;
+}
+
+export function currentPlayer(state: GameState): Player {
+  return state.players[state.turn];
+}
+
+export function applyAction(state: GameState, action: Action, rng: Rng = Math.random): GameState {
+  if (state.phase === "FINISHED") return state;
+  const s = structuredClone(state);
+
+  if (action.type === "PENALTY") {
+    const target = s.players.find((p) => p.id === action.id);
+    if (!target) return state;
+    log(s, `📜 ${target.name} rompió la ley del Consejo Galáctico.`);
+    drink(s, target.id, 1, null);
+    return s;
+  }
+
+  if (action.type === "ROLL") {
+    if (s.phase !== "ROLL") return state;
+    roll(s, rng);
+    return s;
+  }
+
+  if (s.phase !== "DECISION" || !s.decision) return state;
+  return resolveDecision(s, action, rng) ? s : state;
+}
+
+// --- Turnos -----------------------------------------------------------------
+
+function startTurn(s: GameState) {
+  const p = currentPlayer(s);
+  p.status.inmune = false;
+  p.status.hipnosis = false;
+  if (p.status.carcel) {
+    s.phase = "DECISION";
+    s.decision = { kind: "CARCEL", bail: p.status.carcel.bail };
+  } else {
+    s.phase = "ROLL";
+    s.decision = null;
+  }
+}
+
+function endTurn(s: GameState) {
+  s.decision = null;
+  if (s.extraRoll) {
+    s.extraRoll = false;
+    s.phase = "ROLL";
+    return;
+  }
+  s.turn = (s.turn + 1) % s.players.length;
+  startTurn(s);
+}
+
+function decide(s: GameState, decision: Decision) {
+  s.phase = "DECISION";
+  s.decision = decision;
+}
+
+function roll(s: GameState, rng: Rng) {
+  const p = currentPlayer(s);
+  const r = d6(rng);
+  s.lastRoll = r;
+
+  if (p.status.laberinto) {
+    if (r >= 5) {
+      p.status.laberinto = false;
+      log(s, `☄️ ${p.name} saca ${r} y escapa del Cinturón de asteroides.`);
+    } else {
+      log(s, `☄️ ${p.name} saca ${r}: sigue perdido entre asteroides.`);
+      drink(s, p.id, 1, null);
+    }
+    endTurn(s);
+    return;
+  }
+
+  let to = p.pos + r;
+  if (to > LAST_TILE) {
+    to = LAST_TILE * 2 - to;
+    log(s, `🎲 ${p.name} saca ${r}, se pasa de la Tierra y rebota a la ${to}.`);
+  } else {
+    log(s, `🎲 ${p.name} saca ${r} y aterriza en la ${to}.`);
+  }
+  p.pos = to;
+  landOn(s, p, rng);
+}
+
+function landOn(s: GameState, p: Player, rng: Rng) {
+  const tile = getTile(p.pos);
+  const others = s.players.filter((q) => q.id !== p.id);
+
+  switch (tile.type) {
+    case "SALIDA":
+      return endTurn(s);
+
+    case "META":
+      s.winner = p.id;
+      s.phase = "FINISHED";
+      s.decision = null;
+      log(s, `🏆 ¡${p.name} llega a la Tierra! Leyenda Fiestera de la Galaxia. Reparte el resto de bebida como quiera.`);
+      return;
+
+    case "POSADA":
+      p.status.inmune = true;
+      log(s, `⛽ ${p.name} reposta en la Estación Abstemia: nadie le puede mandar beber hasta su próximo turno.`);
+      return endTurn(s);
+
+    case "A_BEBER":
+      log(s, `⛽ Ronda de combustible: ${p.name} reparte ${tile.amount} ${vasos(tile.amount)}.`);
+      return decide(s, { kind: "DISTRIBUTE", amount: tile.amount });
+
+    case "DUELO":
+      if (others.length === 0) return endTurn(s);
+      log(s, `🔫 Duelo de dados láser: ${p.name} reta hasta a ${Math.min(tile.amount, others.length)}.`);
+      return decide(s, { kind: "DUEL", amount: Math.min(tile.amount, others.length) });
+
+    case "OCA":
+      log(s, `🦆 ¡De Oca en Oca y bebo Calimocho!`);
+      drink(s, p.id, 1, null);
+      if (tile.next) {
+        p.pos = tile.next;
+        log(s, `🦆 ${p.name} vuela en la Oca Espacial hasta la ${tile.next} y vuelve a tirar.`);
+      } else {
+        log(s, `🦆 ${p.name} vuelve a tirar.`);
+      }
+      s.extraRoll = true;
+      return endTurn(s);
+
+    case "LABERINTO":
+      p.status.laberinto = true;
+      log(s, `☄️ ${p.name} se pierde en el Cinturón de asteroides. Sale sacando 5 o 6.`);
+      return endTurn(s);
+
+    case "REGLA":
+      log(s, `⚖️ ${p.name} dicta una nueva ley del Consejo Galáctico.`);
+      return decide(s, { kind: "RULE" });
+
+    case "CULTURAL":
+      return decide(s, {
+        kind: "SELECT_DRINKERS",
+        drinks: 1,
+        title: TILE_NAMES.CULTURAL,
+        text: `${p.name} elige una categoría (ej. "marcas de cerveza"). Por turnos decís una cada uno; quien se quede en blanco o repita, bebe.`,
+      });
+
+    case "HIPNOSIS":
+      p.status.hipnosis = true;
+      log(s, `🌀 ${p.name} sufre una Abducción mental: hasta su próximo turno bebe la mitad de lo que beba el resto.`);
+      return endTurn(s);
+
+    case "CARCEL": {
+      for (const q of others) {
+        if (q.status.carcel?.at === tile.n) {
+          q.status.carcel = null;
+          log(s, `🔓 ${q.name} queda libre: ${p.name} ocupa su celda.`);
+        }
+      }
+      const bail = d6(rng) + d6(rng);
+      p.status.carcel = { bail, at: tile.n };
+      log(s, `🚔 ${p.name} al Calabozo Intergaláctico. Fianza: ${bail} ${vasos(bail)}.`);
+      return endTurn(s);
+    }
+
+    case "MUERTE":
+      p.pos = 1;
+      log(s, `🕳️ ${p.name} cae en el Agujero negro y vuelve a la plataforma de despegue.`);
+      return endTurn(s);
+
+    case "PATINAZO":
+      log(s, `🪐 ${p.name} resbala en los anillos de Saturno.`);
+      return decide(s, { kind: "PATINAZO", drinks: tile.drinks, backTo: tile.backTo });
+
+    case "POSICION": {
+      const targets = others.filter((q) => (tile.who === "detras" ? q.pos < p.pos : q.pos > p.pos));
+      log(s, `👀 ${tile.title}: ${targets.length ? targets.map((q) => q.name).join(", ") : "nadie"} ${targets.length === 1 ? "bebe" : "beben"}.`);
+      for (const q of targets) drink(s, q.id, tile.drinks, p.id);
+      return endTurn(s);
+    }
+
+    case "RASGO":
+      return decide(s, {
+        kind: "SELECT_DRINKERS",
+        drinks: tile.drinks,
+        title: tile.title,
+        text: `Estudio de especímenes humanos: beben ${tile.drinks} ${vasos(tile.drinks)} ${tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ")}.`,
+      });
+
+    case "RETO":
+      return decide(s, { kind: "SELECT_DRINKERS", drinks: tile.drinks, title: tile.title, text: tile.text });
+
+    case "ESCLAVO":
+      if (others.length === 0) return endTurn(s);
+      return decide(s, { kind: "SLAVE" });
+  }
+}
+
+// --- Decisiones -------------------------------------------------------------
+
+function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
+  const p = currentPlayer(s);
+  const d = s.decision!;
+  const ids = new Set(s.players.map((q) => q.id));
+
+  if (d.kind === "DISTRIBUTE" && action.type === "DISTRIBUTE") {
+    const entries = Object.entries(action.drinks).filter(([, n]) => n > 0);
+    const total = entries.reduce((a, [, n]) => a + n, 0);
+    if (total !== d.amount || entries.some(([id, n]) => !ids.has(id) || !Number.isInteger(n))) return false;
+    for (const [id, n] of entries) drink(s, id, n, p.id);
+    endTurn(s);
+    return true;
+  }
+
+  if (d.kind === "DUEL" && action.type === "DUEL") {
+    const opps = [...new Set(action.opponents)];
+    if (opps.length < 1 || opps.length > d.amount || opps.some((id) => id === p.id || !ids.has(id))) return false;
+    for (const id of opps) {
+      const rival = s.players.find((q) => q.id === id)!;
+      let a = d6(rng);
+      let b = d6(rng);
+      while (a === b) {
+        log(s, `🔫 ${p.name} ${a} vs ${rival.name} ${b}: empate, otra vez.`);
+        a = d6(rng);
+        b = d6(rng);
+      }
+      const [winner, loser] = a > b ? [p, rival] : [rival, p];
+      log(s, `🔫 ${p.name} ${a} vs ${rival.name} ${b}: pierde ${loser.name}.`);
+      drink(s, loser.id, 1, winner.id);
+    }
+    endTurn(s);
+    return true;
+  }
+
+  if (d.kind === "PATINAZO" && action.type === "PATINAZO") {
+    if (action.choice === "drink") {
+      log(s, `🪐 ${p.name} mantiene el equilibrio bebiendo ${d.drinks} de golpe.`);
+      drink(s, p.id, d.drinks, null);
+    } else {
+      p.pos = d.backTo;
+      log(s, `🪐 ${p.name} cae hasta la ${d.backTo}.`);
+    }
+    endTurn(s);
+    return true;
+  }
+
+  if (d.kind === "RULE" && action.type === "SET_RULE") {
+    const text = action.text.trim();
+    if (!text) return false;
+    s.rule = { text, by: p.id };
+    log(s, `⚖️ Nueva ley de ${p.name}: "${text}"`);
+    endTurn(s);
+    return true;
+  }
+
+  if (d.kind === "SELECT_DRINKERS" && action.type === "SELECT_DRINKERS") {
+    const chosen = [...new Set(action.ids)];
+    if (chosen.some((id) => !ids.has(id))) return false;
+    if (chosen.length === 0) log(s, `${d.title}: esta vez nadie bebe.`);
+    for (const id of chosen) drink(s, id, d.drinks, id === p.id ? null : p.id);
+    endTurn(s);
+    return true;
+  }
+
+  if (d.kind === "SLAVE" && action.type === "CHOOSE_SLAVE") {
+    if (action.id === p.id || !ids.has(action.id)) return false;
+    s.slave = { master: p.id, slave: action.id };
+    const slave = s.players.find((q) => q.id === action.id)!;
+    log(s, `⛓️ ${slave.name} es ahora esclavo de ${p.name}: beberá cada vez que su amo beba.`);
+    endTurn(s);
+    return true;
+  }
+
+  if (d.kind === "CARCEL" && action.type === "CARCEL") {
+    if (action.choice === "pay") {
+      log(s, `🔓 ${p.name} paga la fianza.`);
+      drink(s, p.id, d.bail, null);
+      p.status.carcel = null;
+      s.decision = null;
+      s.phase = "ROLL";
+    } else {
+      log(s, `🚔 ${p.name} sigue en el calabozo esperando que caiga otro.`);
+      endTurn(s);
+    }
+    return true;
+  }
+
+  return false;
+}
+
+// --- Bebida -----------------------------------------------------------------
+
+/** Aplica una bebida respetando Estación Abstemia, Abducción mental y Esclavo. */
+function drink(s: GameState, targetId: string, n: number, sourceId: string | null) {
+  if (n <= 0) return;
+  const target = s.players.find((q) => q.id === targetId)!;
+
+  if (sourceId && sourceId !== targetId && target.status.inmune) {
+    log(s, `⛽ ${target.name} está en la Estación Abstemia: ¡inmune!`);
+    return;
+  }
+
+  let own = n;
+  const hypnotized = s.players.find((q) => q.status.hipnosis && q.id !== targetId);
+  if (hypnotized) {
+    const half = Math.ceil(n / 2);
+    own = n - half;
+    hypnotized.drunk += half;
+    log(s, `🌀 ${hypnotized.name} absorbe ${half} ${vasos(half)} de ${target.name}.`);
+  }
+  if (own > 0) {
+    target.drunk += own;
+    log(s, `🍷 ${target.name} bebe ${own} ${vasos(own)}.`);
+  }
+
+  if (s.slave?.master === targetId) {
+    const slave = s.players.find((q) => q.id === s.slave!.slave)!;
+    slave.drunk += n;
+    log(s, `⛓️ ${slave.name}, como buen esclavo, bebe ${n} ${vasos(n)}.`);
+  }
+}
+
+function vasos(n: number) {
+  return n === 1 ? "vaso" : "vasos";
+}
+
+function log(s: GameState, text: string) {
+  s.logSeq += 1;
+  s.log = [{ id: s.logSeq, text }, ...s.log].slice(0, MAX_LOG);
+}

@@ -19,6 +19,7 @@ Plan completo: [docs/plan-ebrionautas.md](docs/plan-ebrionautas.md)
 npm install
 npm run dev     # http://localhost:3000
 npm run lint
+npm test
 npm run build
 ```
 

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-10 px-4 py-12 text-center">
@@ -14,14 +16,11 @@ export default function Home() {
       </div>
 
       <div className="flex w-full flex-col gap-4">
-        <button className="btn-game bg-btn-green py-4 text-2xl text-white">
+        <Link href="/jugar" className="btn-game bg-btn-green py-4 text-2xl text-white">
           CREAR MESA
-        </button>
-        <button className="btn-game bg-btn-blue py-4 text-2xl text-white">
-          UNIRSE CON CÓDIGO
-        </button>
+        </Link>
         <button className="btn-game bg-btn-grey py-3 text-lg text-white" disabled>
-          REGLAS (próximamente)
+          UNIRSE CON CÓDIGO (próximamente)
         </button>
       </div>
 
