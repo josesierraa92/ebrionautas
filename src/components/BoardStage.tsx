@@ -17,15 +17,18 @@ type Props = {
   winner?: string | null;
   fx: ReturnType<typeof useGameFx>;
   className?: string;
+  /** Capas extra encima del tablero (tarjeta grande, indicador de turno…). */
+  children?: React.ReactNode;
 };
 
 /** Tablero 3D con el dado y los títulos de evento encima. */
-export default function BoardStage({ players, current, winner, fx, className }: Props) {
+export default function BoardStage({ players, current, winner, fx, className, children }: Props) {
   return (
     <div className={`@container relative w-full overflow-hidden rounded-3xl border-4 border-ink bg-[#f3e3f7] shadow-[0_8px_0_#1b1f4b] ${className ?? ""}`}>
       <Board3D players={players} current={current} winner={winner} shown={fx.shown} flying={fx.flying} />
       <DiceOverlay dice={fx.dice} />
       <BannerOverlay banner={fx.banner} />
+      {children}
     </div>
   );
 }

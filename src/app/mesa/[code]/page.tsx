@@ -10,6 +10,7 @@ import PlayersList from "@/components/PlayersList";
 import RuleBanner from "@/components/RuleBanner";
 import SoundToggle from "@/components/SoundToggle";
 import TurnHeader from "@/components/TurnHeader";
+import { DecisionCard, TurnChip, decisionText } from "@/components/TvCards";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Decision } from "@/game/engine";
 import { api, hostKey, saved, useRoom } from "@/lib/room-client";
@@ -22,11 +23,19 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const [hostSecret, setHostSecret] = useState<string | null>(null);
   const [controlUrl, setControlUrl] = useState("");
   const fx = useGameFx(room?.game ?? null);
+  // Panel del marcador a la derecha: se puede ocultar para ver solo el tablero (se recuerda en esta TV).
+  const [panelOpen, setPanelOpen] = useState(true);
 
   useEffect(() => {
     setHostSecret(saved.get<string>(hostKey(code)));
     setControlUrl(`${window.location.origin}/c/${code}`);
+    setPanelOpen(saved.get<boolean>(PANEL_KEY) ?? true);
   }, [code]);
+
+  const togglePanel = () => {
+    saved.set(PANEL_KEY, !panelOpen);
+    setPanelOpen(!panelOpen);
+  };
 
   if (!room) return <Centered>{error ?? "Conectando con la mesa…"}</Centered>;
 
@@ -77,74 +86,82 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const me = currentPlayer(game);
   const winner = game.players.find((p) => p.id === game.winner);
 
+  const showCard = !!game.decision && !winner && fx.settled && !fx.banner;
+
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[1600px] flex-col gap-4 px-4 py-4 lg:flex-row lg:items-start">
+    <main className={`mx-auto flex min-h-dvh flex-col gap-4 px-4 py-4 lg:flex-row lg:items-start ${panelOpen ? "max-w-[1600px]" : ""}`}>
       <section className="flex flex-col gap-3 lg:flex-1">
         <div className="flex items-center justify-between gap-2">
           <span className="title-game text-3xl">EBRIONAUTAS</span>
-          <span className="flex items-center gap-3 font-display text-white/70">
+          <span className="flex items-center gap-2 font-display text-white/70">
             <SoundToggle />
-            Mesa {code}
+            <button onClick={toggleFullscreen} aria-label="Pantalla completa" className="btn-game bg-btn-blue px-3 py-1.5 text-sm text-white">
+              ⛶
+            </button>
+            <button onClick={togglePanel} className="btn-game bg-btn-yellow px-3 py-1.5 text-sm text-white">
+              {panelOpen ? "OCULTAR MARCADOR ▶" : "◀ VER MARCADOR"}
+            </button>
+            <span className="ml-2">Mesa {code}</span>
             {hostSecret && (
-              <button onClick={release} className="ml-3 text-xs text-white/40 underline">
+              <button onClick={release} className="ml-2 text-xs text-white/40 underline">
                 cambiar de celular
               </button>
             )}
           </span>
         </div>
-        {game.rule && <RuleBanner text={game.rule.text} />}
+        {game.rule && panelOpen && <RuleBanner text={game.rule.text} />}
         <BoardStage
           players={game.players}
           current={me.id}
           winner={game.winner}
           fx={fx}
-          className={`aspect-[16/10] lg:aspect-auto ${game.rule ? "lg:h-[calc(100dvh-9.5rem)]" : "lg:h-[calc(100dvh-5.5rem)]"}`}
-        />
-        {winner && <Confetti />}
-      </section>
-      <aside className="flex flex-col gap-4 lg:w-[28rem]">
-        <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
-          {winner ? (
-            <Winner winner={winner} />
-          ) : (
-            <div className="flex flex-col gap-3">
-              <TurnHeader game={game} />
-              {game.decision ? (
-                <DecisionInfo decision={game.decision} name={me.name} />
-              ) : (
-                <p className="font-display text-lg text-btn-yellow">🎲 {me.name}, tira el dado desde el celular</p>
-              )}
+          className={`aspect-[16/10] lg:aspect-auto ${game.rule && panelOpen ? "lg:h-[calc(100dvh-9.5rem)]" : "lg:h-[calc(100dvh-5.5rem)]"}`}
+        >
+          {!panelOpen && <TurnChip game={game} />}
+          {!panelOpen && game.rule && (
+            <div className="pointer-events-none absolute right-[2%] bottom-[2%] left-[2%] z-30">
+              <RuleBanner text={game.rule.text} />
             </div>
           )}
-        </div>
-        <PlayersList game={game} big />
-        <GameLog log={game.log} max={12} />
-        {error && <p className="text-sm text-btn-red">⚠️ {error}</p>}
-      </aside>
+          {showCard && <DecisionCard game={game} />}
+        </BoardStage>
+        {winner && <Confetti />}
+      </section>
+      {panelOpen && (
+        <aside className="flex flex-col gap-4 lg:w-[28rem]">
+          <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
+            {winner ? (
+              <Winner winner={winner} />
+            ) : (
+              <div className="flex flex-col gap-3">
+                <TurnHeader game={game} />
+                {game.decision ? (
+                  <DecisionInfo decision={game.decision} name={me.name} />
+                ) : (
+                  <p className="font-display text-lg text-btn-yellow">🎲 {me.name}, tira el dado desde el celular</p>
+                )}
+              </div>
+            )}
+          </div>
+          <PlayersList game={game} big />
+          <GameLog log={game.log} max={12} />
+          {error && <p className="text-sm text-btn-red">⚠️ {error}</p>}
+        </aside>
+      )}
     </main>
   );
 }
 
+const PANEL_KEY = "ebrionautas:panel";
+
+function toggleFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  else document.documentElement.requestFullscreen?.().catch(() => {});
+}
+
 /** Qué se está decidiendo, en grande para que lo vea toda la mesa. */
 function DecisionInfo({ decision, name }: { decision: Decision; name: string }) {
-  const [title, text] = (() => {
-    switch (decision.kind) {
-      case "DISTRIBUTE":
-        return ["⛽ Ronda de combustible", `${name} reparte ${decision.amount} ${decision.amount === 1 ? "vaso" : "vasos"}.`];
-      case "DUEL":
-        return ["🔫 Duelo de dados láser", `${name} elige hasta ${decision.amount} ${decision.amount === 1 ? "rival" : "rivales"}.`];
-      case "SELECT_DRINKERS":
-        return [decision.title, decision.text];
-      case "PATINAZO":
-        return ["🪐 ¡Resbalón en Saturno!", `${name}: beber ${decision.drinks} de golpe o volver a la ${decision.backTo}.`];
-      case "RULE":
-        return ["⚖️ Ley del Consejo Galáctico", `${name} dicta una nueva ley para todos.`];
-      case "SLAVE":
-        return ["⛓️ Esclavos", `${name} elige a su esclavo.`];
-      case "CARCEL":
-        return ["🚔 Calabozo Intergaláctico", `${name}: pagar fianza de ${decision.bail} vasos o esperar.`];
-    }
-  })();
+  const [title, text] = decisionText(decision, name);
   return (
     <div className="flex flex-col gap-1">
       <p className="font-display text-2xl text-btn-yellow">{title}</p>

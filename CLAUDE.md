@@ -42,4 +42,6 @@ léelo antes de implementar algo nuevo.
 - `src/lib/useGameFx.ts`: a partir de los cambios de estado anima el dado (`rollSeq`), el paso a paso de
   la ficha, vuelos (Oca, agujero negro…), títulos grandes y dispara los sonidos (`src/lib/sfx.ts`, Web Audio
   sintetizado, sin archivos).
+- TV: el marcador de la derecha se puede ocultar (se recuerda en esa TV) y hay botón de pantalla completa;
+  cuando hay una decisión sale una tarjeta grande en el centro (`src/components/TvCards.tsx`).
 - El celular de control sigue usando el tablero 2D en espiral (`src/components/Board.tsx`, `src/game/spiral.ts`).

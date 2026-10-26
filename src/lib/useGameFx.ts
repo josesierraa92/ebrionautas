@@ -52,6 +52,8 @@ export function useGameFx(game: GameState | null) {
   const [flying, setFlying] = useState<string | null>(null);
   const [dice, setDice] = useState<DiceFx | null>(null);
   const [banner, setBanner] = useState<Banner | null>(null);
+  // false mientras la ficha se mueve: la tarjeta grande de la TV espera a que termine.
+  const [settled, setSettled] = useState(true);
   const prev = useRef<GameState | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   // Los que esconden el dado y los títulos no se cancelan con una jugada nueva: si no, se quedarían pegados.
@@ -79,6 +81,7 @@ export function useGameFx(game: GameState | null) {
     setShown(startFrom);
     setFlying(null);
 
+    setSettled(false);
     let t = 0;
     const rolled = (game.rollSeq ?? 0) > (before.rollSeq ?? 0) && game.lastRoll;
     if (rolled) {
@@ -135,6 +138,8 @@ export function useGameFx(game: GameState | null) {
     }
 
     at(t, () => setShown(target));
+    // Margen para que se lea el título de la casilla antes de la tarjeta.
+    at(t + (t > 0 ? 900 : 0), () => setSettled(true));
 
     function showEvent(tile: Tile) {
       const ev = EVENTS[tile.type];
@@ -155,5 +160,5 @@ export function useGameFx(game: GameState | null) {
     [],
   );
 
-  return { shown, flying, dice, banner };
+  return { shown, flying, dice, banner, settled };
 }

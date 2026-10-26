@@ -148,3 +148,9 @@ body {
 
 /* Íconos con sombra sólida, como en la referencia de UI */
 .game-icon { filter: drop-shadow(0 4px 0 var(--color-ink)); overflow: visible; }
+.card-pop { animation: card-pop 0.45s cubic-bezier(0.3, 1.5, 0.5, 1); }
+/* Sin opacidad 0 al empezar: si el navegador va lento, la tarjeta se lee igual. */
+@keyframes card-pop {
+  0% { transform: translateY(8%) scale(0.85) rotate(-4deg); }
+  100% { transform: translateY(0) scale(1) rotate(0deg); }
+}
