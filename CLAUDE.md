@@ -35,24 +35,23 @@ léelo antes de implementar algo nuevo.
 
 ## Tablero isométrico, animaciones y sonido
 
-- La TV y `/jugar` usan el **tablero isométrico 2.5D** (`src/components/IsoBoard.tsx`): SVG con aspecto 3D
-  (losas con canto, sombras, árboles, lago, OVNI) sobre una isla flotando en el espacio. Sin WebGL a propósito:
-  el 3D con Three.js rompía en TV sin WebGL y el usuario prefirió "2D tipo 3D".
+- La TV y `/jugar` usan el **tablero isométrico** (`src/components/IsoBoard.tsx`): una imagen 3D pre-renderizada
+  (ver abajo) con las fichas en SVG encima. Nada de WebGL en el navegador: el 3D en vivo rompía en la TV del usuario.
 - Cámara: el tablero está siempre con zoom (`ZOOM` en `IsoBoard`) y sigue a la última ficha que tiró (`focus` de
   `useGameFx`; antes de la primera tirada, al jugador de turno). El usuario no quiere que se aleje. Animaciones rápidas. Cada losa lleva su número de pie en el borde delantero.
 - `src/game/isoPath.ts`: recorrido de las 62 casillas (4 tramos de 14 + conectores de 2). `src/components/BoardStage.tsx`
   pinta encima el dado y los títulos (`src/components/Fx.tsx`).
-- Estilo visual (referencia del usuario: tablero isométrico 3D suave tipo "clay", sin contornos): las losas son un
-  camino casi continuo con un **símbolo blanco pintado encima** (`TileGlyph` en `IsoBoard`: estrella, flecha, calavera,
-  ?, !…); el número va de pie en el borde. Árboles y decoración son renders 3D (`public/art/deco/*.webp`): entre los
-  tramos solo cosas bajitas (lo alto tapa las casillas de detrás), árboles y tienda en el borde. Las fichas son
-  marcianos 3D por color de jugador (`public/art/alien/<índice de PLAYER_COLORS>.webp`, `alienArt()`; `Marciano` usa
-  la imagen y deja el SVG para otros colores). La Nave Nodriza también es imagen.
-- Ilustraciones de cada tipo de casilla para tarjetas y títulos: `public/art/<tipo>.webp` (`tileArt()`). Todo se genera con
-  `python3 scripts/gen-art.py [tile|deco|alien|grupo/id]` (Cloudflare Workers AI, FLUX schnell): necesita
-  `CLOUDFLARE_ACCOUNT_ID` y el token como network secret de `api.cloudflare.com`. Cuota gratis: 10.000 neuronas al día
-  (~40 imágenes). El filtro NSFW rechaza a veces prompts inocentes (armas, "fiery"…): cambiar el texto y repetir.
-  Pendiente: regenerar el grupo `tile` en el estilo 3D (aún tiene el estilo anterior con contorno).
+- **Estética única** (pedido del usuario: "que todo tenga la misma estética", nada de "pedazos de muchos juegos"):
+  todo sale del mismo render 3D, con la misma luz, materiales y paleta. Dirección de arte: "planeta después de la
+  fiesta" (isla acogedora, pinos turquesa, árboles rosas, lago de calimocho, caldero, vasos rojos de fiesta,
+  guirnaldas de luces, nave nodriza con bola de discoteca, marcianos con su vaso).
+- `scripts/board3d/scene.ts` (Three.js) construye la escena con código y `node scripts/board3d/render.mjs` la renderiza
+  en Chromium sin pantalla (WebGL por software) a `public/art/board.webp` (tablero), `public/art/alien/<i>.webp`
+  (marciano por color de `PLAYER_COLORS`) y `public/art/<tipo>.webp` (losa de cada tipo, para tarjetas y títulos).
+  Volver a ejecutarlo tras cambiar casillas, decoración (`src/game/decor.ts`) o colores. La cámara usa la misma
+  proyección que la TV (`isoSx`/`isoSy`/`ISO_VIEW` en `src/game/isoPath.ts`), así que `IsoBoard` pone la imagen de
+  fondo y encima solo las fichas y los números. La TV no necesita WebGL.
+- Se probó generar dibujos con IA (Cloudflare Workers AI) y el usuario lo rechazó por incoherente; no volver a mezclar.
 - `src/lib/useGameFx.ts`: a partir de los cambios de estado anima el dado (`rollSeq`), el paso a paso de
   la ficha, vuelos (Oca, agujero negro…), títulos grandes y dispara los sonidos (`src/lib/sfx.ts`, Web Audio
   sintetizado, sin archivos).

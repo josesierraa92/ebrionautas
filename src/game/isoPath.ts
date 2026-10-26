@@ -38,3 +38,17 @@ export function isoPos(n: number): GridPos {
 export function isPathCell(gx: number, gy: number): boolean {
   return PATH.some((p) => p.gx === Math.round(gx) && p.gy === Math.round(gy));
 }
+
+// --- Proyección isométrica 2:1 (la comparten la TV y el render 3D del tablero) ---------
+/** Píxeles (SVG) en pantalla de un punto del suelo. */
+export const isoSx = (gx: number, gy: number) => (gx - gy) * 50;
+export const isoSy = (gx: number, gy: number) => (gx + gy) * 25;
+/** La isla sobresale un poco del recorrido. */
+export const ISLAND = { x0: -1.3, x1: ISO_COLS + 0.3, y0: -1.3, y1: ISO_ROWS + 0.3, thickness: 46 };
+/** Rectángulo visible (píxeles SVG): la isla, la nave de arriba y la sombra de abajo. */
+export const ISO_VIEW = {
+  x: isoSx(ISLAND.x0, ISLAND.y1) - 30,
+  y: isoSy(ISLAND.x0, ISLAND.y0) - 190,
+  w: isoSx(ISLAND.x1, ISLAND.y0) - isoSx(ISLAND.x0, ISLAND.y1) + 60,
+  h: isoSy(ISLAND.x1, ISLAND.y1) - isoSy(ISLAND.x0, ISLAND.y0) + ISLAND.thickness + 250,
+};
