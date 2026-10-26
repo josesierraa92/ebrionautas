@@ -25,12 +25,19 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const fx = useGameFx(room?.game ?? null);
   // Panel del marcador a la derecha: se puede ocultar para ver solo el tablero (se recuerda en esta TV).
   const [panelOpen, setPanelOpen] = useState(true);
+  const [prefer2d, setPrefer2d] = useState(false);
 
   useEffect(() => {
     setHostSecret(saved.get<string>(hostKey(code)));
     setControlUrl(`${window.location.origin}/c/${code}`);
     setPanelOpen(saved.get<boolean>(PANEL_KEY) ?? true);
+    setPrefer2d(saved.get<boolean>(VIEW_2D_KEY) ?? false);
   }, [code]);
+
+  const toggleView = () => {
+    saved.set(VIEW_2D_KEY, !prefer2d);
+    setPrefer2d(!prefer2d);
+  };
 
   const togglePanel = () => {
     saved.set(PANEL_KEY, !panelOpen);
@@ -95,6 +102,9 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
           <span className="title-game text-3xl">EBRIONAUTAS</span>
           <span className="flex items-center gap-2 font-display text-white/70">
             <SoundToggle />
+            <button onClick={toggleView} title="Cambiar entre tablero 3D y 2D (el 2D va mejor en TV lentas)" className="btn-game bg-btn-special px-3 py-1.5 text-sm text-white">
+              {prefer2d ? "VER EN 3D" : "VER EN 2D"}
+            </button>
             <button onClick={toggleFullscreen} aria-label="Pantalla completa" className="btn-game bg-btn-blue px-3 py-1.5 text-sm text-white">
               ⛶
             </button>
@@ -115,6 +125,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
           current={me.id}
           winner={game.winner}
           fx={fx}
+          prefer2d={prefer2d}
           className={`aspect-[16/10] lg:aspect-auto ${game.rule && panelOpen ? "lg:h-[calc(100dvh-9.5rem)]" : "lg:h-[calc(100dvh-5.5rem)]"}`}
         >
           {!panelOpen && <TurnChip game={game} />}
@@ -153,6 +164,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
 }
 
 const PANEL_KEY = "ebrionautas:panel";
+const VIEW_2D_KEY = "ebrionautas:vista2d";
 
 function toggleFullscreen() {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
