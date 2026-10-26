@@ -38,8 +38,8 @@ léelo antes de implementar algo nuevo.
 - La TV y `/jugar` usan el **tablero isométrico 2.5D** (`src/components/IsoBoard.tsx`): SVG con aspecto 3D
   (losas con canto, sombras, árboles, lago, OVNI) sobre una isla flotando en el espacio. Sin WebGL a propósito:
   el 3D con Three.js rompía en TV sin WebGL y el usuario prefirió "2D tipo 3D".
-- Cámara: mientras una ficha avanza, `IsoBoard` hace zoom sobre ella (`focus` de `useGameFx`) y luego vuelve a
-  enseñar todo el tablero. Cada losa lleva su número de pie en el borde delantero.
+- Cámara: el tablero está siempre con zoom (`ZOOM` en `IsoBoard`) y sigue a la última ficha que tiró (`focus` de
+  `useGameFx`; antes de la primera tirada, al jugador de turno). El usuario no quiere que se aleje. Animaciones rápidas. Cada losa lleva su número de pie en el borde delantero.
 - `src/game/isoPath.ts`: recorrido de las 62 casillas (4 tramos de 14 + conectores de 2). `src/components/BoardStage.tsx`
   pinta encima el dado y los títulos (`src/components/Fx.tsx`).
 - Los íconos de las casillas son emojis por ahora; el plan es sustituirlos por ilustraciones generadas con IA

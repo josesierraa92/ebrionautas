@@ -115,7 +115,7 @@ body {
   15% { transform: translateY(0) scale(1.1, 0.9); }
   50% { transform: translateY(-28%) scale(0.95, 1.05); }
 }
-.token-fly { animation: token-fly 0.65s ease-in-out; }
+.token-fly { animation: token-fly 0.45s ease-in-out; }
 @keyframes token-fly {
   0%, 100% { scale: 1; rotate: 0deg; }
   50% { scale: 1.9; rotate: 25deg; }
@@ -133,7 +133,7 @@ body {
   0%, 100% { transform: rotate(-6deg) translateY(0); }
   50% { transform: rotate(6deg) translateY(-6%); }
 }
-.dice-land { animation: dice-land 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); filter: drop-shadow(0 10px 0 rgb(0 0 0 / 0.35)); }
+.dice-land { animation: dice-land 0.3s cubic-bezier(0.3, 1.6, 0.5, 1); filter: drop-shadow(0 10px 0 rgb(0 0 0 / 0.35)); }
 @keyframes dice-land {
   0% { transform: scale(1.4) rotate(-20deg); }
   100% { transform: scale(1) rotate(0deg); }
@@ -173,7 +173,7 @@ body {
 
 /* Íconos con sombra sólida, como en la referencia de UI */
 .game-icon { filter: drop-shadow(0 4px 0 var(--color-ink)); overflow: visible; }
-.card-pop { animation: card-pop 0.45s cubic-bezier(0.3, 1.5, 0.5, 1); }
+.card-pop { animation: card-pop 0.3s cubic-bezier(0.3, 1.5, 0.5, 1); }
 /* Sin opacidad 0 al empezar: si el navegador va lento, la tarjeta se lee igual. */
 @keyframes card-pop {
   0% { transform: translateY(8%) scale(0.85) rotate(-4deg); }

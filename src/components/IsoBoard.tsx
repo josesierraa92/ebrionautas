@@ -35,7 +35,7 @@ type Props = {
   winner?: string | null;
   shown?: Record<string, number>;
   flying?: string | null;
-  /** Ficha a la que se acerca la cámara mientras avanza (zoom); null = tablero entero. */
+  /** Ficha que sigue la cámara (siempre con zoom); null = tablero entero. */
   focus?: string | null;
 };
 
@@ -85,7 +85,7 @@ export default function IsoBoard({ players, current, winner, shown, flying, focu
         <g
           style={{
             transform: `translate(${x}px, ${y}px)`,
-            transition: isFlying ? "transform .65s cubic-bezier(.4,-.4,.5,1.4)" : "transform .2s ease-out",
+            transition: isFlying ? "transform .45s cubic-bezier(.4,-.4,.5,1.4)" : "transform .12s ease-out",
           }}
         >
           <ellipse cx={0} cy={0} rx={size * 0.3} ry={size * 0.12} fill="#1d3b12" opacity=".3" />
@@ -122,7 +122,7 @@ export default function IsoBoard({ players, current, winner, shown, flying, focu
           transformBox: "view-box",
           transformOrigin: "0 0",
           transform: cam ? camera(sx(cam.gx, cam.gy), sy(cam.gx, cam.gy) - 50) : "none",
-          transition: "transform .8s ease-in-out",
+          transition: "transform .5s ease-in-out",
         }}
       >
         <Island />

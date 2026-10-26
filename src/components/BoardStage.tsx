@@ -21,7 +21,7 @@ type Props = {
 export default function BoardStage({ players, current, winner, fx, className, bare = false, children }: Props) {
   return (
     <div className={`board-space @container relative w-full overflow-hidden ${bare ? "" : "rounded-3xl border-4 border-ink shadow-[0_8px_0_#1b1f4b]"} ${className ?? ""}`}>
-      <IsoBoard players={players} current={current} winner={winner} shown={fx.shown} flying={fx.flying} focus={fx.focus} />
+      <IsoBoard players={players} current={current} winner={winner} shown={fx.shown} flying={fx.flying} focus={fx.focus ?? current} />
       <DiceOverlay dice={fx.dice} />
       <BannerOverlay banner={fx.banner} />
       {children}

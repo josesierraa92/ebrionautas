@@ -6,11 +6,10 @@ import { getTile, type Tile } from "@/game/board";
 import { duelOutcome, jailOutcome, mazeOutcome } from "@/game/rules";
 import { sfx } from "./sfx";
 
-const DICE_MS = 750; // el dado rueda
-const STEP_MS = 230; // la ficha salta de casilla en casilla
-const FLY_MS = 650; // vuelo de la Oca, agujero negro, resbalón…
-const BANNER_MS = 1800;
-const FOCUS_MS = 2200; // cuánto se queda el zoom sobre la ficha después de caer
+const DICE_MS = 450; // el dado rueda
+const STEP_MS = 140; // la ficha salta de casilla en casilla
+const FLY_MS = 450; // vuelo de la Oca, agujero negro, resbalón…
+const BANNER_MS = 1200;
 
 export type Banner = { key: number; title: string; emoji: string; color: string };
 export type DiceFx = { key: number; value: number; rolling: boolean };
@@ -63,9 +62,8 @@ export function useGameFx(game: GameState | null) {
   // false mientras la ficha se mueve: la tarjeta grande de la TV espera a que termine.
   const [settled, setSettled] = useState(true);
   const [landed, setLanded] = useState<Landed | null>(null);
-  // Ficha a la que se acerca la cámara mientras se mueve.
+  // Ficha que sigue la cámara: la última que tiró, hasta que tire la siguiente.
   const [focus, setFocus] = useState<string | null>(null);
-  const focusKey = useRef(0);
   const prev = useRef<GameState | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   // Los que esconden el dado y los títulos no se cancelan con una jugada nueva: si no, se quedarían pegados.
@@ -101,8 +99,8 @@ export function useGameFx(game: GameState | null) {
       setDice({ key, value: game.lastRoll!, rolling: true });
       sfx.dice();
       later(DICE_MS, () => setDice((d) => (d?.key === key ? { key, value: game.lastRoll!, rolling: false } : d)));
-      later(DICE_MS + 900, () => setDice((d) => (d?.key === key ? null : d)));
-      t = DICE_MS + 150;
+      later(DICE_MS + 500, () => setDice((d) => (d?.key === key ? null : d)));
+      t = DICE_MS + 100;
     }
 
     const mover = game.players.find((p) => p.pos !== startFrom[p.id]);
@@ -121,7 +119,6 @@ export function useGameFx(game: GameState | null) {
           : undefined;
       setLanded({ key, n, playerId: mover?.id ?? roller.id, result });
       setFocus(mover?.id ?? roller.id);
-      focusKey.current = key;
       if (result) {
         const bkey = ++seq.current;
         at(t, () => {
@@ -154,7 +151,7 @@ export function useGameFx(game: GameState | null) {
       const landed = getTile(landing);
       at(t, () => showEvent(landed));
       if (landing !== mover.pos) {
-        t += path.length ? 700 : 0;
+        t += path.length ? 400 : 0;
         at(t, () => {
           setFlying(mover.id);
           setShown((s) => ({ ...s, [mover.id]: mover.pos }));
@@ -189,12 +186,7 @@ export function useGameFx(game: GameState | null) {
 
     at(t, () => setShown(target));
     // Margen para que se lea el título de la casilla antes de la tarjeta.
-    at(t + (t > 0 ? 900 : 0), () => setSettled(true));
-    // Tras caer, la cámara se queda un momento cerca de la ficha y vuelve a enseñar todo el tablero.
-    if (rolled) {
-      const key = focusKey.current;
-      later(t + FOCUS_MS, () => focusKey.current === key && setFocus(null));
-    }
+    at(t + (t > 0 ? 400 : 0), () => setSettled(true));
 
     function showEvent(tile: Tile) {
       const ev = EVENTS[tile.type];

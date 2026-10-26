@@ -10,7 +10,7 @@ import { PhoneRuleCard } from "@/components/TvCards";
 import { stepPath, type Landed } from "@/lib/useGameFx";
 import { useShake } from "@/lib/useShake";
 
-const RESULT_MS = 2200;
+const RESULT_MS = 1300;
 
 type Props = {
   game: GameState;
