@@ -49,41 +49,46 @@ function decisionPrompt(decision: Decision, name: string): string {
  */
 type Props = { game: GameState; n: number; playerId: string; cardKey: number; result?: Landed["result"] };
 
-export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
+/** Contenido de la tarjeta (TV y celular): ícono, colores, título, regla y vasos. */
+export function cardContent(game: GameState, n: number, playerId: string, result?: Landed["result"]) {
   const player = game.players.find((p) => p.id === playerId) ?? currentPlayer(game);
-  const tileStyle = TILE_STYLE[getTile(n).type];
-  // Resultado de una tirada sin moverse (asteroides, calabozo): verde si se salvó, rojo si bebe.
+  // Resultado de una tirada sin moverse (asteroides, calabozo, duelo): verde si se salvó, rojo si bebe.
   const style = result
     ? { icon: result.icon ?? (result.good ? "✨" : result.drinks ? "🔓" : "🍷"), bg: result.good ? ["#8be86b", "#2fae4a"] : ["#ff8a8a", "#d62a3f"] }
-    : tileStyle;
+    : TILE_STYLE[getTile(n).type];
   const decision = game.decision && currentPlayer(game).id === playerId ? game.decision : null;
   // Retos y exámenes llevan su texto concreto (categoría, trabalenguas…) en la decisión.
   const rule = result ?? (decision?.kind === "SELECT_DRINKERS" ? { title: decision.title, text: decision.text } : tileRule(n, game, playerId));
   const drinks = decision?.kind === "SELECT_DRINKERS" ? decision.drinks : result && !result.good && !result.icon ? (result.drinks ?? 1) : null;
+  return { player, style, decision, rule, drinks };
+}
+
+export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
+  const { player, style, decision, rule, drinks } = cardContent(game, n, playerId, result);
   return (
-    // A un lado (sin oscurecer) para que se siga viendo el tablero y el avance de las fichas.
-    <div className="pointer-events-none absolute top-[12%] right-[1.5%] bottom-[3%] z-40 flex w-[31%] items-center">
-      <div key={cardKey} className="card-pop w-full overflow-hidden rounded-[1.6rem] border-[4px] border-ink bg-[#fbf3e4] shadow-[0_8px_0_#1b1f4b]">
-        <div className="flex items-center gap-[1.4cqw] px-[1.8cqw] py-[1.1cqw]" style={{ background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}>
-          <span className="leading-none drop-shadow-[0_3px_0_rgba(0,0,0,.3)]" style={{ fontSize: "4cqw" }}>
+    // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.
+    <div className="pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]">
+      <div key={cardKey} className="card-pop w-full overflow-hidden rounded-[1.2rem] border-[3px] border-ink bg-[#fbf3e4] shadow-[0_6px_0_#1b1f4b]">
+        <div className="flex items-center gap-[1cqw] px-[1.3cqw] py-[0.7cqw]" style={{ background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}>
+          <span className="leading-none drop-shadow-[0_3px_0_rgba(0,0,0,.3)]" style={{ fontSize: "2.8cqw" }}>
             {style.icon}
           </span>
           <div className="min-w-0">
-            <p className="font-display text-white/90 drop-shadow-[0_2px_0_rgba(0,0,0,.35)]" style={{ fontSize: "1.2cqw" }}>
+            <p className="font-display text-white/90 drop-shadow-[0_2px_0_rgba(0,0,0,.35)]" style={{ fontSize: "0.95cqw" }}>
               Casilla {n}
             </p>
-            <h2 className="banner-text font-display leading-none text-white" style={{ fontSize: "2.5cqw" }}>
+            <h2 className="banner-text-sm font-display leading-tight text-white" style={{ fontSize: "1.8cqw" }}>
               {rule.title}
             </h2>
           </div>
         </div>
-        <div className="flex flex-col gap-[1cqw] px-[1.8cqw] py-[1.4cqw] text-ink">
-          <p className="font-display leading-snug whitespace-pre-line" style={{ fontSize: "1.65cqw" }}>
+        <div className="flex flex-col gap-[0.7cqw] px-[1.3cqw] py-[1cqw] text-ink">
+          <p className="font-display leading-snug whitespace-pre-line" style={{ fontSize: "1.25cqw" }}>
             {rule.text}
           </p>
-          <div className="flex items-center justify-between gap-4" style={{ fontSize: "1.4cqw" }}>
+          <div className="flex items-center justify-between gap-4" style={{ fontSize: "1.1cqw" }}>
             <span className="flex items-center gap-[1cqw] font-display">
-              <Marciano avatar={avatarOf(player)} expression="feliz" size={40} className="h-auto w-[3cqw]" />
+              <Marciano avatar={avatarOf(player)} expression="feliz" size={40} className="h-auto w-[2.3cqw]" />
               {player.name}
             </span>
             {drinks !== null && (
@@ -93,7 +98,7 @@ export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
             )}
           </div>
           {decision && (
-            <p className="rounded-2xl bg-btn-yellow/30 px-[1cqw] py-[0.6cqw] text-center font-display" style={{ fontSize: "1.4cqw" }}>
+            <p className="rounded-2xl bg-btn-yellow/30 px-[0.8cqw] py-[0.4cqw] text-center font-display" style={{ fontSize: "1.1cqw" }}>
               📱 {decisionPrompt(decision, player.name)}
             </p>
           )}
@@ -103,7 +108,30 @@ export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
   );
 }
 
-/** Indicador pequeño de turno sobre el tablero, para cuando el panel está oculto. */
+/** La misma tarjeta, en grande para leerla en el celular. */
+export function PhoneRuleCard({ game, n, playerId, cardKey, result }: Props) {
+  const { player, style, rule, drinks } = cardContent(game, n, playerId, result);
+  return (
+    <div key={cardKey} className="card-pop w-full overflow-hidden rounded-2xl border-[3px] border-ink bg-[#fbf3e4] text-left shadow-[0_5px_0_#1b1f4b]">
+      <div className="flex items-center gap-3 px-3 py-2" style={{ background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}>
+        <span className="text-4xl leading-none drop-shadow-[0_2px_0_rgba(0,0,0,.3)]">{style.icon}</span>
+        <div className="min-w-0">
+          <p className="font-display text-xs text-white/90 drop-shadow-[0_1px_0_rgba(0,0,0,.35)]">
+            Casilla {n} · {player.name}
+          </p>
+          <h3 className="banner-text-sm font-display text-2xl leading-tight text-white">{rule.title}</h3>
+        </div>
+        {drinks !== null && (
+          <span className="ml-auto shrink-0 rounded-full border-2 border-ink bg-btn-red px-2 py-0.5 font-display text-sm text-white">
+            🍷 {drinks}
+          </span>
+        )}
+      </div>
+      <p className="px-3 py-2 font-display text-lg leading-snug whitespace-pre-line text-ink">{rule.text}</p>
+    </div>
+  );
+}
+
 /**
  * Esquina de la TV: de quién es el turno y la última tirada (quién tiró y cuánto sacó).
  * Mientras la TV anima la tirada (`moving`, `rolling`) no se adelanta el resultado ni el turno siguiente.

@@ -114,7 +114,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   if (!panelOpen) {
     return (
       <main className="fixed inset-0">
-        <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare side={!!card} className="h-full">
+        <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare className="h-full">
           {overlays}
           <div className="absolute top-[2%] right-[1.5%] z-50 flex items-center gap-2 opacity-60 transition-opacity hover:opacity-100">
             <SoundToggle />
@@ -158,7 +158,6 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
           current={me.id}
           winner={game.winner}
           fx={fx}
-          side={!!card}
           className={`aspect-[16/10] lg:aspect-auto ${game.rule ? "lg:h-[calc(100dvh-9.5rem)]" : "lg:h-[calc(100dvh-5.5rem)]"}`}
         >
           {overlays}

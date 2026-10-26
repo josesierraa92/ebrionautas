@@ -5,11 +5,12 @@ import { Die } from "@/components/Fx";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { currentPlayer, jailBail, type GameState } from "@/game/engine";
-import { duelOutcome } from "@/game/rules";
+import { duelOutcome, jailOutcome, mazeOutcome } from "@/game/rules";
+import { PhoneRuleCard } from "@/components/TvCards";
+import { stepPath, type Landed } from "@/lib/useGameFx";
 import { useShake } from "@/lib/useShake";
 
 const RESULT_MS = 2200;
-const DUEL_MS = 5000;
 
 type Props = {
   game: GameState;
@@ -31,13 +32,19 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
   const roller = useRef(me.name);
   const wasLost = useRef(false); // tiró estando perdido en los asteroides
   const wasJailed = useRef(false); // tiró estando en el calabozo
+  const rollerPos = useRef(me.pos);
   const seenRoll = useRef(game.rollSeq);
+  // La misma tarjeta que la TV (casilla donde cayó o resultado de la tirada); se queda hasta la siguiente tirada.
+  const [card, setCard] = useState<Landed | null>(() => {
+    const last = game.players.find((p) => p.id === game.lastRoller);
+    return last ? { key: 0, n: last.pos, playerId: last.id } : null;
+  });
 
-  const [duel, setDuel] = useState<string | null>(null);
-  const canRoll = game.phase === "ROLL" && !busy && !result && !duel;
+  const canRoll = game.phase === "ROLL" && !busy && !result;
   const roll = () => {
     if (!canRoll) return;
     roller.current = me.name;
+    rollerPos.current = me.pos;
     wasLost.current = me.status.laberinto;
     wasJailed.current = !!me.status.carcel;
     navigator.vibrate?.(80);
@@ -57,42 +64,38 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
     if (game.rollSeq === seenRoll.current) return;
     seenRoll.current = game.rollSeq;
     if (!game.lastRoll) return;
-    setResult({ value: game.lastRoll, name: roller.current, key: game.rollSeq, lost: wasLost.current, jailed: wasJailed.current });
+    const r = game.lastRoll;
+    setResult({ value: r, name: roller.current, key: game.rollSeq, lost: wasLost.current, jailed: wasJailed.current });
+    const by = game.lastRoller ?? "";
+    const outcome = wasLost.current ? mazeOutcome(roller.current, r) : wasJailed.current ? jailOutcome(roller.current, r) : null;
+    setCard(
+      outcome
+        ? { key: game.rollSeq, n: rollerPos.current, playerId: by, result: { good: "escaped" in outcome && outcome.escaped, title: outcome.title, text: outcome.text, drinks: "drinks" in outcome ? outcome.drinks : undefined } }
+        : { key: game.rollSeq, n: stepPath(rollerPos.current, r).at(-1) ?? rollerPos.current, playerId: by },
+    );
     wasLost.current = false;
     wasJailed.current = false;
     navigator.vibrate?.([40, 60, 40]);
     const t = setTimeout(() => setResult(null), RESULT_MS);
     return () => clearTimeout(t);
-  }, [game.rollSeq, game.lastRoll]);
+  }, [game.rollSeq, game.lastRoll, game.lastRoller]);
 
-  // Duelo resuelto: se enseña quién sacó cuánto y quién bebe.
+  // Duelo resuelto: la tarjeta pasa a decir quién sacó cuánto y quién bebe.
   const seenDuel = useRef(game.lastDuel?.seq);
   useEffect(() => {
     if (game.lastDuel?.seq === seenDuel.current) return;
     seenDuel.current = game.lastDuel?.seq;
-    const text = duelOutcome(game)?.text;
-    if (!text) return;
-    setDuel(text);
+    const duel = duelOutcome(game);
+    if (!duel || !game.lastDuel) return;
+    const by = game.lastDuel.by;
+    setCard({ key: -game.lastDuel.seq, n: game.players.find((p) => p.id === by)?.pos ?? 0, playerId: by, result: { good: false, icon: "🔫", ...duel } });
     navigator.vibrate?.([40, 60, 40]);
-    const t = setTimeout(() => setDuel(null), DUEL_MS);
-    return () => clearTimeout(t);
   }, [game]);
 
   const tap = () => {
     if (shake.state === "needs-permission") void shake.request();
     roll();
   };
-
-  if (duel && !result) {
-    return (
-      <button onClick={() => setDuel(null)} className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-        <p className="text-7xl">🔫</p>
-        <p className="title-game text-4xl">¡RESULTADO DEL DUELO!</p>
-        <p className="font-display text-2xl leading-snug whitespace-pre-line">{duel}</p>
-        <p className="text-white/60">Toca para seguir</p>
-      </button>
-    );
-  }
 
   if (result) {
     return (
@@ -129,10 +132,13 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
 
   return (
     <div className="flex flex-1 flex-col items-center justify-between gap-4 text-center">
-      <div className="flex flex-col items-center gap-1">
-        <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={84} animated />
-        <p className="font-display text-lg text-white/70">Le toca a</p>
-        <h2 className="title-game max-w-full truncate text-5xl">{me.name.toUpperCase()}</h2>
+      {card && <PhoneRuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={card.result} />}
+      <div className="flex items-center gap-3">
+        <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={card ? 60 : 84} animated />
+        <div className="min-w-0 text-left">
+          <p className="font-display text-lg text-white/70">Le toca a</p>
+          <h2 className="title-game max-w-full truncate text-5xl">{me.name.toUpperCase()}</h2>
+        </div>
       </div>
 
       <button
@@ -141,7 +147,7 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
         aria-label={`Tirar el dado por ${me.name}`}
         className="grid place-items-center rounded-[2.5rem] p-2 outline-none focus-visible:ring-4 focus-visible:ring-btn-yellow"
       >
-        <Die value={busy ? face : (game.lastRoll ?? 6)} className={`w-60 ${busy ? "dice-tumble" : "dice-idle"}`} />
+        <Die value={busy ? face : (game.lastRoll ?? 6)} className={`${card ? "w-44" : "w-60"} ${busy ? "dice-tumble" : "dice-idle"}`} />
       </button>
 
       <div className="flex flex-col items-center gap-3">

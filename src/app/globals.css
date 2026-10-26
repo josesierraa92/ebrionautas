@@ -143,6 +143,12 @@ body {
   0% { transform: scale(0.2); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
+/* Contorno fino para títulos pequeños (tarjeta de la esquina y del celular). */
+.banner-text-sm {
+  text-shadow:
+    2px 0 0 var(--color-ink), -2px 0 0 var(--color-ink), 0 2px 0 var(--color-ink), 0 -2px 0 var(--color-ink),
+    0 3px 0 var(--color-ink);
+}
 .banner-text {
   text-shadow:
     4px 0 0 var(--color-ink), -4px 0 0 var(--color-ink), 0 4px 0 var(--color-ink), 0 -4px 0 var(--color-ink),
