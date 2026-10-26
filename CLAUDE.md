@@ -30,15 +30,15 @@ léelo antes de implementar algo nuevo.
   `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` o `KV_REST_API_URL`/`KV_REST_API_TOKEN`.
   Sin ellas, en desarrollo usa memoria (las mesas se pierden al reiniciar).
 
-## Tablero 3D, animaciones y sonido
+## Tablero isométrico, animaciones y sonido
 
-- La TV y `/jugar` usan el **tablero 3D** estilo "Monopoly online": `src/components/Board3D.tsx`
-  (Three.js con React Three Fiber + Drei), cargado sin SSR por `src/components/BoardStage.tsx`, que
-  además pinta encima el dado y los títulos (`src/components/Fx.tsx`).
-- `src/game/ringPath.ts`: las 62 casillas en anillo (lados de 15 y 14 + 4 esquinas; la 62 es una
-  esquina, justo antes de la salida). `CameraRig` encuadra el tablero según la proporción de la pantalla.
-- Las texturas de las casillas se dibujan en un canvas (por ahora con emojis); el plan es sustituirlas
-  por ilustraciones generadas con IA.
+- La TV y `/jugar` usan el **tablero isométrico 2.5D** (`src/components/IsoBoard.tsx`): SVG con aspecto 3D
+  (losas con canto, sombras, árboles, lago, OVNI) sobre una isla flotando en el espacio. Sin WebGL a propósito:
+  el 3D con Three.js rompía en TV sin WebGL y el usuario prefirió "2D tipo 3D".
+- `src/game/isoPath.ts`: recorrido de las 62 casillas (4 tramos de 14 + conectores de 2). `src/components/BoardStage.tsx`
+  pinta encima el dado y los títulos (`src/components/Fx.tsx`).
+- Los íconos de las casillas son emojis por ahora; el plan es sustituirlos por ilustraciones generadas con IA
+  (Cloudflare Workers AI, variables `CLOUDFLARE_ACCOUNT_ID` y `CLOUDFLARE_API_TOKEN`).
 - `src/lib/useGameFx.ts`: a partir de los cambios de estado anima el dado (`rollSeq`), el paso a paso de
   la ficha, vuelos (Oca, agujero negro…), títulos grandes y dispara los sonidos (`src/lib/sfx.ts`, Web Audio
   sintetizado, sin archivos).
