@@ -23,9 +23,11 @@ léelo antes de implementar algo nuevo.
 - `/jugar`: sin TV, todo en una misma pantalla (partida guardada en localStorage).
 - El género resuelve solas las casillas Machos (2) y Hembras (11); el resto de casillas de
   "quién bebe" las marca el control.
-- Las fichas son marcianos de colores (`src/components/Marciano.tsx`, `defaultAvatar`).
-  Perfiles, disfraces, accesorios y votación por celular se quitaron a propósito
-  (decisión del usuario); no reintroducirlos sin que lo pida.
+- Las fichas son 8 marcianos fijos, uno por color de jugador, con **la misma silueta** (cuerpo de gominola, patitas,
+  bracitos y su vaso de fiesta) y un "disfraz" distinto cada uno, como una colección (referencia Astrodraws del
+  usuario): verde antenas, azul astronauta, rosa cumpleañero, amarillo DJ, rojo pirata, turquesa cíclope, naranja rey,
+  morado mago (`alien()`/`LOOKS` en `scripts/board3d/scene.ts`). No hay pantalla para personalizarlos: perfiles,
+  accesorios a elegir y votación por celular se quitaron a propósito; no reintroducirlos sin que lo pida.
 - El servidor es la autoridad: `src/server/rooms.ts` guarda la mesa, ejecuta el motor
   (dados incluidos) y solo acepta jugadas con la clave del control. API en `src/app/api/rooms/`.
   Los clientes consultan la mesa cada 1 s (`src/lib/room-client.ts`) y solo aceptan versiones nuevas.

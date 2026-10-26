@@ -49,8 +49,22 @@ const png = (dataUrl) => Buffer.from(dataUrl.split(",")[1], "base64");
 await mkdir(join(out, "alien"), { recursive: true });
 await sharp(png(result.board)).webp({ quality: 86 }).toFile(join(out, "board.webp"));
 console.log("ok board.webp");
+// Todos los marcianos se recortan con el mismo marco (la unión de sus bordes), para que el cuerpo
+// salga del mismo tamaño aunque unos lleven sombrero alto.
+const boxes = await Promise.all(
+  result.aliens.map(async (a) => {
+    const { info } = await sharp(png(a)).trim({ threshold: 0 }).toBuffer({ resolveWithObject: true });
+    return { left: -info.trimOffsetLeft, top: -info.trimOffsetTop, right: -info.trimOffsetLeft + info.width, bottom: -info.trimOffsetTop + info.height };
+  }),
+);
+const frame = {
+  left: Math.min(...boxes.map((b) => b.left)),
+  top: Math.min(...boxes.map((b) => b.top)),
+  width: Math.max(...boxes.map((b) => b.right)) - Math.min(...boxes.map((b) => b.left)),
+  height: Math.max(...boxes.map((b) => b.bottom)) - Math.min(...boxes.map((b) => b.top)),
+};
 for (const [i, a] of result.aliens.entries()) {
-  await sharp(png(a)).trim({ threshold: 0 }).webp({ quality: 90 }).toFile(join(out, "alien", `${i}.webp`));
+  await sharp(png(a)).extract(frame).webp({ quality: 90 }).toFile(join(out, "alien", `${i}.webp`));
 }
 console.log("ok", result.aliens.length, "marcianos");
 for (const [name, icon] of Object.entries(result.icons)) {

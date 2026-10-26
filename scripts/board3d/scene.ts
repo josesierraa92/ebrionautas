@@ -671,62 +671,287 @@ export function renderBoard(scale: number) {
   return r.domElement.toDataURL("image/png");
 }
 
-/** Marciano de fiesta: mismo estilo, misma luz y misma cámara que el tablero. */
-function alien(color: string) {
+// --- Marcianos ------------------------------------------------------------------------
+// Todos comparten la misma silueta (cuerpo de gominola: ancho abajo, redondo arriba, patitas
+// y bracitos cortos) y su vaso de fiesta; cada uno se distingue por su "disfraz", como una
+// colección de muñecos. Se construyen mirando a +z y luego se giran hacia la cámara.
+
+/** Perfil del cuerpo (radio, altura) para el torno. */
+const BODY_PROFILE = new THREE.SplineCurve(
+  [[0, 0], [0.28, 0], [0.34, 0.06], [0.36, 0.24], [0.35, 0.5], [0.3, 0.7], [0.19, 0.85], [0, 0.89]].map(([x, y]) => new THREE.Vector2(x, y)),
+).getPoints(48);
+// alturas de la cara y de la coronilla (los accesorios se colocan respecto a ellas)
+const EYE_Y = 0.57;
+const MOUTH_Y = 0.44;
+const TOP = 0.89;
+
+/** Radio del cuerpo a la altura y (para pegar ojos, boca y accesorios a la superficie). */
+function bodyR(y: number) {
+  for (let i = 1; i < BODY_PROFILE.length; i++) {
+    const a = BODY_PROFILE[i - 1];
+    const b = BODY_PROFILE[i];
+    if ((a.y <= y && y <= b.y) || (b.y <= y && y <= a.y)) {
+      const t = b.y === a.y ? 0 : (y - a.y) / (b.y - a.y);
+      return a.x + (b.x - a.x) * t;
+    }
+  }
+  return 0;
+}
+
+/** Punto de la superficie delantera a la altura y, desplazado `side` hacia un lado. */
+function onFront(y: number, side = 0, out = 0) {
+  const r = bodyR(y);
+  const z = Math.sqrt(Math.max(r * r - side * side, 0));
+  return new THREE.Vector3(side, y, z + out);
+}
+
+/** Pega un objeto a la superficie delantera, orientado hacia fuera. */
+function stick(o: THREE.Object3D, y: number, side = 0, out = 0) {
+  const p = onFront(y, side, out);
+  o.position.copy(p);
+  o.lookAt(p.clone().add(new THREE.Vector3(side * 1.4, 0, p.z).normalize()));
+  return o;
+}
+
+type Look = "antenas" | "astronauta" | "cumple" | "dj" | "pirata" | "ciclope" | "rey" | "mago";
+const LOOKS: Look[] = ["antenas", "astronauta", "cumple", "dj", "pirata", "ciclope", "rey", "mago"];
+const INK = "#1b1f4b";
+
+function eye(size = 0.075) {
+  const g = new THREE.Group();
+  const white = sphere(size, mat("#ffffff", { roughness: 0.15 }), 0, 0, 0, 24);
+  white.scale.z = 0.6;
+  const pupil = sphere(size * 0.6, mat(INK, { roughness: 0.15 }), 0, -size * 0.05, size * 0.38, 20);
+  pupil.scale.z = 0.6;
+  const shine = sphere(size * 0.2, mat("#ffffff", { roughness: 0.1 }), size * 0.22, size * 0.18, size * 0.62, 10);
+  g.add(white, pupil, shine);
+  return g;
+}
+
+function smile(open = false) {
+  if (open) {
+    const g = new THREE.Group();
+    const m = sphere(0.05, mat("#3a1030", { roughness: 0.6 }), 0, 0, 0, 16);
+    m.scale.set(1.2, 0.8, 0.35);
+    const tongue = sphere(0.025, mat("#ff6f8e"), 0, -0.018, 0.012, 12);
+    tongue.scale.z = 0.4;
+    g.add(m, tongue);
+    return g;
+  }
+  // el arco va dentro de un grupo: stick() reorienta el grupo y el arco sigue boca arriba (sonrisa)
+  const g = new THREE.Group();
+  const m = mesh(new THREE.TorusGeometry(0.045, 0.012, 8, 20, Math.PI), mat(INK));
+  m.rotation.z = Math.PI;
+  g.add(m);
+  return g;
+}
+
+function cheeks(g: THREE.Group, y = MOUTH_Y + 0.03) {
+  for (const s of [-1, 1]) {
+    const c = sphere(0.038, mat("#ff8fb0", { roughness: 0.7 }), 0, 0, 0, 12);
+    c.scale.z = 0.3;
+    g.add(stick(c, y, s * 0.17, -0.004));
+  }
+}
+
+function star(r: number, color: string, depth = 0.03) {
+  const sh = new THREE.Shape();
+  for (let k = 0; k < 10; k++) {
+    const rr = k % 2 ? r * 0.45 : r;
+    const a = (Math.PI / 5) * k + Math.PI / 2;
+    if (k === 0) sh.moveTo(rr * Math.cos(a), rr * Math.sin(a));
+    else sh.lineTo(rr * Math.cos(a), rr * Math.sin(a));
+  }
+  return mesh(new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: true, bevelSize: depth * 0.4, bevelThickness: depth * 0.4, bevelSegments: 2 }), mat(color, { roughness: 0.4 }));
+}
+
+function stripedTexture(a: string, b: string) {
+  const cv = document.createElement("canvas");
+  cv.width = 64;
+  cv.height = 64;
+  const c = cv.getContext("2d")!;
+  for (let i = 0; i < 8; i++) {
+    c.fillStyle = i % 2 ? a : b;
+    c.fillRect(0, i * 8, 64, 8);
+  }
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function alien(color: string, look: Look) {
   const g = new THREE.Group();
   const skin = mat(color, { roughness: 0.5 });
-  const dark = mat("#" + lighten(color, -0.25).getHexString(), { roughness: 0.6 });
-  const body = mesh(new THREE.SphereGeometry(0.32, 40, 30), skin, 0, 0.42, 0);
-  body.scale.set(1, 1.18, 0.95);
-  g.add(body);
-  // pies y brazos
-  g.add(sphere(0.1, dark, 0.1, 0.05, -0.12), sphere(0.1, dark, -0.12, 0.05, 0.1));
-  // un brazo saludando (lado +x) y el otro con el vaso de fiesta (lado +z, a la izquierda en pantalla)
-  const wave = mesh(new THREE.CapsuleGeometry(0.055, 0.16, 8, 16), skin, 0.33, 0.48, -0.02);
-  wave.rotation.z = -0.9;
-  const hold = mesh(new THREE.CapsuleGeometry(0.055, 0.14, 8, 16), skin, -0.02, 0.4, 0.33);
-  hold.rotation.x = 1.2;
-  g.add(wave, hold);
-  const cup = mesh(new THREE.CylinderGeometry(0.075, 0.055, 0.16, 20), mat("#e8343f", { roughness: 0.45 }), -0.02, 0.47, 0.47);
-  const drink = mesh(new THREE.CircleGeometry(0.07, 20), glow(C.calimocho, 0.3), -0.02, 0.552, 0.47);
+  const dark = mat("#" + lighten(color, -0.3).getHexString(), { roughness: 0.6 });
+  const pale = "#" + lighten(color, 0.35).getHexString();
+
+  // cuerpo, patitas y bracitos (iguales para todos)
+  g.add(mesh(new THREE.LatheGeometry(BODY_PROFILE, 64), skin));
+  for (const s of [-1, 1]) {
+    const foot = sphere(0.085, dark, s * 0.15, 0.03, 0.12, 20);
+    foot.scale.set(1, 0.55, 1.25);
+    g.add(foot);
+  }
+  // bracitos cortos a los lados (como muñones); el izquierdo sujeta el vaso
+  for (const s of [-1, 1]) {
+    const arm = sphere(0.075, skin, s * 0.36, 0.3, 0.06, 20);
+    arm.scale.set(0.8, 1.25, 0.8);
+    arm.rotation.z = s * 0.5;
+    g.add(arm);
+  }
+  // el vaso de fiesta, en la mano izquierda
+  const cup = mesh(new THREE.CylinderGeometry(0.065, 0.048, 0.14, 20), mat("#e8343f", { roughness: 0.45 }), -0.38, 0.27, 0.18);
+  const drink = mesh(new THREE.CircleGeometry(0.061, 20), glow(C.calimocho, 0.3), -0.38, 0.341, 0.18);
   drink.rotation.x = -Math.PI / 2;
   g.add(cup, drink);
-  // antenas: palito y bola juntos, abiertas hacia los lados
-  for (const s of [-1, 1]) {
-    const ant = new THREE.Group();
-    ant.add(cyl(0.014, 0.014, 0.26, dark, 0, 0, 0, 8), sphere(0.055, glow("#" + lighten(color, 0.3).getHexString(), 0.4), 0, 0.28, 0, 16));
-    ant.position.set(s * 0.09, 0.74, -s * 0.09);
-    ant.rotation.set(-s * 0.35, 0, -s * 0.35);
-    g.add(ant);
+
+  // cara por defecto: dos ojos, mofletes y sonrisa
+  const face = (eyes = true, mouthOpen = false) => {
+    if (eyes) for (const s of [-1, 1]) g.add(stick(eye(), EYE_Y, s * 0.11, -0.01));
+    cheeks(g);
+    g.add(stick(smile(mouthOpen), MOUTH_Y, 0, 0.002));
+  };
+
+  switch (look) {
+    case "antenas":
+      face();
+      for (const s of [-1, 1]) {
+        const ant = new THREE.Group();
+        ant.add(cyl(0.014, 0.014, 0.24, dark, 0, 0, 0, 8), sphere(0.05, glow(pale, 0.5), 0, 0.26, 0, 16));
+        ant.position.set(s * 0.08, TOP - 0.06, 0);
+        ant.rotation.z = -s * 0.4;
+        g.add(ant);
+      }
+      break;
+    case "astronauta": {
+      face();
+      const helmet = mesh(new THREE.SphereGeometry(0.47, 40, 30), mat("#bff4ff", { roughness: 0.05, transparent: true, opacity: 0.28, depthWrite: false }), 0, 0.56, 0);
+      g.add(helmet);
+      const collar = mesh(new THREE.TorusGeometry(0.375, 0.035, 12, 40), mat("#e9ecf6", { roughness: 0.3, metalness: 0.4 }), 0, 0.2, 0);
+      collar.rotation.x = Math.PI / 2;
+      g.add(collar);
+      g.add(stick(star(0.06, C.gold), 0.24, 0, 0.0));
+      break;
+    }
+    case "cumple": {
+      face(true, true);
+      const hat = mesh(new THREE.ConeGeometry(0.15, 0.36, 24), mat("#ffffff", { map: stripedTexture("#ffd84a", "#3fc2ff"), roughness: 0.5 }), 0.03, TOP + 0.12, -0.02);
+      hat.rotation.z = -0.2;
+      g.add(hat, sphere(0.05, mat("#ff5fa2"), -0.01, TOP + 0.3, -0.02, 16));
+      const confetti = ["#ffd84a", "#3fc2ff", "#9dff6a", "#ffffff"];
+      [[0.28, -0.2], [0.2, 0.22], [0.66, -0.24], [0.7, 0.2], [0.14, 0.05]].forEach(([y, sd], k) => {
+        const c = sphere(0.02, mat(confetti[k % 4]), 0, 0, 0, 8);
+        c.scale.z = 0.3;
+        g.add(stick(c, y, sd, -0.002));
+      });
+      break;
+    }
+    case "dj": {
+      // gafas de sol en vez de ojos
+      for (const s of [-1, 1]) {
+        const lens = mesh(new RoundedBoxGeometry(0.15, 0.09, 0.03, 3, 0.03), mat(INK, { roughness: 0.15, metalness: 0.3 }));
+        g.add(stick(lens, EYE_Y, s * 0.09, 0.012));
+      }
+      g.add(stick(mesh(new THREE.BoxGeometry(0.06, 0.015, 0.015), mat(INK)), EYE_Y + 0.01, 0, 0.02));
+      cheeks(g);
+      g.add(stick(smile(true), MOUTH_Y - 0.01, 0, 0.002));
+      const band = mesh(new THREE.TorusGeometry(0.33, 0.025, 10, 40, Math.PI), mat("#2b2d3a", { roughness: 0.4 }), 0, 0.6, 0);
+      g.add(band);
+      for (const s of [-1, 1]) {
+        const cupEar = mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.07, 24), mat("#ff4f8b", { roughness: 0.4 }), s * 0.34, 0.6, 0);
+        cupEar.rotation.z = Math.PI / 2;
+        g.add(cupEar);
+      }
+      break;
+    }
+    case "pirata": {
+      g.add(stick(eye(), EYE_Y, -0.11, -0.01));
+      const patch = sphere(0.07, mat(INK, { roughness: 0.5 }), 0, 0, 0, 16);
+      patch.scale.z = 0.35;
+      g.add(stick(patch, EYE_Y + 0.01, 0.11, 0.0));
+      const strap = mesh(new THREE.TorusGeometry(0.33, 0.01, 6, 48), mat(INK), 0, 0.62, 0);
+      strap.rotation.set(Math.PI / 2 - 0.25, 0, 0);
+      g.add(strap);
+      cheeks(g);
+      g.add(stick(smile(), MOUTH_Y, 0, 0.002));
+      const bandana = mesh(new THREE.SphereGeometry(0.33, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2.2), mat("#2a3c9a", { roughness: 0.6 }), 0, 0.6, -0.005);
+      bandana.scale.set(1.06, 0.95, 1.06);
+      g.add(bandana);
+      for (const k of [0.4, -0.3]) g.add(sphere(0.02, mat("#ffffff"), Math.sin(k) * 0.3, 0.76, Math.cos(k) * 0.22, 8));
+      const knot = sphere(0.06, mat("#2a3c9a"), -0.12, 0.7, -0.29, 16);
+      g.add(knot);
+      const ring = mesh(new THREE.TorusGeometry(0.035, 0.01, 8, 20), mat(C.gold, { metalness: 0.8, roughness: 0.3 }), 0.35, 0.5, 0.06);
+      g.add(ring);
+      break;
+    }
+    case "ciclope": {
+      g.add(stick(eye(0.12), EYE_Y, 0, -0.02));
+      cheeks(g, MOUTH_Y - 0.01);
+      g.add(stick(smile(true), MOUTH_Y - 0.04, 0, 0.002));
+      for (const s of [-1, 1]) {
+        const horn = mesh(new THREE.ConeGeometry(0.045, 0.14, 16), mat("#fff4e0", { roughness: 0.5 }), s * 0.14, TOP - 0.04, 0);
+        horn.rotation.z = -s * 0.35;
+        g.add(horn);
+      }
+      break;
+    }
+    case "rey": {
+      face();
+      const crown = new THREE.Group();
+      const gold = mat(C.gold, { metalness: 0.7, roughness: 0.3 });
+      crown.add(mesh(new THREE.CylinderGeometry(0.17, 0.18, 0.08, 32, 1, true), new THREE.MeshStandardMaterial({ color: C.gold, metalness: 0.7, roughness: 0.3, side: THREE.DoubleSide }), 0, 0.04, 0));
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2;
+        crown.add(mesh(new THREE.ConeGeometry(0.035, 0.08, 4), gold, Math.cos(a) * 0.17, 0.12, Math.sin(a) * 0.17));
+        crown.add(sphere(0.018, glow(["#ff4f8b", "#6ff0ff", "#9dff6a"][k % 3], 0.4), Math.cos(a) * 0.175, 0.05, Math.sin(a) * 0.175, 8));
+      }
+      crown.position.y = TOP - 0.08;
+      crown.rotation.z = 0.12;
+      g.add(crown);
+      // pajarita
+      const bow = new THREE.Group();
+      for (const s of [-1, 1]) {
+        const w = mesh(new THREE.ConeGeometry(0.05, 0.09, 4), mat("#c2185b"), s * 0.045, 0, 0);
+        w.rotation.z = (s * Math.PI) / 2;
+        bow.add(w);
+      }
+      bow.add(sphere(0.022, mat("#c2185b"), 0, 0, 0.01, 10));
+      g.add(stick(bow, 0.24, 0, 0.01));
+      break;
+    }
+    case "mago": {
+      for (const s of [-1, 1]) g.add(stick(eye(0.065), EYE_Y, s * 0.1, -0.01));
+      cheeks(g, MOUTH_Y + 0.06);
+      // barba blanca
+      [[0.42, 0, 0.07], [0.37, -0.07, 0.055], [0.37, 0.07, 0.055], [0.3, 0, 0.06]].forEach(([y, sd, r]) => {
+        const b = sphere(r, mat("#f4f1ff", { roughness: 0.9 }), 0, 0, 0, 16);
+        g.add(stick(b, y, sd, -0.02));
+      });
+      const hat = mesh(new THREE.ConeGeometry(0.28, 0.5, 32), mat("#3b2a8f", { roughness: 0.6 }), 0, TOP + 0.17, -0.02);
+      hat.rotation.set(-0.15, 0, -0.18);
+      const brim = mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.03, 40), mat("#3b2a8f", { roughness: 0.6 }), 0, TOP - 0.08, 0);
+      g.add(hat, brim);
+      [[0.95, 0.12, 0.2], [1.09, -0.05, 0.12], [0.87, -0.15, 0.24]].forEach(([y, x, z]) => {
+        const st = star(0.035, C.gold, 0.01);
+        st.position.set(x, y, z);
+        st.lookAt(x * 3, y, 2);
+        g.add(st);
+      });
+      break;
+    }
   }
-  // cara (mira a la cámara, que está en +x +z)
-  const face = new THREE.Group();
-  const white = mat("#ffffff", { roughness: 0.2 });
-  const black = mat("#1b1f4b", { roughness: 0.2 });
-  for (const s of [-1, 1]) {
-    face.add(sphere(0.085, white, s * 0.11, 0.06, 0, 24));
-    face.add(sphere(0.05, black, s * 0.11, 0.055, 0.06, 20));
-    face.add(sphere(0.016, white, s * 0.11 + 0.02, 0.075, 0.1, 8));
-    const cheek = sphere(0.04, mat("#ff8fb0", { roughness: 0.6 }), s * 0.19, -0.04, -0.02, 12);
-    cheek.scale.z = 0.4;
-    face.add(cheek);
-  }
-  const smile = mesh(new THREE.TorusGeometry(0.06, 0.014, 8, 20, Math.PI), black, 0, -0.07, 0.03);
-  smile.rotation.z = Math.PI;
-  face.add(smile);
-  face.position.set(0.22, 0.5, 0.22);
-  face.lookAt(5, 0.5, 5);
-  face.position.set(0.2, 0.5, 0.2);
-  g.add(face);
-  return shadowed(g);
+  g.rotation.y = Math.PI / 4; // de frente a la cámara (que mira desde +x +z)
+  const out = new THREE.Group();
+  out.add(g);
+  return shadowed(out);
 }
 
 /** Un PNG por color de jugador, con la misma cámara que el tablero. */
 export function renderAliens(px: number) {
   const out: string[] = [];
-  for (const color of PLAYER_COLORS) {
+  for (const [i, color] of PLAYER_COLORS.entries()) {
     const scene = new THREE.Scene();
-    scene.add(alien(color));
+    scene.add(alien(color, LOOKS[i % LOOKS.length]));
     lights(scene, new THREE.Vector3(0, 0, 0), 1024);
     // sombra suave en el suelo, que se ve en la ficha
     const ground = mesh(new THREE.CircleGeometry(0.45, 32), new THREE.ShadowMaterial({ opacity: 0.25 }));
@@ -734,7 +959,7 @@ export function renderAliens(px: number) {
     ground.receiveShadow = true;
     scene.add(ground);
     const r = renderer(px, Math.round(px * 1.2));
-    const half = 0.62 * K; // ancho de la vista en píxeles SVG
+    const half = 0.66 * K; // ancho de la vista en píxeles SVG
     r.render(scene, isoCamera(-half, -half * 1.7, half * 2, half * 2.4, new THREE.Vector3(0, 0, 0)));
     out.push(r.domElement.toDataURL("image/png"));
     r.dispose();
