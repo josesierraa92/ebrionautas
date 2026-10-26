@@ -40,7 +40,7 @@ export default function Board({ players, current, winner, shown, flying, childre
           const group = groups.get(pos)!;
           const area = TILE_AREA[pos];
           const { x, y } = tileCenter(pos);
-          // Varias fichas en la misma casilla se reparten en una cuadrícula; la Tierra es más grande.
+          // Varias fichas en la misma casilla se reparten en una cuadrícula; la nave es más grande.
           const cols = area.cols > 1 ? Math.min(group.length, 4) : group.length <= 1 ? 1 : 2;
           const rows = Math.ceil(group.length / cols);
           const i = group.indexOf(p);
@@ -93,10 +93,10 @@ function TileView({ tile }: { tile: Tile }) {
     return (
       <div className="earth-tile @container relative flex flex-col items-center justify-center rounded-2xl border-[3px] border-ink" style={grid}>
         <span className="earth-glow leading-none" style={{ fontSize: "30cqw" }} aria-hidden>
-          🌍
+          🛸
         </span>
         <span className="title-game leading-none" style={{ fontSize: "11cqw" }}>
-          LA TIERRA
+          LA NAVE
         </span>
         <span className="font-display text-ink/80" style={{ fontSize: "5.5cqw" }}>
           62 · ¡La fiesta definitiva!

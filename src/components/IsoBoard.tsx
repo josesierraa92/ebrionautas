@@ -86,6 +86,10 @@ export default function IsoBoard({ players, current, winner, shown, flying }: Pr
               />
             </svg>
           </g>
+          {/* nombre encima de cada marciano */}
+          <text x={0} y={-size * 1.18} textAnchor="middle" fontFamily="var(--font-lilita), sans-serif" fontSize={group.length > 3 ? 13 : 16} fill={isCurrent ? "#ffe066" : "#ffffff"} stroke="#1b1f4b" strokeWidth={5} paintOrder="stroke">
+            {p.name}
+          </text>
         </g>
       ),
     });
@@ -97,7 +101,7 @@ export default function IsoBoard({ players, current, winner, shown, flying }: Pr
       <Defs />
       <Island />
       {BOARD.map((t) => (t.type === "META" ? null : <TileSlab key={t.n} tile={t} />))}
-      <EarthGoal />
+      <MothershipGoal />
       {standing.map((s) => (
         <g key={s.key}>{s.el}</g>
       ))}
@@ -134,11 +138,10 @@ function Defs() {
         <stop offset="0.6" stopColor="#d6245a" />
         <stop offset="1" stopColor="#8f1240" />
       </radialGradient>
-      <radialGradient id="iso-earth" cx="0.35" cy="0.3" r="0.8">
-        <stop offset="0" stopColor="#bfeaff" />
-        <stop offset="0.5" stopColor="#3a8dff" />
-        <stop offset="1" stopColor="#1d4fc4" />
-      </radialGradient>
+      <linearGradient id="iso-beam" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#b8ffef" stopOpacity=".75" />
+        <stop offset="1" stopColor="#7fd3ff" stopOpacity=".1" />
+      </linearGradient>
       <radialGradient id="iso-glow">
         <stop offset="0" stopColor="#fff3a0" stopOpacity=".9" />
         <stop offset="1" stopColor="#ffd23f" stopOpacity="0" />
@@ -241,26 +244,37 @@ function TileIcon({ tile }: { tile: Tile }) {
   );
 }
 
-/** La meta: pedestal dorado con la Tierra brillando encima. */
-function EarthGoal() {
+/** La meta: la Nave Nodriza flotando sobre la plataforma dorada, con su rayo abductor. */
+function MothershipGoal() {
   const { gx, gy } = isoPos(BOARD.length);
   const x = sx(gx, gy);
   const y = sy(gx, gy);
   const d = planeRect(gx - 0.6, gy - 0.6, gx + 0.6, gy + 0.6, 0.3);
+  const cy = y - 120; // centro del platillo
+  const lights = [-62, -38, -13, 13, 38, 62];
   return (
     <g>
       <g transform={`translate(0 ${-26})`}>
         <Slab d={d} top="#ffe066" side="#e08a12" thickness={26} />
       </g>
-      <circle cx={x} cy={y - 96} r={78} fill="url(#iso-glow)" />
-      <g className="earth-glow" style={{ transformOrigin: `${x}px ${y - 92}px`, transformBox: "view-box" }}>
-        <circle cx={x} cy={y - 92} r={40} fill="url(#iso-earth)" />
-        <path d={`M${x - 28} ${y - 108} q12 -10 22 -1 q6 11 -5 17 q-11 4 -13 15 q-9 -6 -11 -16 q-2 -10 7 -15 z`} fill="#62c94f" />
-        <path d={`M${x + 6} ${y - 80} q13 -7 24 2 q2 13 -9 19 q-11 2 -15 -6 q-4 -9 0 -15 z`} fill="#62c94f" />
-        <ellipse cx={x - 14} cy={y - 112} rx={14} ry={6} fill="#fff" opacity=".45" transform={`rotate(-30 ${x - 14} ${y - 112})`} />
+      <path d={`M${x - 40} ${cy + 14} L${x - 62} ${y - 26} L${x + 62} ${y - 26} L${x + 40} ${cy + 14} Z`} fill="url(#iso-beam)" className="beam-pulse" />
+      <ellipse cx={x} cy={y - 26} rx={62} ry={22} fill="#b8ffef" opacity=".35" className="beam-pulse" />
+      <g className="ship-hover">
+        <g transform={`translate(${x} ${cy}) scale(1.25) translate(${-x} ${-cy})`}>
+          <circle cx={x} cy={cy - 6} r={92} fill="url(#iso-glow)" opacity=".7" />
+          <ellipse cx={x} cy={cy + 10} rx={92} ry={24} fill="#1b1f4b" opacity=".25" />
+          <path d={`M${x - 34} ${cy - 10} Q${x - 30} ${cy - 52} ${x} ${cy - 54} Q${x + 30} ${cy - 52} ${x + 34} ${cy - 10} Z`} fill="#9ff3ff" stroke="#1b1f4b" strokeWidth={4} opacity=".95" />
+          <ellipse cx={x - 12} cy={cy - 36} rx={8} ry={12} fill="#fff" opacity=".6" />
+          <ellipse cx={x} cy={cy} rx={96} ry={26} fill="url(#iso-metal)" stroke="#1b1f4b" strokeWidth={4} />
+          <ellipse cx={x} cy={cy - 6} rx={70} ry={14} fill="#e9edff" opacity=".7" />
+          <path d={`M${x - 96} ${cy} Q${x} ${cy + 46} ${x + 96} ${cy}`} fill="#6b74b8" stroke="#1b1f4b" strokeWidth={4} />
+          {lights.map((dx, i) => (
+            <circle key={dx} cx={x + dx} cy={cy + 14 - Math.abs(dx) * 0.12} r={6} fill={i % 2 ? "#ff5fa2" : "#ffe066"} stroke="#1b1f4b" strokeWidth={2} className="ship-light" style={{ animationDelay: `${i * 0.18}s` }} />
+          ))}
+        </g>
       </g>
-      <text x={x} y={y - 150} textAnchor="middle" fontFamily="var(--font-lilita), sans-serif" fontSize={28} fill="#ffe066" stroke="#1b1f4b" strokeWidth={7} paintOrder="stroke">
-        62 · LA TIERRA
+      <text x={x} y={cy - 84} textAnchor="middle" fontFamily="var(--font-lilita), sans-serif" fontSize={28} fill="#ffe066" stroke="#1b1f4b" strokeWidth={7} paintOrder="stroke">
+        62 · NAVE NODRIZA
       </text>
     </g>
   );
@@ -350,9 +364,6 @@ function Decoration({ gx, gy, kind }: Deco) {
           <ellipse cx={x - 24} cy={y - 6} rx={26} ry={6} fill="#fff" opacity=".3" />
           <ellipse cx={x + 32} cy={y + 6} rx={11} ry={5} fill="#6fcf4a" />
           <ellipse cx={x - 40} cy={y + 9} rx={9} ry={4} fill="#6fcf4a" />
-          <text x={x} y={y - 34} textAnchor="middle" fontFamily="var(--font-lilita), sans-serif" fontSize={18} fill="#fff" stroke="#1b1f4b" strokeWidth={5} paintOrder="stroke">
-            Lago de Calimocho
-          </text>
         </g>
       );
     case "crater":

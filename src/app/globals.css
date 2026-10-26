@@ -70,6 +70,20 @@ body {
   background: radial-gradient(circle at 50% 35%, #fff4b0 0%, #ffd23f 35%, #ff9f1c 100%);
   box-shadow: inset 0 -8px 0 rgb(0 0 0 / 0.15), 0 0 30px rgb(255 214 64 / 0.45);
 }
+.ship-hover { animation: ship-hover 3s ease-in-out infinite; }
+@keyframes ship-hover {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.beam-pulse { animation: beam-pulse 1.6s ease-in-out infinite; }
+@keyframes beam-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.ship-light { animation: ship-light 1.1s steps(2) infinite; }
+@keyframes ship-light {
+  50% { opacity: 0.35; }
+}
 .earth-glow {
   animation: earth-spin 6s ease-in-out infinite;
   filter: drop-shadow(0 0 12px rgb(127 211 255 / 0.9));
@@ -114,6 +128,11 @@ body {
   50% { transform: rotate(180deg) translateY(-12%) scale(1.05); }
   100% { transform: rotate(360deg) translateY(0) scale(0.9); }
 }
+.dice-idle { animation: dice-idle 2.4s ease-in-out infinite; filter: drop-shadow(0 10px 0 rgb(0 0 0 / 0.35)); }
+@keyframes dice-idle {
+  0%, 100% { transform: rotate(-6deg) translateY(0); }
+  50% { transform: rotate(6deg) translateY(-6%); }
+}
 .dice-land { animation: dice-land 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); filter: drop-shadow(0 10px 0 rgb(0 0 0 / 0.35)); }
 @keyframes dice-land {
   0% { transform: scale(1.4) rotate(-20deg); }
@@ -143,7 +162,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mc-bob, .mc-hop, .earth-glow, .mc-anim .mc-eyes, .confetti { animation: none; }
+  .mc-bob, .mc-hop, .earth-glow, .ship-hover, .beam-pulse, .ship-light, .dice-idle, .mc-anim .mc-eyes, .confetti { animation: none; }
 }
 
 /* Íconos con sombra sólida, como en la referencia de UI */

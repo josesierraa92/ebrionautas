@@ -38,10 +38,11 @@ significa beber con un palo, que "ir de Oca en Oca" es una ruta de transporte y
 que el calimocho es combustible para naves. Y el alcohol les afecta de formas
 rarísimas.
 
-El tablero es **la Gran Ruta de Bares Intergaláctica**: un recorrido en espiral
-por 62 paradas del cosmos que termina en el **Planeta Tierra**, donde se celebra
-la fiesta definitiva. Quien llega primero se convierte en **Leyenda Fiestera de
-la Galaxia** (y se va a dormirla a su platillo).
+Tras la fiesta, la tripulación se estrelló en un planeta raro. El tablero es el
+camino de vuelta: 62 casillas hasta la **Nave Nodriza**, que los espera flotando
+con su rayo abductor. Hay que ayudarlos a llegar… aunque lleguen borrachos.
+Quien sube primero se convierte en **Leyenda Fiestera de la Galaxia** (y se va
+a dormirla a su camarote).
 
 ### 0.2 Cómo afecta el alcohol a un Marciano (efectos visuales)
 Según su **deuda de vasos / nivel de borrachera**, el Marciano cambia en
@@ -89,7 +90,7 @@ la ilustración y el texto narrativo:
 | Cárcel (26, 45) | **Calabozo de la Policía Intergaláctica** | Multa por "conducir platillo en estado de embriaguez" |
 | Patinazo (43, 56) | **Resbalón en los anillos de Saturno** | Bebes de golpe o caes a la casilla indicada |
 | Muerte (60) | **Agujero negro** | Te escupe en la plataforma de despegue |
-| Meta (62) | **Planeta Tierra – La Fiesta Definitiva** | "¡Vete a dormirla… a tu platillo!" |
+| Meta (62) | **Nave Nodriza** | "¡Vete a dormirla… a tu platillo!" |
 | Casillas de rasgos (2, 3, 5, 46…) | **Estudio de especímenes humanos** | El alien escanea a los jugadores reales: *"Detectados especímenes con tatuajes. Que beban 2 vasos."* |
 
 ### 0.5 Nombre del juego

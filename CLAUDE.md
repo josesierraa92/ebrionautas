@@ -17,6 +17,9 @@ léelo antes de implementar algo nuevo.
 - `/mesa/[code]`: la TV crea la mesa, muestra un QR y luego el tablero y el marcador. Solo muestra.
 - `/c/[code]`: el único celular que controla la mesa (el primero que la reclama; la TV puede
   liberarlo con "cambiar de celular"). Agrega la tripulación (nombre + hombre/mujer), tira y decide.
+  En partida solo enseña un dado gigante (`src/components/DiceController.tsx`) que se tira tocándolo o
+  agitando el celular (`src/lib/useShake.ts`; en iPhone pide permiso de movimiento), de quién es el turno
+  y "Siguiente: nombre" para saber a quién pasarle el celular. Marcador, historial y tablero van en "☰ MARCADOR".
 - `/jugar`: sin TV, todo en una misma pantalla (partida guardada en localStorage).
 - El género resuelve solas las casillas Machos (2) y Hembras (11); el resto de casillas de
   "quién bebe" las marca el control.
@@ -42,6 +45,10 @@ léelo antes de implementar algo nuevo.
 - `src/lib/useGameFx.ts`: a partir de los cambios de estado anima el dado (`rollSeq`), el paso a paso de
   la ficha, vuelos (Oca, agujero negro…), títulos grandes y dispara los sonidos (`src/lib/sfx.ts`, Web Audio
   sintetizado, sin archivos).
-- TV: el marcador de la derecha se puede ocultar (se recuerda en esa TV) y hay botón de pantalla completa;
-  cuando hay una decisión sale una tarjeta grande en el centro (`src/components/TvCards.tsx`).
-- El celular de control sigue usando el tablero 2D en espiral (`src/components/Board.tsx`, `src/game/spiral.ts`).
+- TV: con "SOLO TABLERO" el marcador se oculta y el tablero ocupa toda la pantalla (se recuerda en esa TV);
+  hay botón de pantalla completa. En una esquina, `TurnChip` muestra el turno y quién sacó cuánto en el dado.
+- Cada casilla donde cae alguien saca una tarjeta grande (`RuleCard` en `src/components/TvCards.tsx`) con
+  su regla explicada (`src/game/rules.ts`); si hay que decidir, se queda hasta que el celular decida.
+- Lore: la tripulación se estrelló tras la fiesta y hay que llevarla (borracha) a la **Nave Nodriza** (casilla 62).
+  Las "Ocas" son OVNIs teletransportadores 🛸. Nada de patos ni de "la Tierra" como meta.
+- El menú del celular usa el tablero 2D en espiral (`src/components/Board.tsx`, `src/game/spiral.ts`).

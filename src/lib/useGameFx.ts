@@ -12,10 +12,14 @@ const BANNER_MS = 1800;
 
 export type Banner = { key: number; title: string; emoji: string; color: string };
 export type DiceFx = { key: number; value: number; rolling: boolean };
+/** Casilla donde acaba de caer alguien (para la tarjeta que explica la regla). */
+export type Landed = { key: number; n: number; playerId: string };
+
+const INFO_MS = 9000; // cuánto se queda la tarjeta de la casilla si no hay que decidir nada
 
 /** Título grande y sonido según la casilla donde cae la ficha. */
 const EVENTS: Partial<Record<Tile["type"], { title: string; emoji: string; color: string; sound: keyof typeof sfx }>> = {
-  OCA: { title: "¡DE OCA EN OCA!", emoji: "🦆", color: "#7fd3ff", sound: "oca" },
+  OCA: { title: "¡DE OVNI EN OVNI!", emoji: "🛸", color: "#7fd3ff", sound: "zap" },
   CARCEL: { title: "¡AL CALABOZO!", emoji: "🚔", color: "#8a99b0", sound: "jail" },
   MUERTE: { title: "¡AGUJERO NEGRO!", emoji: "🕳️", color: "#9b5de5", sound: "blackhole" },
   PATINAZO: { title: "¡RESBALÓN!", emoji: "🪐", color: "#ff8a1f", sound: "slip" },
@@ -54,6 +58,7 @@ export function useGameFx(game: GameState | null) {
   const [banner, setBanner] = useState<Banner | null>(null);
   // false mientras la ficha se mueve: la tarjeta grande de la TV espera a que termine.
   const [settled, setSettled] = useState(true);
+  const [landed, setLanded] = useState<Landed | null>(null);
   const prev = useRef<GameState | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   // Los que esconden el dado y los títulos no se cancelan con una jugada nueva: si no, se quedarían pegados.
@@ -81,6 +86,9 @@ export function useGameFx(game: GameState | null) {
     setShown(startFrom);
     setFlying(null);
 
+    // Ya se decidió lo de la casilla: su tarjeta sobra.
+    if (before.decision && !game.decision) setLanded(null);
+
     setSettled(false);
     let t = 0;
     const rolled = (game.rollSeq ?? 0) > (before.rollSeq ?? 0) && game.lastRoll;
@@ -94,6 +102,13 @@ export function useGameFx(game: GameState | null) {
     }
 
     const mover = game.players.find((p) => p.pos !== startFrom[p.id]);
+    if (rolled) {
+      // Nueva tirada: la tarjeta de la casilla anterior se va y llega la nueva.
+      const roller = before.players[before.turn];
+      const key = ++seq.current;
+      const n = mover ? (stepPath(startFrom[mover.id], game.lastRoll!).at(-1) ?? mover.pos) : roller.pos;
+      setLanded({ key, n, playerId: mover?.id ?? roller.id });
+    }
     if (mover) {
       const from = startFrom[mover.id];
       const path = rolled ? stepPath(from, game.lastRoll!) : [];
@@ -140,6 +155,10 @@ export function useGameFx(game: GameState | null) {
     at(t, () => setShown(target));
     // Margen para que se lea el título de la casilla antes de la tarjeta.
     at(t + (t > 0 ? 900 : 0), () => setSettled(true));
+    if (rolled) {
+      const key = seq.current;
+      later(t + 900 + INFO_MS, () => setLanded((l) => (l && l.key <= key ? null : l)));
+    }
 
     function showEvent(tile: Tile) {
       const ev = EVENTS[tile.type];
@@ -160,5 +179,5 @@ export function useGameFx(game: GameState | null) {
     [],
   );
 
-  return { shown, flying, dice, banner, settled };
+  return { shown, flying, dice, banner, settled, landed };
 }

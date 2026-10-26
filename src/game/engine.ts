@@ -49,6 +49,7 @@ export type GameState = {
   rule: { text: string; by: string } | null;
   slave: { master: string; slave: string } | null;
   lastRoll: number | null;
+  lastRoller?: string | null; // id de quien hizo la última tirada
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
   winner: string | null;
@@ -94,6 +95,7 @@ export function createGame(players: { name: string; color: string; avatar?: Avat
     rule: null,
     slave: null,
     lastRoll: null,
+    lastRoller: null,
     rollSeq: 0,
     extraRoll: false,
     winner: null,
@@ -175,6 +177,7 @@ function roll(s: GameState, rng: Rng) {
   const p = currentPlayer(s);
   const r = d6(rng);
   s.lastRoll = r;
+  s.lastRoller = p.id;
   s.rollSeq = (s.rollSeq ?? 0) + 1;
 
   if (p.status.laberinto) {
@@ -192,7 +195,7 @@ function roll(s: GameState, rng: Rng) {
   let to = p.pos + r;
   if (to > LAST_TILE) {
     to = LAST_TILE * 2 - to;
-    log(s, `🎲 ${p.name} saca ${r}, se pasa de la Tierra y rebota a la ${to}.`);
+    log(s, `🎲 ${p.name} saca ${r}, se pasa de la nave y rebota a la ${to}.`);
   } else {
     log(s, `🎲 ${p.name} saca ${r} y aterriza en la ${to}.`);
   }
@@ -212,7 +215,7 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       s.winner = p.id;
       s.phase = "FINISHED";
       s.decision = null;
-      log(s, `🏆 ¡${p.name} llega a la Tierra! Leyenda Fiestera de la Galaxia. Reparte el resto de bebida como quiera.`);
+      log(s, `🏆 ¡${p.name} llega a la Nave Nodriza! Borracho, pero a bordo: Leyenda Fiestera de la Galaxia. Reparte el resto de bebida como quiera.`);
       return;
 
     case "POSADA":
@@ -230,13 +233,13 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       return decide(s, { kind: "DUEL", amount: Math.min(tile.amount, others.length) });
 
     case "OCA":
-      log(s, `🦆 ¡De Oca en Oca y bebo Calimocho!`);
+      log(s, `🛸 ¡De OVNI en OVNI y bebo Calimocho!`);
       drink(s, p.id, 1, null);
       if (tile.next) {
         p.pos = tile.next;
-        log(s, `🦆 ${p.name} vuela en la Oca Espacial hasta la ${tile.next} y vuelve a tirar.`);
+        log(s, `🛸 El OVNI teletransporta a ${p.name} hasta la ${tile.next} y vuelve a tirar.`);
       } else {
-        log(s, `🦆 ${p.name} vuelve a tirar.`);
+        log(s, `🛸 ${p.name} vuelve a tirar.`);
       }
       s.extraRoll = true;
       return endTurn(s);

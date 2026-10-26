@@ -10,7 +10,7 @@ import PlayersList from "@/components/PlayersList";
 import RuleBanner from "@/components/RuleBanner";
 import SoundToggle from "@/components/SoundToggle";
 import TurnHeader from "@/components/TurnHeader";
-import { DecisionCard, TurnChip, decisionText } from "@/components/TvCards";
+import { RuleCard, TurnChip, decisionText } from "@/components/TvCards";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Decision } from "@/game/engine";
 import { api, hostKey, saved, useRoom } from "@/lib/room-client";
@@ -87,10 +87,50 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const me = currentPlayer(game);
   const winner = game.players.find((p) => p.id === game.winner);
 
-  const showCard = !!game.decision && !winner && fx.settled && !fx.banner;
+  // Tarjeta grande: explica la casilla donde cayó alguien; si hay que decidir, se queda hasta que se decida.
+  const card = winner || !fx.settled || fx.banner
+    ? null
+    : game.decision
+      ? { n: me.pos, playerId: me.id, key: 100000 + game.decisionSeq }
+      : fx.landed
+        ? { n: fx.landed.n, playerId: fx.landed.playerId, key: fx.landed.key }
+        : null;
+
+  const overlays = (
+    <>
+      <TurnChip game={game} moving={!fx.settled} rolling={!!fx.dice?.rolling} />
+      {!panelOpen && game.rule && (
+        <div className="pointer-events-none absolute right-[2%] bottom-[2%] left-[2%] z-30">
+          <RuleBanner text={game.rule.text} />
+        </div>
+      )}
+      {card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} />}
+    </>
+  );
+
+  // Modo tablero a pantalla completa: sin barra ni marcador, solo unos botones pequeños flotando.
+  if (!panelOpen) {
+    return (
+      <main className="fixed inset-0">
+        <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare className="h-full">
+          {overlays}
+          <div className="absolute top-[2%] right-[1.5%] z-50 flex items-center gap-2 opacity-60 transition-opacity hover:opacity-100">
+            <SoundToggle />
+            <button onClick={toggleFullscreen} aria-label="Pantalla completa" className="btn-game bg-btn-blue px-3 py-1.5 text-sm text-white">
+              ⛶
+            </button>
+            <button onClick={togglePanel} className="btn-game bg-btn-yellow px-3 py-1.5 text-sm text-white">
+              ◀ MARCADOR
+            </button>
+          </div>
+        </BoardStage>
+        {winner && <Confetti />}
+      </main>
+    );
+  }
 
   return (
-    <main className={`mx-auto flex min-h-dvh flex-col gap-4 px-4 py-4 lg:flex-row lg:items-start ${panelOpen ? "max-w-[1600px]" : ""}`}>
+    <main className="mx-auto flex min-h-dvh max-w-[1600px] flex-col gap-4 px-4 py-4 lg:flex-row lg:items-start">
       <section className="flex flex-col gap-3 lg:flex-1">
         <div className="flex items-center justify-between gap-2">
           <span className="title-game text-3xl">EBRIONAUTAS</span>
@@ -100,7 +140,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
               ⛶
             </button>
             <button onClick={togglePanel} className="btn-game bg-btn-yellow px-3 py-1.5 text-sm text-white">
-              {panelOpen ? "OCULTAR MARCADOR ▶" : "◀ VER MARCADOR"}
+              SOLO TABLERO ▶
             </button>
             <span className="ml-2">Mesa {code}</span>
             {hostSecret && (
@@ -110,45 +150,37 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
             )}
           </span>
         </div>
-        {game.rule && panelOpen && <RuleBanner text={game.rule.text} />}
+        {game.rule && <RuleBanner text={game.rule.text} />}
         <BoardStage
           players={game.players}
           current={me.id}
           winner={game.winner}
           fx={fx}
-          className={`aspect-[16/10] lg:aspect-auto ${game.rule && panelOpen ? "lg:h-[calc(100dvh-9.5rem)]" : "lg:h-[calc(100dvh-5.5rem)]"}`}
+          className={`aspect-[16/10] lg:aspect-auto ${game.rule ? "lg:h-[calc(100dvh-9.5rem)]" : "lg:h-[calc(100dvh-5.5rem)]"}`}
         >
-          {!panelOpen && <TurnChip game={game} />}
-          {!panelOpen && game.rule && (
-            <div className="pointer-events-none absolute right-[2%] bottom-[2%] left-[2%] z-30">
-              <RuleBanner text={game.rule.text} />
-            </div>
-          )}
-          {showCard && <DecisionCard game={game} />}
+          {overlays}
         </BoardStage>
         {winner && <Confetti />}
       </section>
-      {panelOpen && (
-        <aside className="flex flex-col gap-4 lg:w-[28rem]">
-          <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
-            {winner ? (
-              <Winner winner={winner} />
-            ) : (
-              <div className="flex flex-col gap-3">
-                <TurnHeader game={game} />
-                {game.decision ? (
-                  <DecisionInfo decision={game.decision} name={me.name} />
-                ) : (
-                  <p className="font-display text-lg text-btn-yellow">🎲 {me.name}, tira el dado desde el celular</p>
-                )}
-              </div>
-            )}
-          </div>
-          <PlayersList game={game} big />
-          <GameLog log={game.log} max={12} />
-          {error && <p className="text-sm text-btn-red">⚠️ {error}</p>}
-        </aside>
-      )}
+      <aside className="flex flex-col gap-4 lg:w-[28rem]">
+        <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
+          {winner ? (
+            <Winner winner={winner} />
+          ) : (
+            <div className="flex flex-col gap-3">
+              <TurnHeader game={game} />
+              {game.decision ? (
+                <DecisionInfo decision={game.decision} name={me.name} />
+              ) : (
+                <p className="font-display text-lg text-btn-yellow">🎲 {me.name}, tira el dado desde el celular</p>
+              )}
+            </div>
+          )}
+        </div>
+        <PlayersList game={game} big />
+        <GameLog log={game.log} max={12} />
+        {error && <p className="text-sm text-btn-red">⚠️ {error}</p>}
+      </aside>
     </main>
   );
 }

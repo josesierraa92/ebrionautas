@@ -3,7 +3,7 @@
 //
 // Cuatro tramos de 14 casillas separados por dos filas de césped (para la
 // decoración) y unidos por conectores de 2 casillas: 14·4 + 2·3 = 62.
-// La salida está delante a la izquierda y la Tierra (62) al fondo a la izquierda.
+// La salida está delante a la izquierda y la Nave Nodriza (62) al fondo a la izquierda.
 
 import { BOARD } from "./board";
 

@@ -4,11 +4,11 @@ import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import Board from "@/components/Board";
 import DecisionPanel from "@/components/DecisionPanel";
+import DiceController from "@/components/DiceController";
 import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
 import RuleBanner from "@/components/RuleBanner";
 import Setup from "@/components/Setup";
-import TurnHeader from "@/components/TurnHeader";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Action, type Gender } from "@/game/engine";
 import { api, controlKey, saved, sendAction, useRoom } from "@/lib/room-client";
@@ -21,6 +21,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [menu, setMenu] = useState(false);
 
   useEffect(() => {
     setSecret(saved.get<string>(controlKey(code)));
@@ -113,13 +114,14 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 py-4">
       <div className="flex items-center justify-between">
-        <span className="title-game text-2xl">EBRIONAUTAS</span>
-        <span className="font-display text-white/70">Mesa {code}</span>
+        <span className="title-game text-xl">EBRIONAUTAS</span>
+        <button onClick={() => setMenu(true)} className="btn-game bg-btn-blue px-3 py-1 text-white" aria-label="Marcador e historial">
+          ☰ MARCADOR
+        </button>
       </div>
-      {game.rule && <RuleBanner text={game.rule.text} />}
 
-      <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
-        {winner ? (
+      {winner ? (
+        <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
           <Winner winner={winner}>
             <button
               disabled={busy}
@@ -132,34 +134,41 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
               SALIR
             </Link>
           </Winner>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <TurnHeader game={game} />
-            {game.phase === "ROLL" && (
-              <button disabled={busy} onClick={() => act({ type: "ROLL" })} className="btn-game bg-btn-green py-6 text-3xl text-white disabled:bg-btn-grey">
-                {me.status.laberinto ? "TIRAR (5 o 6 para salir)" : `🎲 TIRAR POR ${me.name.toUpperCase()}`}
-              </button>
-            )}
-            {game.phase === "DECISION" && game.decision && (
+        </div>
+      ) : (
+        <DiceController
+          game={game}
+          busy={busy}
+          onRoll={() => act({ type: "ROLL" })}
+          decision={
+            game.decision && (
               // fieldset deshabilitado: evita enviar la misma jugada dos veces mientras llega la respuesta
               <fieldset disabled={busy} className="contents">
                 <DecisionPanel key={game.decisionSeq} decision={game.decision} me={me} players={game.players} onAction={act} />
               </fieldset>
-            )}
-          </div>
-        )}
-        {actionError && <ErrorBox text={actionError} />}
-      </div>
-
-      <PlayersList game={game} onPenalty={(id) => act({ type: "PENALTY", id })} onDrank={(id) => act({ type: "DRANK", id })} />
-      <GameLog log={game.log} max={10} />
-      <details className="rounded-2xl border-[3px] border-ink bg-ink/80 p-3">
-        <summary className="cursor-pointer font-display">Ver tablero aquí</summary>
-        <div className="mt-2">
-          <Board players={game.players} current={me.id} />
-        </div>
-      </details>
+            )
+          }
+        />
+      )}
+      {actionError && <ErrorBox text={actionError} />}
       {error && <p className="text-sm text-btn-red">⚠️ {error}</p>}
+
+      {menu && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-space/95">
+          <div className="mx-auto flex max-w-md flex-col gap-4 px-4 py-4">
+            <div className="flex items-center justify-between">
+              <span className="font-display text-2xl">Mesa {code}</span>
+              <button onClick={() => setMenu(false)} className="btn-game bg-btn-yellow px-4 py-1 text-white">
+                ✕ CERRAR
+              </button>
+            </div>
+            {game.rule && <RuleBanner text={game.rule.text} />}
+            <PlayersList game={game} onPenalty={(id) => act({ type: "PENALTY", id })} onDrank={(id) => act({ type: "DRANK", id })} />
+            <GameLog log={game.log} max={10} />
+            <Board players={game.players} current={me.id} />
+          </div>
+        </div>
+      )}
     </main>
   );
 }

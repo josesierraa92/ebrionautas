@@ -45,12 +45,12 @@ export const TRAIT_LABELS: Record<Trait, string> = {
 };
 
 export const TILE_NAMES: Record<Tile["type"], string> = {
-  SALIDA: "Plataforma de despegue",
-  META: "Planeta Tierra – La Fiesta Definitiva",
+  SALIDA: "Aterrizaje forzoso",
+  META: "Nave Nodriza",
   POSADA: "Estación de servicio Abstemia",
   A_BEBER: "Ronda de combustible",
   DUELO: "Duelo de dados láser",
-  OCA: "Oca Espacial",
+  OCA: "OVNI teletransportador",
   LABERINTO: "Cinturón de asteroides",
   REGLA: "Ley del Consejo Galáctico",
   CULTURAL: "Examen de Humanología",

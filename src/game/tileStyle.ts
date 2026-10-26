@@ -4,11 +4,11 @@ import type { Tile } from "./board";
 // bg: degradado de arriba (claro) a abajo (oscuro); dark: texto blanco encima.
 export const TILE_STYLE: Record<Tile["type"], { icon: string; bg: [string, string]; dark: boolean; label: string }> = {
   SALIDA: { icon: "🚀", bg: ["#5aa0ff", "#1f5fd6"], dark: true, label: "Despegue" },
-  META: { icon: "🌍", bg: ["#ffe066", "#ff9f1c"], dark: false, label: "La Tierra" },
+  META: { icon: "🛸", bg: ["#ffe066", "#ff9f1c"], dark: false, label: "Nave Nodriza" },
   POSADA: { icon: "⛽", bg: ["#c08a52", "#7a4b22"], dark: true, label: "Gasolinera" },
   A_BEBER: { icon: "🍷", bg: ["#ffe066", "#f5b400"], dark: false, label: "¡A beber!" },
   DUELO: { icon: "🎲", bg: ["#ffffff", "#d8deea"], dark: false, label: "Duelo" },
-  OCA: { icon: "🦆", bg: ["#bfeaff", "#5cc4f5"], dark: false, label: "Oca" },
+  OCA: { icon: "🛸", bg: ["#bfeaff", "#5cc4f5"], dark: false, label: "OVNI" },
   LABERINTO: { icon: "☄️", bg: ["#5fd07a", "#2a8a46"], dark: true, label: "Asteroides" },
   REGLA: { icon: "⚖️", bg: ["#b98bf0", "#7a3fd0"], dark: true, label: "Ley" },
   CULTURAL: { icon: "❓", bg: ["#ff6b7d", "#c81e3a"], dark: true, label: "Examen" },

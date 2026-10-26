@@ -97,11 +97,6 @@ export const sfx = {
     tone(392, 0.12, { type: "triangle", vol: 0.2 });
     tone(523, 0.16, { type: "triangle", at: 0.08, vol: 0.2 });
   },
-  oca() {
-    // "¡Cuac, cuac!"
-    tone(700, 0.14, { type: "sawtooth", to: 420, vol: 0.18 });
-    tone(720, 0.16, { type: "sawtooth", to: 400, at: 0.2, vol: 0.18 });
-  },
   fly() {
     tone(300, 0.5, { type: "sine", to: 1400, vol: 0.18 });
   },
