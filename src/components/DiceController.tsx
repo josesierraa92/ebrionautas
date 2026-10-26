@@ -26,7 +26,6 @@ type Props = {
  */
 export default function DiceController({ game, busy, onRoll, decision }: Props) {
   const me = currentPlayer(game);
-  const next = game.players[(game.turn + 1) % game.players.length];
   const [face, setFace] = useState(1);
   const [result, setResult] = useState<{ value: number; name: string; key: number; lost: boolean; jailed: boolean } | null>(null);
   const roller = useRef(me.name);
@@ -164,12 +163,6 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
             📳 ACTIVAR AGITAR
           </button>
         )}
-        <div className="flex items-center gap-2 rounded-full border-[3px] border-ink bg-ink/80 py-1 pl-1 pr-4">
-          <Marciano avatar={avatarOf(next)} size={36} />
-          <span className="font-display text-lg">
-            Siguiente: <span className="text-btn-yellow">{next.name}</span>
-          </span>
-        </div>
       </div>
     </div>
   );
