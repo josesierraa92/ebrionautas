@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LAST_TILE, type GameState } from "@/game/engine";
 import { getTile, type Tile } from "@/game/board";
-import { mazeOutcome } from "@/game/rules";
+import { duelOutcome, jailOutcome, mazeOutcome } from "@/game/rules";
 import { sfx } from "./sfx";
 
 const DICE_MS = 750; // el dado rueda
@@ -16,9 +16,9 @@ export type DiceFx = { key: number; value: number; rolling: boolean };
 /**
  * Casilla donde acaba de caer alguien (para la tarjeta que explica la regla). Se queda
  * hasta la siguiente tirada para que dé tiempo a leerla. `result`: lo que pasó al tirar
- * sin moverse (p. ej. perdido en los asteroides: se salvó o bebe).
+ * sin moverse (perdido en los asteroides: se salvó o bebe; calabozo: cuánto bebe para salir).
  */
-export type Landed = { key: number; n: number; playerId: string; result?: { good: boolean; title: string; text: string } };
+export type Landed = { key: number; n: number; playerId: string; result?: { good: boolean; title: string; text: string; drinks?: number; icon?: string } };
 
 /** Título grande y sonido según la casilla donde cae la ficha. */
 const EVENTS: Partial<Record<Tile["type"], { title: string; emoji: string; color: string; sound: keyof typeof sfx }>> = {
@@ -107,15 +107,27 @@ export function useGameFx(game: GameState | null) {
       const roller = before.players[before.turn];
       const key = ++seq.current;
       const n = mover ? (stepPath(startFrom[mover.id], game.lastRoll!).at(-1) ?? mover.pos) : roller.pos;
+      // Tirada sin moverse: perdido en los asteroides (se salva o bebe) o fianza del calabozo.
       const maze = roller.status.laberinto ? mazeOutcome(roller.name, game.lastRoll!) : null;
-      const result = maze ? { good: maze.escaped, title: maze.title, text: maze.text } : undefined;
+      const jail = roller.status.carcel ? jailOutcome(roller.name, game.lastRoll!) : null;
+      const result = maze
+        ? { good: maze.escaped, title: maze.title, text: maze.text }
+        : jail
+          ? { good: false, title: jail.title, text: jail.text, drinks: jail.drinks }
+          : undefined;
       setLanded({ key, n, playerId: mover?.id ?? roller.id, result });
-      if (maze) {
+      if (result) {
         const bkey = ++seq.current;
         at(t, () => {
           setDice(null);
-          setBanner(maze.escaped ? { key: bkey, title: "¡SE SALVÓ!", emoji: "✨", color: "#5cd23c" } : { key: bkey, title: "¡A BEBER!", emoji: "🍷", color: "#ffc61a" });
-          if (maze.escaped) sfx.fly();
+          setBanner(
+            result.good
+              ? { key: bkey, title: "¡SE SALVÓ!", emoji: "✨", color: "#5cd23c" }
+              : jail
+                ? { key: bkey, title: `¡FIANZA: ${jail.drinks} VASOS!`, emoji: "🔓", color: "#ffc61a" }
+                : { key: bkey, title: "¡A BEBER!", emoji: "🍷", color: "#ffc61a" },
+          );
+          if (result.good) sfx.fly();
           else sfx.drink();
         });
         later(t + BANNER_MS, () => setBanner((b) => (b?.key === bkey ? null : b)));
@@ -145,6 +157,14 @@ export function useGameFx(game: GameState | null) {
         at(t + FLY_MS, () => setFlying(null));
         t += FLY_MS;
       }
+    }
+
+    // Duelo resuelto: tarjeta con los dados de cada rival y quién bebe.
+    const duel = game.lastDuel && game.lastDuel.seq !== before.lastDuel?.seq ? duelOutcome(game) : null;
+    if (duel) {
+      const key = ++seq.current;
+      setLanded({ key, n: game.players.find((p) => p.id === game.lastDuel!.by)!.pos, playerId: game.lastDuel!.by, result: { good: false, icon: "🔫", ...duel } });
+      at(t, () => sfx.zap());
     }
 
     // Alguien bebió: "glu-glu".

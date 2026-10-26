@@ -14,7 +14,7 @@ describe("avatar", () => {
     expect(expressionFor(p)).toBe("normal");
     expect(expressionFor(p, { isTurn: true })).toBe("feliz");
     expect(expressionFor({ ...p, pending: 5 })).toBe("mareado");
-    expect(expressionFor({ ...p, status: { ...p.status, carcel: { bail: 3, at: 26 } } })).toBe("triste");
+    expect(expressionFor({ ...p, status: { ...p.status, carcel: { at: 26 } } })).toBe("triste");
     expect(expressionFor({ ...p, status: { ...p.status, hipnosis: true } })).toBe("abducido");
     expect(expressionFor({ ...p, status: { ...p.status, inmune: true } })).toBe("chulo");
     expect(expressionFor(p, { winner: p.id })).toBe("euforico");

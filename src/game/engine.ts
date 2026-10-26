@@ -11,7 +11,7 @@ export type PlayerStatus = {
   inmune: boolean; // Estación Abstemia: nadie le puede mandar beber
   hipnosis: boolean; // Abducción mental: absorbe la mitad de lo que beben los demás
   laberinto: boolean; // Cinturón de asteroides: sale con 5 o 6
-  carcel: { bail: number; at: number } | null;
+  carcel: { at: number } | null; // en su turno tira: con 1-3 bebe 2 y sale, con 4-6 bebe 4 y sale
 };
 
 export type Gender = "hombre" | "mujer";
@@ -36,7 +36,6 @@ export type Decision =
   // Quien controla la mesa marca quiénes beben.
   | { kind: "SELECT_DRINKERS"; drinks: number; title: string; text: string }
   | { kind: "SLAVE" }
-  | { kind: "CARCEL"; bail: number };
 
 export type LogEntry = { id: number; text: string };
 
@@ -52,6 +51,8 @@ export type GameState = {
   lastRoller?: string | null; // id de quien hizo la última tirada
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
+  /** Último duelo resuelto (los dados se tiran en el servidor): la TV y el celular enseñan el resultado. */
+  lastDuel?: { seq: number; by: string; rounds: { rival: string; a: number; b: number; loser: string }[] } | null;
   winner: string | null;
   log: LogEntry[];
   logSeq: number;
@@ -65,7 +66,6 @@ export type Action =
   | { type: "SET_RULE"; text: string }
   | { type: "SELECT_DRINKERS"; ids: string[] }
   | { type: "CHOOSE_SLAVE"; id: string }
-  | { type: "CARCEL"; choice: "pay" | "wait" }
   | { type: "DRANK"; id: string }
   | { type: "PENALTY"; id: string };
 
@@ -148,12 +148,8 @@ function startTurn(s: GameState) {
   const p = currentPlayer(s);
   p.status.inmune = false;
   p.status.hipnosis = false;
-  if (p.status.carcel) {
-    decide(s, { kind: "CARCEL", bail: p.status.carcel.bail });
-  } else {
-    s.phase = "ROLL";
-    s.decision = null;
-  }
+  s.phase = "ROLL";
+  s.decision = null;
 }
 
 function endTurn(s: GameState) {
@@ -173,12 +169,27 @@ function decide(s: GameState, decision: Decision) {
   s.decision = decision;
 }
 
+/** Fianza del calabozo: con 1-3 se beben 2 vasos, con 4-6 se beben 4. */
+export function jailBail(roll: number): number {
+  return roll <= 3 ? 2 : 4;
+}
+
 function roll(s: GameState, rng: Rng) {
   const p = currentPlayer(s);
   const r = d6(rng);
   s.lastRoll = r;
   s.lastRoller = p.id;
   s.rollSeq = (s.rollSeq ?? 0) + 1;
+
+  if (p.status.carcel) {
+    // Fianza según el dado; al pagarla sale y vuelve a tirar para avanzar.
+    const bail = jailBail(r);
+    p.status.carcel = null;
+    log(s, `🔓 ${p.name} saca ${r}: bebe ${bail} ${vasos(bail)} y sale del calabozo. Ahora tira para avanzar.`);
+    drink(s, p.id, bail, null);
+    s.phase = "ROLL";
+    return;
+  }
 
   if (p.status.laberinto) {
     if (r >= 5) {
@@ -273,9 +284,8 @@ function landOn(s: GameState, p: Player, rng: Rng) {
           log(s, `🔓 ${q.name} queda libre: ${p.name} ocupa su celda.`);
         }
       }
-      const bail = d6(rng) + d6(rng);
-      p.status.carcel = { bail, at: tile.n };
-      log(s, `🚔 ${p.name} al Calabozo Intergaláctico. Fianza: ${bail} ${vasos(bail)}.`);
+      p.status.carcel = { at: tile.n };
+      log(s, `🚔 ${p.name} al Calabozo Intergaláctico. En su turno tira para ver cuánto bebe para salir.`);
       return endTurn(s);
     }
 
@@ -342,6 +352,7 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
   if (d.kind === "DUEL" && action.type === "DUEL") {
     const opps = [...new Set(action.opponents)];
     if (opps.length < 1 || opps.length > d.amount || opps.some((id) => id === p.id || !ids.has(id))) return false;
+    const rounds: NonNullable<GameState["lastDuel"]>["rounds"] = [];
     for (const id of opps) {
       const rival = s.players.find((q) => q.id === id)!;
       let a = d6(rng);
@@ -354,7 +365,9 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
       const [winner, loser] = a > b ? [p, rival] : [rival, p];
       log(s, `🔫 ${p.name} ${a} vs ${rival.name} ${b}: pierde ${loser.name}.`);
       drink(s, loser.id, 1, winner.id);
+      rounds.push({ rival: rival.id, a, b, loser: loser.id });
     }
+    s.lastDuel = { seq: (s.lastDuel?.seq ?? 0) + 1, by: p.id, rounds };
     endTurn(s);
     return true;
   }
@@ -393,20 +406,6 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
     const slave = s.players.find((q) => q.id === action.id)!;
     log(s, `⛓️ ${slave.name} es ahora esclavo de ${p.name}: beberá cada vez que su amo beba.`);
     endTurn(s);
-    return true;
-  }
-
-  if (d.kind === "CARCEL" && action.type === "CARCEL") {
-    if (action.choice === "pay") {
-      log(s, `🔓 ${p.name} paga la fianza.`);
-      drink(s, p.id, d.bail, null);
-      p.status.carcel = null;
-      s.decision = null;
-      s.phase = "ROLL";
-    } else {
-      log(s, `🚔 ${p.name} sigue en el calabozo esperando que caiga otro.`);
-      endTurn(s);
-    }
     return true;
   }
 

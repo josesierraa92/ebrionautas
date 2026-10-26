@@ -127,7 +127,7 @@ la ilustración y el texto narrativo:
 | **Reglas puñeteras** | 10, 23, 41 | Pones una norma que afecta a todos; dura hasta que alguien ponga otra. | Input de texto en tu celular → se muestra fija en el tablero ("Regla activa: …"). Botón "Denunciar infracción" que crea deuda de 1 vaso al infractor. |
 | **Zona cultural (?)** | 13, 25, 33, 39, 52 | Haz una pregunta con varias respuestas (ej. "países de Europa"); se dicen en orden rápido; quien no sepa, bebe. | Modo A: el jugador escribe la categoría. Modo B: banco de categorías aleatorias. Temporizador de 5 s por turno en pantalla; el grupo marca quién falló. |
 | **Hipnosis** | 17, 36, 57 | Durante un turno, ayudas al resto bebiendo la mitad de las deudas que adquieran. | Estado `HIPNOTIZADO` 1 ronda: cada deuda de otros se divide, la mitad (redondeo arriba) va a ti. |
-| **Cárcel** | 26, 45 | Tira 2 dados y súmalos = vasos de "fianza". Solo sales cuando los bebas o caiga otro jugador. | Estado `EN_CARCEL` con fianza. Botón "Pagar fianza" o liberación automática si otro cae en la misma cárcel. |
+| **Cárcel** | 26, 45 | En tu siguiente turno tiras el dado: con 1-3 bebes 2 vasos, con 4-6 bebes 4, y sales (vuelves a tirar para avanzar). Si otro cae en tu celda antes, sales gratis. | Estado `carcel`; la tirada del calabozo la resuelve `roll()` (`jailBail`). Sin opción de esperar (decisión del usuario). |
 | **Muerte** | 60 | ¡Qué mala suerte! Vuelve a la SALIDA (1). | Animación calavera + vuelta a 1. |
 | **Patinazo** | 43 → 12, 56 → 31 | Para mantener el equilibrio bebes N vasos de golpe **o** vuelves a la casilla indicada. | Decisión en el celular: "Beber 4 de golpe" vs "Volver a la 12" (en la 56: 3 vasos o volver a la 31 — **validar texto**). |
 

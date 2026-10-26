@@ -22,8 +22,6 @@ export function decisionText(decision: Decision, name: string): [string, string]
       return ["Ley del Consejo Galáctico", `${name} dicta una ley para todos. Quien la rompa, bebe.`];
     case "SLAVE":
       return ["Esclavos", `${name} elige un esclavo: beberá cada vez que su amo beba.`];
-    case "CARCEL":
-      return ["Calabozo Intergaláctico", `${name}: paga la fianza de ${decision.bail} vasos o espera a que caiga otro.`];
   }
 }
 
@@ -42,8 +40,6 @@ function decisionPrompt(decision: Decision, name: string): string {
       return `${name} escribe su ley en el celular.`;
     case "SLAVE":
       return `${name} elige a su esclavo en el celular.`;
-    case "CARCEL":
-      return `${name} decide en el celular: pagar la fianza o esperar.`;
   }
 }
 
@@ -56,14 +52,14 @@ type Props = { game: GameState; n: number; playerId: string; cardKey: number; re
 export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
   const player = game.players.find((p) => p.id === playerId) ?? currentPlayer(game);
   const tileStyle = TILE_STYLE[getTile(n).type];
-  // Resultado de una tirada sin moverse (asteroides): verde si se salvó, rojo si bebe.
+  // Resultado de una tirada sin moverse (asteroides, calabozo): verde si se salvó, rojo si bebe.
   const style = result
-    ? { icon: result.good ? "✨" : "🍷", bg: result.good ? ["#8be86b", "#2fae4a"] : ["#ff8a8a", "#d62a3f"] }
+    ? { icon: result.icon ?? (result.good ? "✨" : result.drinks ? "🔓" : "🍷"), bg: result.good ? ["#8be86b", "#2fae4a"] : ["#ff8a8a", "#d62a3f"] }
     : tileStyle;
   const decision = game.decision && currentPlayer(game).id === playerId ? game.decision : null;
   // Retos y exámenes llevan su texto concreto (categoría, trabalenguas…) en la decisión.
   const rule = result ?? (decision?.kind === "SELECT_DRINKERS" ? { title: decision.title, text: decision.text } : tileRule(n, game, playerId));
-  const drinks = decision?.kind === "SELECT_DRINKERS" ? decision.drinks : result && !result.good ? 1 : null;
+  const drinks = decision?.kind === "SELECT_DRINKERS" ? decision.drinks : result && !result.good && !result.icon ? (result.drinks ?? 1) : null;
   return (
     <div className="pointer-events-none absolute inset-0 z-40 grid place-items-center bg-ink/35 p-[3%]">
       <div key={cardKey} className="card-pop w-[min(66%,52rem)] overflow-hidden rounded-[2rem] border-[5px] border-ink bg-[#fbf3e4] shadow-[0_10px_0_#1b1f4b]">
@@ -81,7 +77,7 @@ export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
           </div>
         </div>
         <div className="flex flex-col gap-[1.3cqw] px-[3.5cqw] py-[2.2cqw] text-ink">
-          <p className="font-display leading-snug" style={{ fontSize: "2.5cqw" }}>
+          <p className="font-display leading-snug whitespace-pre-line" style={{ fontSize: "2.5cqw" }}>
             {rule.text}
           </p>
           <div className="flex items-center justify-between gap-4" style={{ fontSize: "1.8cqw" }}>

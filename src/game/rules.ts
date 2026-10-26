@@ -1,7 +1,7 @@
 // Explicación de cada casilla para la tarjeta grande de la TV: qué es y cuál es la regla.
 
 import { TILE_NAMES, TRAIT_LABELS, getTile } from "./board";
-import type { GameState } from "./engine";
+import { jailBail, type GameState } from "./engine";
 
 const vasos = (n: number) => `${n} ${n === 1 ? "vaso" : "vasos"}`;
 
@@ -10,6 +10,21 @@ export function mazeOutcome(name: string, roll: number): { escaped: boolean; tit
   return roll >= 5
     ? { escaped: true, title: "¡Se salvó!", text: `${name} saca ${roll} y escapa del Cinturón de asteroides. No bebe y en su próximo turno vuelve a avanzar.` }
     : { escaped: false, title: "¡Sigue perdido!", text: `${name} saca ${roll}: no es 5 ni 6. Bebe 1 vaso y sigue perdido entre asteroides.` };
+}
+
+/** Resultado de tirar estando en el calabozo: siempre sale, pero bebe 2 (1-3) o 4 (4-6). */
+export function jailOutcome(name: string, roll: number): { drinks: number; title: string; text: string } {
+  const drinks = jailBail(roll);
+  return { drinks, title: "¡Fianza pagada!", text: `${name} saca ${roll}: bebe ${vasos(drinks)} y sale del calabozo. Ahora vuelve a tirar para avanzar.` };
+}
+
+/** Resultado de un duelo, una línea por rival: quién sacó cuánto y quién bebe. */
+export function duelOutcome(game: GameState): { title: string; text: string } | null {
+  const d = game.lastDuel;
+  if (!d) return null;
+  const name = (id: string) => game.players.find((q) => q.id === id)?.name ?? "?";
+  const lines = d.rounds.map((r) => `${name(d.by)} ${r.a} – ${name(r.rival)} ${r.b}: bebe ${name(r.loser)} 1 vaso.`);
+  return { title: "¡Resultado del duelo!", text: lines.join("\n") };
 }
 
 /** Título y regla de la casilla `n` para el jugador `playerId`, con los datos de la partida. */
@@ -58,13 +73,11 @@ export function tileRule(n: number, game: GameState, playerId: string): { title:
         title: TILE_NAMES.HIPNOSIS,
         text: `${name} queda abducido: hasta su próximo turno, se bebe la mitad de todo lo que beban los demás.`,
       };
-    case "CARCEL": {
-      const bail = p?.status.carcel?.bail;
+    case "CARCEL":
       return {
         title: TILE_NAMES.CARCEL,
-        text: `${name} va al calabozo.${bail ? ` Fianza: ${vasos(bail)} (la suma de dos dados).` : " La fianza es la suma de dos dados."} En su turno puede pagarla bebiéndosela y seguir jugando, o esperar. Si otro jugador cae en su celda, sale libre gratis.`,
+        text: `${name} va al calabozo. En su próximo turno tira el dado para salir: con 1, 2 o 3 bebe 2 vasos; con 4, 5 o 6 bebe 4. Después vuelve a tirar para avanzar. Si otro jugador cae en su celda antes, sale gratis.`,
       };
-    }
     case "MUERTE":
       return { title: TILE_NAMES.MUERTE, text: `¡Qué mala suerte! El agujero negro se traga a ${name} y lo devuelve a la plataforma de despegue (casilla 1).` };
     case "PATINAZO":

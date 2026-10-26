@@ -34,7 +34,7 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
                 {p.status.inmune && <span title="Estación Abstemia: inmune">⛽</span>}
                 {p.status.hipnosis && <span title="Abducción mental">🌀</span>}
                 {p.status.laberinto && <span title="Perdido en el cinturón de asteroides">☄️</span>}
-                {p.status.carcel && <span title={`En el calabozo (fianza ${p.status.carcel.bail})`}>🚔</span>}
+                {p.status.carcel && <span title="En el calabozo">🚔</span>}
                 {game.slave?.slave === p.id && <span title="Esclavo">⛓️</span>}
               </p>
               <div className="mt-1 flex items-center gap-2">

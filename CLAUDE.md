@@ -51,6 +51,10 @@ léelo antes de implementar algo nuevo.
   su regla explicada (`src/game/rules.ts`). Se queda hasta la siguiente tirada (para que dé tiempo a leerla);
   si hay que decidir, además dice qué marcar en el celular. Al tirar perdido en los asteroides sale el resultado
   (`mazeOutcome`: con 5 o 6 "¡Se salvó!", si no "¡Sigue perdido!" y bebe).
+- Calabozo (regla del usuario): en su turno el preso tira; con 1-3 bebe 2, con 4-6 bebe 4 (`jailBail`), sale
+  y vuelve a tirar para avanzar. No hay opción de esperar. La TV muestra la tarjeta "¡Fianza pagada!" (`jailOutcome`).
+- Toda casilla que diga "tira el dado" debe enseñar después una tarjeta con lo que pasó (TV y celular):
+  asteroides (`mazeOutcome`), calabozo (`jailOutcome`) y duelo (`lastDuel` en el estado + `duelOutcome`).
 - Lore: la tripulación se estrelló tras la fiesta y hay que llevarla (borracha) a la **Nave Nodriza** (casilla 62).
   Las "Ocas" son OVNIs teletransportadores 🛸. Nada de patos ni de "la Tierra" como meta.
 - El menú del celular usa el tablero 2D en espiral (`src/components/Board.tsx`, `src/game/spiral.ts`).

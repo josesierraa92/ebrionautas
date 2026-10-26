@@ -69,18 +69,6 @@ export default function DecisionPanel({ decision, me, players, onAction }: Props
           ))}
         </Card>
       );
-
-    case "CARCEL":
-      return (
-        <Card title="Calabozo Intergaláctico" text={`Fianza: ${decision.bail} vasos. O esperas a que caiga otro en tu celda.`}>
-          <button onClick={() => onAction({ type: "CARCEL", choice: "pay" })} className="btn-game bg-btn-red py-3 text-lg text-white">
-            PAGAR FIANZA ({decision.bail} 🍷)
-          </button>
-          <button onClick={() => onAction({ type: "CARCEL", choice: "wait" })} className="btn-game bg-btn-yellow py-3 text-lg text-white">
-            ESPERAR
-          </button>
-        </Card>
-      );
   }
 }
 

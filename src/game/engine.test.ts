@@ -87,7 +87,8 @@ describe("casillas", () => {
     let s = rollFrom(game(), 5, 2); // 7, x1
     s = act(s, { type: "DUEL", opponents: ["p2"] }, 3, 3, 2, 5);
     expect(s.players[0].drunk).toBe(1);
-    expect(s.players[1].drunk).toBe(0);
+    expect(s.players[1].drunk).toBe(0);    // El resultado queda guardado para enseñarlo en la TV y el celular.
+    expect(s.lastDuel).toEqual({ seq: 1, by: "p1", rounds: [{ rival: "p2", a: 2, b: 5, loser: "p1" }] });
   });
 
   it("Duelo: no puede retar a más rivales de los permitidos", () => {
@@ -106,19 +107,33 @@ describe("casillas", () => {
     expect(s.players[0].status.laberinto).toBe(false);
   });
 
-  it("Cárcel: fianza de 2 dados, pagar o esperar, y libera al caer otro", () => {
-    let s = rollFrom(game(2), 22, 4, 3, 4); // 26, fianza 7
-    expect(s.players[0].status.carcel).toEqual({ bail: 7, at: 26 });
-    s = rollFrom(s, 20, 6, 1, 1); // Beto cae en 26
+  it("Cárcel: en su turno tira; con 1-3 bebe 2, con 4-6 bebe 4, sale y vuelve a tirar", () => {
+    let s = rollFrom(game(2), 22, 4); // Ana cae en 26
+    expect(s.players[0].status.carcel).toEqual({ at: 26 });
+    expect(s.turn).toBe(1);
+    s = rollFrom(s, 1, 1); // Beto 2
+    s = act(s, { type: "SELECT_DRINKERS", ids: [] });
+    expect(s.phase).toBe("ROLL");
+    s = act(s, { type: "ROLL" }, 3); // Ana saca 3: bebe 2 y sale
+    expect(s.players[0].drunk).toBe(2);
     expect(s.players[0].status.carcel).toBeNull();
-    expect(s.players[1].status.carcel?.bail).toBe(2);
+    expect(s.players[0].pos).toBe(26);
+    expect(s.turn).toBe(0);
+    expect(s.phase).toBe("ROLL");
+    s = act(s, { type: "ROLL" }, 1); // ahora avanza
+    expect(s.players[0].pos).toBe(27);
+  });
+
+  it("Cárcel: con 4 o más la fianza es de 4 vasos; caer en la celda de otro lo libera", () => {
+    let s = rollFrom(game(2), 22, 4); // Ana 26
+    s = rollFrom(s, 20, 6); // Beto también 26: Ana libre
+    expect(s.players[0].status.carcel).toBeNull();
+    expect(s.players[1].status.carcel).toEqual({ at: 26 });
     s = rollFrom(s, 1, 1); // Ana 2
     s = act(s, { type: "SELECT_DRINKERS", ids: [] });
-    expect(s.decision).toEqual({ kind: "CARCEL", bail: 2 });
-    s = act(s, { type: "CARCEL", choice: "pay" });
-    expect(s.players[1].drunk).toBe(2);
-    expect(s.phase).toBe("ROLL");
-    expect(s.turn).toBe(1);
+    s = act(s, { type: "ROLL" }, 5); // Beto saca 5
+    expect(s.players[1].drunk).toBe(4);
+    expect(s.players[1].status.carcel).toBeNull();
   });
 
   it("Patinazo: beber de golpe o retroceder", () => {
