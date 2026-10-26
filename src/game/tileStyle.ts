@@ -42,3 +42,9 @@ export const PLAYER_COLORS = [
   "#ff8a1f",
   "#9b5de5",
 ];
+
+/** Marciano 3D (generado con IA) del color de un jugador, o null si el color no es de la lista. */
+export function alienArt(skin: string): string | null {
+  const i = PLAYER_COLORS.indexOf(skin.toLowerCase());
+  return i < 0 ? null : `/art/alien/${i}.webp`;
+}

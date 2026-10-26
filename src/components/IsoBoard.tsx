@@ -3,7 +3,7 @@ import { avatarOf, expressionFor } from "@/game/avatar";
 import { BOARD, type Tile } from "@/game/board";
 import type { Player } from "@/game/engine";
 import { ISO_COLS, ISO_ROWS, isoPos } from "@/game/isoPath";
-import { TILE_STYLE, tileArt } from "@/game/tileStyle";
+import { TILE_STYLE } from "@/game/tileStyle";
 
 // Tablero isométrico 2.5D: dibujos planos con volumen (losas con canto,
 // sombras suaves, árboles redondeados) sobre una isla de césped flotando en el
@@ -60,7 +60,7 @@ export default function IsoBoard({ players, current, winner, shown, flying, focu
   for (const tile of BOARD) {
     if (tile.type === "META") continue;
     const { gx, gy } = isoPos(tile.n);
-    standing.push({ d: gx + gy, key: `i${tile.n}`, el: <TileIcon tile={tile} /> });
+    standing.push({ d: gx + gy, key: `i${tile.n}`, el: <TileNumber tile={tile} /> });
   }
   for (const deco of DECOR) standing.push({ d: deco.gx + deco.gy, key: `d${deco.kind}${deco.gx},${deco.gy}`, el: <Decoration {...deco} /> });
 
@@ -75,7 +75,7 @@ export default function IsoBoard({ players, current, winner, shown, flying, focu
     const off = (i - (group.length - 1) / 2) * (group.length > 2 ? 0.24 : 0.32);
     const x = sx(gx + off, gy - off);
     const y = sy(gx + off, gy - off) - TILE_T + 4;
-    const size = group.length > 3 ? 42 : 54;
+    const size = group.length > 3 ? 50 : 66;
     const isCurrent = p.id === current && !winner;
     const isFlying = p.id === flying;
     standing.push({
@@ -139,27 +139,6 @@ export default function IsoBoard({ players, current, winner, shown, flying, focu
 function Defs() {
   return (
     <defs>
-      <radialGradient id="iso-leaf" cx="0.35" cy="0.3" r="0.8">
-        <stop offset="0" stopColor="#c6f27a" />
-        <stop offset="0.55" stopColor="#6fcf4a" />
-        <stop offset="1" stopColor="#3f9a35" />
-      </radialGradient>
-      <radialGradient id="iso-leaf-purple" cx="0.35" cy="0.3" r="0.8">
-        <stop offset="0" stopColor="#e3c6ff" />
-        <stop offset="0.55" stopColor="#a774f0" />
-        <stop offset="1" stopColor="#6a3fc0" />
-      </radialGradient>
-      <linearGradient id="iso-pine" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stopColor="#5fd6c8" />
-        <stop offset="0.55" stopColor="#2bb3a3" />
-        <stop offset="0.56" stopColor="#1f8f86" />
-        <stop offset="1" stopColor="#1a7a74" />
-      </linearGradient>
-      <radialGradient id="iso-rock" cx="0.35" cy="0.3" r="0.8">
-        <stop offset="0" stopColor="#f0f0f5" />
-        <stop offset="0.6" stopColor="#b9bdcc" />
-        <stop offset="1" stopColor="#8a8fa3" />
-      </radialGradient>
       <radialGradient id="iso-water" cx="0.4" cy="0.35" r="0.8">
         <stop offset="0" stopColor="#ff8aa8" />
         <stop offset="0.6" stopColor="#d6245a" />
@@ -173,10 +152,6 @@ function Defs() {
         <stop offset="0" stopColor="#fff3a0" stopOpacity=".9" />
         <stop offset="1" stopColor="#ffd23f" stopOpacity="0" />
       </radialGradient>
-      <linearGradient id="iso-metal" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#ffffff" />
-        <stop offset="1" stopColor="#aab3c8" />
-      </linearGradient>
     </defs>
   );
 }
@@ -203,12 +178,12 @@ function Island() {
   const cells: React.ReactNode[] = [];
   for (let gx = -1; gx <= ISO_COLS; gx++)
     for (let gy = -1; gy <= ISO_ROWS; gy++)
-      if ((gx + gy) % 2 === 0) cells.push(<path key={`${gx},${gy}`} d={`M${gx - 0.5} ${gy - 0.5} h1 v1 h-1 Z`} transform={PLANE(0)} fill="#9fe070" />);
+      if ((gx + gy) % 2 === 0) cells.push(<path key={`${gx},${gy}`} d={`M${gx - 0.5} ${gy - 0.5} h1 v1 h-1 Z`} transform={PLANE(0)} fill="#b3e26e" />);
   const shape = planeRect(I0, I0, IX, IY, 0.9);
   return (
     <g>
       <ellipse cx={sx((I0 + IX) / 2, (I0 + IY) / 2)} cy={sy(IX, IY) + ISLAND_T + 70} rx={VIEW.w * 0.4} ry={45} fill="#000" opacity=".28" />
-      <Slab d={shape} top="#8bd65f" side="#b4764a" thickness={ISLAND_T} />
+      <Slab d={shape} top="#a2d861" side="#c08452" thickness={ISLAND_T} />
       {/* franja de tierra oscura bajo el césped */}
       <path d={shape} transform={PLANE(10)} fill="none" stroke="#8a5432" strokeWidth={3} vectorEffect="non-scaling-stroke" opacity=".6" />
       <g clipPath="url(#iso-island-clip)">{cells}</g>
@@ -233,32 +208,134 @@ function TileSlab({ tile }: { tile: Tile }) {
   const colored = !["RETO", "RASGO", "POSICION", "CULTURAL"].includes(tile.type);
   const top = colored ? lighten(s.bg[0], 0.15) : "#fbf4e6";
   const side = colored ? lighten(s.bg[1], -0.15) : "#d8c8ab";
-  const d = planeRect(gx - 0.43, gy - 0.43, gx + 0.43, gy + 0.43, 0.16);
+  const d = planeRect(gx - 0.48, gy - 0.48, gx + 0.48, gy + 0.48, 0.18);
   return (
     <g transform={`translate(0 ${-TILE_T})`}>
-      <path d={d} transform={PLANE(TILE_T + 6)} fill="#2d5a1c" opacity=".22" />
+      <path d={d} transform={PLANE(TILE_T + 6)} fill="#2d5a1c" opacity=".2" />
       <Slab d={d} top={top} side={side} thickness={TILE_T} />
       {/* brillo en el borde de arriba */}
-      <path d={planeRect(gx - 0.36, gy - 0.4, gx + 0.36, gy - 0.3, 0.05)} transform={PLANE(0)} fill="#fff" opacity=".35" />
+      <path d={planeRect(gx - 0.4, gy - 0.45, gx + 0.4, gy - 0.36, 0.05)} transform={PLANE(0)} fill="#fff" opacity=".35" />
+      <g transform={`matrix(0.5 0.25 -0.5 0.25 ${sx(gx, gy)} ${sy(gx, gy)})`} opacity={0.95}>
+        <TileGlyph type={tile.type} color={colored ? "#ffffff" : s.bg[1]} hole={top} />
+      </g>
     </g>
   );
 }
 
-/** Ícono de la casilla, de pie sobre la losa (como las monedas de los juegos de tablero online). */
-function TileIcon({ tile }: { tile: Tile }) {
+/** Número de la casilla, de pie en el borde delantero de la losa. */
+function TileNumber({ tile }: { tile: Tile }) {
   const { gx, gy } = isoPos(tile.n);
   const x = sx(gx, gy);
   const y = sy(gx, gy) - TILE_T;
   return (
-    <g>
-      <ellipse cx={x + 2} cy={y + 2} rx={17} ry={6} fill="#000" opacity=".18" />
-      <image href={tileArt(tile.type)} x={x - 30} y={y - 54} width={60} height={60} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,.25))" }} />
-      {/* número de la casilla, de pie en el borde delantero para que el ícono no lo tape */}
-      <text x={x} y={y + 18} textAnchor="middle" fontFamily="var(--font-lilita), sans-serif" fontSize={14} fill="#ffffff" stroke="#1b1f4b" strokeWidth={4} paintOrder="stroke">
-        {tile.n}
-      </text>
-    </g>
+    <text x={x} y={y + 21} textAnchor="middle" fontFamily="var(--font-lilita), sans-serif" fontSize={13} fill="#ffffff" stroke="#1b1f4b" strokeWidth={4} paintOrder="stroke">
+      {tile.n}
+    </text>
   );
+}
+
+/** Símbolo blanco pintado sobre la losa (estrella, flecha, calavera…), como en los juegos de tablero online. */
+function TileGlyph({ type, color, hole }: { type: Tile["type"]; color: string; hole: string }) {
+  const stroke = { fill: "none", stroke: color, strokeWidth: 7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  const text = (t: string, size = 60) => (
+    <text x={0} y={2} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-lilita), sans-serif" fontSize={size} fill={color}>
+      {t}
+    </text>
+  );
+  switch (type) {
+    case "SALIDA":
+      return <path d="M-26 -10 H4 V-24 L28 0 L4 24 V10 H-26 Z" fill={color} />;
+    case "OCA": {
+      const pts = Array.from({ length: 10 }, (_, k) => {
+        const r = k % 2 ? 12 : 28;
+        const a = (Math.PI / 5) * k - Math.PI / 2;
+        return `${(r * Math.cos(a)).toFixed(1)},${(r * Math.sin(a)).toFixed(1)}`;
+      });
+      return <polygon points={pts.join(" ")} fill={color} />;
+    }
+    case "MUERTE":
+      return (
+        <g>
+          <circle cx={0} cy={-6} r={22} fill={color} />
+          <rect x={-13} y={6} width={26} height={18} rx={5} fill={color} />
+          <circle cx={-9} cy={-6} r={6.5} fill={hole} />
+          <circle cx={9} cy={-6} r={6.5} fill={hole} />
+          <path d="M-5 16 V24 M0 16 V24 M5 16 V24" stroke={hole} strokeWidth={2.5} />
+        </g>
+      );
+    case "POSADA":
+      return <path d="M0 -28 C14 -8 22 2 22 10 A22 22 0 0 1 -22 10 C-22 2 -14 -8 0 -28 Z" fill={color} />;
+    case "A_BEBER":
+      return (
+        <g fill={color}>
+          <path d="M-20 -26 H20 Q20 4 0 6 Q-20 4 -20 -26 Z" />
+          <rect x={-3} y={4} width={6} height={16} />
+          <ellipse cx={0} cy={22} rx={14} ry={4.5} />
+        </g>
+      );
+    case "DUELO":
+      return text("VS", 40);
+    case "CULTURAL":
+      return text("?");
+    case "REGLA":
+      return text("!");
+    case "HIPNOSIS":
+      return <path d="M0 0 m-4 0 a4 4 0 1 1 8 0 a8 8 0 1 1 -16 0 a12 12 0 1 1 24 0 a16 16 0 1 1 -32 0 a20 20 0 1 1 40 0" {...stroke} strokeWidth={6} />;
+    case "CARCEL":
+      return (
+        <g {...stroke}>
+          <rect x={-22} y={-22} width={44} height={44} rx={7} />
+          <path d="M-8 -22 V22 M8 -22 V22" />
+        </g>
+      );
+    case "PATINAZO":
+      return (
+        <g>
+          <circle cx={0} cy={0} r={14} fill={color} />
+          <ellipse cx={0} cy={0} rx={29} ry={9} transform="rotate(-20)" {...stroke} strokeWidth={5} />
+        </g>
+      );
+    case "POSICION":
+      return (
+        <g>
+          <circle cx={-14} cy={0} r={12} fill={color} />
+          <circle cx={14} cy={0} r={12} fill={color} />
+          <circle cx={-10} cy={2} r={5} fill={hole} />
+          <circle cx={18} cy={2} r={5} fill={hole} />
+        </g>
+      );
+    case "RASGO":
+      return (
+        <g {...stroke}>
+          <circle cx={-5} cy={-5} r={14} />
+          <path d="M6 6 L22 22" strokeWidth={9} />
+        </g>
+      );
+    case "ESCLAVO":
+      return (
+        <g {...stroke} strokeWidth={6}>
+          <ellipse cx={-10} cy={0} rx={16} ry={9} transform="rotate(-25 -10 0)" />
+          <ellipse cx={10} cy={0} rx={16} ry={9} transform="rotate(-25 10 0)" />
+        </g>
+      );
+    case "RETO":
+      return (
+        <g>
+          <rect x={-9} y={-28} width={18} height={30} rx={9} fill={color} />
+          <path d="M-16 -4 Q-16 14 0 14 Q16 14 16 -4 M0 14 V24 M-10 24 H10" {...stroke} strokeWidth={5} />
+        </g>
+      );
+    case "LABERINTO":
+      return (
+        <g fill={color}>
+          <circle cx={-12} cy={8} r={12} />
+          <circle cx={13} cy={9} r={10} />
+          <circle cx={0} cy={-13} r={13} />
+        </g>
+      );
+    case "META":
+      return null;
+  }
 }
 
 /** La meta: la Nave Nodriza flotando sobre la plataforma dorada, con su rayo abductor. */
@@ -268,7 +345,6 @@ function MothershipGoal() {
   const y = sy(gx, gy);
   const d = planeRect(gx - 0.6, gy - 0.6, gx + 0.6, gy + 0.6, 0.3);
   const cy = y - 120; // centro del platillo
-  const lights = [-62, -38, -13, 13, 38, 62];
   return (
     <g>
       <g transform={`translate(0 ${-26})`}>
@@ -277,102 +353,71 @@ function MothershipGoal() {
       <path d={`M${x - 40} ${cy + 14} L${x - 62} ${y - 26} L${x + 62} ${y - 26} L${x + 40} ${cy + 14} Z`} fill="url(#iso-beam)" className="beam-pulse" />
       <ellipse cx={x} cy={y - 26} rx={62} ry={22} fill="#b8ffef" opacity=".35" className="beam-pulse" />
       <g className="ship-hover">
-        <g transform={`translate(${x} ${cy}) scale(1.25) translate(${-x} ${-cy})`}>
-          <circle cx={x} cy={cy - 6} r={92} fill="url(#iso-glow)" opacity=".7" />
-          <ellipse cx={x} cy={cy + 10} rx={92} ry={24} fill="#1b1f4b" opacity=".25" />
-          <path d={`M${x - 34} ${cy - 10} Q${x - 30} ${cy - 52} ${x} ${cy - 54} Q${x + 30} ${cy - 52} ${x + 34} ${cy - 10} Z`} fill="#9ff3ff" stroke="#1b1f4b" strokeWidth={4} opacity=".95" />
-          <ellipse cx={x - 12} cy={cy - 36} rx={8} ry={12} fill="#fff" opacity=".6" />
-          <ellipse cx={x} cy={cy} rx={96} ry={26} fill="url(#iso-metal)" stroke="#1b1f4b" strokeWidth={4} />
-          <ellipse cx={x} cy={cy - 6} rx={70} ry={14} fill="#e9edff" opacity=".7" />
-          <path d={`M${x - 96} ${cy} Q${x} ${cy + 46} ${x + 96} ${cy}`} fill="#6b74b8" stroke="#1b1f4b" strokeWidth={4} />
-          {lights.map((dx, i) => (
-            <circle key={dx} cx={x + dx} cy={cy + 14 - Math.abs(dx) * 0.12} r={6} fill={i % 2 ? "#ff5fa2" : "#ffe066"} stroke="#1b1f4b" strokeWidth={2} className="ship-light" style={{ animationDelay: `${i * 0.18}s` }} />
-          ))}
-        </g>
+        <circle cx={x} cy={cy - 30} r={120} fill="url(#iso-glow)" opacity=".6" />
+        <image href="/art/deco/mothership.webp" x={x - 130} y={cy + 40 - 260} width={260} height={260} />
       </g>
-      <text x={x} y={cy - 84} textAnchor="middle" fontFamily="var(--font-lilita), sans-serif" fontSize={28} fill="#ffe066" stroke="#1b1f4b" strokeWidth={7} paintOrder="stroke">
+      <text x={x} y={cy - 200} textAnchor="middle" fontFamily="var(--font-lilita), sans-serif" fontSize={28} fill="#ffe066" stroke="#1b1f4b" strokeWidth={7} paintOrder="stroke">
         62 · NAVE NODRIZA
       </text>
     </g>
   );
 }
 
-// Decoración en el césped entre los tramos del camino.
-type Deco = { gx: number; gy: number; kind: "tree" | "ptree" | "pine" | "rock" | "mush" | "pond" | "crater" | "ufo" | "rocket" | "logs" | "flowers" | "sign" };
+// Decoración en el césped: objetos 3D generados con IA (public/art/deco) y algunos dibujados (lago, cráter, letrero).
+type ArtKind = "tree" | "tree2" | "ptree" | "pine" | "bush" | "mush" | "rock" | "logs" | "cauldron" | "tent" | "flowers" | "rocket";
+type Deco = { gx: number; gy: number; kind: ArtKind | "pond" | "crater" | "sign" };
+/** Tamaño en pantalla de cada objeto (el ancho de una casilla es 100). */
+const ART_SIZE: Record<ArtKind, number> = {
+  tree: 125, tree2: 135, ptree: 120, pine: 115, bush: 55, mush: 45, rock: 55, logs: 55, cauldron: 60, tent: 105, flowers: 50, rocket: 120,
+};
+// Entre los tramos solo cosas bajitas (lo alto taparía las casillas de detrás); árboles y tienda, en el borde.
 const DECOR: Deco[] = [
   { gx: -0.8, gy: 9.8, kind: "rocket" },
   { gx: 0.4, gy: 10.1, kind: "sign" },
-  { gx: 1.5, gy: 7.6, kind: "tree" },
-  { gx: 6.5, gy: 7.5, kind: "pond" },
+  // entre el primer y el segundo tramo
+  { gx: 1.6, gy: 7.6, kind: "bush" },
   { gx: 3.6, gy: 7.8, kind: "mush" },
-  { gx: 10.3, gy: 7.2, kind: "ptree" },
-  { gx: 11.8, gy: 7.7, kind: "rock" },
+  { gx: 6.5, gy: 7.5, kind: "pond" },
   { gx: 9.2, gy: 7.9, kind: "flowers" },
-  { gx: 2.4, gy: 4.5, kind: "pine" },
-  { gx: 4.2, gy: 4.2, kind: "logs" },
+  { gx: 10.6, gy: 7.5, kind: "logs" },
+  { gx: 12, gy: 7.8, kind: "rock" },
+  // entre el segundo y el tercero
+  { gx: 1.8, gy: 4.6, kind: "flowers" },
+  { gx: 3.5, gy: 4.4, kind: "cauldron" },
+  { gx: 5.4, gy: 4.8, kind: "bush" },
   { gx: 7.5, gy: 4.5, kind: "crater" },
-  { gx: 10.6, gy: 4.6, kind: "tree" },
-  { gx: 12.3, gy: 4.2, kind: "pine" },
-  { gx: 5.6, gy: 4.8, kind: "flowers" },
-  { gx: 2.2, gy: 1.5, kind: "ptree" },
-  { gx: 5.5, gy: 1.4, kind: "ufo" },
-  { gx: 8.6, gy: 1.6, kind: "mush" },
-  { gx: 10.4, gy: 1.4, kind: "tree" },
-  { gx: 12.2, gy: 1.8, kind: "rock" },
-  { gx: 14, gy: 9.6, kind: "pine" },
-  { gx: 14, gy: 6.6, kind: "tree" },
+  { gx: 9.8, gy: 4.6, kind: "mush" },
+  { gx: 11.8, gy: 4.4, kind: "flowers" },
+  // entre el tercero y el cuarto
+  { gx: 2.2, gy: 1.6, kind: "rock" },
+  { gx: 4.3, gy: 1.5, kind: "bush" },
+  { gx: 6.4, gy: 1.7, kind: "logs" },
+  { gx: 8.6, gy: 1.6, kind: "flowers" },
+  { gx: 10.4, gy: 1.5, kind: "mush" },
+  { gx: 12.2, gy: 1.7, kind: "bush" },
+  // bosque alrededor (detrás y a los lados)
+  ...[0.3, 1.7, 4.6, 6, 8.4, 9.8, 11.2, 12.6].map((gx, i): Deco => ({ gx, gy: -1, kind: (["pine", "tree", "pine", "ptree", "tree", "pine", "tree2", "tree"] as const)[i] })),
+  { gx: 3, gy: -1.1, kind: "tent" },
   { gx: 13.9, gy: -0.9, kind: "pine" },
-  { gx: 7.2, gy: -1, kind: "ptree" },
+  ...[1.6, 4.6, 7.4].map((gy, i): Deco => ({ gx: -1, gy, kind: (["tree", "pine", "ptree"] as const)[i] })),
+  ...[0.4, 3.6, 6.6, 9.6].map((gy, i): Deco => ({ gx: 14.1, gy, kind: (["tree2", "pine", "tree", "pine"] as const)[i] })),
+  ...[3, 6.5, 10, 12.6].map((gx, i): Deco => ({ gx, gy: 10.1, kind: (["bush", "flowers", "bush", "mush"] as const)[i] })),
 ];
 
 function Decoration({ gx, gy, kind }: Deco) {
   const x = sx(gx, gy);
   const y = sy(gx, gy);
-  const shadow = (rx: number, ry = rx * 0.4) => <ellipse cx={x + 4} cy={y + 2} rx={rx} ry={ry} fill="#1d3b12" opacity=".25" />;
+  const shadow = (rx: number, ry = rx * 0.4) => <ellipse cx={x + 4} cy={y + 2} rx={rx} ry={ry} fill="#1d3b12" opacity=".22" />;
+  if (kind in ART_SIZE) {
+    const size = ART_SIZE[kind as ArtKind];
+    return (
+      <g>
+        {shadow(size * 0.28)}
+        <image href={`/art/deco/${kind}.webp`} x={x - size / 2} y={y - size * 0.96} width={size} height={size} />
+      </g>
+    );
+  }
   switch (kind) {
-    case "tree":
-    case "ptree": {
-      const leaf = kind === "tree" ? "url(#iso-leaf)" : "url(#iso-leaf-purple)";
-      return (
-        <g>
-          {shadow(30)}
-          <rect x={x - 6} y={y - 34} width={12} height={34} rx={5} fill="#a66a3c" />
-          <circle cx={x - 18} cy={y - 50} r={22} fill={leaf} />
-          <circle cx={x + 18} cy={y - 52} r={22} fill={leaf} />
-          <circle cx={x} cy={y - 74} r={28} fill={leaf} />
-        </g>
-      );
-    }
-    case "pine":
-      return (
-        <g>
-          {shadow(24)}
-          <rect x={x - 5} y={y - 22} width={10} height={22} rx={4} fill="#8a5a33" />
-          {[0, 1, 2].map((i) => (
-            <path key={i} d={`M${x} ${y - 112 + i * 26} L${x + 30 - i * 3} ${y - 50 + i * 16} Q${x} ${y - 40 + i * 16} ${x - 30 + i * 3} ${y - 50 + i * 16} Z`} fill="url(#iso-pine)" />
-          )).reverse()}
-        </g>
-      );
-    case "rock":
-      return (
-        <g>
-          {shadow(24)}
-          <path d={`M${x - 26} ${y} q-6 -20 10 -30 q18 -12 34 2 q14 14 4 28 z`} fill="url(#iso-rock)" />
-          <path d={`M${x - 4} ${y - 2} q-2 -14 12 -18`} fill="none" stroke="#fff" strokeWidth={3} opacity=".6" />
-        </g>
-      );
-    case "mush":
-      return (
-        <g>
-          {shadow(16)}
-          <rect x={x - 5} y={y - 22} width={10} height={22} rx={5} fill="#fff4e0" />
-          <path d={`M${x - 20} ${y - 20} q20 -30 40 0 z`} fill="#ff5c8a" />
-          <circle cx={x - 6} cy={y - 28} r={3.5} fill="#fff" />
-          <circle cx={x + 7} cy={y - 26} r={3} fill="#fff" />
-          <rect x={x + 18} y={y - 12} width={6} height={12} rx={3} fill="#fff4e0" />
-          <path d={`M${x + 12} ${y - 11} q9 -14 18 0 z`} fill="#ff5c8a" />
-        </g>
-      );
     case "pond":
       return (
         <g>
@@ -389,59 +434,6 @@ function Decoration({ gx, gy, kind }: Deco) {
           <ellipse cx={x} cy={y} rx={52} ry={22} fill="#5fae3d" />
           <ellipse cx={x} cy={y + 3} rx={40} ry={15} fill="#3f7f2a" />
           <ellipse cx={x + 6} cy={y + 6} rx={26} ry={9} fill="#2f6420" />
-        </g>
-      );
-    case "logs":
-      return (
-        <g>
-          {shadow(30)}
-          {[0, 1].map((i) => (
-            <g key={i} transform={`translate(${i * 14} ${-i * 12})`}>
-              <rect x={x - 30} y={y - 16} width={50} height={16} rx={8} fill="#a66a3c" />
-              <ellipse cx={x + 20} cy={y - 8} rx={6} ry={8} fill="#e8c08f" />
-            </g>
-          ))}
-        </g>
-      );
-    case "flowers":
-      return (
-        <g>
-          {[
-            [-14, -2],
-            [6, 4],
-            [18, -6],
-            [-2, -10],
-          ].map(([dx, dy], i) => (
-            <g key={i}>
-              <circle cx={x + dx} cy={y + dy} r={5} fill="#fff" />
-              <circle cx={x + dx} cy={y + dy} r={2} fill="#ffc61a" />
-            </g>
-          ))}
-        </g>
-      );
-    case "ufo":
-      return (
-        <g className="mc-bob">
-          {shadow(32, 10)}
-          <path d={`M${x - 16} ${y - 74} L${x - 34} ${y - 4} L${x + 34} ${y - 4} L${x + 16} ${y - 74} Z`} fill="#fff3a0" opacity=".35" />
-          <ellipse cx={x} cy={y - 92} rx={20} ry={18} fill="#bfeaff" opacity=".9" />
-          <ellipse cx={x - 6} cy={y - 98} rx={6} ry={4} fill="#fff" opacity=".8" />
-          <ellipse cx={x} cy={y - 80} rx={46} ry={14} fill="url(#iso-metal)" />
-          {[-28, -10, 10, 28].map((dx, i) => (
-            <circle key={dx} cx={x + dx} cy={y - 77 + Math.abs(dx) / 8} r={4} fill={["#ffe066", "#e53fd6", "#5cd23c", "#00d1c1"][i]} />
-          ))}
-        </g>
-      );
-    case "rocket":
-      return (
-        <g>
-          {shadow(26)}
-          <path d={`M${x - 24} ${y - 6} L${x - 16} ${y - 38} L${x - 8} ${y - 10} Z`} fill="#ef476f" />
-          <path d={`M${x + 24} ${y - 6} L${x + 16} ${y - 38} L${x + 8} ${y - 10} Z`} fill="#c8143c" />
-          <path d={`M${x} ${y - 120} C${x + 22} ${y - 100} ${x + 22} ${y - 40} ${x + 14} ${y - 10} L${x - 14} ${y - 10} C${x - 22} ${y - 40} ${x - 22} ${y - 100} ${x} ${y - 120} Z`} fill="url(#iso-metal)" />
-          <path d={`M${x} ${y - 120} C${x + 10} ${y - 112} ${x + 16} ${y - 102} ${x + 18} ${y - 92} L${x - 18} ${y - 92} C${x - 16} ${y - 102} ${x - 10} ${y - 112} ${x} ${y - 120} Z`} fill="#ef476f" />
-          <circle cx={x} cy={y - 68} r={9} fill="#4cc9f0" stroke="#fff" strokeWidth={3} />
-          <path d={`M${x - 8} ${y - 10} Q${x} ${y + 14} ${x + 8} ${y - 10} Z`} fill="#ffc61a" />
         </g>
       );
     case "sign":
