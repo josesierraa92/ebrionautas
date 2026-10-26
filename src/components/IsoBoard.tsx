@@ -35,9 +35,24 @@ type Props = {
   winner?: string | null;
   shown?: Record<string, number>;
   flying?: string | null;
+  /** Ficha a la que se acerca la cámara mientras avanza (zoom); null = tablero entero. */
+  focus?: string | null;
 };
 
-export default function IsoBoard({ players, current, winner, shown, flying }: Props) {
+const ZOOM = 1.8;
+
+/** Transformación de cámara: acerca el tablero a `ZOOM` centrado en (x, y), sin salirse de la vista. */
+function camera(x: number, y: number) {
+  const halfW = VIEW.w / (2 * ZOOM);
+  const halfH = VIEW.h / (2 * ZOOM);
+  const fx = Math.min(Math.max(x, VIEW.x + halfW), VIEW.x + VIEW.w - halfW);
+  const fy = Math.min(Math.max(y, VIEW.y + halfH), VIEW.y + VIEW.h - halfH);
+  const tx = VIEW.x + VIEW.w / 2 - ZOOM * fx;
+  const ty = VIEW.y + VIEW.h / 2 - ZOOM * fy;
+  return `translate(${tx}px, ${ty}px) scale(${ZOOM})`;
+}
+
+export default function IsoBoard({ players, current, winner, shown, flying, focus }: Props) {
   const at = (p: Player) => shown?.[p.id] ?? p.pos;
 
   // Todo lo que va "de pie" se ordena por profundidad para que lo de delante tape a lo de atrás.
@@ -96,15 +111,27 @@ export default function IsoBoard({ players, current, winner, shown, flying }: Pr
   }
   standing.sort((a, b) => a.d - b.d);
 
+  const focused = players.find((p) => p.id === focus);
+  const cam = focused ? isoPos(at(focused)) : null;
+
   return (
     <svg viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`} className="h-full w-full" role="img" aria-label="Tablero">
       <Defs />
-      <Island />
-      {BOARD.map((t) => (t.type === "META" ? null : <TileSlab key={t.n} tile={t} />))}
-      <MothershipGoal />
-      {standing.map((s) => (
-        <g key={s.key}>{s.el}</g>
-      ))}
+      <g
+        style={{
+          transformBox: "view-box",
+          transformOrigin: "0 0",
+          transform: cam ? camera(sx(cam.gx, cam.gy), sy(cam.gx, cam.gy) - 50) : "none",
+          transition: "transform .8s ease-in-out",
+        }}
+      >
+        <Island />
+        {BOARD.map((t) => (t.type === "META" ? null : <TileSlab key={t.n} tile={t} />))}
+        <MothershipGoal />
+        {standing.map((s) => (
+          <g key={s.key}>{s.el}</g>
+        ))}
+      </g>
     </svg>
   );
 }
@@ -207,24 +234,12 @@ function TileSlab({ tile }: { tile: Tile }) {
   const top = colored ? lighten(s.bg[0], 0.15) : "#fbf4e6";
   const side = colored ? lighten(s.bg[1], -0.15) : "#d8c8ab";
   const d = planeRect(gx - 0.43, gy - 0.43, gx + 0.43, gy + 0.43, 0.16);
-  const darkText = colored ? !s.dark : true;
   return (
     <g transform={`translate(0 ${-TILE_T})`}>
       <path d={d} transform={PLANE(TILE_T + 6)} fill="#2d5a1c" opacity=".22" />
       <Slab d={d} top={top} side={side} thickness={TILE_T} />
       {/* brillo en el borde de arriba */}
       <path d={planeRect(gx - 0.36, gy - 0.4, gx + 0.36, gy - 0.3, 0.05)} transform={PLANE(0)} fill="#fff" opacity=".35" />
-      <text
-        transform={`matrix(0.5 0.25 -0.5 0.25 ${sx(gx, gy)} ${sy(gx, gy)})`}
-        x={-30}
-        y={-10}
-        fontFamily="var(--font-lilita), sans-serif"
-        fontSize={30}
-        fill={darkText ? "#5b4a3a" : "#ffffff"}
-        opacity=".9"
-      >
-        {tile.n}
-      </text>
     </g>
   );
 }
@@ -239,6 +254,10 @@ function TileIcon({ tile }: { tile: Tile }) {
       <ellipse cx={x + 2} cy={y + 2} rx={15} ry={6} fill="#000" opacity=".15" />
       <text x={x} y={y - 6} textAnchor="middle" fontSize={34} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,.25))" }}>
         {TILE_STYLE[tile.type].icon}
+      </text>
+      {/* número de la casilla, de pie en el borde delantero para que el ícono no lo tape */}
+      <text x={x} y={y + 18} textAnchor="middle" fontFamily="var(--font-lilita), sans-serif" fontSize={14} fill="#ffffff" stroke="#1b1f4b" strokeWidth={4} paintOrder="stroke">
+        {tile.n}
       </text>
     </g>
   );

@@ -10,6 +10,7 @@ const DICE_MS = 750; // el dado rueda
 const STEP_MS = 230; // la ficha salta de casilla en casilla
 const FLY_MS = 650; // vuelo de la Oca, agujero negro, resbalón…
 const BANNER_MS = 1800;
+const FOCUS_MS = 2200; // cuánto se queda el zoom sobre la ficha después de caer
 
 export type Banner = { key: number; title: string; emoji: string; color: string };
 export type DiceFx = { key: number; value: number; rolling: boolean };
@@ -62,6 +63,9 @@ export function useGameFx(game: GameState | null) {
   // false mientras la ficha se mueve: la tarjeta grande de la TV espera a que termine.
   const [settled, setSettled] = useState(true);
   const [landed, setLanded] = useState<Landed | null>(null);
+  // Ficha a la que se acerca la cámara mientras se mueve.
+  const [focus, setFocus] = useState<string | null>(null);
+  const focusKey = useRef(0);
   const prev = useRef<GameState | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   // Los que esconden el dado y los títulos no se cancelan con una jugada nueva: si no, se quedarían pegados.
@@ -116,6 +120,8 @@ export function useGameFx(game: GameState | null) {
           ? { good: false, title: jail.title, text: jail.text, drinks: jail.drinks }
           : undefined;
       setLanded({ key, n, playerId: mover?.id ?? roller.id, result });
+      setFocus(mover?.id ?? roller.id);
+      focusKey.current = key;
       if (result) {
         const bkey = ++seq.current;
         at(t, () => {
@@ -184,6 +190,11 @@ export function useGameFx(game: GameState | null) {
     at(t, () => setShown(target));
     // Margen para que se lea el título de la casilla antes de la tarjeta.
     at(t + (t > 0 ? 900 : 0), () => setSettled(true));
+    // Tras caer, la cámara se queda un momento cerca de la ficha y vuelve a enseñar todo el tablero.
+    if (rolled) {
+      const key = focusKey.current;
+      later(t + FOCUS_MS, () => focusKey.current === key && setFocus(null));
+    }
 
     function showEvent(tile: Tile) {
       const ev = EVENTS[tile.type];
@@ -204,5 +215,5 @@ export function useGameFx(game: GameState | null) {
     [],
   );
 
-  return { shown, flying, dice, banner, settled, landed };
+  return { shown, flying, dice, banner, settled, landed, focus };
 }
