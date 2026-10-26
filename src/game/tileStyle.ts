@@ -22,6 +22,11 @@ export const TILE_STYLE: Record<Tile["type"], { icon: string; bg: [string, strin
   RETO: { icon: "🎤", bg: ["#6fdcff", "#0094d4"], dark: false, label: "" },
 };
 
+/** Ilustración de cada tipo de casilla (generada con IA: `scripts/gen-art.py`, en `public/art/`). */
+export function tileArt(type: Tile["type"]): string {
+  return `/art/${type.toLowerCase()}.webp`;
+}
+
 /** Nombre corto para mostrar en la casilla. */
 export function tileLabel(tile: Tile): string {
   return "title" in tile ? tile.title : TILE_STYLE[tile.type].label;

@@ -3,7 +3,7 @@ import { avatarOf, expressionFor } from "@/game/avatar";
 import { BOARD, type Tile } from "@/game/board";
 import type { Player } from "@/game/engine";
 import { ISO_COLS, ISO_ROWS, isoPos } from "@/game/isoPath";
-import { TILE_STYLE } from "@/game/tileStyle";
+import { TILE_STYLE, tileArt } from "@/game/tileStyle";
 
 // Tablero isométrico 2.5D: dibujos planos con volumen (losas con canto,
 // sombras suaves, árboles redondeados) sobre una isla de césped flotando en el
@@ -251,10 +251,8 @@ function TileIcon({ tile }: { tile: Tile }) {
   const y = sy(gx, gy) - TILE_T;
   return (
     <g>
-      <ellipse cx={x + 2} cy={y + 2} rx={15} ry={6} fill="#000" opacity=".15" />
-      <text x={x} y={y - 6} textAnchor="middle" fontSize={34} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,.25))" }}>
-        {TILE_STYLE[tile.type].icon}
-      </text>
+      <ellipse cx={x + 2} cy={y + 2} rx={17} ry={6} fill="#000" opacity=".18" />
+      <image href={tileArt(tile.type)} x={x - 30} y={y - 54} width={60} height={60} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,.25))" }} />
       {/* número de la casilla, de pie en el borde delantero para que el ícono no lo tape */}
       <text x={x} y={y + 18} textAnchor="middle" fontFamily="var(--font-lilita), sans-serif" fontSize={14} fill="#ffffff" stroke="#1b1f4b" strokeWidth={4} paintOrder="stroke">
         {tile.n}

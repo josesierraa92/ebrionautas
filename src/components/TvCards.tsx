@@ -4,7 +4,7 @@ import { avatarOf, expressionFor } from "@/game/avatar";
 import { getTile } from "@/game/board";
 import { currentPlayer, type Decision, type GameState } from "@/game/engine";
 import { tileRule } from "@/game/rules";
-import { TILE_STYLE } from "@/game/tileStyle";
+import { TILE_STYLE, tileArt } from "@/game/tileStyle";
 import type { Landed } from "@/lib/useGameFx";
 
 /** Título y texto de lo que se está decidiendo, para leerlo en la TV. */
@@ -60,21 +60,21 @@ export function cardContent(game: GameState, n: number, playerId: string, result
   // Retos y exámenes llevan su texto concreto (categoría, trabalenguas…) en la decisión.
   const rule = result ?? (decision?.kind === "SELECT_DRINKERS" ? { title: decision.title, text: decision.text } : tileRule(n, game, playerId));
   const drinks = decision?.kind === "SELECT_DRINKERS" ? decision.drinks : result && !result.good && !result.icon ? (result.drinks ?? 1) : null;
-  return { player, style, decision, rule, drinks };
+  // Encabezado claro (dado, gasolinera…): el texto pequeño va oscuro para que se lea.
+  const light = !result && !TILE_STYLE[getTile(n).type].dark;
+  return { player, style, decision, rule, drinks, light };
 }
 
 export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
-  const { player, style, decision, rule, drinks } = cardContent(game, n, playerId, result);
+  const { player, style, decision, rule, drinks, light } = cardContent(game, n, playerId, result);
   return (
     // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.
     <div className="pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]">
       <div key={cardKey} className="card-pop w-full overflow-hidden rounded-[1.2rem] border-[3px] border-ink bg-[#fbf3e4] shadow-[0_6px_0_#1b1f4b]">
         <div className="flex items-center gap-[1cqw] px-[1.3cqw] py-[0.7cqw]" style={{ background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}>
-          <span className="leading-none drop-shadow-[0_3px_0_rgba(0,0,0,.3)]" style={{ fontSize: "2.8cqw" }}>
-            {style.icon}
-          </span>
+          <img src={tileArt(getTile(n).type)} alt="" className="h-auto shrink-0 drop-shadow-[0_3px_0_rgba(0,0,0,.3)]" style={{ width: "4.5cqw" }} />
           <div className="min-w-0">
-            <p className="font-display text-white/90 drop-shadow-[0_2px_0_rgba(0,0,0,.35)]" style={{ fontSize: "0.95cqw" }}>
+            <p className={`font-display ${light ? "text-ink/70" : "text-white/90 drop-shadow-[0_2px_0_rgba(0,0,0,.35)]"}`} style={{ fontSize: "0.95cqw" }}>
               Casilla {n}
             </p>
             <h2 className="banner-text-sm font-display leading-tight text-white" style={{ fontSize: "1.8cqw" }}>
@@ -110,13 +110,13 @@ export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
 
 /** La misma tarjeta, en grande para leerla en el celular. */
 export function PhoneRuleCard({ game, n, playerId, cardKey, result }: Props) {
-  const { player, style, rule, drinks } = cardContent(game, n, playerId, result);
+  const { player, style, rule, drinks, light } = cardContent(game, n, playerId, result);
   return (
     <div key={cardKey} className="card-pop w-full overflow-hidden rounded-2xl border-[3px] border-ink bg-[#fbf3e4] text-left shadow-[0_5px_0_#1b1f4b]">
       <div className="flex items-center gap-3 px-3 py-2" style={{ background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}>
-        <span className="text-4xl leading-none drop-shadow-[0_2px_0_rgba(0,0,0,.3)]">{style.icon}</span>
+        <img src={tileArt(getTile(n).type)} alt="" className="h-14 w-14 shrink-0 drop-shadow-[0_2px_0_rgba(0,0,0,.3)]" />
         <div className="min-w-0">
-          <p className="font-display text-xs text-white/90 drop-shadow-[0_1px_0_rgba(0,0,0,.35)]">
+          <p className={`font-display text-xs ${light ? "text-ink/70" : "text-white/90 drop-shadow-[0_1px_0_rgba(0,0,0,.35)]"}`}>
             Casilla {n} · {player.name}
           </p>
           <h3 className="banner-text-sm font-display text-2xl leading-tight text-white">{rule.title}</h3>

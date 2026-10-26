@@ -48,9 +48,13 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center bg-[radial-gradient(circle,rgba(255,255,255,.75)_0%,rgba(255,255,255,.35)_45%,transparent_72%)]">
       <div key={banner.key} className="banner-pop flex flex-col items-center gap-[2%] px-[4%] text-center">
-        <span className="leading-none" style={{ fontSize: "16cqw" }}>
-          {banner.emoji}
-        </span>
+        {banner.art ? (
+          <img src={banner.art} alt="" className="h-auto drop-shadow-[0_8px_0_rgba(0,0,0,.3)]" style={{ width: "20cqw" }} />
+        ) : (
+          <span className="leading-none" style={{ fontSize: "16cqw" }}>
+            {banner.emoji}
+          </span>
+        )}
         <span
           className="banner-text font-display leading-none"
           style={{ fontSize: "8.5cqw", color: banner.color }}

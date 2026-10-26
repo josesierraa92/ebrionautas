@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { LAST_TILE, type GameState } from "@/game/engine";
 import { getTile, type Tile } from "@/game/board";
 import { duelOutcome, jailOutcome, mazeOutcome } from "@/game/rules";
+import { tileArt } from "@/game/tileStyle";
 import { sfx } from "./sfx";
 
 const DICE_MS = 450; // el dado rueda
@@ -11,7 +12,7 @@ const STEP_MS = 140; // la ficha salta de casilla en casilla
 const FLY_MS = 450; // vuelo de la Oca, agujero negro, resbalón…
 const BANNER_MS = 1200;
 
-export type Banner = { key: number; title: string; emoji: string; color: string };
+export type Banner = { key: number; title: string; emoji: string; color: string; art?: string };
 export type DiceFx = { key: number; value: number; rolling: boolean };
 /**
  * Casilla donde acaba de caer alguien (para la tarjeta que explica la regla). Se queda
@@ -193,7 +194,7 @@ export function useGameFx(game: GameState | null) {
       if (!ev) return sfx.land();
       const key = ++seq.current;
       setDice(null); // que el título no quede encima del dado
-      setBanner({ key, title: ev.title, emoji: ev.emoji, color: ev.color });
+      setBanner({ key, title: ev.title, emoji: ev.emoji, color: ev.color, art: tileArt(tile.type) });
       sfx[ev.sound]();
       later(BANNER_MS, () => setBanner((b) => (b?.key === key ? null : b)));
     }

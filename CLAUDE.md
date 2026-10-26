@@ -42,8 +42,11 @@ léelo antes de implementar algo nuevo.
   `useGameFx`; antes de la primera tirada, al jugador de turno). El usuario no quiere que se aleje. Animaciones rápidas. Cada losa lleva su número de pie en el borde delantero.
 - `src/game/isoPath.ts`: recorrido de las 62 casillas (4 tramos de 14 + conectores de 2). `src/components/BoardStage.tsx`
   pinta encima el dado y los títulos (`src/components/Fx.tsx`).
-- Los íconos de las casillas son emojis por ahora; el plan es sustituirlos por ilustraciones generadas con IA
-  (Cloudflare Workers AI, variables `CLOUDFLARE_ACCOUNT_ID` y `CLOUDFLARE_API_TOKEN`).
+- Los íconos de las casillas son ilustraciones generadas con IA (`public/art/<tipo>.webp`, `tileArt()` en
+  `src/game/tileStyle.ts`), usadas en el tablero, las tarjetas y los títulos grandes. Se regeneran con
+  `python3 scripts/gen-art.py [ids]` (Cloudflare Workers AI, FLUX schnell): necesita `CLOUDFLARE_ACCOUNT_ID` y el token
+  como network secret de `api.cloudflare.com`. El filtro NSFW de Cloudflare rechaza a veces prompts inocentes
+  (armas, "fiery"…): cambiar el texto y repetir.
 - `src/lib/useGameFx.ts`: a partir de los cambios de estado anima el dado (`rollSeq`), el paso a paso de
   la ficha, vuelos (Oca, agujero negro…), títulos grandes y dispara los sonidos (`src/lib/sfx.ts`, Web Audio
   sintetizado, sin archivos).
