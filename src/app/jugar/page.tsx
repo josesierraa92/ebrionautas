@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import Board from "@/components/Board";
-import { BannerOverlay, Confetti, DiceOverlay } from "@/components/Fx";
+import BoardStage from "@/components/BoardStage";
+import { Confetti } from "@/components/Fx";
 import DecisionPanel from "@/components/DecisionPanel";
 import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
@@ -73,12 +73,13 @@ export default function JugarPage() {
           </button>
         </div>
         {game.rule && <RuleBanner text={game.rule.text} />}
-        <div className="mx-auto w-full" style={{ maxWidth: "calc(100dvh - 7rem)" }}>
-          <Board players={game.players} current={me.id} winner={game.winner} shown={fx.shown} flying={fx.flying}>
-            <DiceOverlay dice={fx.dice} />
-            <BannerOverlay banner={fx.banner} />
-          </Board>
-        </div>
+        <BoardStage
+          players={game.players}
+          current={me.id}
+          winner={game.winner}
+          fx={fx}
+          className="aspect-[4/3] lg:aspect-auto lg:h-[calc(100dvh-5.5rem)]"
+        />
         {winner && <Confetti />}
       </section>
 

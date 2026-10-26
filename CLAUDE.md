@@ -30,10 +30,16 @@ léelo antes de implementar algo nuevo.
   `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` o `KV_REST_API_URL`/`KV_REST_API_TOKEN`.
   Sin ellas, en desarrollo usa memoria (las mesas se pierden al reiniciar).
 
-## Tablero, animaciones y sonido (Fase 6)
+## Tablero 3D, animaciones y sonido
 
-- `src/game/spiral.ts`: tablero en espiral de 9×9 (salida abajo a la izquierda, la 62 ocupa el centro).
-- `src/components/Board.tsx`: casillas + capa de fichas (marcianos) posicionadas por % y animadas con transiciones.
+- La TV y `/jugar` usan el **tablero 3D** estilo "Monopoly online": `src/components/Board3D.tsx`
+  (Three.js con React Three Fiber + Drei), cargado sin SSR por `src/components/BoardStage.tsx`, que
+  además pinta encima el dado y los títulos (`src/components/Fx.tsx`).
+- `src/game/ringPath.ts`: las 62 casillas en anillo (lados de 15 y 14 + 4 esquinas; la 62 es una
+  esquina, justo antes de la salida). `CameraRig` encuadra el tablero según la proporción de la pantalla.
+- Las texturas de las casillas se dibujan en un canvas (por ahora con emojis); el plan es sustituirlas
+  por ilustraciones generadas con IA.
 - `src/lib/useGameFx.ts`: a partir de los cambios de estado anima el dado (`rollSeq`), el paso a paso de
   la ficha, vuelos (Oca, agujero negro…), títulos grandes y dispara los sonidos (`src/lib/sfx.ts`, Web Audio
-  sintetizado, sin archivos). Capas visuales en `src/components/Fx.tsx`. Se usa en la TV y en `/jugar`.
+  sintetizado, sin archivos).
+- El celular de control sigue usando el tablero 2D en espiral (`src/components/Board.tsx`, `src/game/spiral.ts`).

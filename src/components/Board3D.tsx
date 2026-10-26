@@ -1,8 +1,8 @@
 "use client";
 
 import { ContactShadows, RoundedBox } from "@react-three/drei";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { avatarOf } from "@/game/avatar";
 import { BOARD, type Tile } from "@/game/board";
@@ -13,11 +13,19 @@ import { TILE_STYLE, tileLabel } from "@/game/tileStyle";
 // Tablero 3D estilo "Monopoly online": anillo de casillas con colores pastel,
 // plaza central decorada, luz suave con sombras y marcianos 3D como fichas.
 
-type Props = { players: Player[]; current: string; shown?: Record<string, number> };
+type Props = {
+  players: Player[];
+  current: string;
+  winner?: string | null;
+  /** Posición mostrada de cada ficha (la animación va por detrás de la posición real). */
+  shown?: Record<string, number>;
+  /** Ficha que va volando (Oca, agujero negro…): salta en arco. */
+  flying?: string | null;
+};
 
-export default function Board3D({ players, current, shown }: Props) {
+export default function Board3D({ players, current, winner, shown, flying }: Props) {
   return (
-    <Canvas shadows camera={{ position: [0, 21, 15], fov: 44 }} onCreated={({ camera }) => camera.lookAt(0, 0, 1.4)} dpr={[1, 2]} gl={{ antialias: true }}>
+    <Canvas shadows camera={{ position: [0, 21, 15], fov: 40 }} dpr={[1, 1.75]} gl={{ antialias: true }}>
       <color attach="background" args={["#f3e3f7"]} />
       <hemisphereLight args={["#ffffff", "#d9b8e6", 1.1]} />
       <directionalLight
@@ -31,20 +39,53 @@ export default function Board3D({ players, current, shown }: Props) {
         shadow-camera-bottom={-16}
         shadow-bias={-0.0005}
       />
+      <CameraRig />
+      <Ground />
       <group>
-        <Ground />
         <BoardBase />
         {RING.map((t) => (
           <TileMesh key={t.n} ring={t} tile={BOARD[t.n - 1]} />
         ))}
         <Plaza />
         {players.map((p, i) => (
-          <Alien3D key={p.id} player={p} index={i} pos={shown?.[p.id] ?? p.pos} players={players} shown={shown} active={p.id === current} />
+          <Alien3D
+            key={p.id}
+            player={p}
+            index={i}
+            pos={shown?.[p.id] ?? p.pos}
+            players={players}
+            shown={shown}
+            active={p.id === current && !winner}
+            flying={p.id === flying}
+            winner={p.id === winner}
+          />
         ))}
-        <ContactShadows position={[0, 0.02, 0]} opacity={0.35} scale={40} blur={2.5} far={6} />
       </group>
+      <ContactShadows position={[0, 0.02, 0]} opacity={0.35} scale={40} blur={2.5} far={6} />
     </Canvas>
   );
+}
+
+const ELEVATION = (58 * Math.PI) / 180; // inclinación de la cámara (como en los juegos de tablero online)
+
+/** Coloca la cámara para que el tablero llene la pantalla, sea cual sea su proporción. */
+function CameraRig() {
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const { width, height } = useThree((s) => s.size);
+  useLayoutEffect(() => {
+    const aspect = width / height;
+    const vfov = (camera.fov * Math.PI) / 180;
+    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
+    const halfW = (RING_W + 1) / 2;
+    // Fondo del tablero visto en perspectiva desde arriba en diagonal, más la altura de la Tierra y el OVNI.
+    const halfD = ((RING_D + 1) / 2) * Math.sin(ELEVATION) + 1.4 * Math.cos(ELEVATION);
+    // La fila de delante queda más cerca de la cámara y se ve más grande: margen extra.
+    const dist = Math.max(halfW / Math.tan(hfov / 2) + (RING_D / 2) * Math.cos(ELEVATION), halfD / Math.tan(vfov / 2)) * 1.12;
+    camera.position.set(0, Math.sin(ELEVATION) * dist, Math.cos(ELEVATION) * dist + 0.6);
+    camera.lookAt(0, 0, 0.6);
+    camera.updateProjectionMatrix();
+  }, [camera, width, height]);
+  return null;
 }
 
 const PASTEL: Record<Tile["type"], string> = {
@@ -333,7 +374,25 @@ function tokenTarget(pos: number, id: string, players: Player[], shown?: Record<
 }
 
 /** Marciano 3D: cuerpo de gomita, ojos grandes, antenas y patitas. */
-function Alien3D({ player, pos, players, shown, active, index }: { player: Player; pos: number; players: Player[]; shown?: Record<string, number>; active: boolean; index: number }) {
+function Alien3D({
+  player,
+  pos,
+  players,
+  shown,
+  active,
+  flying,
+  winner,
+  index,
+}: {
+  player: Player;
+  pos: number;
+  players: Player[];
+  shown?: Record<string, number>;
+  active: boolean;
+  flying: boolean;
+  winner: boolean;
+  index: number;
+}) {
   const ref = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
   const color = avatarOf(player).skin;
@@ -345,13 +404,13 @@ function Alien3D({ player, pos, players, shown, active, index }: { player: Playe
     // Se desliza hacia su casilla dando saltitos.
     const dist = g.position.distanceTo(target);
     g.position.lerp(target, Math.min(1, dt * 7));
-    const hop = dist > 0.05 ? Math.abs(Math.sin(t * 14)) * 0.35 : active ? Math.abs(Math.sin(t * 5)) * 0.25 : 0;
+    // Volando: arco alto que baja al acercarse; caminando: saltitos; en su turno: bota en el sitio.
+    const hop = flying && dist > 0.05 ? Math.min(2.2, dist * 0.45) : dist > 0.05 ? Math.abs(Math.sin(t * 14)) * 0.35 : active || winner ? Math.abs(Math.sin(t * 5)) * (winner ? 0.5 : 0.25) : 0;
     if (body.current) {
       body.current.position.y = hop;
       body.current.scale.y = 1 + Math.sin(t * 2.4) * 0.03;
     }
-    // Mira hacia la cámara (que está "delante" del tablero girado 45°).
-    g.rotation.y = 0;
+    g.rotation.y = winner ? t * 3 : flying && dist > 0.05 ? g.rotation.y + dt * 10 : 0;
   });
   return (
     <group ref={ref} position={target} scale={1.55}>

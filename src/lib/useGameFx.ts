@@ -54,6 +54,8 @@ export function useGameFx(game: GameState | null) {
   const [banner, setBanner] = useState<Banner | null>(null);
   const prev = useRef<GameState | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // Los que esconden el dado y los títulos no se cancelan con una jugada nueva: si no, se quedarían pegados.
+  const hideTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const seq = useRef(0);
 
   useEffect(() => {
@@ -72,6 +74,7 @@ export function useGameFx(game: GameState | null) {
     timers.current.forEach(clearTimeout);
     timers.current = [];
     const at = (ms: number, fn: () => void) => timers.current.push(setTimeout(fn, ms));
+    const later = (ms: number, fn: () => void) => hideTimers.current.push(setTimeout(fn, ms));
     const startFrom = Object.fromEntries(before.players.map((p) => [p.id, p.pos]));
     setShown(startFrom);
     setFlying(null);
@@ -82,8 +85,8 @@ export function useGameFx(game: GameState | null) {
       const key = ++seq.current;
       setDice({ key, value: game.lastRoll!, rolling: true });
       sfx.dice();
-      at(DICE_MS, () => setDice({ key, value: game.lastRoll!, rolling: false }));
-      at(DICE_MS + 900, () => setDice((d) => (d?.key === key ? null : d)));
+      later(DICE_MS, () => setDice((d) => (d?.key === key ? { key, value: game.lastRoll!, rolling: false } : d)));
+      later(DICE_MS + 900, () => setDice((d) => (d?.key === key ? null : d)));
       t = DICE_MS + 150;
     }
 
@@ -128,7 +131,7 @@ export function useGameFx(game: GameState | null) {
         setBanner({ key, title: `¡${w.name.toUpperCase()} GANA!`, emoji: "🏆", color: "#ffc61a" });
         sfx.win();
       });
-      at(t + 200 + BANNER_MS * 2, () => setBanner((b) => (b?.key === key ? null : b)));
+      later(t + 200 + BANNER_MS * 2, () => setBanner((b) => (b?.key === key ? null : b)));
     }
 
     at(t, () => setShown(target));
@@ -140,11 +143,17 @@ export function useGameFx(game: GameState | null) {
       setDice(null); // que el título no quede encima del dado
       setBanner({ key, title: ev.title, emoji: ev.emoji, color: ev.color });
       sfx[ev.sound]();
-      at(BANNER_MS, () => setBanner((b) => (b?.key === key ? null : b)));
+      later(BANNER_MS, () => setBanner((b) => (b?.key === key ? null : b)));
     }
   }, [game]);
 
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  useEffect(
+    () => () => {
+      timers.current.forEach(clearTimeout);
+      hideTimers.current.forEach(clearTimeout);
+    },
+    [],
+  );
 
   return { shown, flying, dice, banner };
 }

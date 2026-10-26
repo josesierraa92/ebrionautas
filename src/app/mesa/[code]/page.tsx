@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import { use, useEffect, useState } from "react";
-import Board from "@/components/Board";
-import { BannerOverlay, Confetti, DiceOverlay } from "@/components/Fx";
+import BoardStage from "@/components/BoardStage";
+import { Confetti } from "@/components/Fx";
 import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
 import RuleBanner from "@/components/RuleBanner";
@@ -93,13 +93,13 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
           </span>
         </div>
         {game.rule && <RuleBanner text={game.rule.text} />}
-        {/* El tablero es cuadrado: que quepa entero en el alto de la TV. */}
-        <div className="mx-auto w-full" style={{ maxWidth: "calc(100dvh - 8rem)" }}>
-          <Board players={game.players} current={me.id} winner={game.winner} shown={fx.shown} flying={fx.flying}>
-            <DiceOverlay dice={fx.dice} />
-            <BannerOverlay banner={fx.banner} />
-          </Board>
-        </div>
+        <BoardStage
+          players={game.players}
+          current={me.id}
+          winner={game.winner}
+          fx={fx}
+          className={`aspect-[16/10] lg:aspect-auto ${game.rule ? "lg:h-[calc(100dvh-9.5rem)]" : "lg:h-[calc(100dvh-5.5rem)]"}`}
+        />
         {winner && <Confetti />}
       </section>
       <aside className="flex flex-col gap-4 lg:w-[28rem]">

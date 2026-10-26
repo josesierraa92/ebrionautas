@@ -46,7 +46,7 @@ export function DiceOverlay({ dice }: { dice: DiceFx | null }) {
 export function BannerOverlay({ banner }: { banner: Banner | null }) {
   if (!banner) return null;
   return (
-    <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center bg-[radial-gradient(circle,rgba(13,11,42,.85)_0%,rgba(13,11,42,.55)_45%,transparent_75%)]">
+    <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center bg-[radial-gradient(circle,rgba(255,255,255,.75)_0%,rgba(255,255,255,.35)_45%,transparent_72%)]">
       <div key={banner.key} className="banner-pop flex flex-col items-center gap-[2%] px-[4%] text-center">
         <span className="leading-none" style={{ fontSize: "16cqw" }}>
           {banner.emoji}
