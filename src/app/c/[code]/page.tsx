@@ -144,7 +144,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
             game.decision && (
               // fieldset deshabilitado: evita enviar la misma jugada dos veces mientras llega la respuesta
               <fieldset disabled={busy} className="contents">
-                <DecisionPanel key={game.decisionSeq} decision={game.decision} me={me} players={game.players} onAction={act} />
+                <DecisionPanel key={game.decisionSeq} decision={game.decision} me={me} players={game.players} onAction={act} compact />
               </fieldset>
             )
           }

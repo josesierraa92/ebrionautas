@@ -8,10 +8,11 @@ type Props = {
   me: Player;
   players: Player[];
   onAction: (a: Action) => void;
+  compact?: boolean;
 };
 
 /** UI de cada decisión pendiente. Se monta con key distinta por decisión para reiniciar su estado. */
-export default function DecisionPanel({ decision, me, players, onAction }: Props) {
+export default function DecisionPanel({ decision, me, players, onAction, compact = false }: Props) {
   const others = players.filter((p) => p.id !== me.id);
 
   switch (decision.kind) {
@@ -34,8 +35,8 @@ export default function DecisionPanel({ decision, me, players, onAction }: Props
     case "SELECT_DRINKERS":
       return (
         <PickPlayers
-          title={decision.title}
-          text={`${decision.text} Marca quiénes beben ${decision.drinks}.`}
+          title={compact ? "¿Quién bebe?" : decision.title}
+          text={compact ? `Marca quiénes beben ${decision.drinks} ${decision.drinks === 1 ? "vaso" : "vasos"}:` : `${decision.text} Marca quiénes beben ${decision.drinks}.`}
           players={players}
           max={players.length}
           min={0}

@@ -116,15 +116,17 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
   }
 
   if (game.phase === "DECISION" && decision) {
+    const tileNumber = card?.n ?? me.pos;
+    const tilePlayerId = card?.playerId ?? me.id;
     return (
-      <div className="flex flex-1 flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={56} className="shrink-0" />
-          <div className="min-w-0">
-            <p className="text-sm text-white/70">Decide</p>
-            <h2 className="truncate font-display text-3xl">{me.name}</h2>
-          </div>
-        </div>
+      <div className="flex flex-1 flex-col gap-4">
+        <PhoneRuleCard
+          game={game}
+          n={tileNumber}
+          playerId={tilePlayerId}
+          cardKey={card?.key ?? (game.decisionSeq ?? tileNumber)}
+          result={card?.result}
+        />
         {decision}
       </div>
     );
@@ -132,9 +134,8 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
 
   return (
     <div className="flex flex-1 flex-col items-center justify-between gap-4 text-center">
-      {card && <PhoneRuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={card.result} />}
       <div className="flex items-center gap-3">
-        <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={card ? 60 : 84} animated />
+        <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={84} animated />
         <div className="min-w-0 text-left">
           <p className="font-display text-lg text-white/70">Le toca a</p>
           <h2 className="title-game max-w-full truncate text-5xl">{me.name.toUpperCase()}</h2>
@@ -147,7 +148,7 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
         aria-label={`Tirar el dado por ${me.name}`}
         className="grid place-items-center rounded-[2.5rem] p-2 outline-none focus-visible:ring-4 focus-visible:ring-btn-yellow"
       >
-        <Die value={busy ? face : (game.lastRoll ?? 6)} className={`${card ? "w-44" : "w-60"} ${busy ? "dice-tumble" : "dice-idle"}`} />
+        <Die value={busy ? face : (game.lastRoll ?? 6)} className={`w-60 ${busy ? "dice-tumble" : "dice-idle"}`} />
       </button>
 
       <div className="flex flex-col items-center gap-3">
