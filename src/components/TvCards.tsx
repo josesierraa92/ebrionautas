@@ -61,38 +61,39 @@ export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
   const rule = result ?? (decision?.kind === "SELECT_DRINKERS" ? { title: decision.title, text: decision.text } : tileRule(n, game, playerId));
   const drinks = decision?.kind === "SELECT_DRINKERS" ? decision.drinks : result && !result.good && !result.icon ? (result.drinks ?? 1) : null;
   return (
-    <div className="pointer-events-none absolute inset-0 z-40 grid place-items-center bg-ink/35 p-[3%]">
-      <div key={cardKey} className="card-pop w-[min(66%,52rem)] overflow-hidden rounded-[2rem] border-[5px] border-ink bg-[#fbf3e4] shadow-[0_10px_0_#1b1f4b]">
-        <div className="flex items-center gap-[2.5cqw] px-[3cqw] py-[1.5cqw]" style={{ background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}>
-          <span className="leading-none drop-shadow-[0_3px_0_rgba(0,0,0,.3)]" style={{ fontSize: "6cqw" }}>
+    // A un lado (sin oscurecer) para que se siga viendo el tablero y el avance de las fichas.
+    <div className="pointer-events-none absolute top-[12%] right-[1.5%] bottom-[3%] z-40 flex w-[31%] items-center">
+      <div key={cardKey} className="card-pop w-full overflow-hidden rounded-[1.6rem] border-[4px] border-ink bg-[#fbf3e4] shadow-[0_8px_0_#1b1f4b]">
+        <div className="flex items-center gap-[1.4cqw] px-[1.8cqw] py-[1.1cqw]" style={{ background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}>
+          <span className="leading-none drop-shadow-[0_3px_0_rgba(0,0,0,.3)]" style={{ fontSize: "4cqw" }}>
             {style.icon}
           </span>
           <div className="min-w-0">
-            <p className="font-display text-white/90 drop-shadow-[0_2px_0_rgba(0,0,0,.35)]" style={{ fontSize: "1.7cqw" }}>
+            <p className="font-display text-white/90 drop-shadow-[0_2px_0_rgba(0,0,0,.35)]" style={{ fontSize: "1.2cqw" }}>
               Casilla {n}
             </p>
-            <h2 className="banner-text font-display leading-none text-white" style={{ fontSize: "4cqw" }}>
+            <h2 className="banner-text font-display leading-none text-white" style={{ fontSize: "2.5cqw" }}>
               {rule.title}
             </h2>
           </div>
         </div>
-        <div className="flex flex-col gap-[1.3cqw] px-[3.5cqw] py-[2.2cqw] text-ink">
-          <p className="font-display leading-snug whitespace-pre-line" style={{ fontSize: "2.5cqw" }}>
+        <div className="flex flex-col gap-[1cqw] px-[1.8cqw] py-[1.4cqw] text-ink">
+          <p className="font-display leading-snug whitespace-pre-line" style={{ fontSize: "1.65cqw" }}>
             {rule.text}
           </p>
-          <div className="flex items-center justify-between gap-4" style={{ fontSize: "1.8cqw" }}>
+          <div className="flex items-center justify-between gap-4" style={{ fontSize: "1.4cqw" }}>
             <span className="flex items-center gap-[1cqw] font-display">
-              <Marciano avatar={avatarOf(player)} expression="feliz" size={40} className="h-auto w-[4cqw]" />
+              <Marciano avatar={avatarOf(player)} expression="feliz" size={40} className="h-auto w-[3cqw]" />
               {player.name}
             </span>
             {drinks !== null && (
-              <span className="rounded-full border-[3px] border-ink bg-btn-red px-[1.4cqw] py-[0.3cqw] font-display text-white">
+              <span className="rounded-full border-[3px] border-ink bg-btn-red px-[1cqw] py-[0.2cqw] font-display text-white">
                 🍷 {drinks} {drinks === 1 ? "vaso" : "vasos"}
               </span>
             )}
           </div>
           {decision && (
-            <p className="rounded-2xl bg-btn-yellow/30 px-[1.5cqw] py-[0.8cqw] text-center font-display" style={{ fontSize: "1.9cqw" }}>
+            <p className="rounded-2xl bg-btn-yellow/30 px-[1cqw] py-[0.6cqw] text-center font-display" style={{ fontSize: "1.4cqw" }}>
               📱 {decisionPrompt(decision, player.name)}
             </p>
           )}

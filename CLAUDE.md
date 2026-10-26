@@ -47,7 +47,8 @@ léelo antes de implementar algo nuevo.
   sintetizado, sin archivos).
 - TV: con "SOLO TABLERO" el marcador se oculta y el tablero ocupa toda la pantalla (se recuerda en esa TV);
   hay botón de pantalla completa. En una esquina, `TurnChip` muestra el turno y quién sacó cuánto en el dado.
-- Cada casilla donde cae alguien saca una tarjeta grande (`RuleCard` en `src/components/TvCards.tsx`) con
+- Cada casilla donde cae alguien saca una tarjeta a la derecha (`RuleCard` en `src/components/TvCards.tsx`; el
+  tablero se aparta a la izquierda con `BoardStage side` para que se vea el avance) con
   su regla explicada (`src/game/rules.ts`). Se queda hasta la siguiente tirada (para que dé tiempo a leerla);
   si hay que decidir, además dice qué marcar en el celular. Al tirar perdido en los asteroides sale el resultado
   (`mazeOutcome`: con 5 o 6 "¡Se salvó!", si no "¡Sigue perdido!" y bebe).
