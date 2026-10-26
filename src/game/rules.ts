@@ -5,6 +5,13 @@ import type { GameState } from "./engine";
 
 const vasos = (n: number) => `${n} ${n === 1 ? "vaso" : "vasos"}`;
 
+/** Resultado de tirar estando perdido en el Cinturón de asteroides: con 5 o 6 escapa, si no bebe. */
+export function mazeOutcome(name: string, roll: number): { escaped: boolean; title: string; text: string } {
+  return roll >= 5
+    ? { escaped: true, title: "¡Se salvó!", text: `${name} saca ${roll} y escapa del Cinturón de asteroides. No bebe y en su próximo turno vuelve a avanzar.` }
+    : { escaped: false, title: "¡Sigue perdido!", text: `${name} saca ${roll}: no es 5 ni 6. Bebe 1 vaso y sigue perdido entre asteroides.` };
+}
+
 /** Título y regla de la casilla `n` para el jugador `playerId`, con los datos de la partida. */
 export function tileRule(n: number, game: GameState, playerId: string): { title: string; text: string } {
   const tile = getTile(n);

@@ -48,7 +48,9 @@ léelo antes de implementar algo nuevo.
 - TV: con "SOLO TABLERO" el marcador se oculta y el tablero ocupa toda la pantalla (se recuerda en esa TV);
   hay botón de pantalla completa. En una esquina, `TurnChip` muestra el turno y quién sacó cuánto en el dado.
 - Cada casilla donde cae alguien saca una tarjeta grande (`RuleCard` en `src/components/TvCards.tsx`) con
-  su regla explicada (`src/game/rules.ts`); si hay que decidir, se queda hasta que el celular decida.
+  su regla explicada (`src/game/rules.ts`). Se queda hasta la siguiente tirada (para que dé tiempo a leerla);
+  si hay que decidir, además dice qué marcar en el celular. Al tirar perdido en los asteroides sale el resultado
+  (`mazeOutcome`: con 5 o 6 "¡Se salvó!", si no "¡Sigue perdido!" y bebe).
 - Lore: la tripulación se estrelló tras la fiesta y hay que llevarla (borracha) a la **Nave Nodriza** (casilla 62).
   Las "Ocas" son OVNIs teletransportadores 🛸. Nada de patos ni de "la Tierra" como meta.
 - El menú del celular usa el tablero 2D en espiral (`src/components/Board.tsx`, `src/game/spiral.ts`).

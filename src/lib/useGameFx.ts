@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LAST_TILE, type GameState } from "@/game/engine";
 import { getTile, type Tile } from "@/game/board";
+import { mazeOutcome } from "@/game/rules";
 import { sfx } from "./sfx";
 
 const DICE_MS = 750; // el dado rueda
@@ -12,10 +13,12 @@ const BANNER_MS = 1800;
 
 export type Banner = { key: number; title: string; emoji: string; color: string };
 export type DiceFx = { key: number; value: number; rolling: boolean };
-/** Casilla donde acaba de caer alguien (para la tarjeta que explica la regla). */
-export type Landed = { key: number; n: number; playerId: string };
-
-const INFO_MS = 9000; // cuánto se queda la tarjeta de la casilla si no hay que decidir nada
+/**
+ * Casilla donde acaba de caer alguien (para la tarjeta que explica la regla). Se queda
+ * hasta la siguiente tirada para que dé tiempo a leerla. `result`: lo que pasó al tirar
+ * sin moverse (p. ej. perdido en los asteroides: se salvó o bebe).
+ */
+export type Landed = { key: number; n: number; playerId: string; result?: { good: boolean; title: string; text: string } };
 
 /** Título grande y sonido según la casilla donde cae la ficha. */
 const EVENTS: Partial<Record<Tile["type"], { title: string; emoji: string; color: string; sound: keyof typeof sfx }>> = {
@@ -86,9 +89,6 @@ export function useGameFx(game: GameState | null) {
     setShown(startFrom);
     setFlying(null);
 
-    // Ya se decidió lo de la casilla: su tarjeta sobra.
-    if (before.decision && !game.decision) setLanded(null);
-
     setSettled(false);
     let t = 0;
     const rolled = (game.rollSeq ?? 0) > (before.rollSeq ?? 0) && game.lastRoll;
@@ -107,7 +107,19 @@ export function useGameFx(game: GameState | null) {
       const roller = before.players[before.turn];
       const key = ++seq.current;
       const n = mover ? (stepPath(startFrom[mover.id], game.lastRoll!).at(-1) ?? mover.pos) : roller.pos;
-      setLanded({ key, n, playerId: mover?.id ?? roller.id });
+      const maze = roller.status.laberinto ? mazeOutcome(roller.name, game.lastRoll!) : null;
+      const result = maze ? { good: maze.escaped, title: maze.title, text: maze.text } : undefined;
+      setLanded({ key, n, playerId: mover?.id ?? roller.id, result });
+      if (maze) {
+        const bkey = ++seq.current;
+        at(t, () => {
+          setDice(null);
+          setBanner(maze.escaped ? { key: bkey, title: "¡SE SALVÓ!", emoji: "✨", color: "#5cd23c" } : { key: bkey, title: "¡A BEBER!", emoji: "🍷", color: "#ffc61a" });
+          if (maze.escaped) sfx.fly();
+          else sfx.drink();
+        });
+        later(t + BANNER_MS, () => setBanner((b) => (b?.key === bkey ? null : b)));
+      }
     }
     if (mover) {
       const from = startFrom[mover.id];
@@ -133,9 +145,6 @@ export function useGameFx(game: GameState | null) {
         at(t + FLY_MS, () => setFlying(null));
         t += FLY_MS;
       }
-    } else if (rolled) {
-      // Tiró pero no se movió (perdido en los asteroides).
-      at(t, () => sfx.land());
     }
 
     // Alguien bebió: "glu-glu".
@@ -155,10 +164,6 @@ export function useGameFx(game: GameState | null) {
     at(t, () => setShown(target));
     // Margen para que se lea el título de la casilla antes de la tarjeta.
     at(t + (t > 0 ? 900 : 0), () => setSettled(true));
-    if (rolled) {
-      const key = seq.current;
-      later(t + 900 + INFO_MS, () => setLanded((l) => (l && l.key <= key ? null : l)));
-    }
 
     function showEvent(tile: Tile) {
       const ev = EVENTS[tile.type];

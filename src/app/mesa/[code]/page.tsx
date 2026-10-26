@@ -87,13 +87,15 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const me = currentPlayer(game);
   const winner = game.players.find((p) => p.id === game.winner);
 
-  // Tarjeta grande: explica la casilla donde cayó alguien; si hay que decidir, se queda hasta que se decida.
+  // Tarjeta grande: explica la casilla donde cayó alguien (o lo que pasó al tirar) y se queda
+  // hasta la siguiente tirada; si hay que decidir, enseña además qué marcar en el celular.
+  const sameTile = fx.landed?.playerId === me.id && fx.landed.n === me.pos;
   const card = winner || !fx.settled || fx.banner
     ? null
     : game.decision
-      ? { n: me.pos, playerId: me.id, key: 100000 + game.decisionSeq }
+      ? { n: me.pos, playerId: me.id, key: sameTile ? fx.landed!.key : 100000 + game.decisionSeq }
       : fx.landed
-        ? { n: fx.landed.n, playerId: fx.landed.playerId, key: fx.landed.key }
+        ? { n: fx.landed.n, playerId: fx.landed.playerId, key: fx.landed.key, result: fx.landed.result }
         : null;
 
   const overlays = (
@@ -104,7 +106,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
           <RuleBanner text={game.rule.text} />
         </div>
       )}
-      {card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} />}
+      {card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} />}
     </>
   );
 

@@ -7,7 +7,7 @@ import { avatarOf, expressionFor } from "@/game/avatar";
 import { currentPlayer, type GameState } from "@/game/engine";
 import { useShake } from "@/lib/useShake";
 
-const RESULT_MS = 1800;
+const RESULT_MS = 2200;
 
 type Props = {
   game: GameState;
@@ -25,14 +25,16 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
   const me = currentPlayer(game);
   const next = game.players[(game.turn + 1) % game.players.length];
   const [face, setFace] = useState(1);
-  const [result, setResult] = useState<{ value: number; name: string; key: number } | null>(null);
+  const [result, setResult] = useState<{ value: number; name: string; key: number; lost: boolean } | null>(null);
   const roller = useRef(me.name);
+  const wasLost = useRef(false); // tiró estando perdido en los asteroides
   const seenRoll = useRef(game.rollSeq);
 
   const canRoll = game.phase === "ROLL" && !busy && !result;
   const roll = () => {
     if (!canRoll) return;
     roller.current = me.name;
+    wasLost.current = me.status.laberinto;
     navigator.vibrate?.(80);
     onRoll();
   };
@@ -50,7 +52,8 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
     if (game.rollSeq === seenRoll.current) return;
     seenRoll.current = game.rollSeq;
     if (!game.lastRoll) return;
-    setResult({ value: game.lastRoll, name: roller.current, key: game.rollSeq });
+    setResult({ value: game.lastRoll, name: roller.current, key: game.rollSeq, lost: wasLost.current });
+    wasLost.current = false;
     navigator.vibrate?.([40, 60, 40]);
     const t = setTimeout(() => setResult(null), RESULT_MS);
     return () => clearTimeout(t);
@@ -67,6 +70,11 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
         <p className="font-display text-2xl text-white/80">{result.name} sacó</p>
         <Die key={result.key} value={result.value} className="dice-land w-56" />
         <p className="title-game text-7xl">{result.value}</p>
+        {result.lost && (
+          <p className={`btn-game px-5 py-2 text-2xl text-white ${result.value >= 5 ? "bg-btn-green" : "bg-btn-red"}`}>
+            {result.value >= 5 ? "✨ ¡SE SALVÓ! NO BEBE" : "🍷 SIGUE PERDIDO: BEBE 1"}
+          </p>
+        )}
       </div>
     );
   }

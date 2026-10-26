@@ -5,6 +5,7 @@ import { getTile } from "@/game/board";
 import { currentPlayer, type Decision, type GameState } from "@/game/engine";
 import { tileRule } from "@/game/rules";
 import { TILE_STYLE } from "@/game/tileStyle";
+import type { Landed } from "@/lib/useGameFx";
 
 /** Título y texto de lo que se está decidiendo, para leerlo en la TV. */
 export function decisionText(decision: Decision, name: string): [string, string] {
@@ -50,13 +51,19 @@ function decisionPrompt(decision: Decision, name: string): string {
  * Tarjeta grande en el centro de la TV, como las cartas de Monopoly: explica la
  * casilla en la que cayó alguien y, si hay que decidir algo, qué se decide.
  */
-export function RuleCard({ game, n, playerId, cardKey }: { game: GameState; n: number; playerId: string; cardKey: number }) {
+type Props = { game: GameState; n: number; playerId: string; cardKey: number; result?: Landed["result"] };
+
+export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
   const player = game.players.find((p) => p.id === playerId) ?? currentPlayer(game);
-  const style = TILE_STYLE[getTile(n).type];
+  const tileStyle = TILE_STYLE[getTile(n).type];
+  // Resultado de una tirada sin moverse (asteroides): verde si se salvó, rojo si bebe.
+  const style = result
+    ? { icon: result.good ? "✨" : "🍷", bg: result.good ? ["#8be86b", "#2fae4a"] : ["#ff8a8a", "#d62a3f"] }
+    : tileStyle;
   const decision = game.decision && currentPlayer(game).id === playerId ? game.decision : null;
   // Retos y exámenes llevan su texto concreto (categoría, trabalenguas…) en la decisión.
-  const rule = decision?.kind === "SELECT_DRINKERS" ? { title: decision.title, text: decision.text } : tileRule(n, game, playerId);
-  const drinks = decision?.kind === "SELECT_DRINKERS" ? decision.drinks : null;
+  const rule = result ?? (decision?.kind === "SELECT_DRINKERS" ? { title: decision.title, text: decision.text } : tileRule(n, game, playerId));
+  const drinks = decision?.kind === "SELECT_DRINKERS" ? decision.drinks : result && !result.good ? 1 : null;
   return (
     <div className="pointer-events-none absolute inset-0 z-40 grid place-items-center bg-ink/35 p-[3%]">
       <div key={cardKey} className="card-pop w-[min(66%,52rem)] overflow-hidden rounded-[2rem] border-[5px] border-ink bg-[#fbf3e4] shadow-[0_10px_0_#1b1f4b]">
