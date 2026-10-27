@@ -90,8 +90,15 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
 El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, en lugar de que lo componga Claude.
 - Fase 1 (hecha): terreno de celdas que se pinta (`GROUNDS`) y se sube/baja/aplana, catálogo de modelos para
   arrastrar o "sellar", gizmos de mover/girar/tamaño, deshacer, 4 luces, guardar en la nube y exportar/importar.
-- Pendiente: fase 2 (colocar las 62 casillas con sus iconos y publicar el render a la TV) y fase 3 (subir
-  modelos propios y elegir el modelo de cada zombi). La TV todavía usa el tablero de `scripts/board3d`.
+- Fase 2 (hecha): herramienta "Casillas del juego" (T) para poner las 62 casillas en celdas (`tiles` del
+  layout; el tipo de cada número sigue siendo el de `board.ts`), color e icono por tipo (`tileStyles`: emoji o
+  imagen subida, guardada como data URL pequeña) y botón "Publicar en la TV": `renderForTV()` en `scene.ts`
+  renderiza todo con la cámara de la TV y calcula el píxel de cada casilla; `POST /api/admin/publish` sube la
+  imagen a **Vercel Blob** (`BLOB_READ_WRITE_TOKEN`; en desarrollo sin Blob va al almacén y la sirve
+  `/api/board/image`) y guarda `PublishedBoard` (`src/game/publishedBoard.ts`) en Redis. `IsoBoard` usa el
+  tablero publicado (`usePublishedBoard`, `GET /api/board`) y, si no hay, el de serie (`scripts/board3d`).
+  La TV lo lee al cargar la página. `DELETE /api/admin/publish` vuelve al de serie.
+- Pendiente: fase 3 (subir modelos propios y elegir el modelo de cada zombi).
 - Datos: `src/editor/layout.ts` (formato `BoardLayout`, funciones puras con tests), `history.ts` (deshacer),
   `scene.ts` (Three.js: dibuja el diseño y recoge el ratón), `BoardEditor.tsx` (la interfaz).
 - Se guarda en Redis (`src/server/boardDesign.ts`, API `src/app/api/admin/board`). Guardar pide la clave

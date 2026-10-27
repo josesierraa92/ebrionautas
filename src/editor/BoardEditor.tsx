@@ -5,8 +5,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { History } from "./history";
+import TilesPanel from "./TilesPanel";
 import {
   flatten,
+  TILE_COUNT,
+  toggleTile,
   GROUND_IDS,
   GROUNDS,
   groundAt,
@@ -38,6 +41,7 @@ const TOOLS: { id: Tool; icon: string; label: string; key: string }[] = [
   { id: "raise", icon: "⛰️", label: "Subir terreno", key: "U" },
   { id: "lower", icon: "🕳️", label: "Bajar terreno", key: "J" },
   { id: "flatten", icon: "📏", label: "Aplanar", key: "F" },
+  { id: "tiles", icon: "🔢", label: "Casillas del juego", key: "T" },
 ];
 
 const GIZMOS: { id: GizmoMode; label: string; key: string }[] = [
@@ -68,6 +72,7 @@ export default function BoardEditor() {
   const strokeBefore = useRef<BoardLayout | null>(null);
   const flattenLevel = useRef(0);
   const shadowBefore = useRef<BoardLayout | null>(null);
+  const tileMode = useRef<"add" | "remove">("add");
 
   const [tool, setTool] = useState<Tool>("select");
   const [ground, setGround] = useState<GroundId>("dirt");
@@ -185,7 +190,10 @@ export default function BoardEditor() {
         if (phase === "start") {
           strokeBefore.current = l;
           flattenLevel.current = l.height[y * l.w + x];
+          // casillas: si empieza sobre una casilla, el trazo quita; si no, pone
+          tileMode.current = l.tiles.some((c) => c.x === x && c.y === y) ? "remove" : "add";
         }
+        if (t.tool === "tiles") l = toggleTile(l, x, y, tileMode.current);
         if (t.tool === "paint") l = paint(l, x, y, t.brushSize, t.ground);
         if (t.tool === "raise") l = raise(l, x, y, t.brushSize, 1);
         if (t.tool === "lower") l = raise(l, x, y, t.brushSize, -1);
@@ -316,6 +324,49 @@ export default function BoardEditor() {
     } catch {
       setStatus("No se pudo guardar (¿sin conexión?).");
     }
+  };
+
+  /** Renderiza el tablero con la cámara de la TV y lo publica: desde entonces las mesas lo usan. */
+  const publish = async () => {
+    const l = layoutRef.current;
+    if (l.tiles.length < TILE_COUNT) {
+      setTool("tiles");
+      return setStatus(`Faltan ${TILE_COUNT - l.tiles.length} casillas: pon las 62 con la herramienta "Casillas del juego" (T).`);
+    }
+    if (!window.confirm("¿Publicar este tablero en la TV? Las mesas lo usarán en cuanto recarguen la página.")) return;
+    const scene = sceneRef.current;
+    if (!scene) return;
+    try {
+      setStatus("Renderizando el tablero…");
+      const shot = await scene.renderForTV();
+      setStatus("Subiendo…");
+      const key = adminKey() ?? "";
+      const res = await fetch("/api/admin/publish", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-admin-key": key },
+        body: JSON.stringify(shot),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.status === 401) localStorage.removeItem(ADMIN_KEY);
+      if (!res.ok) return setStatus(body.error ?? "No se pudo publicar.");
+      // el diseño publicado también queda guardado en la nube
+      await fetch("/api/admin/board", {
+        method: "PUT",
+        headers: { "content-type": "application/json", "x-admin-key": key },
+        body: JSON.stringify({ layout: l }),
+      });
+      setStatus("¡Publicado! Recarga la TV para verlo.");
+    } catch {
+      setStatus("No se pudo publicar (¿sin conexión?).");
+    }
+  };
+
+  const unpublish = async () => {
+    if (!window.confirm("¿Quitar tu tablero de la TV? Las mesas volverán al tablero de serie.")) return;
+    const res = await fetch("/api/admin/publish", { method: "DELETE", headers: { "x-admin-key": adminKey() ?? "" } });
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 401) localStorage.removeItem(ADMIN_KEY);
+    setStatus(res.ok ? "La TV vuelve a usar el tablero de serie." : body.error ?? "No se pudo quitar.");
   };
 
   const loadCloud = async () => {
@@ -464,12 +515,19 @@ export default function BoardEditor() {
           <button className={`${btn} bg-emerald-500 text-black hover:bg-emerald-400`} onClick={saveCloud}>
             ☁️ Guardar
           </button>
+          <button
+            className={`${btn} ${layout.tiles.length === TILE_COUNT ? "bg-fuchsia-500 text-white hover:bg-fuchsia-400" : off}`}
+            onClick={publish}
+            title={`Casillas: ${layout.tiles.length} / ${TILE_COUNT}`}
+          >
+            📺 Publicar en la TV
+          </button>
         </div>
       </header>
 
       <div className="flex min-h-0 flex-1">
         {/* ------------------------------------------------ herramientas */}
-        <aside className="flex w-64 shrink-0 flex-col gap-3 overflow-y-auto border-r border-white/10 bg-[#1c1f27] p-3">
+        <aside className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto border-r border-white/10 bg-[#1c1f27] p-3">
           <div className="grid gap-1">
             {TOOLS.map((t) => (
               <button
@@ -487,7 +545,9 @@ export default function BoardEditor() {
             ))}
           </div>
 
-          {tool !== "select" && tool !== "stamp" && (
+          {tool === "tiles" && <TilesPanel layout={layout} onChange={commit} onUnpublish={unpublish} />}
+
+          {tool !== "select" && tool !== "stamp" && tool !== "tiles" && (
             <label className="text-sm">
               Pincel: {brushSize}×{brushSize}
               <input type="range" min={1} max={9} value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full" />

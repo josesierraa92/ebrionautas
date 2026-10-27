@@ -4,9 +4,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { brushCells, GROUNDS, groundAt, LEVEL, LIQUIDS, type BoardLayout, type LightId, type PlacedObject } from "./layout";
+import { brushCells, GROUNDS, groundAt, LEVEL, LIQUIDS, lookOf, tileTypeOf, type BoardLayout, type LightId, type PlacedObject } from "./layout";
 
-export type Tool = "select" | "paint" | "raise" | "lower" | "flatten" | "stamp";
+export type Tool = "select" | "paint" | "raise" | "lower" | "flatten" | "stamp" | "tiles";
 export type GizmoMode = "translate" | "rotate" | "scale";
 
 export type SceneEvents = {
@@ -54,6 +54,10 @@ export class EditorScene {
   private grid = new THREE.Group();
   private brush: THREE.LineSegments;
   private objectRoot = new THREE.Group();
+  private tileRoot = new THREE.Group();
+  private tileTextures = new Map<string, THREE.CanvasTexture>();
+  /** Imágenes de iconos subidos que aún se están cargando (la foto para la TV las espera). */
+  private pendingIcons = new Set<Promise<void>>();
   private objects = new Map<string, THREE.Group>();
   private loader = new GLTFLoader();
   private models = new Map<string, Promise<THREE.Object3D | null>>();
@@ -89,7 +93,7 @@ export class EditorScene {
     container.appendChild(this.renderer.domElement);
     this.renderer.domElement.style.display = "block";
 
-    this.scene.add(this.hemi, this.sun, this.sun.target, this.objectRoot, this.grid);
+    this.scene.add(this.hemi, this.sun, this.sun.target, this.objectRoot, this.grid, this.tileRoot);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(4096, 4096);
     this.sun.shadow.bias = -0.0004;
@@ -252,6 +256,8 @@ export class EditorScene {
     if (!prev || prev.w !== l.w || prev.h !== l.h) this.resetView();
     if (!prev || prev.light !== l.light || prev.shadow !== l.shadow) this.applyLight(l);
     if (!prev || prev.objects !== l.objects) this.syncObjects(l.objects);
+    if (!prev || prev.tiles !== l.tiles || prev.tileStyles !== l.tileStyles || prev.height !== l.height || prev.ground !== l.ground)
+      this.buildTiles(l);
   }
 
   private buildTerrain(l: BoardLayout) {
@@ -546,7 +552,7 @@ export class EditorScene {
       this.brush.visible = false;
       return;
     }
-    const size = this.tool === "stamp" ? 1 : this.brushSize;
+    const size = this.tool === "stamp" || this.tool === "tiles" ? 1 : this.brushSize;
     const cells = brushCells(l, g.cx, g.cy, size);
     let top = 0;
     for (const i of cells) top = Math.max(top, l.height[i] * LEVEL);
@@ -606,8 +612,162 @@ export class EditorScene {
     );
   }
 
-  /** Imagen de lo que se ve (para guardar una miniatura del diseño). */
-  snapshot(): string {
-    return this.renderer.domElement.toDataURL("image/webp", 0.85);
+  // ------------------------------------------------------------------ casillas del juego
+
+  /** Losa de cada casilla: su color, el icono pintado en el suelo y el número. */
+  private buildTiles(l: BoardLayout) {
+    for (const m of this.tileRoot.children as THREE.Mesh[]) m.geometry.dispose();
+    this.tileRoot.clear();
+    const used = new Set<string>();
+    const geo = new THREE.BoxGeometry(0.9, 0.1, 0.9);
+    l.tiles.forEach((t, k) => {
+      const n = k + 1;
+      const look = lookOf(l, tileTypeOf(n));
+      const key = `${n}|${look.color}|${look.icon}`;
+      used.add(key);
+      let tex = this.tileTextures.get(key);
+      if (!tex) {
+        tex = this.tileTexture(n, look.color, look.icon);
+        this.tileTextures.set(key, tex);
+      }
+      const side = new THREE.MeshStandardMaterial({ color: new THREE.Color(look.color).multiplyScalar(0.55), roughness: 0.8 });
+      const top = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.75 });
+      // orden de caras de BoxGeometry: +x, -x, +y (arriba), -y, +z, -z
+      const mesh = new THREE.Mesh(geo, [side, side, top, side, side, side]);
+      const i = t.y * l.w + t.x;
+      mesh.position.set(t.x + 0.5, l.height[i] * LEVEL + 0.05, t.y + 0.5);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.tileRoot.add(mesh);
+    });
+    for (const [key, tex] of this.tileTextures)
+      if (!used.has(key)) {
+        tex.dispose();
+        this.tileTextures.delete(key);
+      }
+  }
+
+  /**
+   * Cara de arriba de la losa. Vista desde la TV la losa es un rombo, así que el icono va girado 45° para salir
+   * derecho en pantalla, y el número va en la punta de delante.
+   */
+  private tileTexture(n: number, color: string, icon: string): THREE.CanvasTexture {
+    const S = 256;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = S;
+    const ctx = canvas.getContext("2d")!;
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    const dark = "#" + new THREE.Color(color).multiplyScalar(0.55).getHexString();
+    const base = () => {
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, S, S);
+      ctx.strokeStyle = dark;
+      ctx.lineWidth = 18;
+      ctx.strokeRect(9, 9, S - 18, S - 18);
+      ctx.save();
+      ctx.translate(S - 52, S - 52);
+      ctx.rotate(-Math.PI / 4);
+      ctx.font = "bold 56px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = dark;
+      ctx.strokeText(String(n), 0, 0);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(String(n), 0, 0);
+      ctx.restore();
+    };
+    const centered = (draw: () => void) => {
+      ctx.save();
+      ctx.translate(S / 2 - 10, S / 2 - 10);
+      ctx.rotate(-Math.PI / 4);
+      draw();
+      ctx.restore();
+    };
+    base();
+    if (icon.startsWith("data:")) {
+      const img = new Image();
+      const done = new Promise<void>((resolve) => {
+        img.onload = () => {
+          centered(() => ctx.drawImage(img, -72, -72, 144, 144));
+          tex.needsUpdate = true;
+          resolve();
+        };
+        img.onerror = () => resolve();
+      });
+      this.pendingIcons.add(done);
+      done.then(() => this.pendingIcons.delete(done));
+      img.src = icon;
+    } else
+      centered(() => {
+        ctx.font = "130px 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(icon, 0, 8);
+      });
+    return tex;
+  }
+
+  // ------------------------------------------------------------------ foto para la TV
+
+  /**
+   * Renderiza el tablero entero con la cámara de la TV (isométrica fija, sin rejilla ni ayudas) y calcula dónde
+   * cae cada casilla en la imagen, para poner encima las fichas.
+   */
+  async renderForTV(maxWidth = 2400): Promise<{ image: string; width: number; height: number; tiles: { x: number; y: number }[]; cell: number; bg: string }> {
+    const l = this.layout;
+    if (!l) throw new Error("No hay diseño");
+    await Promise.all([...this.models.values()]);
+    await Promise.all([...this.pendingIcons]);
+
+    const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, -500, 1000);
+    const center = new THREE.Vector3(l.w / 2, 0, l.h / 2);
+    const dir = new THREE.Vector3(1, Math.tan(Math.PI / 6) * Math.SQRT2, 1).normalize();
+    cam.position.copy(center).addScaledVector(dir, CAM_DIST);
+    cam.lookAt(center);
+    cam.updateMatrixWorld();
+    // encuadre: todo el mundo y todo lo que sobresale de él (árboles, edificios)
+    const box = new THREE.Box3(new THREE.Vector3(0, BASE, 0), new THREE.Vector3(l.w, 1, l.h));
+    box.union(new THREE.Box3().setFromObject(this.objectRoot));
+    const inv = cam.matrixWorldInverse;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const x of [box.min.x, box.max.x])
+      for (const y of [box.min.y, box.max.y])
+        for (const z of [box.min.z, box.max.z]) {
+          const p = new THREE.Vector3(x, y, z).applyMatrix4(inv);
+          minX = Math.min(minX, p.x);
+          maxX = Math.max(maxX, p.x);
+          minY = Math.min(minY, p.y);
+          maxY = Math.max(maxY, p.y);
+        }
+    const m = 0.5;
+    Object.assign(cam, { left: minX - m, right: maxX + m, top: maxY + m, bottom: minY - m });
+    cam.updateProjectionMatrix();
+    const width = maxWidth;
+    const height = Math.round((width * (maxY - minY + 2 * m)) / (maxX - minX + 2 * m));
+
+    const hidden = [this.grid, this.brush, this.gizmo.getHelper()].filter((o) => o.visible);
+    for (const o of hidden) o.visible = false;
+    const ratio = this.renderer.getPixelRatio();
+    this.renderer.setPixelRatio(1);
+    this.renderer.setSize(width, height, false);
+    this.renderer.render(this.scene, cam);
+    let image = this.renderer.domElement.toDataURL("image/webp", 0.85);
+    // el servidor acepta hasta ~4 MB: si pesa más, se baja la calidad
+    for (const q of [0.75, 0.6]) if (image.length > 4_000_000) image = this.renderer.domElement.toDataURL("image/webp", q);
+    this.renderer.setPixelRatio(ratio);
+    for (const o of hidden) o.visible = true;
+    this.resize();
+
+    const toPx = (v: THREE.Vector3) => {
+      const p = v.clone().project(cam);
+      return { x: ((p.x + 1) / 2) * width, y: ((1 - p.y) / 2) * height };
+    };
+    const tiles = l.tiles.map((t) => toPx(new THREE.Vector3(t.x + 0.5, l.height[t.y * l.w + t.x] * LEVEL + 0.1, t.y + 0.5)));
+    const cell = Math.abs(toPx(new THREE.Vector3(1, 0, 0)).x - toPx(new THREE.Vector3(0, 0, 1)).x);
+    const bg = "#" + (this.scene.background as THREE.Color).getHexString();
+    return { image, width, height, tiles, cell, bg };
   }
 }
