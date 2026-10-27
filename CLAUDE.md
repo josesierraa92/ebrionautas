@@ -19,8 +19,8 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
 - `/c/[code]`: el único celular que controla la mesa (el primero que la reclama; la TV puede
   liberarlo con "cambiar de celular"). Agrega a los muertos/jugadores (nombre + hombre/mujer), tira y decide.
   En partida solo enseña un dado gigante (`src/components/DiceController.tsx`) que se tira tocándolo o
-  agitando el celular (`src/lib/useShake.ts`; en iPhone pide permiso de movimiento), de quién es el turno
-  y "Siguiente: nombre" para saber a quién pasarle el celular. Marcador, historial y tablero van en "☰ MARCADOR".
+  agitando el celular (`src/lib/useShake.ts`; en iPhone pide permiso de movimiento) y de quién es el turno
+  (el usuario quitó el "Siguiente: nombre" de debajo del dado). Marcador, historial y tablero van en "☰ MARCADOR".
 - `/jugar`: sin TV, todo en una misma pantalla (partida guardada en localStorage).
 - El género resuelve solas las casillas Machos (2) y Hembras (11); el resto de casillas de
   "quién bebe" las marca el control.
@@ -63,8 +63,9 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
 - TV: con "SOLO TABLERO" el marcador se oculta y el tablero ocupa toda la pantalla (se recuerda en esa TV);
   hay botón de pantalla completa. En una esquina, `TurnChip` muestra el turno y quién sacó cuánto en el dado.
 - Cada casilla donde cae alguien saca una tarjeta pequeña en la esquina inferior derecha (`RuleCard` en
-  `src/components/TvCards.tsx`; lo principal es que se vea el tablero). El celular enseña la misma tarjeta arriba del
-  dado (`PhoneRuleCard`, contenido compartido en `cardContent`). Con
+  `src/components/TvCards.tsx`; lo principal es que se vea el tablero). En el celular la misma tarjeta
+  (`PhoneRuleCard`, contenido compartido en `cardContent`) sale solo cuando hay que decidir algo, encima de las
+  opciones; la pantalla del dado queda limpia (cambio del usuario). Con
   su regla explicada (`src/game/rules.ts`). Se queda hasta la siguiente tirada (para que dé tiempo a leerla);
   si hay que decidir, además dice qué marcar en el celular. Al tirar perdido en el Panteón en Niebla sale el resultado
   (`mazeOutcome`: con 5 o 6 "¡Se salvó!", si no "¡Sigue perdido!" y bebe).
