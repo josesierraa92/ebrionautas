@@ -4,6 +4,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { builtinIcon, drawIcon } from "./icons";
 import { brushCells, GROUNDS, groundAt, LEVEL, LIQUIDS, lookOf, TILE_SIZE, tileAnchor, tileTypeOf, type BoardLayout, type TileKind, type LightId, type PlacedObject } from "./layout";
 
 export type Tool = "select" | "paint" | "raise" | "lower" | "flatten" | "stamp" | "tiles";
@@ -59,6 +61,9 @@ export class EditorScene {
   private brush: THREE.LineSegments;
   private objectRoot = new THREE.Group();
   private tileRoot = new THREE.Group();
+  /** Fuente de videojuego (la de los títulos del juego, Lilita One) para los números de las casillas. */
+  private fontFamily = "'Lilita One', 'Arial Black', sans-serif";
+  private fontReady: Promise<void> = Promise.resolve();
   private tileTextures = new Map<string, THREE.CanvasTexture>();
   /** Imágenes de iconos subidos que aún se están cargando (la foto para la TV las espera). */
   private pendingIcons = new Set<Promise<void>>();
@@ -88,6 +93,15 @@ export class EditorScene {
     private container: HTMLElement,
     private events: SceneEvents,
   ) {
+    // next/font define --font-lilita en <body>; hay que pedir la fuente para que se descargue antes de dibujar con ella
+    this.fontFamily = getComputedStyle(document.body).getPropertyValue("--font-lilita").trim() || this.fontFamily;
+    this.fontReady = document.fonts
+      .load(`80px ${this.fontFamily}`)
+      .then(() => {
+        this.dropTileTextures();
+        if (this.layout) this.buildTiles(this.layout);
+      })
+      .catch(() => undefined);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
@@ -650,7 +664,8 @@ export class EditorScene {
     for (const m of this.tileRoot.children as THREE.Mesh[]) m.geometry.dispose();
     this.tileRoot.clear();
     const used = new Set<string>();
-    const geo = new THREE.BoxGeometry(TILE_SIZE - 0.14, 0.14, TILE_SIZE - 0.14);
+    // losa con todas las esquinas y los cantos redondeados (nada de ángulos duros)
+    const geo = new RoundedBoxGeometry(TILE_SIZE - 0.16, 0.3, TILE_SIZE - 0.16, 4, 0.14);
     l.tiles.forEach((t, k) => {
       const n = k + 1;
       const look = lookOf(l, tileTypeOf(n));
@@ -666,7 +681,7 @@ export class EditorScene {
       const top = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.75 });
       // orden de caras de BoxGeometry: +x, -x, +y (arriba), -y, +z, -z
       const mesh = new THREE.Mesh(geo, [side, side, top, side, side, side]);
-      mesh.position.set(t.x + TILE_SIZE / 2, this.tileTop(l, t) + 0.07, t.y + TILE_SIZE / 2);
+      mesh.position.set(t.x + TILE_SIZE / 2, this.tileTop(l, t) - 0.03, t.y + TILE_SIZE / 2); // la mitad queda enterrada
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       this.tileRoot.add(mesh);
@@ -692,78 +707,71 @@ export class EditorScene {
     tex.anisotropy = 8;
     const road = kind === "road";
     const tint = new THREE.Color(color);
-    // en carretera el icono y el número van "pintados" en un tono suave del color del tipo
-    const paint = road ? "#" + tint.clone().lerp(new THREE.Color("#f2efe6"), 0.55).getHexString() : "#ffffff";
-    const dark = road ? ROAD.edge : "#" + tint.clone().multiplyScalar(0.5).getHexString();
+    // vivo: icono y número de un solo tono, claro u oscuro según el color de fondo; carretera: pintura suave
+    const ink = tint.r * 0.299 + tint.g * 0.587 + tint.b * 0.114 > 0.62 ? "#2b2140" : "#ffffff";
+    const paint = road ? "#" + tint.clone().lerp(new THREE.Color("#f2efe6"), 0.5).getHexString() : ink;
 
-    const base = () => {
-      if (road) {
-        // asfalto con grano y una línea discontinua alrededor, como una plaza de aparcamiento
-        ctx.fillStyle = ROAD.asphalt;
-        ctx.fillRect(0, 0, S, S);
-        for (let k = 0; k < 1400; k++) {
-          const v = Math.random();
-          ctx.fillStyle = v < 0.5 ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.06)";
-          ctx.fillRect(Math.random() * S, Math.random() * S, 3, 3);
-        }
-        ctx.setLineDash([34, 22]);
-        ctx.lineWidth = 12;
-        ctx.strokeStyle = paint;
-        ctx.globalAlpha = 0.75;
-        ctx.strokeRect(34, 34, S - 68, S - 68);
-        ctx.globalAlpha = 1;
-        ctx.setLineDash([]);
-      } else {
-        // color vivo de videojuego: degradado, borde claro por dentro y canto oscuro
-        const grad = ctx.createLinearGradient(0, 0, S, S);
-        grad.addColorStop(0, "#" + tint.clone().lerp(new THREE.Color("#ffffff"), 0.18).getHexString());
-        grad.addColorStop(1, "#" + tint.clone().multiplyScalar(0.85).getHexString());
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, S, S);
-        ctx.lineWidth = 28;
-        ctx.strokeStyle = dark;
-        ctx.strokeRect(14, 14, S - 28, S - 28);
-        ctx.lineWidth = 10;
-        ctx.strokeStyle = "rgba(255,255,255,0.55)";
-        ctx.strokeRect(40, 40, S - 80, S - 80);
+    if (road) {
+      ctx.fillStyle = ROAD.asphalt;
+      ctx.fillRect(0, 0, S, S);
+      for (let k = 0; k < 900; k++) {
+        ctx.fillStyle = Math.random() < 0.5 ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.035)";
+        ctx.fillRect(Math.random() * S, Math.random() * S, 3, 3);
       }
-      ctx.save();
-      ctx.translate(S - 100, S - 100);
-      ctx.rotate(-Math.PI / 4);
-      ctx.font = "bold 92px system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.lineWidth = 16;
-      ctx.strokeStyle = dark;
-      ctx.strokeText(String(n), 0, 0);
-      ctx.fillStyle = paint;
-      ctx.fillText(String(n), 0, 0);
-      ctx.restore();
-    };
-    /** Dibuja el icono girado 45° (la losa se ve como un rombo); en carretera, de un solo color como pintura. */
-    const drawIcon = (draw: (c: CanvasRenderingContext2D) => void) => {
+      // línea discontinua apenas visible, con las puntas y las esquinas redondeadas
+      ctx.setLineDash([16, 22]);
+      ctx.lineCap = "round";
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = "rgba(242,239,230,0.2)";
+      ctx.beginPath();
+      ctx.roundRect(46, 46, S - 92, S - 92, 70);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      // color liso con un degradado muy suave, sin bordes ni marcos
+      const grad = ctx.createLinearGradient(0, 0, S, S);
+      grad.addColorStop(0, "#" + tint.clone().lerp(new THREE.Color("#ffffff"), 0.1).getHexString());
+      grad.addColorStop(1, "#" + tint.clone().multiplyScalar(0.92).getHexString());
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, S, S);
+    }
+    // número en la esquina de abajo, con la fuente del juego y girado para leerse derecho desde la cámara
+    ctx.save();
+    ctx.translate(S - 104, S - 104);
+    ctx.rotate(-Math.PI / 4);
+    ctx.font = `130px ${this.fontFamily}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = paint;
+    ctx.globalAlpha = road ? 0.85 : 0.95;
+    ctx.fillText(String(n), 0, 0);
+    ctx.restore();
+
+    /** Icono girado 45° (la losa se ve como un rombo), en una capa aparte para poder recortarlo y teñirlo. */
+    const drawOnLayer = (draw: (c: CanvasRenderingContext2D) => void, recolor: boolean) => {
       const layer = document.createElement("canvas");
       layer.width = layer.height = S;
       const lc = layer.getContext("2d")!;
-      lc.translate(S / 2 - 20, S / 2 - 20);
+      lc.fillStyle = paint;
+      lc.translate(S / 2 - 24, S / 2 - 24);
       lc.rotate(-Math.PI / 4);
       draw(lc);
-      if (road) {
+      if (recolor) {
         lc.setTransform(1, 0, 0, 1, 0, 0);
         lc.globalCompositeOperation = "source-in";
-        lc.fillStyle = paint;
         lc.fillRect(0, 0, S, S);
-        ctx.globalAlpha = 0.9;
       }
+      ctx.globalAlpha = road ? 0.9 : 0.96;
       ctx.drawImage(layer, 0, 0);
       ctx.globalAlpha = 1;
     };
-    base();
-    if (icon.startsWith("data:")) {
+    const name = builtinIcon(icon);
+    if (name) drawOnLayer((c) => drawIcon(c, name, 270), false);
+    else if (icon.startsWith("data:")) {
       const img = new Image();
       const done = new Promise<void>((resolve) => {
         img.onload = () => {
-          drawIcon((c) => c.drawImage(img, -130, -130, 260, 260));
+          drawOnLayer((c) => c.drawImage(img, -135, -135, 270, 270), road);
           tex.needsUpdate = true;
           resolve();
         };
@@ -773,13 +781,18 @@ export class EditorScene {
       done.then(() => this.pendingIcons.delete(done));
       img.src = icon;
     } else
-      drawIcon((c) => {
+      drawOnLayer((c) => {
         c.font = "230px 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
         c.textAlign = "center";
         c.textBaseline = "middle";
         c.fillText(icon, 0, 14);
-      });
+      }, road);
     return tex;
+  }
+
+  private dropTileTextures() {
+    for (const t of this.tileTextures.values()) t.dispose();
+    this.tileTextures.clear();
   }
 
   /** Altura de la cara de arriba del terreno bajo una casilla (la celda más alta de las que pisa). */
@@ -798,7 +811,7 @@ export class EditorScene {
   async renderForTV(maxWidth = 2400): Promise<{ image: string; width: number; height: number; tiles: { x: number; y: number }[]; cell: number; bg: string }> {
     const l = this.layout;
     if (!l) throw new Error("No hay diseño");
-    await Promise.all([...this.models.values()]);
+    await Promise.all([...this.models.values(), this.fontReady]);
     await Promise.all([...this.pendingIcons]);
 
     const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, -500, 1000);

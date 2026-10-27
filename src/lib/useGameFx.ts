@@ -23,7 +23,7 @@ export type Landed = { key: number; n: number; playerId: string; result?: { good
 
 /** Título grande y sonido según la casilla donde cae la ficha. */
 const EVENTS: Partial<Record<Tile["type"], { title: string; emoji: string; color: string; sound: keyof typeof sfx }>> = {
-  OCA: { title: "¡DE MARIPOSA EN MARIPOSA!", emoji: "🦋", color: "#ff9f1c", sound: "zap" },
+  OCA: { title: "¡DE MURCIÉLAGO EN MURCIÉLAGO!", emoji: "🦇", color: "#ff9f1c", sound: "zap" },
   CARCEL: { title: "¡AL PURGATORIO!", emoji: "🔥", color: "#ff6b3d", sound: "jail" },
   MUERTE: { title: "¡A LA FOSA!", emoji: "⚰️", color: "#b07cff", sound: "blackhole" },
   PATINAZO: { title: "¡TROPIEZO!", emoji: "🪦", color: "#ff8a1f", sound: "slip" },

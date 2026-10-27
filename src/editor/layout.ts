@@ -1,5 +1,6 @@
 import { BOARD, TILE_NAMES, type Tile } from "@/game/board";
 import { TILE_STYLE } from "@/game/tileStyle";
+import { DEFAULT_ICON, iconValue } from "./icons";
 
 // Diseño del tablero hecho en el editor (/admin/editor): un terreno de celdas pintables con altura
 // y los modelos 3D colocados encima. Funciones puras: el editor y el servidor comparten este formato.
@@ -94,7 +95,7 @@ export const TILE_SIZE = 2;
 const VIVID: Partial<Record<TileType, string>> = {
   SALIDA: "#36c95a", // verde: aquí empieza todo
   META: "#ffc61a", // amarillo: la meta
-  OCA: "#9b5de5", // morado: la mariposa hace saltar
+  OCA: "#9b5de5", // morado: el murciélago hace saltar
   POSADA: "#ffc61a",
   LABERINTO: "#9b5de5",
   CARCEL: "#ff7a1a",
@@ -294,5 +295,5 @@ export const tileAt = (l: BoardLayout, x: number, y: number) => l.tiles.some((t)
 export function lookOf(l: BoardLayout, type: TileType): { color: string; icon: string; kind: TileKind } {
   const d = TILE_STYLE[type];
   const own = l.tileStyles[type];
-  return { color: own?.color ?? VIVID[type] ?? d.bg[0], icon: own?.icon ?? d.icon, kind: own?.kind ?? (VIVID[type] ? "vivid" : "road") };
+  return { color: own?.color ?? VIVID[type] ?? d.bg[0], icon: own?.icon ?? iconValue(DEFAULT_ICON[type]), kind: own?.kind ?? (VIVID[type] ? "vivid" : "road") };
 }

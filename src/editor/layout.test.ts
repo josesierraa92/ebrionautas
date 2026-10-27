@@ -86,7 +86,7 @@ describe("casillas del juego", () => {
     expect(l?.tiles).toEqual([{ x: 1, y: 1 }]);
     expect(l?.tileStyles).toEqual({ OCA: { color: "#123456", icon: "🦇", kind: "road" }, DUELO: {} });
     expect(lookOf(l!, "OCA")).toEqual({ color: "#123456", icon: "🦇", kind: "road" });
-    expect(lookOf(l!, "DUELO").icon).toBe("💀");
+    expect(lookOf(l!, "DUELO").icon).toBe("i:skull");
     // por defecto: las importantes en colores vivos y el resto estilo carretera
     expect(lookOf(l!, "SALIDA").kind).toBe("vivid");
     expect(lookOf(l!, "A_BEBER").kind).toBe("road");

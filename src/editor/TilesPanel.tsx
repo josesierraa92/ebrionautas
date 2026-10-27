@@ -4,6 +4,7 @@
 // tipo de casilla. Las reglas de cada número no cambian (src/game/board.ts): aquí solo se decide dónde y cómo se ve.
 
 import { BOARD, TILE_NAMES } from "@/game/board";
+import { builtinIcon, ICON_LABELS, ICON_NAMES, iconMaskUrl, iconValue, type IconName } from "./icons";
 import { lookOf, TILE_COUNT, tileTypeOf, type BoardLayout, type TileKind, type TileType } from "./layout";
 
 /** Tipos de casilla en el orden en que aparecen en el tablero. */
@@ -22,11 +23,27 @@ async function iconFromFile(file: File): Promise<string> {
 }
 
 function Swatch({ color, icon, kind, size = 32 }: { color: string; icon: string; kind: TileKind; size?: number }) {
-  // en carretera: asfalto gris con el borde discontinuo del color del tipo
-  const style = kind === "road" ? { background: "#4a4d54", outline: `2px dashed ${color}`, outlineOffset: -5 } : { background: color };
+  // en carretera: asfalto gris; en vivo: el color del tipo. El icono va de un solo tono.
+  const bg = kind === "road" ? "#4a4d54" : color;
+  const ink = kind === "road" ? color : "#ffffff";
+  const name = builtinIcon(icon);
   return (
-    <span className="grid shrink-0 place-items-center rounded border-2 border-black/40" style={{ ...style, width: size, height: size }}>
-      {icon.startsWith("data:") ? (
+    <span className="grid shrink-0 place-items-center rounded-lg" style={{ background: bg, width: size, height: size }}>
+      {name ? (
+        <span
+          style={{
+            width: size * 0.7,
+            height: size * 0.7,
+            background: ink,
+            maskImage: `url(${iconMaskUrl(name)})`,
+            WebkitMaskImage: `url(${iconMaskUrl(name)})`,
+            maskSize: "contain",
+            WebkitMaskSize: "contain",
+            maskRepeat: "no-repeat",
+            WebkitMaskRepeat: "no-repeat",
+          }}
+        />
+      ) : icon.startsWith("data:") ? (
         <img src={icon} alt="" className="h-[75%] w-[75%] object-contain" />
       ) : (
         <span style={{ fontSize: size * 0.55, lineHeight: 1 }}>{icon}</span>
@@ -112,14 +129,19 @@ export default function TilesPanel({
                 className="h-7 w-7 cursor-pointer rounded border-0 bg-transparent p-0"
                 title="Color"
               />
-              <input
-                value={look.icon.startsWith("data:") ? "" : look.icon}
-                placeholder="🖼️"
-                maxLength={16}
-                onChange={(e) => e.target.value && setLook(type, { icon: e.target.value })}
-                className="w-10 rounded bg-white/10 px-1 py-0.5 text-center"
-                title="Icono: escribe o pega un emoji"
-              />
+              <select
+                value={builtinIcon(look.icon) ?? ""}
+                onChange={(e) => e.target.value && setLook(type, { icon: iconValue(e.target.value as IconName) })}
+                className="w-20 rounded bg-white/10 px-1 py-0.5 text-xs"
+                title="Icono"
+              >
+                {!builtinIcon(look.icon) && <option value="">Propio</option>}
+                {ICON_NAMES.map((n) => (
+                  <option key={n} value={n} className="bg-[#1c1f27]">
+                    {ICON_LABELS[n]}
+                  </option>
+                ))}
+              </select>
               <label className="cursor-pointer rounded bg-white/10 px-1.5 py-0.5 hover:bg-white/20" title="Subir una imagen como icono">
                 ⬆
                 <input

@@ -79,8 +79,8 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
   y vuelve a tirar para avanzar. No hay opción de esperar. La TV muestra la tarjeta "¡Sale del Purgatorio!" (`jailOutcome`).
 - Toda casilla que diga "tira el dado" debe enseñar después una tarjeta con lo que pasó (TV y celular):
   niebla (`mazeOutcome`), purgatorio (`jailOutcome`) y duelo (`lastDuel` en el estado + `duelOutcome`).
-- Nombres de las casillas (`TILE_NAMES` en `board.ts`): Medianoche (salida), Tu Tumba (meta), Mariposa Monarca (oca:
-  "¡De mariposa en mariposa y bebo porque me toca!"), La Fosa (vuelve a la 1), Purgatorio (cárcel), Panteón en Niebla
+- Nombres de las casillas (`TILE_NAMES` en `board.ts`): Medianoche (salida), Tu Tumba (meta), El Murciélago (oca:
+  "¡De murciélago en murciélago y bebo porque me toca!"), La Fosa (vuelve a la 1), Purgatorio (cárcel), Panteón en Niebla
   (laberinto), Poseído, La Ouija, La Capilla (posada), Pacto de Sangre (esclavo), Ley del Más Allá, Ronda de mezcal,
   Duelo de calaveras, Tropiezo con la lápida, Juicio de los vivos. Nada de extraterrestres, naves ni patos.
 - El menú del celular usa el tablero 2D en espiral (`src/components/Board.tsx`, `src/game/spiral.ts`).
@@ -103,6 +103,10 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   con el icono pintado, para que no chillen con el escenario).
 - El terreno sigue más allá del borde del mundo (copia de la celda del borde) y la foto de la TV es 16:9 y llena
   la pantalla: el usuario no quiere ver "un cubo flotando en el infinito" ni cielo alrededor.
+- Estética de las casillas (pedido del usuario): números con la fuente del juego (Lilita One, `--font-lilita`), líneas
+  casi invisibles y esquinas/cantos redondeados (`RoundedBoxGeometry`), sin marcos cuadrados. Los iconos son siluetas
+  de un solo tono con temática de terror, dibujadas con rutas en `src/editor/icons.ts` (se guardan como `i:<nombre>`;
+  también se puede subir una imagen). La mariposa se cambió por un murciélago.
 - Pendiente: fase 3 (subir modelos propios y elegir el modelo de cada zombi).
 - Datos: `src/editor/layout.ts` (formato `BoardLayout`, funciones puras con tests), `history.ts` (deshacer),
   `scene.ts` (Three.js: dibuja el diseño y recoge el ratón), `BoardEditor.tsx` (la interfaz).

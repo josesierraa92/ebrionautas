@@ -51,7 +51,7 @@ export const TILE_NAMES: Record<Tile["type"], string> = {
   POSADA: "La Capilla",
   A_BEBER: "Ronda de mezcal",
   DUELO: "Duelo de calaveras",
-  OCA: "Mariposa Monarca",
+  OCA: "El Murciélago",
   LABERINTO: "Panteón en Niebla",
   REGLA: "Ley del Más Allá",
   CULTURAL: "La Ouija",

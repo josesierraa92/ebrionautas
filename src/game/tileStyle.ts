@@ -8,7 +8,7 @@ export const TILE_STYLE: Record<Tile["type"], { icon: string; bg: [string, strin
   POSADA: { icon: "⛪", bg: ["#ffd166", "#d99a1e"], dark: true, label: "Capilla" },
   A_BEBER: { icon: "🥃", bg: ["#ffd23f", "#f5a300"], dark: false, label: "¡Mezcal!" },
   DUELO: { icon: "💀", bg: ["#fff4e6", "#d9c8b4"], dark: false, label: "Duelo" },
-  OCA: { icon: "🦋", bg: ["#ff8c42", "#d9480f"], dark: false, label: "Mariposa" },
+  OCA: { icon: "🦇", bg: ["#ff8c42", "#d9480f"], dark: false, label: "Murciélago" },
   LABERINTO: { icon: "🌫️", bg: ["#b8b2d8", "#7d74b0"], dark: true, label: "Niebla" },
   REGLA: { icon: "⚖️", bg: ["#b98bf0", "#7a3fd0"], dark: true, label: "Ley" },
   CULTURAL: { icon: "🔮", bg: ["#ff5d8f", "#c2185b"], dark: true, label: "Ouija" },

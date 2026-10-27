@@ -48,10 +48,10 @@ export function tileRule(n: number, game: GameState, playerId: string): { title:
       };
     case "OCA":
       return {
-        title: "¡De mariposa en mariposa!",
+        title: "¡De murciélago en murciélago!",
         text: tile.next
-          ? `${name} bebe 1 vaso diciendo «¡De mariposa en mariposa y bebo porque me toca!»; la mariposa monarca (el alma que guía a los muertos) lo lleva a la siguiente mariposa (casilla ${tile.next}) y vuelve a tirar.`
-          : `Es la última mariposa: ${name} bebe 1 vaso diciendo «¡De mariposa en mariposa y bebo porque me toca!» y vuelve a tirar.`,
+          ? `${name} bebe 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!»; el murciélago lo lleva volando a la siguiente casilla de murciélago (la ${tile.next}) y vuelve a tirar.`
+          : `Es el último murciélago: ${name} bebe 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» y vuelve a tirar.`,
       };
     case "LABERINTO":
       return {

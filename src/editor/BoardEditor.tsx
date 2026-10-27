@@ -532,7 +532,7 @@ export default function BoardEditor() {
 
       <div className="flex min-h-0 flex-1">
         {/* ------------------------------------------------ herramientas */}
-        <aside className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto border-r border-white/10 bg-[#1c1f27] p-3">
+        <aside className="flex w-96 shrink-0 flex-col gap-3 overflow-y-auto border-r border-white/10 bg-[#1c1f27] p-3">
           <div className="grid gap-1">
             {TOOLS.map((t) => (
               <button

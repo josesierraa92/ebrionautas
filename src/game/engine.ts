@@ -244,11 +244,11 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       return decide(s, { kind: "DUEL", amount: Math.min(tile.amount, others.length) });
 
     case "OCA":
-      log(s, `🦋 ¡De mariposa en mariposa y bebo porque me toca!`);
+      log(s, `🦇 ¡De murciélago en murciélago y bebo porque me toca!`);
       drink(s, p.id, 1, null);
       if (tile.next) {
         p.pos = tile.next;
-        log(s, `🦋 La mariposa monarca lleva a ${p.name} hasta la ${tile.next} y vuelve a tirar.`);
+        log(s, `🦇 El murciélago lleva a ${p.name} hasta la ${tile.next} y vuelve a tirar.`);
       } else {
         log(s, `🦋 ${p.name} vuelve a tirar.`);
       }
