@@ -53,15 +53,29 @@ type Props = { game: GameState; n: number; playerId: string; cardKey: number; re
 export function cardContent(game: GameState, n: number, playerId: string, result?: Landed["result"]) {
   const player = game.players.find((p) => p.id === playerId) ?? currentPlayer(game);
   // Resultado de una tirada sin moverse (niebla, purgatorio, duelo): verde si se salvó, rojo si bebe.
+  const tile = getTile(n);
   const style = result
     ? { icon: result.icon ?? (result.good ? "✨" : result.drinks ? "🔓" : "🍷"), bg: result.good ? ["#8be86b", "#2fae4a"] : ["#ff8a8a", "#d62a3f"] }
-    : TILE_STYLE[getTile(n).type];
+    : TILE_STYLE[tile.type];
   const decision = game.decision && currentPlayer(game).id === playerId ? game.decision : null;
   // Retos y exámenes llevan su texto concreto (categoría, trabalenguas…) en la decisión.
   const rule = result ?? (decision?.kind === "SELECT_DRINKERS" ? { title: decision.title, text: decision.text } : tileRule(n, game, playerId));
-  const drinks = decision?.kind === "SELECT_DRINKERS" ? decision.drinks : result && !result.good && !result.icon ? (result.drinks ?? 1) : null;
+  const drinks =
+    decision?.kind === "SELECT_DRINKERS"
+      ? decision.drinks
+      : decision?.kind === "DISTRIBUTE"
+        ? decision.amount
+        : decision?.kind === "PATINAZO"
+          ? decision.drinks
+          : result && !result.good && !result.icon
+            ? (result.drinks ?? 1)
+            : "drinks" in tile
+              ? tile.drinks
+              : "amount" in tile && tile.type === "A_BEBER"
+                ? tile.amount
+                : null;
   // Encabezado claro (dado, gasolinera…): el texto pequeño va oscuro para que se lea.
-  const light = !result && !TILE_STYLE[getTile(n).type].dark;
+  const light = !result && !TILE_STYLE[tile.type].dark;
   return { player, style, decision, rule, drinks, light };
 }
 
