@@ -718,15 +718,6 @@ export class EditorScene {
         ctx.fillStyle = Math.random() < 0.5 ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.035)";
         ctx.fillRect(Math.random() * S, Math.random() * S, 3, 3);
       }
-      // línea discontinua apenas visible, con las puntas y las esquinas redondeadas
-      ctx.setLineDash([16, 22]);
-      ctx.lineCap = "round";
-      ctx.lineWidth = 6;
-      ctx.strokeStyle = "rgba(242,239,230,0.2)";
-      ctx.beginPath();
-      ctx.roundRect(46, 46, S - 92, S - 92, 70);
-      ctx.stroke();
-      ctx.setLineDash([]);
     } else {
       // color liso con un degradado muy suave, sin bordes ni marcos
       const grad = ctx.createLinearGradient(0, 0, S, S);
