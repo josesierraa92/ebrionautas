@@ -1,23 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { isPathCell, isoPos } from "./isoPath";
+import { isoPos } from "./isoPath";
 
-describe("recorrido isométrico", () => {
-  it("cada casilla es vecina de la siguiente y ninguna se repite", () => {
-    const seen = new Set<string>();
-    for (let n = 1; n <= 62; n++) {
-      const p = isoPos(n);
-      expect(seen.has(`${p.gx},${p.gy}`)).toBe(false);
-      seen.add(`${p.gx},${p.gy}`);
-      if (n > 1) {
-        const q = isoPos(n - 1);
-        expect(Math.abs(p.gx - q.gx) + Math.abs(p.gy - q.gy)).toBe(1);
-      }
+const dist = (a: number, b: number) => Math.hypot(isoPos(a).gx - isoPos(b).gx, isoPos(a).gy - isoPos(b).gy);
+
+describe("recorrido del tablero", () => {
+  it("cada casilla está a ~1 casilla de la siguiente", () => {
+    for (let n = 2; n <= 62; n++) {
+      expect(dist(n, n - 1)).toBeGreaterThan(0.85);
+      expect(dist(n, n - 1)).toBeLessThan(1.15);
     }
   });
 
-  it("sale delante a la izquierda y termina al fondo a la izquierda", () => {
-    expect(isoPos(1)).toEqual({ gx: 0, gy: 9 });
-    expect(isoPos(62)).toEqual({ gx: 0, gy: 0 });
-    expect(isPathCell(5, 7)).toBe(false);
+  it("los tramos que pasan cerca no se tocan (queda sitio para la decoración)", () => {
+    for (let a = 1; a <= 62; a++) for (let b = a + 3; b <= 62; b++) expect(dist(a, b), `${a} y ${b}`).toBeGreaterThan(2);
+  });
+
+  it("sale delante a la izquierda y termina al fondo", () => {
+    expect(isoPos(1).gy).toBeGreaterThan(10);
+    expect(isoPos(62).gy).toBeLessThan(0.5);
   });
 });

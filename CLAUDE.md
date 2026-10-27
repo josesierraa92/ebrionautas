@@ -24,11 +24,10 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
 - `/jugar`: sin TV, todo en una misma pantalla (partida guardada en localStorage).
 - El género resuelve solas las casillas Machos (2) y Hembras (11); el resto de casillas de
   "quién bebe" las marca el control.
-- Las fichas son 8 calaveritas fijas, una por color de jugador, con **la misma silueta** (cuerpo de gominola, patitas,
-  bracitos, cara de calaverita de azúcar y jarrito de mezcal) y un disfraz distinto cada una, como una colección
-  (referencia Astrodraws del usuario): verde mariachi, azul luchador, rosa catrina, amarillo novia, rojo diablito,
-  turquesa chamán, naranja cura, morado rockero (`alien()`/`LOOKS` en `scripts/board3d/scene.ts`; en el código el
-  componente sigue llamándose `Marciano` y las imágenes `public/art/alien/`). No hay pantalla para personalizarlos: perfiles,
+- Las fichas son 8 zombis fijos (uno por color de jugador) con la misma silueta: el zombi del kit de Kenney
+  con la camisa del color del jugador, brazos hacia delante, botella en la mano y un accesorio en la cabeza
+  (`alien()`/`headgear()`/`LOOKS` en `scripts/board3d/scene.ts`; en el código el componente sigue llamándose
+  `Marciano` y las imágenes `public/art/alien/`). No hay pantalla para personalizarlos: perfiles,
   accesorios a elegir y votación por celular se quitaron a propósito; no reintroducirlos sin que lo pida.
 - El servidor es la autoridad: `src/server/rooms.ts` guarda la mesa, ejecuta el motor
   (dados incluidos) y solo acepta jugadas con la clave del control. API en `src/app/api/rooms/`.
@@ -43,13 +42,13 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
   (ver abajo) con las fichas en SVG encima. Nada de WebGL en el navegador: el 3D en vivo rompía en la TV del usuario.
 - Cámara: el tablero está siempre con zoom (`ZOOM` en `IsoBoard`) y sigue a la última ficha que tiró (`focus` de
   `useGameFx`; antes de la primera tirada, al jugador de turno). El usuario no quiere que se aleje. Animaciones rápidas. Cada losa lleva su número de pie en el borde delantero.
-- `src/game/isoPath.ts`: recorrido de las 62 casillas (4 tramos de 14 + conectores de 2). `src/components/BoardStage.tsx`
+- `src/game/isoPath.ts`: recorrido de las 62 casillas (camino serpenteante estilo Mario Party, `ROUTE`) y la proyección. `src/components/BoardStage.tsx`
   pinta encima el dado y los títulos (`src/components/Fx.tsx`).
 - **Estética única** (pedido del usuario: "que todo tenga la misma estética", nada de "pedazos de muchos juegos"):
-  todo sale del mismo render 3D, con la misma luz, materiales y paleta. Dirección de arte: panteón de Día de Muertos
-  de noche (luz de luna lila y de velas; cipreses, jacarandas, árboles secos con farolillos, cempasúchil, velas,
-  lápidas, cruces, ofrendas, mausoleo, papel picado, botellas de mezcal y jarritos; la meta es una tumba con arco
-  de cempasúchil y el resplandor del amanecer). Paleta: morado, naranja cempasúchil, rosa mexicano, hueso.
+  todo sale del mismo render 3D, con la misma luz, materiales y paleta. **Antes de tocar el tablero, usar la skill
+  `diseno-tablero`** (`.claude/skills/diseno-tablero/SKILL.md`): estilo terror/postapocalíptico (no Día de
+  Muertos ni Halloween), recorrido serpenteante de casillas redondas al estilo Mario Party (`ROUTE` en
+  `isoPath.ts`), zonas, escala y la lista de revisión. `decor.test.ts` comprueba que nada pise ni tape casillas.
 - `scripts/board3d/scene.ts` (Three.js) construye la escena con código y `node scripts/board3d/render.mjs` la renderiza
   en Chromium sin pantalla (WebGL por software) a `public/art/board.webp` (tablero), `public/art/alien/<i>.webp`
   (calaverita por color de `PLAYER_COLORS`) y `public/art/<tipo>.webp` (losa de cada tipo, para tarjetas y títulos).

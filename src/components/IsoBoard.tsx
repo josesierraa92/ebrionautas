@@ -55,7 +55,7 @@ export default function IsoBoard({ players, current, winner, shown, flying, focu
     const off = (i - (group.length - 1) / 2) * (group.length > 2 ? 0.24 : 0.32);
     const x = sx(gx + off, gy - off);
     const y = sy(gx + off, gy - off) - TILE_T + 4;
-    const size = group.length > 3 ? 50 : 66;
+    const size = group.length > 3 ? 64 : 86;
     const isCurrent = p.id === current && !winner;
     const isFlying = p.id === flying;
     standing.push({

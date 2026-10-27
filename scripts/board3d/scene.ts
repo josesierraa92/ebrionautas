@@ -9,8 +9,8 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { BOARD, type Tile } from "@/game/board";
-import { DECOR, type Deco } from "@/game/decor";
-import { ISLAND, ISO_VIEW as VIEW, isoPos } from "@/game/isoPath";
+import { DECOR, HEIGHT, type Deco } from "@/game/decor";
+import { ISLAND, ISO_VIEW as VIEW, isoPos, routeCurve } from "@/game/isoPath";
 import { PLAYER_COLORS, TILE_STYLE } from "@/game/tileStyle";
 
 // --- Proyección (igual que IsoBoard) -------------------------------------------
@@ -23,23 +23,18 @@ const mat = (color: string, opts: Partial<THREE.MeshStandardMaterialParameters> 
   new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0, ...opts });
 const glow = (color: string, intensity = 1.6) => mat(color, { emissive: color, emissiveIntensity: intensity, roughness: 0.4 });
 
-// Paleta "Muertos de Sed": panteón de noche, morado y naranja cempasúchil, rosa mexicano.
+// Paleta de terror: panteón abandonado de noche. Hierba muerta, tierra oscura, piedra fría, luz de luna y fuego.
 const C = {
-  grass: "#3f7a5a",
-  grassLight: "#4a8763",
-  dirt: "#6b4560",
-  dirtDark: "#4a2c45",
-  cream: "#f1e6d2", // hueso
-  marigold: "#ff9500",
-  white: "#fffaf0",
-  gold: "#ffcf3f",
-  calimocho: "#c2185b",
+  grass: "#3c4434",
+  grassLight: "#434c3a",
+  dirt: "#3a302b",
+  dirtDark: "#2a2320",
+  cream: "#d9d2c3", // hueso viejo
+  white: "#e8e2d4",
+  gold: "#b8a26a",
+  calimocho: "#7a1022", // sangre / vino
+  toxic: "#8dff6a", // brillo verdoso de lo sobrenatural
 };
-
-function lighten(hex: string, amount: number) {
-  const c = new THREE.Color(hex);
-  return amount >= 0 ? c.lerp(new THREE.Color("#ffffff"), amount) : c.lerp(new THREE.Color("#000000"), -amount);
-}
 
 function shadowed<T extends THREE.Object3D>(o: T): T {
   o.traverse((m) => {
@@ -223,20 +218,26 @@ function glyphTexture(type: Tile["type"], color: string, hole: string) {
   return t;
 }
 
-const TILE_GEO = new RoundedBoxGeometry(0.95, 0.24, 0.95, 4, 0.08);
-const GLYPH_PLANE = new THREE.PlaneGeometry(0.62, 0.62).rotateX(-Math.PI / 2);
+// Casillas redondas al estilo Mario Party: un disco de color con borde claro, un poco elevado sobre el sendero.
+const RIM_GEO = new THREE.LatheGeometry(
+  [[0, 0], [0.45, 0], [0.47, 0.03], [0.47, TILE_TOP - 0.03], [0.45, TILE_TOP], [0, TILE_TOP]].map(([x, y]) => new THREE.Vector2(x, y)),
+  48,
+);
+const DISC_GEO = new THREE.CylinderGeometry(0.41, 0.41, 0.02, 48);
+const GLYPH_PLANE = new THREE.PlaneGeometry(0.56, 0.56).rotateX(-Math.PI / 2);
 
 /** Una losa con su símbolo pintado, centrada en (x, z). */
 function tile(type: Tile["type"], x: number, z: number) {
   const g = new THREE.Group();
   const s = TILE_STYLE[type];
   const colored = !["RETO", "RASGO", "POSICION", "CULTURAL"].includes(type);
-  const top = colored ? new THREE.Color(s.bg[0]).lerp(new THREE.Color(s.bg[1]), 0.25) : new THREE.Color(C.cream);
+  const top = colored ? new THREE.Color(s.bg[0]).lerp(new THREE.Color(s.bg[1]), 0.5) : new THREE.Color(C.cream);
   // símbolo blanco sobre losas de color; sobre las claras (crema, duelo), del color de la casilla o azul tinta
   const light = top.r * 0.3 + top.g * 0.59 + top.b * 0.11 > 0.8;
   const ink = !colored ? s.bg[1] : light ? "#5468a8" : "#ffffff";
   // un poco de brillo propio para que las casillas se lean de noche, como neón suave
-  g.add(shadowed(mesh(TILE_GEO, new THREE.MeshStandardMaterial({ color: top, roughness: 0.55, emissive: top, emissiveIntensity: 0.22 }), x, TILE_TOP - 0.12, z)));
+  g.add(shadowed(mesh(RIM_GEO, mat("#f6ecdc", { roughness: 0.5, emissive: "#f6ecdc", emissiveIntensity: 0.12 }), x, 0, z)));
+  g.add(shadowed(mesh(DISC_GEO, new THREE.MeshStandardMaterial({ color: top, roughness: 0.45, emissive: top, emissiveIntensity: 0.25 }), x, TILE_TOP - 0.005, z)));
   const decal = new THREE.MeshStandardMaterial({
     map: glyphTexture(type, ink, "#" + top.getHexString()),
     transparent: true,
@@ -244,14 +245,42 @@ function tile(type: Tile["type"], x: number, z: number) {
     polygonOffset: true,
     polygonOffsetFactor: -4,
   });
-  const m = mesh(GLYPH_PLANE, decal, x, TILE_TOP + 0.002, z);
+  const m = mesh(GLYPH_PLANE, decal, x, TILE_TOP + 0.008, z);
   m.receiveShadow = true;
   g.add(m);
   return g;
 }
 
+/** Sendero de tierra apisonada bajo las casillas, siguiendo la curva del recorrido. */
+function trail() {
+  // tira plana sobre el suelo: a cada punto de la curva, un vértice a cada lado (perpendicular en el plano)
+  const pts = routeCurve(40);
+  const half = 0.34;
+  const pos: number[] = [];
+  const idx: number[] = [];
+  pts.forEach((p, i) => {
+    const a = pts[Math.max(i - 1, 0)];
+    const b = pts[Math.min(i + 1, pts.length - 1)];
+    const tx = b.gx - a.gx;
+    const tz = b.gy - a.gy;
+    const len = Math.hypot(tx, tz) || 1;
+    const nx = -tz / len;
+    const nz = tx / len;
+    pos.push(p.gx + nx * half, 0.012, p.gy + nz * half, p.gx - nx * half, 0.012, p.gy - nz * half);
+    if (i > 0) idx.push(2 * i - 2, 2 * i - 1, 2 * i, 2 * i - 1, 2 * i + 1, 2 * i);
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  const m = mesh(geo, mat("#7d6274", { roughness: 0.95, side: THREE.DoubleSide }));
+  m.receiveShadow = true;
+  return m;
+}
+
 function tiles() {
   const g = new THREE.Group();
+  g.add(trail());
   for (const t of BOARD) {
     if (t.type === "META") continue;
     const { gx, gy } = isoPos(t.n);
@@ -277,7 +306,9 @@ const KENNEY = [
   "pine", "pine-crooked", "pine-fall", "pine-fall-crooked", "gravestone-round", "gravestone-cross", "gravestone-decorative",
   "gravestone-bevel", "gravestone-broken", "cross-wood", "candle-multiple", "candle", "altar-stone", "crypt-large",
   "crypt-large-roof", "grave", "shovel-dirt", "iron-fence", "iron-fence-border-column", "lightpost-single", "lantern-candle",
-  "urn-round", "fire-basket", "rocks",
+  "urn-round", "fire-basket", "rocks", "iron-fence-damaged", "fence-damaged", "fence", "stone-wall-damaged", "stone-wall",
+  "stone-wall-column", "debris", "debris-wood", "coffin-old", "coffin", "rocks-tall", "trunk", "trunk-long", "gravestone-debris",
+  "pillar-obelisk", "character-zombie",
 ] as const;
 type KenneyModel = (typeof KENNEY)[number];
 const models = new Map<KenneyModel, THREE.Object3D>();
@@ -302,16 +333,35 @@ function kenney(name: KenneyModel, height: number, turn = 0) {
 /** Altura de la parte de arriba de un objeto (para poner cosas encima). */
 const topOf = (o: THREE.Object3D) => new THREE.Box3().setFromObject(o).max.y;
 
-/** Ofrenda: altar de piedra con velas, cempasúchil, pan de muerto y una calaverita de azúcar. */
-function ofrenda(v: number) {
-  const g = kenney("altar-stone", 0.32, Math.PI / 2);
-  const top = topOf(g);
-  g.add(kenney("candle-multiple", 0.16).translateX(-0.12).translateY(top).translateZ(0.08));
-  const bread = sphere(0.06, mat("#d9893b", { roughness: 0.7 }), 0.1, top + 0.03, 0.05, 14);
-  bread.scale.y = 0.6;
-  g.add(bread, sphere(0.05, mat("#fffaf0", { roughness: 0.4 }), 0.02, top + 0.05, -0.1, 14));
-  [-1, 1].forEach((s) => g.add(sphere(0.012, mat("#ff4f8b"), 0.02 + s * 0.017, top + 0.06, -0.06, 8)));
-  for (let k = 0; k < 5; k++) g.add(sphere(0.04, mat(k % 2 ? C.marigold : "#ff4f8b", { roughness: 0.9, flatShading: true }), -0.2 + k * 0.1, top + 0.02, -0.16 + v * 0.02, 6));
+/** Árbol muerto low poly: tronco retorcido y ramas peladas, sin hojas (siempre igual para la misma posición). */
+function deadTree(v: number) {
+  const g = new THREE.Group();
+  const bark = mat("#3b3530", { flatShading: true, roughness: 1 });
+  const branch = (len: number, r: number, depth: number, seed: number): THREE.Object3D => {
+    const b = new THREE.Group();
+    const m = mesh(new THREE.CylinderGeometry(r * 0.6, r, len, 6), bark, 0, len / 2, 0);
+    b.add(m);
+    if (depth > 0) {
+      const n = depth >= 2 ? 3 : 2;
+      for (let k = 0; k < n; k++) {
+        const child = branch(len * 0.62, r * 0.6, depth - 1, seed * 7 + k);
+        child.position.y = len * (0.55 + 0.4 * ((k + 1) / n));
+        child.rotation.set(0.6 + ((seed + k) % 3) * 0.18, (seed * 2.3 + k * 2.1) % 6.28, 0);
+        b.add(child);
+      }
+    }
+    return b;
+  };
+  const trunk = branch(1, 0.2, 3, Math.floor(v * 10) + 1);
+  trunk.rotation.z = (v - 0.5) * 0.25;
+  g.add(trunk);
+  // raíces
+  for (let k = 0; k < 4; k++) {
+    const root = mesh(new THREE.ConeGeometry(0.07, 0.35, 5), bark, 0, 0.04, 0);
+    root.rotation.set(Math.PI / 2.4, (k / 4) * Math.PI * 2 + v, 0);
+    root.translateY(0.12);
+    g.add(root);
+  }
   return g;
 }
 
@@ -332,19 +382,6 @@ function mausoleum() {
 function grave() {
   const g = kenney("grave", 0.12);
   g.add(kenney("cross-wood", 0.5).translateZ(-0.42));
-  return g;
-}
-
-/** Mata de cempasúchil: hojas verdes con pompones naranjas. */
-function marigold(v: number) {
-  const g = new THREE.Group();
-  // low poly, como los modelos de Kenney
-  g.add(mesh(new THREE.IcosahedronGeometry(0.16, 0), mat("#2f6b3a", { flatShading: true }), 0, 0.1, 0));
-  for (let k = 0; k < 7; k++) {
-    const a = k * 0.9 + v * 5;
-    const r = k === 0 ? 0 : 0.11;
-    g.add(mesh(new THREE.IcosahedronGeometry(0.06, 0), mat(k % 3 ? C.marigold : "#ffb627", { roughness: 0.9, flatShading: true }), Math.cos(a) * r, 0.2 + (k % 2) * 0.03, Math.sin(a) * r));
-  }
   return g;
 }
 
@@ -371,65 +408,47 @@ function sign() {
   return g;
 }
 
-/** Guirnalda de papel picado entre dos puntos. */
-function papelPicado(a: THREE.Vector3, b: THREE.Vector3, n = 12) {
-  const g = new THREE.Group();
-  const colors = ["#ff4f8b", "#ff9f1c", "#b07cff", "#3fd0c9", "#ffd23f", "#7ee36b"];
-  const pts: THREE.Vector3[] = [];
-  const dir = b.clone().sub(a);
-  const yaw = Math.atan2(-dir.z, dir.x);
-  for (let i = 0; i <= n; i++) {
-    const t = i / n;
-    const p = a.clone().lerp(b, t);
-    p.y -= Math.sin(t * Math.PI) * 0.22;
-    pts.push(p);
-    if (i < n) {
-      const flag = mesh(new THREE.PlaneGeometry(0.2, 0.17), new THREE.MeshStandardMaterial({ color: colors[i % colors.length], side: THREE.DoubleSide, roughness: 0.7, emissive: colors[i % colors.length], emissiveIntensity: 0.25 }));
-      const q = a.clone().lerp(b, t + 0.5 / n);
-      q.y -= Math.sin((t + 0.5 / n) * Math.PI) * 0.22 + 0.09;
-      flag.position.copy(q);
-      flag.rotation.y = yaw;
-      g.add(flag);
-    }
-  }
-  g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.005, 4), mat("#3b2c4a")));
+/** Lápida partida con sus escombros. */
+function brokenTomb() {
+  const g = kenney("gravestone-debris", 1);
   return g;
 }
 
-/** Altura de cada objeto en casillas (tabla de escala de la skill diseno-tablero). */
 function decoration(d: Deco) {
   const v = vary(d.gx, d.gy);
   const builders: Record<Deco["kind"], () => THREE.Object3D> = {
-    pine: () => kenney(v > 0.5 ? "pine" : "pine-crooked", 2.2 + v * 0.4),
-    pineFall: () => kenney(v > 0.5 ? "pine-fall" : "pine-fall-crooked", 2.1 + v * 0.4),
-    lantern: () => kenney("lightpost-single", 1.25),
+    deadTree: () => deadTree(v),
+    lantern: () => kenney("lightpost-single", 1),
     crypt: () => mausoleum(),
-    tombstone: () => kenney((["gravestone-round", "gravestone-cross", "gravestone-decorative", "gravestone-bevel"] as const)[Math.floor(v * 4)], 0.5),
-    cross: () => kenney("cross-wood", 0.5),
-    candles: () => kenney("candle-multiple", 0.36),
-    marigold: () => marigold(v),
-    ofrenda: () => ofrenda(v),
+    wall: () => kenney("stone-wall-damaged", 1),
+    tombstone: () => kenney((["gravestone-round", "gravestone-cross", "gravestone-decorative", "gravestone-bevel", "gravestone-broken"] as const)[Math.floor(v * 5)], 1),
+    brokenTomb: () => brokenTomb(),
+    cross: () => kenney("cross-wood", 1),
+    candles: () => kenney("candle-multiple", 1),
+    fire: () => kenney("fire-basket", 1),
+    coffin: () => kenney(v > 0.5 ? "coffin-old" : "coffin", 1),
+    debris: () => kenney(v > 0.5 ? "debris" : "debris-wood", 1),
+    rocks: () => kenney(v > 0.5 ? "rocks" : "rocks-tall", 1),
+    stump: () => kenney(v > 0.5 ? "trunk" : "trunk-long", 1),
     grave: () => grave(),
     sign: () => sign(),
   };
   const o = builders[d.kind]();
+  // cada objeto mide lo que dice la tabla HEIGHT de decor.ts (la misma que usa el test); los árboles varían un poco
+  o.scale.multiplyScalar((HEIGHT[d.kind] * (d.kind === "deadTree" ? 0.85 + v * 0.3 : 1)) / topOf(o));
   o.position.set(d.gx, 0, d.gy);
   o.rotation.y += d.turn ?? 0;
   // solo la vegetación lleva una variación mínima de giro (regla: alineado a la cuadrícula)
-  if (d.kind === "pine" || d.kind === "pineFall" || d.kind === "marigold") o.rotation.y += (v - 0.5) * 0.35;
-  if (d.kind === "crypt") o.scale.multiplyScalar(2);
-  if (d.kind === "marigold") o.scale.multiplyScalar(1.6);
-  if (d.kind === "ofrenda") o.scale.multiplyScalar(1.5);
-  if (d.kind === "sign") o.scale.multiplyScalar(1.3);
+  if (d.kind === "deadTree" || d.kind === "rocks" || d.kind === "debris") o.rotation.y += v * Math.PI * 2;
   return shadowed(o);
 }
 
 // --- Tu Tumba (meta) -------------------------------------------------------------------
-/** La tumba de destino: lápida grande con arco de cempasúchil, velas y el resplandor del amanecer. */
+/** La tumba de destino: lápida grande y vieja con cruz de hierro, velas y un brillo verdoso del más allá. */
 function goalTomb(at = isoPos(BOARD.length)) {
   const { gx, gy } = at;
   const g = new THREE.Group();
-  g.add(shadowed(mesh(new RoundedBoxGeometry(1.25, 0.4, 1.25, 4, 0.1), mat("#b9b3cc", { roughness: 0.6 }), 0, 0.12, 0)));
+  g.add(shadowed(mesh(new RoundedBoxGeometry(1.25, 0.4, 1.25, 4, 0.1), mat("#5c5a62", { roughness: 0.9, flatShading: true }), 0, 0.12, 0)));
   const tomb = new THREE.Group();
   const slab = new THREE.Shape();
   slab.moveTo(-0.38, 0);
@@ -439,40 +458,36 @@ function goalTomb(at = isoPos(BOARD.length)) {
   slab.lineTo(-0.38, 0);
   const geo = new THREE.ExtrudeGeometry(slab, { depth: 0.16, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 3 });
   geo.translate(0, 0, -0.08);
-  tomb.add(mesh(geo, mat("#e9e3f5", { roughness: 0.5 })));
-  // cruz dorada y calavera grabada
-  tomb.add(mesh(new THREE.BoxGeometry(0.07, 0.34, 0.03), mat(C.gold, { metalness: 0.6, roughness: 0.3 }), 0, 0.82, 0.1));
-  tomb.add(mesh(new THREE.BoxGeometry(0.24, 0.07, 0.03), mat(C.gold, { metalness: 0.6, roughness: 0.3 }), 0, 0.88, 0.1));
-  tomb.add(sphere(0.1, mat("#fffaf0", { roughness: 0.4 }), 0, 0.42, 0.1, 18));
-  [-1, 1].forEach((s) => tomb.add(sphere(0.028, mat("#1e1028"), s * 0.035, 0.44, 0.18, 10)));
-  // arco de cempasúchil
-  for (let k = 0; k <= 16; k++) {
-    const a = (k / 16) * Math.PI;
-    tomb.add(sphere(0.07, mat(k % 3 ? C.marigold : "#ff4f8b", { roughness: 0.9 }), Math.cos(a) * 0.55, 0.15 + Math.sin(a) * 0.95, 0.12, 12));
-  }
+  tomb.add(mesh(geo, mat("#8d8a92", { roughness: 0.95, flatShading: true })));
+  // cruz de hierro oxidado y una calavera grabada
+  const iron = mat("#3a2f2a", { metalness: 0.5, roughness: 0.6 });
+  tomb.add(mesh(new THREE.BoxGeometry(0.07, 0.34, 0.03), iron, 0, 0.82, 0.1));
+  tomb.add(mesh(new THREE.BoxGeometry(0.24, 0.07, 0.03), iron, 0, 0.88, 0.1));
+  tomb.add(sphere(0.1, mat("#cfc8b8", { roughness: 0.8 }), 0, 0.42, 0.1, 10));
+  [-1, 1].forEach((s) => tomb.add(sphere(0.028, glow(C.toxic, 2), s * 0.035, 0.44, 0.18, 8)));
   tomb.position.y = 0.32;
   tomb.rotation.y = Math.PI / 4;
   g.add(shadowed(tomb));
   // velas alrededor
   [[0.45, 0.45], [-0.45, 0.45], [0.45, -0.45], [0.5, 0.05], [0.05, 0.5]].forEach(([x, z], k) => {
     const h = 0.14 + (k % 3) * 0.05;
-    g.add(cyl(0.035, 0.035, h, mat("#fff4e0"), x, 0.32, z, 12));
+    g.add(cyl(0.035, 0.035, h, mat("#d9d0bd"), x, 0.32, z, 12));
     g.add(mesh(new THREE.ConeGeometry(0.022, 0.07, 10), glow("#ffb347", 3), x, 0.32 + h + 0.035, z));
   });
-  // luz cálida del amanecer que asoma detrás de la tumba
-  const dawn = new THREE.PointLight("#ffb347", 6, 4, 1.4);
-  dawn.position.set(-0.4, 1.4, -0.4);
-  g.add(dawn);
+  // brillo verdoso del más allá sobre la tumba
+  const ghost = new THREE.PointLight(C.toxic, 5, 3.5, 1.4);
+  ghost.position.set(0.3, 1.3, 0.3);
+  g.add(ghost);
   g.position.set(gx, 0, gy);
   return g;
 }
 
 // --- Escena y render ------------------------------------------------------------------
 function lights(scene: THREE.Scene, target: THREE.Vector3, shadowSize: number) {
-  // noche de Día de Muertos: cielo morado, luz de luna lila y algo de calor de las velas
-  scene.add(new THREE.HemisphereLight("#9b7bff", "#3a2050", 1.25));
-  scene.add(new THREE.AmbientLight("#ffd9b0", 0.3));
-  const sun = new THREE.DirectionalLight("#d8ccff", 2.0);
+  // noche de terror: cielo azul frío, luna pálida; el calor solo viene del fuego y las velas
+  scene.add(new THREE.HemisphereLight("#7d93b8", "#1a1814", 1.0));
+  scene.add(new THREE.AmbientLight("#b8c4d8", 0.15));
+  const sun = new THREE.DirectionalLight("#cfe0ff", 1.9);
   sun.position.set(target.x - 7, 12, target.z - 5);
   sun.target.position.copy(target);
   sun.castShadow = true;
@@ -520,7 +535,8 @@ function ironFence(x0: number, z0: number, x1: number, z1: number) {
   const yaw = -Math.atan2(z1 - z0, x1 - x0);
   for (let i = 0; i < n; i++) {
     const t = (i + 0.5) / n;
-    const p = i % 4 === 0 ? kenney("iron-fence-border-column", 0.4) : piece.clone(true);
+    // reja vieja: columnas cada cuatro tramos y algún tramo roto
+    const p = i % 4 === 0 ? kenney("iron-fence-border-column", 0.4) : i % 5 === 2 ? kenney("iron-fence-damaged", 0.32) : piece.clone(true);
     p.position.set(x0 + (x1 - x0) * t, 0, z0 + (z1 - z0) * t);
     p.rotation.y = yaw;
     g.add(p);
@@ -533,19 +549,18 @@ export async function renderBoard(scale: number) {
   const scene = new THREE.Scene();
   scene.add(island(), tiles(), goalTomb());
   for (const d of DECOR) scene.add(decoration(d));
-  // papel picado colgado entre los árboles de la primera fila del fondo
-  scene.add(papelPicado(new THREE.Vector3(1.2, 1.4, -1.2), new THREE.Vector3(6, 1.4, -1.2), 14));
-  scene.add(papelPicado(new THREE.Vector3(8.4, 1.4, -1.2), new THREE.Vector3(13.2, 1.4, -1.2), 14));
+  // niebla: lo del fondo se pierde en la oscuridad
+  scene.fog = new THREE.Fog("#141a22", 44, 66);
   // reja de hierro al borde de la isla: fondo y lados (delante no: taparía las casillas; a la izquierda
   // deja la entrada junto a la salida)
   const { y0: J0 } = ISLAND;
   scene.add(shadowed(ironFence(I0 + 0.6, J0 + 0.25, IX - 0.6, J0 + 0.25)));
   scene.add(shadowed(ironFence(I0 + 0.25, J0 + 0.6, I0 + 0.25, IY - 2.4)));
   scene.add(shadowed(ironFence(IX - 0.25, J0 + 0.6, IX - 0.25, IY - 0.6)));
-  // luz cálida de velas, ofrenda y faroles
-  for (const d of DECOR.filter((x) => x.kind === "candles" || x.kind === "ofrenda" || x.kind === "lantern")) {
-    const l = new THREE.PointLight("#ffa040", 2.2, 2.6, 1.6);
-    l.position.set(d.gx, 0.5, d.gy);
+  // luz de fuego: braseros fuertes, velas suaves
+  for (const d of DECOR.filter((x) => x.kind === "fire" || x.kind === "candles" || x.kind === "lantern")) {
+    const l = d.kind === "fire" ? new THREE.PointLight("#ff7a2a", 7, 4.5, 1.5) : new THREE.PointLight("#ffa040", 1.8, 2.2, 1.6);
+    l.position.set(d.gx, d.kind === "fire" ? 0.9 : 0.5, d.gy);
     scene.add(l);
   }
   lights(scene, new THREE.Vector3(6.5, 0, 4.5), 8192);
@@ -556,265 +571,106 @@ export async function renderBoard(scale: number) {
   return r.domElement.toDataURL("image/png");
 }
 
-// --- Calaveritas (fichas) ---------------------------------------------------------------
-// Todas comparten la misma silueta (cuerpo de gominola: ancho abajo, redondo arriba, patitas
-// y bracitos cortos), la cara de calaverita de azúcar y su jarrito de mezcal; cada una se
-// distingue por su disfraz, como una colección de muñecos. Se construyen mirando a +z y luego
-// se giran hacia la cámara.
+// --- Fichas: zombis con accesorios ---------------------------------------------------------
+// Base única: el zombi del kit de Kenney (piezas rígidas: piernas, torso, brazos, cabeza), así todos
+// tienen la misma silueta. Cada jugador se distingue por la camisa de su color y un accesorio en la
+// cabeza; todos con los brazos hacia delante (pose de zombi) y una botella en la mano.
 
-/** Perfil del cuerpo (radio, altura) para el torno. */
-const BODY_PROFILE = new THREE.SplineCurve(
-  [[0, 0], [0.28, 0], [0.34, 0.06], [0.36, 0.24], [0.35, 0.5], [0.3, 0.7], [0.19, 0.85], [0, 0.89]].map(([x, y]) => new THREE.Vector2(x, y)),
-).getPoints(48);
-// alturas de la cara y de la coronilla (los accesorios se colocan respecto a ellas)
-const EYE_Y = 0.57;
-const MOUTH_Y = 0.44;
-const TOP = 0.89;
+type Look = "casco" | "gorra" | "novia" | "obra" | "vaquero" | "gas" | "cono" | "chistera";
+const LOOKS: Look[] = ["casco", "gorra", "novia", "obra", "vaquero", "gas", "cono", "chistera"];
 
-/** Radio del cuerpo a la altura y (para pegar ojos, boca y accesorios a la superficie). */
-function bodyR(y: number) {
-  for (let i = 1; i < BODY_PROFILE.length; i++) {
-    const a = BODY_PROFILE[i - 1];
-    const b = BODY_PROFILE[i];
-    if ((a.y <= y && y <= b.y) || (b.y <= y && y <= a.y)) {
-      const t = b.y === a.y ? 0 : (y - a.y) / (b.y - a.y);
-      return a.x + (b.x - a.x) * t;
-    }
-  }
-  return 0;
-}
-
-/** Punto de la superficie delantera a la altura y, desplazado `side` hacia un lado. */
-function onFront(y: number, side = 0, out = 0) {
-  const r = bodyR(y);
-  const z = Math.sqrt(Math.max(r * r - side * side, 0));
-  return new THREE.Vector3(side, y, z + out);
-}
-
-/** Pega un objeto a la superficie delantera, orientado hacia fuera. */
-function stick(o: THREE.Object3D, y: number, side = 0, out = 0) {
-  const p = onFront(y, side, out);
-  o.position.copy(p);
-  o.lookAt(p.clone().add(new THREE.Vector3(side * 1.4, 0, p.z).normalize()));
-  return o;
-}
-
-type Look = "mariachi" | "luchador" | "catrina" | "novia" | "diablito" | "chaman" | "cura" | "rockero";
-const LOOKS: Look[] = ["mariachi", "luchador", "catrina", "novia", "diablito", "chaman", "cura", "rockero"];
-const INK = "#1e1028";
-
-/** Cuenca del ojo de la calavera: hueco oscuro con un brillo de color (los muertos tienen alma). */
-function socket(iris: string, size = 0.072) {
+/** Accesorio de cabeza, en coordenadas de la cabeza: `top` es la coronilla, `w` el ancho y `front` la cara. */
+function headgear(look: Look, w: number, top: number, front: number) {
   const g = new THREE.Group();
-  const hole = sphere(size, mat(INK, { roughness: 0.3 }), 0, 0, 0, 24);
-  hole.scale.set(1, 1.1, 0.4);
-  const glowEye = sphere(size * 0.38, glow(iris, 1.4), size * 0.1, 0, size * 0.3, 14);
-  glowEye.scale.z = 0.5;
-  const shine = sphere(size * 0.14, mat("#ffffff"), size * 0.25, size * 0.25, size * 0.4, 8);
-  g.add(hole, glowEye, shine);
-  return g;
-}
-
-/** Cara de calaverita de azúcar pintada sobre el cuerpo: máscara de hueso, cuencas, nariz y sonrisa cosida. */
-function sugarSkull(g: THREE.Group, accent: string, opts: { eyes?: boolean; mask?: boolean } = {}) {
-  const bone = mat("#fbf3e6", { roughness: 0.45, emissive: "#fbf3e6", emissiveIntensity: 0.12 });
-  // con máscara de hueso, los rasgos van por delante de ella (sobresale unos 4 cm del cuerpo)
-  const lift = opts.mask === false ? 0 : 1;
-  if (opts.mask !== false) {
-    const face = sphere(0.24, bone, 0, 0, 0, 32);
-    face.scale.set(1, 1.05, 0.32);
-    g.add(stick(face, EYE_Y - 0.06, 0, -0.035));
-  }
-  if (opts.eyes !== false) for (const s of [-1, 1]) g.add(stick(socket(accent), EYE_Y, s * 0.095, 0.03 * lift));
-  // nariz de corazón al revés
-  for (const s of [-1, 1]) {
-    const n = sphere(0.018, mat(INK), 0, 0, 0, 10);
-    n.scale.z = 0.4;
-    g.add(stick(n, MOUTH_Y + 0.055, s * 0.012, 0.004 + 0.04 * lift));
-  }
-  // sonrisa cosida
-  const mouth = new THREE.Group();
-  const line = mesh(new THREE.TorusGeometry(0.08, 0.008, 6, 24, Math.PI * 0.7), mat(INK));
-  line.rotation.z = Math.PI + Math.PI * 0.15;
-  mouth.add(line);
-  for (let k = -3; k <= 3; k++) {
-    const a = -Math.PI / 2 + k * 0.17;
-    const st = mesh(new THREE.BoxGeometry(0.006, 0.035, 0.006), mat(INK), Math.cos(a) * 0.08, Math.sin(a) * 0.08 + 0.002, 0);
-    st.rotation.z = a + Math.PI / 2;
-    mouth.add(st);
-  }
-  g.add(stick(mouth, MOUTH_Y + 0.07, 0, 0.004 + 0.035 * lift));
-  // adornos de colores: puntitos en las mejillas y una flor en la frente
-  for (const s of [-1, 1]) {
-    for (let k = 0; k < 3; k++) {
-      const d = sphere(0.011, mat(accent), 0, 0, 0, 8);
-      d.scale.z = 0.4;
-      g.add(stick(d, MOUTH_Y + 0.02 + k * 0.022, s * (0.155 + (k % 2) * 0.012), 0.003 + 0.02 * lift));
-    }
-  }
-  const flower = new THREE.Group();
-  for (let k = 0; k < 6; k++) {
-    const a = (k / 6) * Math.PI * 2;
-    const pt = sphere(0.018, mat(accent), Math.cos(a) * 0.024, Math.sin(a) * 0.024, 0, 8);
-    pt.scale.z = 0.35;
-    flower.add(pt);
-  }
-  flower.add(sphere(0.012, mat(C.gold), 0, 0, 0.004, 8));
-  g.add(stick(flower, EYE_Y + 0.12, 0, 0.002 + 0.025 * lift));
-}
-
-/** Calaverita fiestera: misma silueta para todos, cara de calavera de azúcar, jarrito de barro y un disfraz. */
-function alien(color: string, look: Look) {
-  const g = new THREE.Group();
-  const skin = mat(color, { roughness: 0.5 });
-  const dark = mat("#" + lighten(color, -0.35).getHexString(), { roughness: 0.6 });
-
-  // cuerpo (con el traje del color del jugador), patitas de hueso y bracitos
-  g.add(mesh(new THREE.LatheGeometry(BODY_PROFILE, 64), skin));
-  for (const s of [-1, 1]) {
-    const foot = sphere(0.085, mat("#fbf3e6", { roughness: 0.5 }), s * 0.15, 0.03, 0.12, 20);
-    foot.scale.set(1, 0.55, 1.25);
-    g.add(foot);
-  }
-  for (const s of [-1, 1]) {
-    const arm = sphere(0.075, skin, s * 0.36, 0.3, 0.06, 20);
-    arm.scale.set(0.8, 1.25, 0.8);
-    arm.rotation.z = s * 0.5;
-    g.add(arm);
-  }
-  // jarrito de barro con mezcal, en la mano izquierda
-  const clay = mat("#c8663b", { roughness: 0.75 });
-  g.add(mesh(new THREE.CylinderGeometry(0.065, 0.05, 0.13, 20), clay, -0.38, 0.27, 0.18));
-  const handle = mesh(new THREE.TorusGeometry(0.035, 0.012, 8, 16), clay, -0.45, 0.28, 0.18);
-  handle.rotation.y = Math.PI / 2;
-  g.add(handle);
-  const drink = mesh(new THREE.CircleGeometry(0.058, 20), glow("#ffe9a8", 0.3), -0.38, 0.336, 0.18);
-  drink.rotation.x = -Math.PI / 2;
-  g.add(drink);
-
+  const m = (c: string, o: Partial<THREE.MeshStandardMaterialParameters> = {}) => mat(c, { flatShading: true, roughness: 0.7, ...o });
+  const dome = (r: number, color: string, sy = 0.75) => {
+    const d = mesh(new THREE.SphereGeometry(r, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), m(color), 0, top - w * 0.12, 0);
+    d.scale.y = sy;
+    return d;
+  };
   switch (look) {
-    case "mariachi": {
-      sugarSkull(g, "#ff4f8b");
-      const black = mat("#1e1028", { roughness: 0.6 });
-      const brim = mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.03, 48), black, 0, TOP - 0.1, 0);
-      const crown = mesh(new THREE.CylinderGeometry(0.17, 0.22, 0.24, 32), black, 0, TOP - 0.08, 0);
-      const trim = mesh(new THREE.TorusGeometry(0.5, 0.015, 8, 48), mat(C.gold, { metalness: 0.7, roughness: 0.3 }), 0, TOP - 0.085, 0);
-      trim.rotation.x = Math.PI / 2;
-      const band = mesh(new THREE.TorusGeometry(0.21, 0.018, 8, 32), mat(C.gold, { metalness: 0.7, roughness: 0.3 }), 0, TOP - 0.03, 0);
-      band.rotation.x = Math.PI / 2;
-      g.add(brim, crown, trim, band);
-      // moño de charro
-      const bow = new THREE.Group();
-      for (const s of [-1, 1]) {
-        const w = mesh(new THREE.ConeGeometry(0.05, 0.09, 4), mat("#c2185b"), s * 0.045, 0, 0);
-        w.rotation.z = (s * Math.PI) / 2;
-        bow.add(w);
-      }
-      g.add(stick(bow, 0.24, 0, 0.01));
+    case "casco": // casco militar con correa
+      g.add(dome(w * 0.66, "#4b5a3a"), mesh(new THREE.CylinderGeometry(w * 0.72, w * 0.72, w * 0.05, 14), m("#3d4a2f"), 0, top - w * 0.1, 0));
       break;
-    }
-    case "luchador": {
-      // máscara de luchador en vez de la cara de hueso: de color, con ribetes y cuencas
-      sugarSkull(g, "#ffd23f", { mask: false });
-      const trimMat = mat("#ffd23f", { roughness: 0.4 });
-      for (const s of [-1, 1]) {
-        const ring = mesh(new THREE.TorusGeometry(0.085, 0.014, 8, 24), trimMat);
-        g.add(stick(ring, EYE_Y, s * 0.095, 0.004));
-      }
-      const crest = mesh(new THREE.BoxGeometry(0.04, 0.3, 0.05), trimMat, 0, TOP - 0.06, 0.12);
-      crest.rotation.x = -0.6;
-      g.add(crest);
-      // capa
-      const cape = mesh(new THREE.CylinderGeometry(0.3, 0.42, 0.55, 32, 1, true, Math.PI * 0.75, Math.PI * 1.5), mat("#ffd23f", { side: THREE.DoubleSide, roughness: 0.6 }), 0, 0.35, -0.03);
-      g.add(cape);
-      break;
-    }
-    case "catrina": {
-      sugarSkull(g, "#ff4f8b");
-      const hat = mat("#2b1840", { roughness: 0.6 });
-      const brim = mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.025, 48), hat, 0, TOP - 0.08, 0);
-      brim.rotation.x = -0.15;
-      const crown = mesh(new THREE.SphereGeometry(0.22, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), hat, 0, TOP - 0.08, -0.02);
-      g.add(brim, crown);
-      // flores y pluma
-      [[0.18, 0.05, "#ff4f8b"], [0.05, 0.2, C.marigold], [-0.12, 0.17, "#b07cff"], [0.22, -0.1, "#ffd23f"]].forEach(([x, z, c]) =>
-        g.add(sphere(0.06, mat(c as string, { roughness: 0.8 }), x as number, TOP - 0.02, z as number, 14)),
-      );
-      const feather = sphere(0.05, mat("#fbf3e6"), -0.15, TOP + 0.12, -0.05, 14);
-      feather.scale.set(0.6, 2.6, 0.6);
-      feather.rotation.z = 0.5;
-      g.add(feather);
+    case "gorra": {
+      g.add(dome(w * 0.6, "#2a3f73", 0.6));
+      const visor = mesh(new THREE.BoxGeometry(w * 0.7, w * 0.05, w * 0.45), m("#22335e"), 0, top - w * 0.08, front + w * 0.12);
+      g.add(visor);
       break;
     }
     case "novia": {
-      sugarSkull(g, "#b07cff");
-      // velo y corona de flores
-      const veil = mesh(new THREE.SphereGeometry(0.42, 32, 20, Math.PI * 0.85, Math.PI * 1.3, 0, Math.PI * 0.62), mat("#ffffff", { transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false, roughness: 0.6 }), 0, 0.5, -0.02);
-      veil.scale.y = 1.15;
+      // velo roto y una corona de flores marchitas
+      const veil = mesh(new THREE.ConeGeometry(w * 0.75, w * 1.4, 10, 1, true), m("#e8e2d4", { transparent: true, opacity: 0.6, side: THREE.DoubleSide }), 0, top - w * 0.55, -w * 0.12);
       g.add(veil);
-      for (let k = 0; k < 9; k++) {
-        const a = (k / 9) * Math.PI * 2;
-        g.add(sphere(0.045, mat(k % 2 ? "#ffffff" : "#ff8fb0", { roughness: 0.8 }), Math.cos(a) * 0.19, TOP - 0.06, Math.sin(a) * 0.19, 12));
+      for (let k = 0; k < 7; k++) {
+        const a = (k / 7) * Math.PI * 2;
+        g.add(mesh(new THREE.IcosahedronGeometry(w * 0.09, 0), m(k % 2 ? "#d8c7c0" : "#8a2a3a"), Math.cos(a) * w * 0.38, top - w * 0.04, Math.sin(a) * w * 0.38));
       }
       break;
     }
-    case "diablito": {
-      sugarSkull(g, "#ffd23f");
-      for (const s of [-1, 1]) {
-        const horn = mesh(new THREE.ConeGeometry(0.05, 0.18, 16), mat("#2b1018", { roughness: 0.4 }), s * 0.15, TOP - 0.02, 0);
-        horn.rotation.z = -s * 0.45;
-        g.add(horn);
-      }
-      // colita con punta de flecha
-      const tail = mesh(new THREE.TorusGeometry(0.16, 0.018, 8, 24, Math.PI * 1.2), dark, -0.05, 0.22, -0.4);
-      tail.rotation.y = Math.PI / 2;
-      g.add(tail, mesh(new THREE.ConeGeometry(0.05, 0.08, 3), dark, -0.05, 0.38, -0.5));
+    case "obra": // casco de obra amarillo
+      g.add(dome(w * 0.62, "#e0b020"), mesh(new THREE.CylinderGeometry(w * 0.7, w * 0.7, w * 0.04, 14), m("#c99a12"), 0, top - w * 0.1, w * 0.06));
       break;
-    }
-    case "chaman": {
-      sugarSkull(g, "#3fd0c9");
-      // penacho de plumas
-      const colors = ["#ff4f8b", C.marigold, "#ffd23f", "#3fd0c9", "#b07cff"];
-      for (let k = -4; k <= 4; k++) {
-        const f = sphere(0.045, mat(colors[(k + 4) % colors.length], { roughness: 0.7 }), Math.sin(k * 0.3) * 0.22, TOP + 0.1, -0.04 - Math.cos(k * 0.3) * 0.04, 12);
-        f.scale.set(0.6, 2.8, 0.4);
-        f.rotation.z = -k * 0.28;
-        g.add(f);
-      }
-      const band = mesh(new THREE.TorusGeometry(0.27, 0.025, 8, 36), mat("#7a4a2c"), 0, TOP - 0.17, 0);
-      band.rotation.x = Math.PI / 2;
-      g.add(band);
+    case "vaquero":
+      g.add(mesh(new THREE.CylinderGeometry(w * 0.95, w * 0.95, w * 0.05, 14), m("#5a3a24"), 0, top + w * 0.02, 0));
+      g.add(mesh(new THREE.CylinderGeometry(w * 0.4, w * 0.48, w * 0.45, 10), m("#6b4630"), 0, top + w * 0.25, 0));
       break;
-    }
-    case "cura": {
-      sugarSkull(g, "#ffd23f");
-      // alzacuellos blanco y cruz dorada
-      g.add(stick(mesh(new THREE.BoxGeometry(0.08, 0.05, 0.02), mat("#ffffff")), 0.3, 0, 0.01));
-      const cross = new THREE.Group();
-      cross.add(mesh(new THREE.BoxGeometry(0.025, 0.1, 0.015), mat(C.gold, { metalness: 0.7, roughness: 0.3 })), mesh(new THREE.BoxGeometry(0.07, 0.025, 0.015), mat(C.gold, { metalness: 0.7, roughness: 0.3 }), 0, 0.02, 0));
-      g.add(stick(cross, 0.17, 0, 0.012));
-      // bonete negro
-      const hat = mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.12, 4), mat("#1e1028", { roughness: 0.6 }), 0, TOP - 0.02, 0);
-      hat.rotation.y = Math.PI / 4;
-      g.add(hat, sphere(0.035, mat("#c2185b"), 0, TOP + 0.06, 0, 10));
-      break;
-    }
-    case "rockero": {
-      sugarSkull(g, "#7ee36b", { eyes: false });
-      // gafas de sol y cresta punk
-      for (const s of [-1, 1]) g.add(stick(mesh(new RoundedBoxGeometry(0.15, 0.085, 0.03, 3, 0.03), mat(INK, { roughness: 0.15, metalness: 0.3 })), EYE_Y, s * 0.09, 0.045));
-      for (let k = 0; k < 6; k++) {
-        const spike = mesh(new THREE.ConeGeometry(0.045, 0.2, 8), mat("#7ee36b", { roughness: 0.5 }), 0, TOP - 0.02 - Math.abs(k - 2.5) * 0.03, 0.18 - k * 0.07);
-        spike.rotation.x = -0.3 + k * 0.12;
-        g.add(spike);
+    case "gas": {
+      // máscara de gas sobre la cara y gafas redondas
+      const face = mesh(new THREE.BoxGeometry(w * 0.85, w * 0.55, w * 0.12), m("#2b2b2b"), 0, top - w * 0.6, front + w * 0.03);
+      const filter = mesh(new THREE.CylinderGeometry(w * 0.16, w * 0.2, w * 0.3, 10), m("#4a4a48"), 0, top - w * 0.78, front + w * 0.2);
+      filter.rotation.x = Math.PI / 2;
+      g.add(face, filter);
+      for (const sx of [-1, 1]) {
+        const lens = mesh(new THREE.CylinderGeometry(w * 0.14, w * 0.14, w * 0.06, 12), glow(C.toxic, 0.8), sx * w * 0.2, top - w * 0.42, front + w * 0.08);
+        lens.rotation.x = Math.PI / 2;
+        g.add(lens);
       }
       break;
     }
+    case "cono": // cono de tráfico en la cabeza
+      g.add(mesh(new THREE.ConeGeometry(w * 0.45, w * 1.1, 10), m("#e8641e"), 0, top + w * 0.5, 0));
+      g.add(mesh(new THREE.CylinderGeometry(w * 0.27, w * 0.32, w * 0.15, 10), m("#e8e2d4"), 0, top + w * 0.45, 0));
+      break;
+    case "chistera":
+      g.add(mesh(new THREE.CylinderGeometry(w * 0.7, w * 0.7, w * 0.05, 14), m("#151515"), 0, top + w * 0.02, 0));
+      g.add(mesh(new THREE.CylinderGeometry(w * 0.42, w * 0.42, w * 0.75, 12), m("#1c1c1c"), 0, top + w * 0.4, 0));
+      g.add(mesh(new THREE.CylinderGeometry(w * 0.43, w * 0.43, w * 0.12, 12), m("#7a1022"), 0, top + w * 0.12, 0));
+      break;
   }
-  g.rotation.y = Math.PI / 4; // de frente a la cámara (que mira desde +x +z)
-  const out = new THREE.Group();
-  out.add(g);
-  return shadowed(out);
+  return g;
+}
+
+function alien(color: string, look: Look) {
+  const o = models.get("character-zombie")!.clone(true);
+  // tamaño de ficha: el cuerpo (sin accesorios) mide 0,85 casillas
+  const body = new THREE.Box3().setFromObject(o);
+  o.scale.setScalar(0.85 / (body.max.y - body.min.y));
+  // camisa del color del jugador (los zombis comparten todo lo demás)
+  const torso = o.getObjectByName("torso") as THREE.Mesh;
+  torso.material = mat(color, { roughness: 0.75, flatShading: true });
+  // el modelo viene en cruz (brazos a los lados): se giran hacia delante, como buen zombi
+  o.getObjectByName("arm-left")!.rotation.y = -Math.PI / 2 + 0.15;
+  o.getObjectByName("arm-right")!.rotation.y = Math.PI / 2 - 0.15;
+  // botella en la mano derecha (la punta del brazo es su x mínima)
+  const arm = o.getObjectByName("arm-right") as THREE.Mesh;
+  arm.geometry.computeBoundingBox();
+  const hand = arm.geometry.boundingBox!;
+  const bottle = new THREE.Group();
+  const glass = mat("#3f6a3a", { roughness: 0.2, transparent: true, opacity: 0.85 });
+  bottle.add(cyl(0.035, 0.035, 0.1, glass, 0, -0.05, 0, 10), cyl(0.012, 0.02, 0.05, glass, 0, 0.05, 0, 8));
+  bottle.position.set(hand.min.x + 0.02, (hand.min.y + hand.max.y) / 2 + 0.03, 0);
+  arm.add(bottle);
+  // accesorio en la cabeza
+  const head = o.getObjectByName("head") as THREE.Mesh;
+  head.geometry.computeBoundingBox();
+  const hb = head.geometry.boundingBox!;
+  head.add(headgear(look, hb.max.x - hb.min.x, hb.max.y, hb.max.z));
+  // de cara a la cámara (que mira desde +x +z)
+  const g = new THREE.Group();
+  g.add(o);
+  g.rotation.y = Math.PI / 4;
+  return shadowed(g);
 }
 
 /** Un PNG por color de jugador, con la misma cámara que el tablero. */
@@ -824,6 +680,10 @@ export function renderAliens(px: number) {
     const scene = new THREE.Scene();
     scene.add(alien(color, LOOKS[i % LOOKS.length]));
     lights(scene, new THREE.Vector3(0, 0, 0), 1024);
+    // luz de relleno de frente: las fichas tienen que leerse aunque el tablero sea oscuro
+    const fill = new THREE.DirectionalLight("#fff0e0", 1.6);
+    fill.position.set(5, 3, 5);
+    scene.add(fill);
     // sombra suave en el suelo, que se ve en la ficha
     const ground = mesh(new THREE.CircleGeometry(0.45, 32), new THREE.ShadowMaterial({ opacity: 0.25 }));
     ground.rotation.x = -Math.PI / 2;
