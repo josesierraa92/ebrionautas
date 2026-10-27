@@ -107,6 +107,10 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   casi invisibles y esquinas/cantos redondeados (`RoundedBoxGeometry`), sin marcos cuadrados. Los iconos son siluetas
   de un solo tono con temática de terror, dibujadas con rutas en `src/editor/icons.ts` (se guardan como `i:<nombre>`;
   también se puede subir una imagen). La mariposa se cambió por un murciélago.
+- Ajustes de los números (`numbers` del layout, iguales para las 62): mostrar/ocultar, tamaño, tipo de letra
+  (`NUMBER_FONTS`; las extra se cargan en `src/editor/fonts.ts` con next/font, que no admite `...` en las opciones)
+  y posición (abajo/arriba/izquierda/derecha/centro, tal como se ve en pantalla). El color del icono y del número es
+  el mismo y se elige por tipo (`iconColor`).
 - Pendiente: fase 3 (subir modelos propios y elegir el modelo de cada zombi).
 - Datos: `src/editor/layout.ts` (formato `BoardLayout`, funciones puras con tests), `history.ts` (deshacer),
   `scene.ts` (Three.js: dibuja el diseño y recoge el ratón), `BoardEditor.tsx` (la interfaz).

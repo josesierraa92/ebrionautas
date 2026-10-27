@@ -76,16 +76,44 @@ export type BoardLayout = {
   tiles: Cell[];
   /** Aspecto de cada tipo de casilla elegido en el editor (si falta, el de TILE_STYLE). */
   tileStyles: Partial<Record<TileType, TileLook>>;
+  /** Aspecto de los números de las casillas. */
+  numbers: NumberStyle;
 };
 
 export type Cell = { x: number; y: number };
+
+/** Tipos de letra para los números de las casillas (fuentes de Google ya incluidas en la app o en el editor). */
+export const NUMBER_FONTS = {
+  lilita: { label: "Lilita One (juego)", cssVar: "--font-lilita", fallback: "'Arial Black', sans-serif" },
+  fredoka: { label: "Fredoka (redondeada)", cssVar: "--font-fredoka", fallback: "'Trebuchet MS', sans-serif" },
+  bangers: { label: "Bangers (cómic)", cssVar: "--font-bangers", fallback: "Impact, sans-serif" },
+  creepster: { label: "Creepster (terror)", cssVar: "--font-creepster", fallback: "Impact, sans-serif" },
+  pixel: { label: "Press Start 2P (pixel)", cssVar: "--font-pixel", fallback: "monospace" },
+  blackops: { label: "Black Ops One (militar)", cssVar: "--font-blackops", fallback: "Impact, sans-serif" },
+} as const;
+export type NumberFont = keyof typeof NUMBER_FONTS;
+
+/** Dónde va el número en la losa, tal como se ve en pantalla desde la cámara de la TV. */
+export const NUMBER_POSITIONS = {
+  front: "Abajo",
+  back: "Arriba",
+  left: "Izquierda",
+  right: "Derecha",
+  center: "Centro",
+} as const;
+export type NumberPosition = keyof typeof NUMBER_POSITIONS;
+
+/** Cómo se ven los números de las casillas (igual para las 62). */
+export type NumberStyle = { show: boolean; size: number; font: NumberFont; pos: NumberPosition };
+export const DEFAULT_NUMBERS: NumberStyle = { show: true, size: 130, font: "lilita", pos: "front" };
+export const NUMBER_SIZE = { min: 50, max: 260 };
 export type TileType = Tile["type"];
 /**
  * color: fondo de la losa; icon: un emoji o una imagen subida (data:image/...);
  * kind: "vivid" (colores de videojuego, para las casillas importantes) o "road" (asfalto con el icono pintado
  * como una señal de carretera, para que el resto no chille con la ciudad).
  */
-export type TileLook = { color?: string; icon?: string; kind?: TileKind };
+export type TileLook = { color?: string; icon?: string; kind?: TileKind; iconColor?: string };
 export type TileKind = "vivid" | "road";
 
 /** Lado de una casilla del juego, en celdas de la rejilla (el usuario las quiere de 2×2). */
@@ -120,6 +148,7 @@ export function newLayout(w = 32, h = 24): BoardLayout {
     shadow: 0.45,
     tiles: [],
     tileStyles: {},
+    numbers: DEFAULT_NUMBERS,
   };
 }
 
@@ -177,7 +206,7 @@ export function resize(l: BoardLayout, w: number, h: number): BoardLayout {
       out.ground[y * w + x] = l.ground[cellIndex(l, x, y)];
       out.height[y * w + x] = l.height[cellIndex(l, x, y)];
     }
-  return { ...out, light: l.light, shadow: l.shadow, tileStyles: l.tileStyles, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
+  return { ...out, light: l.light, shadow: l.shadow, tileStyles: l.tileStyles, numbers: l.numbers, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
 }
 
 /** Altura (en unidades del mundo) de la superficie de una celda. Los líquidos quedan un poco hundidos. */
@@ -250,9 +279,17 @@ export function parseLayout(raw: unknown): BoardLayout | null {
       if (typeof look.color === "string" && /^#[0-9a-f]{6}$/i.test(look.color)) out.color = look.color;
       if (typeof look.icon === "string" && isIcon(look.icon)) out.icon = look.icon;
       if (look.kind === "vivid" || look.kind === "road") out.kind = look.kind;
+      if (typeof look.iconColor === "string" && /^#[0-9a-f]{6}$/i.test(look.iconColor)) out.iconColor = look.iconColor;
       tileStyles[k as TileType] = out;
     }
-  return { version: 1, w, h, ground, height, objects, light, shadow, tiles, tileStyles };
+  const n = (r.numbers && typeof r.numbers === "object" ? r.numbers : {}) as Record<string, unknown>;
+  const numbers: NumberStyle = {
+    show: typeof n.show === "boolean" ? n.show : DEFAULT_NUMBERS.show,
+    size: Math.round(Math.max(NUMBER_SIZE.min, Math.min(NUMBER_SIZE.max, num(n.size, DEFAULT_NUMBERS.size)))),
+    font: typeof n.font === "string" && n.font in NUMBER_FONTS ? (n.font as NumberFont) : DEFAULT_NUMBERS.font,
+    pos: typeof n.pos === "string" && n.pos in NUMBER_POSITIONS ? (n.pos as NumberPosition) : DEFAULT_NUMBERS.pos,
+  };
+  return { version: 1, w, h, ground, height, objects, light, shadow, tiles, tileStyles, numbers };
 }
 
 /** Un emoji/texto corto o una imagen pequeña subida desde el editor. */
@@ -291,9 +328,21 @@ export function toggleTile(l: BoardLayout, x: number, y: number, mode: "toggle" 
 /** ¿Hay una casilla en ese sitio (esquina x, y)? */
 export const tileAt = (l: BoardLayout, x: number, y: number) => l.tiles.some((t) => overlaps(t, x, y));
 
-/** Color, icono y estilo con los que se pinta un tipo de casilla. */
-export function lookOf(l: BoardLayout, type: TileType): { color: string; icon: string; kind: TileKind } {
+const channel = (hex: string, i: number) => parseInt(hex.slice(1 + 2 * i, 3 + 2 * i), 16);
+const toHex = (v: number[]) => "#" + v.map((c) => Math.round(Math.min(255, Math.max(0, c))).toString(16).padStart(2, "0")).join("");
+
+/** Color del icono y del número cuando el usuario no elige uno: pintura suave en carretera; claro u oscuro en vivo. */
+export function defaultInk(color: string, kind: TileKind): string {
+  const rgb = [0, 1, 2].map((i) => channel(color, i));
+  if (kind === "road") return toHex(rgb.map((c, i) => c * 0.5 + [242, 239, 230][i] * 0.5));
+  return (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114) / 255 > 0.62 ? "#2b2140" : "#ffffff";
+}
+
+/** Color, icono y estilo con los que se pinta un tipo de casilla. `ink` es el color del icono y del número. */
+export function lookOf(l: BoardLayout, type: TileType): { color: string; icon: string; kind: TileKind; ink: string; customInk: boolean } {
   const d = TILE_STYLE[type];
   const own = l.tileStyles[type];
-  return { color: own?.color ?? VIVID[type] ?? d.bg[0], icon: own?.icon ?? iconValue(DEFAULT_ICON[type]), kind: own?.kind ?? (VIVID[type] ? "vivid" : "road") };
+  const color = own?.color ?? VIVID[type] ?? d.bg[0];
+  const kind = own?.kind ?? (VIVID[type] ? "vivid" : "road");
+  return { color, icon: own?.icon ?? iconValue(DEFAULT_ICON[type]), kind, ink: own?.iconColor ?? defaultInk(color, kind), customInk: !!own?.iconColor };
 }

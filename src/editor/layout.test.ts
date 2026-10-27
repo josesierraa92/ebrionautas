@@ -85,11 +85,28 @@ describe("casillas del juego", () => {
     });
     expect(l?.tiles).toEqual([{ x: 1, y: 1 }]);
     expect(l?.tileStyles).toEqual({ OCA: { color: "#123456", icon: "🦇", kind: "road" }, DUELO: {} });
-    expect(lookOf(l!, "OCA")).toEqual({ color: "#123456", icon: "🦇", kind: "road" });
+    expect(lookOf(l!, "OCA")).toMatchObject({ color: "#123456", icon: "🦇", kind: "road", customInk: false });
+    // el color del icono se puede elegir; si no, sale automático
+    const inked = parseLayout({ ...newLayout(10, 8), tileStyles: { OCA: { iconColor: "#ff00aa" }, DUELO: { iconColor: "rojo" } } });
+    expect(lookOf(inked!, "OCA")).toMatchObject({ ink: "#ff00aa", customInk: true });
+    expect(lookOf(inked!, "DUELO").customInk).toBe(false);
+    expect(lookOf(inked!, "SALIDA").ink).toBe("#ffffff");
+    expect(lookOf(inked!, "META").ink).toBe("#2b2140");
     expect(lookOf(l!, "DUELO").icon).toBe("i:skull");
     // por defecto: las importantes en colores vivos y el resto estilo carretera
     expect(lookOf(l!, "SALIDA").kind).toBe("vivid");
     expect(lookOf(l!, "A_BEBER").kind).toBe("road");
+  });
+});
+
+describe("números de las casillas", () => {
+  it("tienen valores de serie y se validan", () => {
+    const base = newLayout(10, 8);
+    expect(parseLayout({ ...base, numbers: undefined })?.numbers).toEqual({ show: true, size: 130, font: "lilita", pos: "front" });
+    const l = parseLayout({ ...base, numbers: { show: false, size: 9999, font: "creepster", pos: "center" } });
+    expect(l?.numbers).toEqual({ show: false, size: 260, font: "creepster", pos: "center" });
+    expect(parseLayout({ ...base, numbers: { font: "comic-sans", pos: "arriba", size: "grande" } })?.numbers).toEqual(base.numbers);
+    expect(resize(l!, 20, 12).numbers).toEqual(l!.numbers);
   });
 });
 

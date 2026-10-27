@@ -6,6 +6,7 @@ import { TransformControls } from "three/examples/jsm/controls/TransformControls
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { builtinIcon, drawIcon } from "./icons";
+import { NUMBER_FONTS, type NumberFont, type NumberStyle } from "./layout";
 import { brushCells, GROUNDS, groundAt, LEVEL, LIQUIDS, lookOf, TILE_SIZE, tileAnchor, tileTypeOf, type BoardLayout, type TileKind, type LightId, type PlacedObject } from "./layout";
 
 export type Tool = "select" | "paint" | "raise" | "lower" | "flatten" | "stamp" | "tiles";
@@ -61,9 +62,8 @@ export class EditorScene {
   private brush: THREE.LineSegments;
   private objectRoot = new THREE.Group();
   private tileRoot = new THREE.Group();
-  /** Fuente de videojuego (la de los títulos del juego, Lilita One) para los números de las casillas. */
-  private fontFamily = "'Lilita One', 'Arial Black', sans-serif";
-  private fontReady: Promise<void> = Promise.resolve();
+  /** Tipos de letra de los números que ya se descargaron (hasta entonces se dibuja con la de respaldo). */
+  private fontsReady = new Set<NumberFont>();
   private tileTextures = new Map<string, THREE.CanvasTexture>();
   /** Imágenes de iconos subidos que aún se están cargando (la foto para la TV las espera). */
   private pendingIcons = new Set<Promise<void>>();
@@ -93,15 +93,6 @@ export class EditorScene {
     private container: HTMLElement,
     private events: SceneEvents,
   ) {
-    // next/font define --font-lilita en <body>; hay que pedir la fuente para que se descargue antes de dibujar con ella
-    this.fontFamily = getComputedStyle(document.body).getPropertyValue("--font-lilita").trim() || this.fontFamily;
-    this.fontReady = document.fonts
-      .load(`80px ${this.fontFamily}`)
-      .then(() => {
-        this.dropTileTextures();
-        if (this.layout) this.buildTiles(this.layout);
-      })
-      .catch(() => undefined);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
@@ -274,7 +265,7 @@ export class EditorScene {
     if (!prev || prev.w !== l.w || prev.h !== l.h) this.resetView();
     if (!prev || prev.light !== l.light || prev.shadow !== l.shadow) this.applyLight(l);
     if (!prev || prev.objects !== l.objects) this.syncObjects(l.objects);
-    if (!prev || prev.tiles !== l.tiles || prev.tileStyles !== l.tileStyles || prev.height !== l.height || prev.ground !== l.ground)
+    if (!prev || prev.tiles !== l.tiles || prev.tileStyles !== l.tileStyles || prev.numbers !== l.numbers || prev.height !== l.height || prev.ground !== l.ground)
       this.buildTiles(l);
   }
 
@@ -664,16 +655,23 @@ export class EditorScene {
     for (const m of this.tileRoot.children as THREE.Mesh[]) m.geometry.dispose();
     this.tileRoot.clear();
     const used = new Set<string>();
+    // si el tipo de letra elegido aún no se descargó, se redibuja en cuanto llegue
+    if (l.numbers.show && !this.fontsReady.has(l.numbers.font))
+      void this.needFont(l.numbers.font).then(() => {
+        if (this.layout?.numbers.font !== l.numbers.font) return;
+        this.dropTileTextures();
+        this.buildTiles(this.layout);
+      });
     // losa con todas las esquinas y los cantos redondeados (nada de ángulos duros)
     const geo = new RoundedBoxGeometry(TILE_SIZE - 0.16, 0.3, TILE_SIZE - 0.16, 4, 0.14);
     l.tiles.forEach((t, k) => {
       const n = k + 1;
       const look = lookOf(l, tileTypeOf(n));
-      const key = `${n}|${look.color}|${look.icon}|${look.kind}`;
+      const key = `${n}|${look.color}|${look.icon}|${look.kind}|${look.ink}|${JSON.stringify(l.numbers)}`;
       used.add(key);
       let tex = this.tileTextures.get(key);
       if (!tex) {
-        tex = this.tileTexture(n, look.color, look.icon, look.kind);
+        tex = this.tileTexture(n, look.color, look.icon, look.kind, look.ink, l.numbers);
         this.tileTextures.set(key, tex);
       }
       const sideColor = look.kind === "road" ? new THREE.Color(ROAD.edge) : new THREE.Color(look.color).multiplyScalar(0.55);
@@ -697,7 +695,7 @@ export class EditorScene {
    * Cara de arriba de la losa. Vista desde la TV la losa es un rombo, así que el icono va girado 45° para salir
    * derecho en pantalla, y el número va en la punta de delante.
    */
-  private tileTexture(n: number, color: string, icon: string, kind: TileKind): THREE.CanvasTexture {
+  private tileTexture(n: number, color: string, icon: string, kind: TileKind, paint: string, numbers: NumberStyle): THREE.CanvasTexture {
     const S = 512;
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = S;
@@ -707,10 +705,6 @@ export class EditorScene {
     tex.anisotropy = 8;
     const road = kind === "road";
     const tint = new THREE.Color(color);
-    // vivo: icono y número de un solo tono, claro u oscuro según el color de fondo; carretera: pintura suave
-    const ink = tint.r * 0.299 + tint.g * 0.587 + tint.b * 0.114 > 0.62 ? "#2b2140" : "#ffffff";
-    const paint = road ? "#" + tint.clone().lerp(new THREE.Color("#f2efe6"), 0.5).getHexString() : ink;
-
     if (road) {
       ctx.fillStyle = ROAD.asphalt;
       ctx.fillRect(0, 0, S, S);
@@ -726,17 +720,27 @@ export class EditorScene {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, S, S);
     }
-    // número en la esquina de abajo, con la fuente del juego y girado para leerse derecho desde la cámara
-    ctx.save();
-    ctx.translate(S - 104, S - 104);
-    ctx.rotate(-Math.PI / 4);
-    ctx.font = `130px ${this.fontFamily}`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = paint;
-    ctx.globalAlpha = road ? 0.85 : 0.95;
-    ctx.fillText(String(n), 0, 0);
-    ctx.restore();
+    // número: con el tipo de letra, tamaño y sitio elegidos, girado para leerse derecho desde la cámara
+    if (numbers.show) {
+      const m = 40 + numbers.size * 0.5;
+      const at: Record<NumberStyle["pos"], [number, number]> = {
+        front: [S - m, S - m],
+        back: [m, m],
+        left: [m, S - m],
+        right: [S - m, m],
+        center: [S / 2, S / 2],
+      };
+      ctx.save();
+      ctx.translate(...at[numbers.pos]);
+      ctx.rotate(-Math.PI / 4);
+      ctx.font = `${numbers.size}px ${this.fontFamily(numbers.font)}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = paint;
+      ctx.globalAlpha = road ? 0.85 : 0.95;
+      ctx.fillText(String(n), 0, 0);
+      ctx.restore();
+    }
 
     /** Icono girado 45° (la losa se ve como un rombo), en una capa aparte para poder recortarlo y teñirlo. */
     const drawOnLayer = (draw: (c: CanvasRenderingContext2D) => void, recolor: boolean) => {
@@ -744,7 +748,9 @@ export class EditorScene {
       layer.width = layer.height = S;
       const lc = layer.getContext("2d")!;
       lc.fillStyle = paint;
-      lc.translate(S / 2 - 24, S / 2 - 24);
+      // con el número en el centro, el icono se hace más chico y se corre hacia atrás para no pisarse
+      const off = numbers.show && numbers.pos === "center" ? 118 : 24;
+      lc.translate(S / 2 - off, S / 2 - off);
       lc.rotate(-Math.PI / 4);
       draw(lc);
       if (recolor) {
@@ -757,12 +763,13 @@ export class EditorScene {
       ctx.globalAlpha = 1;
     };
     const name = builtinIcon(icon);
-    if (name) drawOnLayer((c) => drawIcon(c, name, 270), false);
+    const iconSize = numbers.show && numbers.pos === "center" ? 170 : 270;
+    if (name) drawOnLayer((c) => drawIcon(c, name, iconSize), false);
     else if (icon.startsWith("data:")) {
       const img = new Image();
       const done = new Promise<void>((resolve) => {
         img.onload = () => {
-          drawOnLayer((c) => c.drawImage(img, -135, -135, 270, 270), road);
+          drawOnLayer((c) => c.drawImage(img, -iconSize / 2, -iconSize / 2, iconSize, iconSize), road);
           tex.needsUpdate = true;
           resolve();
         };
@@ -779,6 +786,22 @@ export class EditorScene {
         c.fillText(icon, 0, 14);
       }, road);
     return tex;
+  }
+
+  /** Nombre CSS del tipo de letra (la variable la define next/font en <body> o en el contenedor del editor). */
+  private fontFamily(id: NumberFont) {
+    const f = NUMBER_FONTS[id];
+    const v = getComputedStyle(this.container).getPropertyValue(f.cssVar).trim();
+    return v ? `${v}, ${f.fallback}` : f.fallback;
+  }
+
+  /** Pide la descarga del tipo de letra y avisa cuando está listo (si falla, se sigue con la de respaldo). */
+  private needFont(id: NumberFont): Promise<void> {
+    if (this.fontsReady.has(id)) return Promise.resolve();
+    return document.fonts
+      .load(`80px ${this.fontFamily(id)}`)
+      .catch(() => undefined)
+      .then(() => void this.fontsReady.add(id));
   }
 
   private dropTileTextures() {
@@ -802,7 +825,11 @@ export class EditorScene {
   async renderForTV(maxWidth = 2400): Promise<{ image: string; width: number; height: number; tiles: { x: number; y: number }[]; cell: number; bg: string }> {
     const l = this.layout;
     if (!l) throw new Error("No hay diseño");
-    await Promise.all([...this.models.values(), this.fontReady]);
+    await Promise.all([...this.models.values(), this.needFont(l.numbers.font)]);
+    if (l.numbers.show) {
+      this.dropTileTextures();
+      this.buildTiles(l);
+    }
     await Promise.all([...this.pendingIcons]);
 
     const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, -500, 1000);
