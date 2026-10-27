@@ -98,6 +98,11 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   `/api/board/image`) y guarda `PublishedBoard` (`src/game/publishedBoard.ts`) en Redis. `IsoBoard` usa el
   tablero publicado (`usePublishedBoard`, `GET /api/board`) y, si no hay, el de serie (`scripts/board3d`).
   La TV lo lee al cargar la página. `DELETE /api/admin/publish` vuelve al de serie.
+- Casillas de 2×2 celdas (`TILE_SIZE`; el usuario las quiere grandes). Estilo por tipo (`kind`): "vivid" (colores
+  de videojuego verde/amarillo/morado, por defecto en las importantes: `VIVID` en `layout.ts`) o "road" (asfalto
+  con el icono pintado, para que no chillen con el escenario).
+- El terreno sigue más allá del borde del mundo (copia de la celda del borde) y la foto de la TV es 16:9 y llena
+  la pantalla: el usuario no quiere ver "un cubo flotando en el infinito" ni cielo alrededor.
 - Pendiente: fase 3 (subir modelos propios y elegir el modelo de cada zombi).
 - Datos: `src/editor/layout.ts` (formato `BoardLayout`, funciones puras con tests), `history.ts` (deshacer),
   `scene.ts` (Three.js: dibuja el diseño y recoge el ratón), `BoardEditor.tsx` (la interfaz).

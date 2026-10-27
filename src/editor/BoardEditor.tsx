@@ -9,6 +9,7 @@ import TilesPanel from "./TilesPanel";
 import {
   flatten,
   TILE_COUNT,
+  tileAt,
   toggleTile,
   GROUND_IDS,
   GROUNDS,
@@ -73,6 +74,7 @@ export default function BoardEditor() {
   const flattenLevel = useRef(0);
   const shadowBefore = useRef<BoardLayout | null>(null);
   const tileMode = useRef<"add" | "remove">("add");
+  const draftLoaded = useRef(false);
 
   const [tool, setTool] = useState<Tool>("select");
   const [ground, setGround] = useState<GroundId>("dirt");
@@ -191,7 +193,7 @@ export default function BoardEditor() {
           strokeBefore.current = l;
           flattenLevel.current = l.height[y * l.w + x];
           // casillas: si empieza sobre una casilla, el trazo quita; si no, pone
-          tileMode.current = l.tiles.some((c) => c.x === x && c.y === y) ? "remove" : "add";
+          tileMode.current = tileAt(l, x, y) ? "remove" : "add";
         }
         if (t.tool === "tiles") l = toggleTile(l, x, y, tileMode.current);
         if (t.tool === "paint") l = paint(l, x, y, t.brushSize, t.ground);
@@ -228,6 +230,7 @@ export default function BoardEditor() {
     const draft = readDraft();
     if (draft) setLayout(draft);
     scene.setLayout(draft ?? layoutRef.current);
+    draftLoaded.current = true;
     return () => {
       scene.dispose();
       sceneRef.current = null;
@@ -237,6 +240,8 @@ export default function BoardEditor() {
   useEffect(() => {
     sceneRef.current?.setLayout(layout);
     setSize({ w: layout.w, h: layout.h });
+    // no guardar antes de haber leído el borrador: se pisaría con el tablero vacío del arranque
+    if (!draftLoaded.current) return;
     const t = setTimeout(() => {
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify(layout));

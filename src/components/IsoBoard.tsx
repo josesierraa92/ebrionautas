@@ -122,7 +122,7 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
         >
           <ellipse cx={0} cy={0} rx={size * 0.3} ry={size * 0.12} fill="#1d3b12" opacity=".3" />
           <g className={isFlying ? "token-fly" : undefined}>
-            <svg x={-size / 2} y={-size * 1.12} width={size} height={size * 1.2} overflow="visible">
+            <svg x={-size / 2} y={-size * 1.02} width={size} height={size * 1.2} overflow="visible">
               <Marciano
                 avatar={avatarOf(p)}
                 expression={expressionFor(p, { winner, isTurn: isCurrent })}
@@ -136,7 +136,7 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
           {/* nombre encima de cada ficha */}
           <text
             x={0}
-            y={-size * 1.18}
+            y={-size * 1.08}
             textAnchor="middle"
             fontFamily="var(--font-lilita), sans-serif"
             fontSize={(group.length > 3 ? 13 : 16) * k}
@@ -160,6 +160,8 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
   return (
     <svg
       viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
+      // el tablero publicado llena la pantalla (recortando un poco si hace falta); el de serie se ve entero
+      preserveAspectRatio={geo.numbers ? undefined : "xMidYMid slice"}
       className="h-full w-full"
       role="img"
       aria-label="Tablero"

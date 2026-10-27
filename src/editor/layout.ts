@@ -68,7 +68,10 @@ export type BoardLayout = {
   light: LightId;
   /** Fuerza de las sombras (0 = sin sombra, 1 = sombra negra). */
   shadow: number;
-  /** Celda de cada casilla del juego: la casilla n está en tiles[n - 1]. Hacen falta las 62 para publicar. */
+  /**
+   * Casillas del juego: la casilla n está en tiles[n - 1]. Cada una ocupa TILE_SIZE × TILE_SIZE celdas y (x, y)
+   * es su celda de arriba a la izquierda. Hacen falta las 62 para publicar.
+   */
   tiles: Cell[];
   /** Aspecto de cada tipo de casilla elegido en el editor (si falta, el de TILE_STYLE). */
   tileStyles: Partial<Record<TileType, TileLook>>;
@@ -76,8 +79,28 @@ export type BoardLayout = {
 
 export type Cell = { x: number; y: number };
 export type TileType = Tile["type"];
-/** color: fondo de la losa; icon: un emoji o una imagen subida (data:image/...). */
-export type TileLook = { color?: string; icon?: string };
+/**
+ * color: fondo de la losa; icon: un emoji o una imagen subida (data:image/...);
+ * kind: "vivid" (colores de videojuego, para las casillas importantes) o "road" (asfalto con el icono pintado
+ * como una señal de carretera, para que el resto no chille con la ciudad).
+ */
+export type TileLook = { color?: string; icon?: string; kind?: TileKind };
+export type TileKind = "vivid" | "road";
+
+/** Lado de una casilla del juego, en celdas de la rejilla (el usuario las quiere de 2×2). */
+export const TILE_SIZE = 2;
+
+/** Casillas importantes: por defecto van en colores vivos; el resto, estilo carretera. */
+const VIVID: Partial<Record<TileType, string>> = {
+  SALIDA: "#36c95a", // verde: aquí empieza todo
+  META: "#ffc61a", // amarillo: la meta
+  OCA: "#9b5de5", // morado: la mariposa hace saltar
+  POSADA: "#ffc61a",
+  LABERINTO: "#9b5de5",
+  CARCEL: "#ff7a1a",
+  MUERTE: "#7a2fd0",
+  ESCLAVO: "#e8344a",
+};
 
 export const TILE_COUNT = BOARD.length;
 export const TILE_TYPES = Object.keys(TILE_NAMES) as TileType[];
@@ -153,7 +176,7 @@ export function resize(l: BoardLayout, w: number, h: number): BoardLayout {
       out.ground[y * w + x] = l.ground[cellIndex(l, x, y)];
       out.height[y * w + x] = l.height[cellIndex(l, x, y)];
     }
-  return { ...out, light: l.light, shadow: l.shadow, tileStyles: l.tileStyles, tiles: l.tiles.filter((t) => t.x < w && t.y < h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
+  return { ...out, light: l.light, shadow: l.shadow, tileStyles: l.tileStyles, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
 }
 
 /** Altura (en unidades del mundo) de la superficie de una celda. Los líquidos quedan un poco hundidos. */
@@ -214,8 +237,8 @@ export function parseLayout(raw: unknown): BoardLayout | null {
     const c = t as Record<string, unknown>;
     const x = num(c?.x, -1);
     const y = num(c?.y, -1);
-    if (tiles.length < TILE_COUNT && Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < w && y < h && !tiles.some((o) => o.x === x && o.y === y))
-      tiles.push({ x, y });
+    const fits = Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x + TILE_SIZE <= w && y + TILE_SIZE <= h;
+    if (tiles.length < TILE_COUNT && fits && !tiles.some((o) => overlaps(o, x, y))) tiles.push({ x, y });
   }
   const tileStyles: Partial<Record<TileType, TileLook>> = {};
   if (r.tileStyles && typeof r.tileStyles === "object")
@@ -225,6 +248,7 @@ export function parseLayout(raw: unknown): BoardLayout | null {
       const out: TileLook = {};
       if (typeof look.color === "string" && /^#[0-9a-f]{6}$/i.test(look.color)) out.color = look.color;
       if (typeof look.icon === "string" && isIcon(look.icon)) out.icon = look.icon;
+      if (look.kind === "vivid" || look.kind === "road") out.kind = look.kind;
       tileStyles[k as TileType] = out;
     }
   return { version: 1, w, h, ground, height, objects, light, shadow, tiles, tileStyles };
@@ -236,20 +260,39 @@ export function isIcon(icon: string) {
   return icon.length > 0 && icon.length <= 16;
 }
 
+/** ¿La casilla t se pisa con una puesta en (x, y)? */
+const overlaps = (t: Cell, x: number, y: number) => Math.abs(t.x - x) < TILE_SIZE && Math.abs(t.y - y) < TILE_SIZE;
+
+/** Esquina (celda de arriba a la izquierda) de la casilla centrada lo más cerca posible del punto (px, pz). */
+export function tileAnchor(l: BoardLayout, px: number, pz: number): Cell {
+  const clamp = (v: number, max: number) => Math.min(Math.max(v, 0), max - TILE_SIZE);
+  return { x: clamp(Math.round(px - TILE_SIZE / 2), l.w), y: clamp(Math.round(pz - TILE_SIZE / 2), l.h) };
+}
+
 /**
- * Pone la siguiente casilla en una celda, o quita la que haya (las de después se renumeran).
+ * Pone la siguiente casilla con su esquina en (x, y), o quita la que haya ahí (las de después se renumeran).
  * mode "add" solo pone y "remove" solo quita (para arrastrar el ratón sin alternar).
  */
 export function toggleTile(l: BoardLayout, x: number, y: number, mode: "toggle" | "add" | "remove" = "toggle"): BoardLayout {
-  if (!inside(l, x, y)) return l;
-  const i = l.tiles.findIndex((t) => t.x === x && t.y === y);
+  if (x < 0 || y < 0 || x + TILE_SIZE > l.w || y + TILE_SIZE > l.h) return l;
+  // al quitar manda la casilla más cercana de las que se pisan con ese sitio
+  let i = -1;
+  let best = Infinity;
+  l.tiles.forEach((t, k) => {
+    const d = Math.hypot(t.x - x, t.y - y);
+    if (overlaps(t, x, y) && d < best) [i, best] = [k, d];
+  });
   if (i >= 0) return mode === "add" ? l : { ...l, tiles: l.tiles.filter((_, k) => k !== i) };
   if (mode === "remove" || l.tiles.length >= TILE_COUNT) return l;
   return { ...l, tiles: [...l.tiles, { x, y }] };
 }
 
-/** Color e icono con los que se pinta un tipo de casilla. */
-export function lookOf(l: BoardLayout, type: TileType): { color: string; icon: string } {
+/** ¿Hay una casilla en ese sitio (esquina x, y)? */
+export const tileAt = (l: BoardLayout, x: number, y: number) => l.tiles.some((t) => overlaps(t, x, y));
+
+/** Color, icono y estilo con los que se pinta un tipo de casilla. */
+export function lookOf(l: BoardLayout, type: TileType): { color: string; icon: string; kind: TileKind } {
   const d = TILE_STYLE[type];
-  return { color: l.tileStyles[type]?.color ?? d.bg[0], icon: l.tileStyles[type]?.icon ?? d.icon };
+  const own = l.tileStyles[type];
+  return { color: own?.color ?? VIVID[type] ?? d.bg[0], icon: own?.icon ?? d.icon, kind: own?.kind ?? (VIVID[type] ? "vivid" : "road") };
 }

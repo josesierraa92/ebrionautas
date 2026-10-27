@@ -4,7 +4,7 @@
 // tipo de casilla. Las reglas de cada número no cambian (src/game/board.ts): aquí solo se decide dónde y cómo se ve.
 
 import { BOARD, TILE_NAMES } from "@/game/board";
-import { lookOf, TILE_COUNT, tileTypeOf, type BoardLayout, type TileType } from "./layout";
+import { lookOf, TILE_COUNT, tileTypeOf, type BoardLayout, type TileKind, type TileType } from "./layout";
 
 /** Tipos de casilla en el orden en que aparecen en el tablero. */
 const TYPES = [...new Set(BOARD.map((t) => t.type))];
@@ -21,9 +21,11 @@ async function iconFromFile(file: File): Promise<string> {
   return canvas.toDataURL("image/webp", 0.85);
 }
 
-function Swatch({ color, icon, size = 32 }: { color: string; icon: string; size?: number }) {
+function Swatch({ color, icon, kind, size = 32 }: { color: string; icon: string; kind: TileKind; size?: number }) {
+  // en carretera: asfalto gris con el borde discontinuo del color del tipo
+  const style = kind === "road" ? { background: "#4a4d54", outline: `2px dashed ${color}`, outlineOffset: -5 } : { background: color };
   return (
-    <span className="grid shrink-0 place-items-center rounded border-2 border-black/40" style={{ background: color, width: size, height: size }}>
+    <span className="grid shrink-0 place-items-center rounded border-2 border-black/40" style={{ ...style, width: size, height: size }}>
       {icon.startsWith("data:") ? (
         <img src={icon} alt="" className="h-[75%] w-[75%] object-contain" />
       ) : (
@@ -44,7 +46,7 @@ export default function TilesPanel({
 }) {
   const count = layout.tiles.length;
   const next = count < TILE_COUNT ? count + 1 : null;
-  const setLook = (type: TileType, patch: { color?: string; icon?: string } | null) => {
+  const setLook = (type: TileType, patch: { color?: string; icon?: string; kind?: TileKind } | null) => {
     const styles = { ...layout.tileStyles };
     if (patch) styles[type] = { ...styles[type], ...patch };
     else delete styles[type];
@@ -68,8 +70,8 @@ export default function TilesPanel({
           <p className="mt-1 text-emerald-400">¡Están las 62! Ya puedes publicar en la TV.</p>
         )}
         <p className="mt-2 text-xs leading-relaxed opacity-70">
-          Clic en el suelo: pone la siguiente casilla. Arrastra para poner varias seguidas. Clic en una casilla: la quita
-          (las de después se renumeran).
+          Cada casilla ocupa 2×2 cuadros de la rejilla. Clic en el suelo: pone la siguiente. Arrastra para poner varias
+          seguidas. Clic en una casilla: la quita (las de después se renumeran).
         </p>
         {count > 0 && (
           <button
@@ -83,6 +85,10 @@ export default function TilesPanel({
 
       <div className="grid gap-1.5">
         <p className="font-semibold">Aspecto de las casillas</p>
+        <p className="text-xs opacity-70">
+          ✨ Vivo: colores de videojuego, para las importantes. 🛣️ Carretera: asfalto con el icono pintado, para que el
+          resto no chille con el escenario.
+        </p>
         {TYPES.map((type) => {
           const look = lookOf(layout, type);
           const custom = !!layout.tileStyles[type];
@@ -92,6 +98,13 @@ export default function TilesPanel({
               <span className="min-w-0 flex-1 truncate text-xs" title={TILE_NAMES[type]}>
                 {TILE_NAMES[type]}
               </span>
+              <button
+                className="rounded bg-white/10 px-1 py-0.5 hover:bg-white/20"
+                title={look.kind === "vivid" ? "Vivo (clic: pasar a carretera)" : "Carretera (clic: pasar a vivo)"}
+                onClick={() => setLook(type, { kind: look.kind === "vivid" ? "road" : "vivid" })}
+              >
+                {look.kind === "vivid" ? "✨" : "🛣️"}
+              </button>
               <input
                 type="color"
                 value={look.color}

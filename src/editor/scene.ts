@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { brushCells, GROUNDS, groundAt, LEVEL, LIQUIDS, lookOf, tileTypeOf, type BoardLayout, type LightId, type PlacedObject } from "./layout";
+import { brushCells, GROUNDS, groundAt, LEVEL, LIQUIDS, lookOf, TILE_SIZE, tileAnchor, tileTypeOf, type BoardLayout, type TileKind, type LightId, type PlacedObject } from "./layout";
 
 export type Tool = "select" | "paint" | "raise" | "lower" | "flatten" | "stamp" | "tiles";
 export type GizmoMode = "translate" | "rotate" | "scale";
@@ -21,7 +21,9 @@ export type SceneEvents = {
 };
 
 const BASE = -0.8; // fondo del bloque de tierra del mundo
-const CAM_DIST = 200; // distancia de la cámara ortográfica al centro (la niebla se mide desde ahí)
+const CAM_DIST = 200;
+/** Colores de las casillas estilo carretera. */
+const ROAD = { asphalt: "#4a4d54", edge: "#2c2e33" }; // distancia de la cámara ortográfica al centro (la niebla se mide desde ahí)
 
 /** Variación de color estable por celda (da el aspecto de baldosas de la referencia). */
 function cellShade(i: number) {
@@ -52,6 +54,8 @@ export class EditorScene {
   private terrain: THREE.Mesh;
   private liquid: THREE.Mesh;
   private grid = new THREE.Group();
+  /** Borde de la zona editable (fuera el terreno sigue, pero no se edita). */
+  private bounds = new THREE.Group();
   private brush: THREE.LineSegments;
   private objectRoot = new THREE.Group();
   private tileRoot = new THREE.Group();
@@ -93,7 +97,7 @@ export class EditorScene {
     container.appendChild(this.renderer.domElement);
     this.renderer.domElement.style.display = "block";
 
-    this.scene.add(this.hemi, this.sun, this.sun.target, this.objectRoot, this.grid, this.tileRoot);
+    this.scene.add(this.hemi, this.sun, this.sun.target, this.objectRoot, this.grid, this.bounds, this.tileRoot);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(4096, 4096);
     this.sun.shadow.bias = -0.0004;
@@ -273,13 +277,17 @@ export class EditorScene {
       }
     };
     const solidTop = (i: number) => l.height[i] * LEVEL - (LIQUIDS.includes(l.ground[i]) ? 0.45 : 0);
-    for (let y = 0; y < l.h; y++)
-      for (let x = 0; x < l.w; x++) {
-        const i = y * l.w + x;
+    // El terreno sigue más allá del borde del mundo (copiando la celda del borde más cercana): así el tablero
+    // no parece un cubo flotando en el vacío (pedido del usuario). Solo se edita y se juega dentro del mundo.
+    const E = Math.max(l.w, l.h);
+    const src = (x: number, y: number) => Math.min(Math.max(y, 0), l.h - 1) * l.w + Math.min(Math.max(x, 0), l.w - 1);
+    for (let y = -E; y < l.h + E; y++)
+      for (let x = -E; x < l.w + E; x++) {
+        const i = src(x, y);
         const g = GROUNDS[l.ground[i]];
         const liquid = LIQUIDS.includes(l.ground[i]);
         const top = solidTop(i);
-        const shade = cellShade(i);
+        const shade = cellShade((x + 1000) * 7919 + y);
         c.set(liquid ? g.side : g.top).multiplyScalar(shade);
         quad(pos, col, c, [x, top, y], [x, top, y + 1], [x + 1, top, y + 1], [x + 1, top, y]);
         if (liquid) {
@@ -287,7 +295,7 @@ export class EditorScene {
           c.set(g.top).multiplyScalar(0.97 + (shade - 1) * 0.3);
           quad(lpos, lcol, c, [x, s, y], [x, s, y + 1], [x + 1, s, y + 1], [x + 1, s, y]);
         }
-        // lados: solo donde el vecino es más bajo (o en el borde del mundo)
+        // lados: solo donde el vecino es más bajo (o al final del terreno)
         const sides: [number, number, number[], number[]][] = [
           [x + 1, y, [x + 1, 0, y + 1], [x + 1, 0, y]],
           [x - 1, y, [x, 0, y], [x, 0, y + 1]],
@@ -295,8 +303,8 @@ export class EditorScene {
           [x, y - 1, [x + 1, 0, y], [x, 0, y]],
         ];
         for (const [nx, ny, a, b] of sides) {
-          const inWorld = nx >= 0 && ny >= 0 && nx < l.w && ny < l.h;
-          const bottom = inWorld ? solidTop(ny * l.w + nx) : BASE;
+          const inTerrain = nx >= -E && ny >= -E && nx < l.w + E && ny < l.h + E;
+          const bottom = inTerrain ? solidTop(src(nx, ny)) : BASE;
           if (bottom >= top) continue;
           c.set(g.side).multiplyScalar(shade * (nx !== x ? 0.82 : 0.68));
           quad(pos, col, c, [a[0], bottom, a[2]], [b[0], bottom, b[2]], [b[0], top, b[2]], [a[0], top, a[2]]);
@@ -314,9 +322,16 @@ export class EditorScene {
     set(this.liquid, lpos, lcol);
   }
 
-  /** Rejilla pegada a la cara de arriba de cada celda (sigue el terreno). */
+  /** Rejilla pegada a la cara de arriba de cada celda (sigue el terreno) y el borde de la zona editable. */
   private buildGrid(l: BoardLayout) {
     this.grid.clear();
+    this.bounds.clear();
+    let top = 0;
+    for (const h of l.height) top = Math.max(top, h * LEVEL);
+    const rim = [0, 0, l.w, 0, l.w, 0, l.w, l.h, l.w, l.h, 0, l.h, 0, l.h, 0, 0].flatMap((v, k) => (k % 2 ? [top + 0.02, v] : [v]));
+    const rimGeo = new THREE.BufferGeometry();
+    rimGeo.setAttribute("position", new THREE.Float32BufferAttribute(rim, 3));
+    this.bounds.add(new THREE.LineSegments(rimGeo, new THREE.LineBasicMaterial({ color: "#ffd23f", depthTest: false, transparent: true, opacity: 0.8 })));
     const pts: number[] = [];
     for (let y = 0; y < l.h; y++)
       for (let x = 0; x < l.w; x++) {
@@ -511,20 +526,27 @@ export class EditorScene {
     if (this.tool === "select" || this.tool === "stamp") return;
     const g = this.pickGround(e);
     if (!g) return;
+    const c = this.strokeCell(g);
     this.stroking = true;
-    this.lastCell = `${g.cx},${g.cy}`;
-    this.events.onStroke(g.cx, g.cy, "start");
+    this.lastCell = `${c.x},${c.y}`;
+    this.events.onStroke(c.x, c.y, "start");
   };
+
+  /** Celda del trazo; con la herramienta de casillas, la esquina de la casilla 2×2 más cercana al ratón. */
+  private strokeCell(g: NonNullable<ReturnType<EditorScene["pickGround"]>>) {
+    return this.tool === "tiles" && this.layout ? tileAnchor(this.layout, g.x, g.z) : { x: g.cx, y: g.cy };
+  }
 
   private onPointerMove = (e: PointerEvent) => {
     if (this.tool === "select") return;
     const g = this.pickGround(e);
     this.updateBrush(g);
     if (!this.stroking || !g) return;
-    const key = `${g.cx},${g.cy}`;
+    const c = this.strokeCell(g);
+    const key = `${c.x},${c.y}`;
     if (key === this.lastCell) return;
     this.lastCell = key;
-    this.events.onStroke(g.cx, g.cy, "move");
+    this.events.onStroke(c.x, c.y, "move");
   };
 
   private onPointerUp = (e: PointerEvent) => {
@@ -552,7 +574,16 @@ export class EditorScene {
       this.brush.visible = false;
       return;
     }
-    const size = this.tool === "stamp" || this.tool === "tiles" ? 1 : this.brushSize;
+    if (this.tool === "tiles") {
+      const a = tileAnchor(l, g.x, g.z);
+      let top = 0;
+      for (let dy = 0; dy < TILE_SIZE; dy++) for (let dx = 0; dx < TILE_SIZE; dx++) top = Math.max(top, l.height[(a.y + dy) * l.w + a.x + dx] * LEVEL);
+      this.brush.scale.set(TILE_SIZE, 1, TILE_SIZE);
+      this.brush.position.set(a.x + TILE_SIZE / 2, top + 0.03, a.y + TILE_SIZE / 2);
+      this.brush.visible = true;
+      return;
+    }
+    const size = this.tool === "stamp" ? 1 : this.brushSize;
     const cells = brushCells(l, g.cx, g.cy, size);
     let top = 0;
     for (const i of cells) top = Math.max(top, l.height[i] * LEVEL);
@@ -619,23 +650,23 @@ export class EditorScene {
     for (const m of this.tileRoot.children as THREE.Mesh[]) m.geometry.dispose();
     this.tileRoot.clear();
     const used = new Set<string>();
-    const geo = new THREE.BoxGeometry(0.9, 0.1, 0.9);
+    const geo = new THREE.BoxGeometry(TILE_SIZE - 0.14, 0.14, TILE_SIZE - 0.14);
     l.tiles.forEach((t, k) => {
       const n = k + 1;
       const look = lookOf(l, tileTypeOf(n));
-      const key = `${n}|${look.color}|${look.icon}`;
+      const key = `${n}|${look.color}|${look.icon}|${look.kind}`;
       used.add(key);
       let tex = this.tileTextures.get(key);
       if (!tex) {
-        tex = this.tileTexture(n, look.color, look.icon);
+        tex = this.tileTexture(n, look.color, look.icon, look.kind);
         this.tileTextures.set(key, tex);
       }
-      const side = new THREE.MeshStandardMaterial({ color: new THREE.Color(look.color).multiplyScalar(0.55), roughness: 0.8 });
+      const sideColor = look.kind === "road" ? new THREE.Color(ROAD.edge) : new THREE.Color(look.color).multiplyScalar(0.55);
+      const side = new THREE.MeshStandardMaterial({ color: sideColor, roughness: 0.85 });
       const top = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.75 });
       // orden de caras de BoxGeometry: +x, -x, +y (arriba), -y, +z, -z
       const mesh = new THREE.Mesh(geo, [side, side, top, side, side, side]);
-      const i = t.y * l.w + t.x;
-      mesh.position.set(t.x + 0.5, l.height[i] * LEVEL + 0.05, t.y + 0.5);
+      mesh.position.set(t.x + TILE_SIZE / 2, this.tileTop(l, t) + 0.07, t.y + TILE_SIZE / 2);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       this.tileRoot.add(mesh);
@@ -651,47 +682,88 @@ export class EditorScene {
    * Cara de arriba de la losa. Vista desde la TV la losa es un rombo, así que el icono va girado 45° para salir
    * derecho en pantalla, y el número va en la punta de delante.
    */
-  private tileTexture(n: number, color: string, icon: string): THREE.CanvasTexture {
-    const S = 256;
+  private tileTexture(n: number, color: string, icon: string, kind: TileKind): THREE.CanvasTexture {
+    const S = 512;
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = S;
     const ctx = canvas.getContext("2d")!;
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 8;
-    const dark = "#" + new THREE.Color(color).multiplyScalar(0.55).getHexString();
+    const road = kind === "road";
+    const tint = new THREE.Color(color);
+    // en carretera el icono y el número van "pintados" en un tono suave del color del tipo
+    const paint = road ? "#" + tint.clone().lerp(new THREE.Color("#f2efe6"), 0.55).getHexString() : "#ffffff";
+    const dark = road ? ROAD.edge : "#" + tint.clone().multiplyScalar(0.5).getHexString();
+
     const base = () => {
-      ctx.fillStyle = color;
-      ctx.fillRect(0, 0, S, S);
-      ctx.strokeStyle = dark;
-      ctx.lineWidth = 18;
-      ctx.strokeRect(9, 9, S - 18, S - 18);
+      if (road) {
+        // asfalto con grano y una línea discontinua alrededor, como una plaza de aparcamiento
+        ctx.fillStyle = ROAD.asphalt;
+        ctx.fillRect(0, 0, S, S);
+        for (let k = 0; k < 1400; k++) {
+          const v = Math.random();
+          ctx.fillStyle = v < 0.5 ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.06)";
+          ctx.fillRect(Math.random() * S, Math.random() * S, 3, 3);
+        }
+        ctx.setLineDash([34, 22]);
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = paint;
+        ctx.globalAlpha = 0.75;
+        ctx.strokeRect(34, 34, S - 68, S - 68);
+        ctx.globalAlpha = 1;
+        ctx.setLineDash([]);
+      } else {
+        // color vivo de videojuego: degradado, borde claro por dentro y canto oscuro
+        const grad = ctx.createLinearGradient(0, 0, S, S);
+        grad.addColorStop(0, "#" + tint.clone().lerp(new THREE.Color("#ffffff"), 0.18).getHexString());
+        grad.addColorStop(1, "#" + tint.clone().multiplyScalar(0.85).getHexString());
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, S, S);
+        ctx.lineWidth = 28;
+        ctx.strokeStyle = dark;
+        ctx.strokeRect(14, 14, S - 28, S - 28);
+        ctx.lineWidth = 10;
+        ctx.strokeStyle = "rgba(255,255,255,0.55)";
+        ctx.strokeRect(40, 40, S - 80, S - 80);
+      }
       ctx.save();
-      ctx.translate(S - 52, S - 52);
+      ctx.translate(S - 100, S - 100);
       ctx.rotate(-Math.PI / 4);
-      ctx.font = "bold 56px system-ui, sans-serif";
+      ctx.font = "bold 92px system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.lineWidth = 10;
+      ctx.lineWidth = 16;
       ctx.strokeStyle = dark;
       ctx.strokeText(String(n), 0, 0);
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = paint;
       ctx.fillText(String(n), 0, 0);
       ctx.restore();
     };
-    const centered = (draw: () => void) => {
-      ctx.save();
-      ctx.translate(S / 2 - 10, S / 2 - 10);
-      ctx.rotate(-Math.PI / 4);
-      draw();
-      ctx.restore();
+    /** Dibuja el icono girado 45° (la losa se ve como un rombo); en carretera, de un solo color como pintura. */
+    const drawIcon = (draw: (c: CanvasRenderingContext2D) => void) => {
+      const layer = document.createElement("canvas");
+      layer.width = layer.height = S;
+      const lc = layer.getContext("2d")!;
+      lc.translate(S / 2 - 20, S / 2 - 20);
+      lc.rotate(-Math.PI / 4);
+      draw(lc);
+      if (road) {
+        lc.setTransform(1, 0, 0, 1, 0, 0);
+        lc.globalCompositeOperation = "source-in";
+        lc.fillStyle = paint;
+        lc.fillRect(0, 0, S, S);
+        ctx.globalAlpha = 0.9;
+      }
+      ctx.drawImage(layer, 0, 0);
+      ctx.globalAlpha = 1;
     };
     base();
     if (icon.startsWith("data:")) {
       const img = new Image();
       const done = new Promise<void>((resolve) => {
         img.onload = () => {
-          centered(() => ctx.drawImage(img, -72, -72, 144, 144));
+          drawIcon((c) => c.drawImage(img, -130, -130, 260, 260));
           tex.needsUpdate = true;
           resolve();
         };
@@ -701,13 +773,20 @@ export class EditorScene {
       done.then(() => this.pendingIcons.delete(done));
       img.src = icon;
     } else
-      centered(() => {
-        ctx.font = "130px 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(icon, 0, 8);
+      drawIcon((c) => {
+        c.font = "230px 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        c.fillText(icon, 0, 14);
       });
     return tex;
+  }
+
+  /** Altura de la cara de arriba del terreno bajo una casilla (la celda más alta de las que pisa). */
+  private tileTop(l: BoardLayout, t: { x: number; y: number }) {
+    let top = 0;
+    for (let dy = 0; dy < TILE_SIZE; dy++) for (let dx = 0; dx < TILE_SIZE; dx++) top = Math.max(top, l.height[(t.y + dy) * l.w + t.x + dx] * LEVEL);
+    return top;
   }
 
   // ------------------------------------------------------------------ foto para la TV
@@ -728,9 +807,11 @@ export class EditorScene {
     cam.position.copy(center).addScaledVector(dir, CAM_DIST);
     cam.lookAt(center);
     cam.updateMatrixWorld();
-    // encuadre: todo el mundo y todo lo que sobresale de él (árboles, edificios)
-    const box = new THREE.Box3(new THREE.Vector3(0, BASE, 0), new THREE.Vector3(l.w, 1, l.h));
-    box.union(new THREE.Box3().setFromObject(this.objectRoot));
+    // encuadre: la superficie del mundo; alrededor se ve el terreno que sigue, nunca el vacío
+    let maxTop = 0;
+    for (const h of l.height) maxTop = Math.max(maxTop, h * LEVEL);
+    // (con margen por arriba para las fichas que están de pie en las casillas del fondo)
+    const box = new THREE.Box3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(l.w, maxTop + 2.5, l.h));
     const inv = cam.matrixWorldInverse;
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const x of [box.min.x, box.max.x])
@@ -742,13 +823,17 @@ export class EditorScene {
           minY = Math.min(minY, p.y);
           maxY = Math.max(maxY, p.y);
         }
-    const m = 0.5;
-    Object.assign(cam, { left: minX - m, right: maxX + m, top: maxY + m, bottom: minY - m });
+    // proporción de la TV (16:9): lo que falta se rellena con el terreno de alrededor, así nunca se ve el cielo
+    const [cx, cy] = [(minX + maxX) / 2, (minY + maxY) / 2];
+    let [hw, hh] = [(maxX - minX) / 2, (maxY - minY) / 2];
+    if (hw / hh > 16 / 9) hh = (hw * 9) / 16;
+    else hw = (hh * 16) / 9;
+    Object.assign(cam, { left: cx - hw, right: cx + hw, top: cy + hh, bottom: cy - hh });
     cam.updateProjectionMatrix();
     const width = maxWidth;
-    const height = Math.round((width * (maxY - minY + 2 * m)) / (maxX - minX + 2 * m));
+    const height = Math.round((width * 9) / 16);
 
-    const hidden = [this.grid, this.brush, this.gizmo.getHelper()].filter((o) => o.visible);
+    const hidden = [this.grid, this.bounds, this.brush, this.gizmo.getHelper()].filter((o) => o.visible);
     for (const o of hidden) o.visible = false;
     const ratio = this.renderer.getPixelRatio();
     this.renderer.setPixelRatio(1);
@@ -765,8 +850,9 @@ export class EditorScene {
       const p = v.clone().project(cam);
       return { x: ((p.x + 1) / 2) * width, y: ((1 - p.y) / 2) * height };
     };
-    const tiles = l.tiles.map((t) => toPx(new THREE.Vector3(t.x + 0.5, l.height[t.y * l.w + t.x] * LEVEL + 0.1, t.y + 0.5)));
-    const cell = Math.abs(toPx(new THREE.Vector3(1, 0, 0)).x - toPx(new THREE.Vector3(0, 0, 1)).x);
+    const tiles = l.tiles.map((t) => toPx(new THREE.Vector3(t.x + TILE_SIZE / 2, this.tileTop(l, t) + 0.14, t.y + TILE_SIZE / 2)));
+    // ancho en pantalla del rombo de una casilla (las fichas se escalan con él)
+    const cell = Math.abs(toPx(new THREE.Vector3(TILE_SIZE, 0, 0)).x - toPx(new THREE.Vector3(0, 0, TILE_SIZE)).x);
     const bg = "#" + (this.scene.background as THREE.Color).getHexString();
     return { image, width, height, tiles, cell, bg };
   }

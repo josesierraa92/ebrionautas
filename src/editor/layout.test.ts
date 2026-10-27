@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { History } from "./history";
-import { brushCells, flatten, groundAt, lookOf, MAX_LEVEL, newLayout, paint, parseLayout, raise, resize, TILE_COUNT, tileTypeOf, toggleTile } from "./layout";
+import { brushCells, flatten, groundAt, lookOf, MAX_LEVEL, newLayout, paint, parseLayout, raise, resize, TILE_COUNT, tileAnchor, tileTypeOf, toggleTile } from "./layout";
 
 describe("diseño del tablero", () => {
   it("el pincel pinta un cuadrado y no se sale del mundo", () => {
@@ -55,18 +55,23 @@ describe("casillas del juego", () => {
   it("se ponen en orden y al quitar una se renumeran las siguientes", () => {
     let l = newLayout(10, 8);
     l = toggleTile(l, 1, 1);
-    l = toggleTile(l, 2, 1);
     l = toggleTile(l, 3, 1);
-    expect(l.tiles).toEqual([{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }]);
-    l = toggleTile(l, 2, 1);
-    expect(l.tiles).toEqual([{ x: 1, y: 1 }, { x: 3, y: 1 }]);
-    expect(toggleTile(l, 1, 1, "add")).toBe(l);
-    expect(toggleTile(l, 5, 5, "remove")).toBe(l);
+    l = toggleTile(l, 5, 1);
+    expect(l.tiles).toEqual([{ x: 1, y: 1 }, { x: 3, y: 1 }, { x: 5, y: 1 }]);
+    // cada casilla ocupa 2×2: no se puede poner otra pisándola
+    expect(toggleTile(l, 2, 2, "add")).toBe(l);
+    l = toggleTile(l, 3, 1);
+    expect(l.tiles).toEqual([{ x: 1, y: 1 }, { x: 5, y: 1 }]);
+    expect(toggleTile(l, 7, 5, "remove")).toBe(l);
+    // no se sale del mundo
+    expect(toggleTile(l, 9, 0)).toBe(l);
+    expect(tileAnchor(l, 9.9, 0.1)).toEqual({ x: 8, y: 0 });
   });
 
   it("no pasa de 62", () => {
     let l = newLayout(10, 8);
-    for (let i = 0; i < 80; i++) l = toggleTile(l, i % 10, Math.floor(i / 10));
+    l = resize(l, 40, 40);
+    for (let i = 0; i < 80; i++) l = toggleTile(l, (i % 20) * 2, Math.floor(i / 20) * 2);
     expect(l.tiles).toHaveLength(TILE_COUNT);
     expect(tileTypeOf(1)).toBe("SALIDA");
     expect(tileTypeOf(TILE_COUNT)).toBe("META");
@@ -75,13 +80,16 @@ describe("casillas del juego", () => {
   it("valida los estilos de casilla", () => {
     const l = parseLayout({
       ...newLayout(10, 8),
-      tiles: [{ x: 1, y: 1 }, { x: 1, y: 1 }, { x: 99, y: 1 }],
-      tileStyles: { OCA: { color: "#123456", icon: "🦇" }, DUELO: { color: "rojo", icon: "<script>".repeat(5) }, NADA: { icon: "x" } },
+      tiles: [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 99, y: 1 }],
+      tileStyles: { OCA: { color: "#123456", icon: "🦇", kind: "road" }, DUELO: { color: "rojo", icon: "<script>".repeat(5) }, NADA: { icon: "x" } },
     });
     expect(l?.tiles).toEqual([{ x: 1, y: 1 }]);
-    expect(l?.tileStyles).toEqual({ OCA: { color: "#123456", icon: "🦇" }, DUELO: {} });
-    expect(lookOf(l!, "OCA")).toEqual({ color: "#123456", icon: "🦇" });
+    expect(l?.tileStyles).toEqual({ OCA: { color: "#123456", icon: "🦇", kind: "road" }, DUELO: {} });
+    expect(lookOf(l!, "OCA")).toEqual({ color: "#123456", icon: "🦇", kind: "road" });
     expect(lookOf(l!, "DUELO").icon).toBe("💀");
+    // por defecto: las importantes en colores vivos y el resto estilo carretera
+    expect(lookOf(l!, "SALIDA").kind).toBe("vivid");
+    expect(lookOf(l!, "A_BEBER").kind).toBe("road");
   });
 });
 
