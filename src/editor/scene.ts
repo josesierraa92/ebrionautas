@@ -6,6 +6,7 @@ import { TransformControls } from "three/examples/jsm/controls/TransformControls
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { builtinIcon, drawIcon } from "./icons";
+import { findLamp, type Lamp } from "./lamp";
 import { lightOf, NUMBER_FONTS, type NumberFont, type NumberStyle } from "./layout";
 import { brushCells, GROUNDS, groundAt, LEVEL, LIQUIDS, lookOf, TILE_SIZE, tileAnchor, tileTypeOf, type BoardLayout, type TileKind, type LightId, type PlacedObject } from "./layout";
 
@@ -59,6 +60,9 @@ export class EditorScene {
   private grid = new THREE.Group();
   /** Borde de la zona editable (fuera el terreno sigue, pero no se edita). */
   private bounds = new THREE.Group();
+  /** Neblina baja alrededor de la zona editable: esconde el terreno de fuera, que no se puede construir. */
+  private mistRoot = new THREE.Group();
+  private mistTexture: THREE.CanvasTexture | null = null;
   private brush: THREE.LineSegments;
   private objectRoot = new THREE.Group();
   private tileRoot = new THREE.Group();
@@ -66,6 +70,9 @@ export class EditorScene {
   private fontsReady = new Set<NumberFont>();
   private tileTextures = new Map<string, THREE.CanvasTexture>();
   private glowTexture: THREE.CanvasTexture | null = null;
+  /** Modelos cargados (sin instanciar) y su análisis de "qué parte es luz", que se hace al primer uso. */
+  private baseScenes = new Map<string, THREE.Object3D>();
+  private lamps = new Map<string, Lamp>();
   /** Imágenes de iconos subidos que aún se están cargando (la foto para la TV las espera). */
   private pendingIcons = new Set<Promise<void>>();
   private objects = new Map<string, THREE.Group>();
@@ -103,7 +110,7 @@ export class EditorScene {
     container.appendChild(this.renderer.domElement);
     this.renderer.domElement.style.display = "block";
 
-    this.scene.add(this.hemi, this.sun, this.sun.target, this.objectRoot, this.grid, this.bounds, this.tileRoot);
+    this.scene.add(this.hemi, this.sun, this.sun.target, this.objectRoot, this.grid, this.bounds, this.tileRoot, this.mistRoot);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(4096, 4096);
     this.sun.shadow.bias = -0.0004;
@@ -265,6 +272,7 @@ export class EditorScene {
     }
     if (!prev || prev.w !== l.w || prev.h !== l.h) this.resetView();
     if (!prev || prev.light !== l.light || prev.shadow !== l.shadow) this.applyLight(l);
+    if (!prev || prev.w !== l.w || prev.h !== l.h || prev.mist !== l.mist || prev.light !== l.light || prev.height !== l.height) this.buildMist(l);
     if (!prev || prev.objects !== l.objects) this.syncObjects(l.objects);
     if (!prev || prev.tiles !== l.tiles || prev.tileStyles !== l.tileStyles || prev.numbers !== l.numbers || prev.height !== l.height || prev.ground !== l.ground)
       this.buildTiles(l);
@@ -328,6 +336,48 @@ export class EditorScene {
     set(this.liquid, lpos, lcol);
   }
 
+  /**
+   * Dos láminas de neblina a poca altura: transparentes sobre la zona editable, cada vez más espesas hacia fuera hasta
+   * tapar del todo el terreno de relleno (del color del fondo, así no se nota dónde acaba).
+   */
+  private buildMist(l: BoardLayout) {
+    for (const m of this.mistRoot.children as THREE.Mesh[]) (m.material as THREE.Material).dispose();
+    this.mistRoot.clear();
+    this.mistTexture?.dispose();
+    this.mistTexture = null;
+    if (l.mist <= 0) return;
+    const E = Math.max(l.w, l.h); // el terreno de relleno llega hasta E casillas fuera del mundo
+    const size = { w: l.w + 2 * E, h: l.h + 2 * E };
+    const R = 1024;
+    const k = R / Math.max(size.w, size.h); // píxeles por casilla
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(size.w * k);
+    canvas.height = Math.round(size.h * k);
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // se recorta el mundo (ensanchado unas casillas y difuminado): en la línea amarilla la neblina apenas empieza y
+    // unas 8 casillas más allá ya es opaca
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.filter = `blur(${Math.round(4 * k)}px)`;
+    const grow = 3 * k;
+    ctx.fillRect(E * k - grow, E * k - grow, l.w * k + 2 * grow, l.h * k + 2 * grow);
+    ctx.filter = "none";
+    const tex = new THREE.CanvasTexture(canvas);
+    this.mistTexture = tex;
+    const color = new THREE.Color(LIGHT_PRESETS[l.light].bg);
+    let top = 0;
+    for (const h of l.height) top = Math.max(top, h * LEVEL);
+    for (const [dy, opacity] of [[0.3, 1], [1.5, 0.7]] as const) {
+      const mat = new THREE.MeshBasicMaterial({ map: tex, color, transparent: true, opacity: opacity * (0.35 + 0.65 * l.mist), depthWrite: false, toneMapped: false, fog: false });
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(size.w, size.h), mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(l.w / 2, top + dy, l.h / 2);
+      mesh.renderOrder = 5;
+      this.mistRoot.add(mesh);
+    }
+  }
+
   /** Rejilla pegada a la cara de arriba de cada celda (sigue el terreno) y el borde de la zona editable. */
   private buildGrid(l: BoardLayout) {
     this.grid.clear();
@@ -388,6 +438,7 @@ export class EditorScene {
                 for (const m of [mesh.material].flat() as THREE.MeshStandardMaterial[]) if ("metalness" in m) m.metalness = 0;
               });
               this.boxes.set(id, new THREE.Box3().setFromObject(g.scene));
+              this.baseScenes.set(id, g.scene);
               return g.scene;
             },
             () => null,
@@ -432,7 +483,7 @@ export class EditorScene {
     }
   }
 
-  /** Luz del objeto: un punto de luz cálido en lo alto del modelo y un halo que se ve en la foto de la TV. */
+  /** Luz del objeto: un foco cálido en las partes luminosas del modelo y un halo que se ve en la foto de la TV. */
   private applyObjectLight(g: THREE.Group, o: PlacedObject) {
     const lt = lightOf(o);
     let rig = g.userData.rig as THREE.Group | undefined;
@@ -442,22 +493,36 @@ export class EditorScene {
         (rig.children[1] as THREE.Sprite).material.dispose();
         g.userData.rig = undefined;
       }
+      const lamp = this.lamps.get(o.model);
+      if (lamp && g.userData.glowReady) this.setGlowParts(g, lamp, null);
       return;
     }
     const box = this.boxes.get(o.model);
-    if (!box) return; // el modelo aún no cargó: se vuelve a llamar al cargar
+    const base = this.baseScenes.get(o.model);
+    if (!box || !base) return; // el modelo aún no cargó: se vuelve a llamar al cargar
+    let lamp = this.lamps.get(o.model);
+    if (!lamp) {
+      lamp = findLamp(base);
+      this.lamps.set(o.model, lamp);
+    }
     if (!rig) {
-      const light = new THREE.PointLight();
-      light.decay = 2;
+      // un foco hacia abajo y muy abierto (no un punto): alumbra el suelo y lo de alrededor, pero no el poste del
+      // propio farol, que está pegado a la luz y se vería como un tubo brillante
+      const light = new THREE.SpotLight();
+      light.angle = Math.PI * 0.46;
+      light.penumbra = 0.95;
+      light.decay = 1.5;
+      light.target.position.set(0, -1, 0);
       const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glow(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
       rig = new THREE.Group();
-      rig.add(light, sprite);
+      rig.add(light, sprite, light.target);
       g.add(rig);
       g.userData.rig = rig;
     }
-    const [light, sprite] = rig.children as [THREE.PointLight, THREE.Sprite];
-    // en lo alto del modelo, donde está la llama o el cristal de la lámpara (coordenadas del modelo, sin escalar)
-    rig.position.set((box.min.x + box.max.x) / 2, box.min.y + (box.max.y - box.min.y) * 0.72, (box.min.z + box.max.z) / 2);
+    const [light, sprite] = rig.children as [THREE.SpotLight, THREE.Sprite];
+    // la luz sale de las partes amarillas del modelo (las ventanitas del farol, la llama); si no tiene, de lo alto
+    if (lamp.anchor) rig.position.copy(lamp.anchor);
+    else rig.position.set((box.min.x + box.max.x) / 2, box.min.y + (box.max.y - box.min.y) * 0.72, (box.min.z + box.max.z) / 2);
     light.color.set(lt.color);
     light.intensity = lt.intensity;
     light.distance = lt.distance;
@@ -465,6 +530,29 @@ export class EditorScene {
     sprite.material.opacity = Math.min(0.85, 0.3 + lt.intensity / 250);
     const world = Math.min(3, 0.8 + lt.distance * 0.08); // tamaño del halo en casillas
     sprite.scale.set(world / g.scale.x, world / g.scale.y, 1);
+    this.setGlowParts(g, lamp, lt.intensity);
+  }
+
+  /** Hace brillar las partes amarillas del objeto (cada objeto lleva sus propios materiales para poder apagarlas). */
+  private setGlowParts(g: THREE.Group, lamp: Lamp, intensity: number | null) {
+    if (!lamp.emissiveMap) return;
+    if (!g.userData.glowReady) {
+      if (intensity === null) return;
+      g.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh || Array.isArray(mesh.material) || o.parent === g.userData.rig) return;
+        const m = (mesh.material as THREE.MeshStandardMaterial).clone();
+        m.emissiveMap = lamp.emissiveMap;
+        m.emissive.set("#ffffff");
+        mesh.material = m;
+      });
+      g.userData.glowReady = true;
+    }
+    const k = intensity === null ? 0 : Math.min(2.5, 0.8 + intensity / 50);
+    g.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (mesh.isMesh && !Array.isArray(mesh.material)) (mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = k;
+    });
   }
 
   private glow() {

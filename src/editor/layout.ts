@@ -60,7 +60,7 @@ export type PlacedObject = {
 };
 
 export type ObjectLight = { on: boolean; color: string; intensity: number; distance: number };
-export const DEFAULT_LIGHT: ObjectLight = { on: true, color: "#ffb347", intensity: 40, distance: 12 };
+export const DEFAULT_LIGHT: ObjectLight = { on: true, color: "#ffb347", intensity: 25, distance: 12 };
 export const LIGHT_LIMITS = { intensity: { min: 5, max: 200 }, distance: { min: 2, max: 30 } };
 const EMITTERS = /(lantern|candle|jackolantern|lightpost|fire|torch|campfire|brazier)/i;
 /** Los faroles, velas, hogueras y calabazas con vela brillan solos (hace falta luz de noche). */
@@ -80,6 +80,8 @@ export type BoardLayout = {
   light: LightId;
   /** Fuerza de las sombras (0 = sin sombra, 1 = sombra negra). */
   shadow: number;
+  /** Neblina que esconde el terreno de fuera de la zona editable (0 = nada, 1 = muy espesa). */
+  mist: number;
   /**
    * Casillas del juego: la casilla n está en tiles[n - 1]. Cada una ocupa TILE_SIZE × TILE_SIZE celdas y (x, y)
    * es su celda de arriba a la izquierda. Hacen falta las 62 para publicar.
@@ -147,6 +149,8 @@ export const TILE_TYPES = Object.keys(TILE_NAMES) as TileType[];
 /** Tipo de juego de la casilla n (las reglas no cambian: solo dónde y cómo se ve). */
 export const tileTypeOf = (n: number): TileType => BOARD[n - 1].type;
 
+export const DEFAULT_MIST = 0.8;
+
 export function newLayout(w = 32, h = 24): BoardLayout {
   return {
     version: 1,
@@ -157,6 +161,7 @@ export function newLayout(w = 32, h = 24): BoardLayout {
     objects: [],
     light: "dia",
     shadow: 0.45,
+    mist: DEFAULT_MIST,
     tiles: [],
     tileStyles: {},
     numbers: DEFAULT_NUMBERS,
@@ -217,7 +222,7 @@ export function resize(l: BoardLayout, w: number, h: number): BoardLayout {
       out.ground[y * w + x] = l.ground[cellIndex(l, x, y)];
       out.height[y * w + x] = l.height[cellIndex(l, x, y)];
     }
-  return { ...out, light: l.light, shadow: l.shadow, tileStyles: l.tileStyles, numbers: l.numbers, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
+  return { ...out, light: l.light, shadow: l.shadow, mist: l.mist, tileStyles: l.tileStyles, numbers: l.numbers, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
 }
 
 /** Altura (en unidades del mundo) de la superficie de una celda. Los líquidos quedan un poco hundidos. */
@@ -282,6 +287,7 @@ export function parseLayout(raw: unknown): BoardLayout | null {
   }
   const light = typeof r.light === "string" && r.light in LIGHTS ? (r.light as LightId) : "dia";
   const shadow = Math.max(0, Math.min(1, num(r.shadow, 0.45)));
+  const mist = Math.max(0, Math.min(1, num(r.mist, DEFAULT_MIST)));
   const tiles: Cell[] = [];
   for (const t of Array.isArray(r.tiles) ? r.tiles : []) {
     const c = t as Record<string, unknown>;
@@ -309,7 +315,7 @@ export function parseLayout(raw: unknown): BoardLayout | null {
     font: typeof n.font === "string" && n.font in NUMBER_FONTS ? (n.font as NumberFont) : DEFAULT_NUMBERS.font,
     pos: typeof n.pos === "string" && n.pos in NUMBER_POSITIONS ? (n.pos as NumberPosition) : DEFAULT_NUMBERS.pos,
   };
-  return { version: 1, w, h, ground, height, objects, light, shadow, tiles, tileStyles, numbers };
+  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers };
 }
 
 /** Un emoji/texto corto o una imagen pequeña subida desde el editor. */

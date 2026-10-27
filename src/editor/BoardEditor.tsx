@@ -76,6 +76,7 @@ export default function BoardEditor() {
   const strokeBefore = useRef<BoardLayout | null>(null);
   const flattenLevel = useRef(0);
   const shadowBefore = useRef<BoardLayout | null>(null);
+  const mistBefore = useRef<BoardLayout | null>(null);
   const tileMode = useRef<"add" | "remove">("add");
   const draftLoaded = useRef(false);
 
@@ -489,6 +490,23 @@ export default function BoardEditor() {
             onPointerUp={() => {
               if (shadowBefore.current && shadowBefore.current !== layoutRef.current) history.current.push(shadowBefore.current);
               shadowBefore.current = null;
+              setTick((t) => t + 1);
+            }}
+          />
+        </label>
+        <label className="flex items-center gap-1 text-sm" title="Neblina alrededor de la zona editable">
+          Neblina
+          <input
+            type="range"
+            min={0}
+            max={100}
+            className="w-24"
+            value={Math.round(layout.mist * 100)}
+            onPointerDown={() => (mistBefore.current = layoutRef.current)}
+            onChange={(e) => setLayout({ ...layoutRef.current, mist: Number(e.target.value) / 100 })}
+            onPointerUp={() => {
+              if (mistBefore.current && mistBefore.current !== layoutRef.current) history.current.push(mistBefore.current);
+              mistBefore.current = null;
               setTick((t) => t + 1);
             }}
           />
