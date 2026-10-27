@@ -84,3 +84,19 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
   (laberinto), Poseído, La Ouija, La Capilla (posada), Pacto de Sangre (esclavo), Ley del Más Allá, Ronda de mezcal,
   Duelo de calaveras, Tropiezo con la lápida, Juicio de los vivos. Nada de extraterrestres, naves ni patos.
 - El menú del celular usa el tablero 2D en espiral (`src/components/Board.tsx`, `src/game/spiral.ts`).
+
+## Editor del tablero (`/admin/editor`, en construcción por fases)
+
+El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, en lugar de que lo componga Claude.
+- Fase 1 (hecha): terreno de celdas que se pinta (`GROUNDS`) y se sube/baja/aplana, catálogo de modelos para
+  arrastrar o "sellar", gizmos de mover/girar/tamaño, deshacer, 4 luces, guardar en la nube y exportar/importar.
+- Pendiente: fase 2 (colocar las 62 casillas con sus iconos y publicar el render a la TV) y fase 3 (subir
+  modelos propios y elegir el modelo de cada zombi). La TV todavía usa el tablero de `scripts/board3d`.
+- Datos: `src/editor/layout.ts` (formato `BoardLayout`, funciones puras con tests), `history.ts` (deshacer),
+  `scene.ts` (Three.js: dibuja el diseño y recoge el ratón), `BoardEditor.tsx` (la interfaz).
+- Se guarda en Redis (`src/server/boardDesign.ts`, API `src/app/api/admin/board`). Guardar pide la clave
+  `ADMIN_PASSWORD` (variable de entorno de Vercel); en desarrollo, sin ella, no se pide. El borrador se guarda
+  también en el navegador.
+- Catálogo: kits CC0 de Kenney en `public/models/<kit>/` (cementerio, naturaleza, supervivencia, ciudad).
+  `node scripts/editor/catalog.mjs` genera `public/models/catalog.json` y las miniaturas; volver a ejecutarlo al
+  añadir modelos. Ahí también va la escala con la que entra cada kit (`KITS`).
