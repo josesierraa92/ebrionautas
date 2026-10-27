@@ -55,7 +55,18 @@ export type PlacedObject = {
   /** Estiramiento a lo ancho/largo del modelo (para que una losa ocupe casillas enteras). Por defecto 1. */
   sx?: number;
   sz?: number;
+  /** Luz que emite el objeto (un farol, una vela…). Si falta, los que emiten luz por su nombre la traen por defecto. */
+  light?: ObjectLight;
 };
+
+export type ObjectLight = { on: boolean; color: string; intensity: number; distance: number };
+export const DEFAULT_LIGHT: ObjectLight = { on: true, color: "#ffb347", intensity: 40, distance: 12 };
+export const LIGHT_LIMITS = { intensity: { min: 5, max: 200 }, distance: { min: 2, max: 30 } };
+const EMITTERS = /(lantern|candle|jackolantern|lightpost|fire|torch|campfire|brazier)/i;
+/** Los faroles, velas, hogueras y calabazas con vela brillan solos (hace falta luz de noche). */
+export const isEmitter = (model: string) => EMITTERS.test(model.split("/")[1] ?? "");
+/** La luz con la que se dibuja un objeto: la suya, o la de serie si es de los que brillan. */
+export const lightOf = (o: PlacedObject): ObjectLight | null => o.light ?? (isEmitter(o.model) ? DEFAULT_LIGHT : null);
 
 export type BoardLayout = {
   version: 1;
@@ -255,6 +266,15 @@ export function parseLayout(raw: unknown): BoardLayout | null {
       s: Math.max(0.05, Math.min(20, num(p.s, 1))),
     });
     const last = objects[objects.length - 1];
+    if (p.light && typeof p.light === "object") {
+      const lt = p.light as Record<string, unknown>;
+      last.light = {
+        on: typeof lt.on === "boolean" ? lt.on : true,
+        color: typeof lt.color === "string" && /^#[0-9a-f]{6}$/i.test(lt.color) ? lt.color : DEFAULT_LIGHT.color,
+        intensity: Math.max(LIGHT_LIMITS.intensity.min, Math.min(LIGHT_LIMITS.intensity.max, num(lt.intensity, DEFAULT_LIGHT.intensity))),
+        distance: Math.max(LIGHT_LIMITS.distance.min, Math.min(LIGHT_LIMITS.distance.max, num(lt.distance, DEFAULT_LIGHT.distance))),
+      };
+    }
     for (const k of ["sx", "sz"] as const) {
       const v = Math.max(0.1, Math.min(10, num(p[k], 1)));
       if (v !== 1) last[k] = v;

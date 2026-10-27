@@ -117,6 +117,12 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - Se guarda en Redis (`src/server/boardDesign.ts`, API `src/app/api/admin/board`). Guardar pide la clave
   `ADMIN_PASSWORD` (variable de entorno de Vercel); en desarrollo, sin ella, no se pide. El borrador se guarda
   también en el navegador.
-- Catálogo: kits CC0 de Kenney en `public/models/<kit>/` (cementerio, naturaleza, supervivencia, ciudad).
+- Luces de los objetos (`light` en `PlacedObject`, panel `ObjectLightPanel`): un `PointLight` más un halo en lo alto
+  del modelo. Los que se llaman lantern/candle/jackolantern/lightpost/fire/torch/campfire/brazier brillan solos
+  (`isEmitter`, `lightOf`); `light: {on:false}` los apaga. Sin luz propia la noche queda muy oscura (pedido del usuario).
+- Catálogo: kits CC0 de Kenney en `public/models/<kit>/` (cementerio, naturaleza, supervivencia, ciudad) y el kit
+  **Halloween Bits de KayKit** (CC0, `halloween`, escala 0.5: viene ~4 veces más grande). Poly Pizza bloquea las
+  descargas automáticas (Cloudflare): los kits se bajan de su repositorio (p. ej. GitHub) y los `.gltf` se
+  convierten con `node scripts/editor/gltf2glb.mjs <carpeta> public/models/<kit>`.
   `node scripts/editor/catalog.mjs` genera `public/models/catalog.json` y las miniaturas; volver a ejecutarlo al
   añadir modelos. Ahí también va la escala con la que entra cada kit (`KITS`).

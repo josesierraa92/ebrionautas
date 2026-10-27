@@ -6,7 +6,7 @@ import { TransformControls } from "three/examples/jsm/controls/TransformControls
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { builtinIcon, drawIcon } from "./icons";
-import { NUMBER_FONTS, type NumberFont, type NumberStyle } from "./layout";
+import { lightOf, NUMBER_FONTS, type NumberFont, type NumberStyle } from "./layout";
 import { brushCells, GROUNDS, groundAt, LEVEL, LIQUIDS, lookOf, TILE_SIZE, tileAnchor, tileTypeOf, type BoardLayout, type TileKind, type LightId, type PlacedObject } from "./layout";
 
 export type Tool = "select" | "paint" | "raise" | "lower" | "flatten" | "stamp" | "tiles";
@@ -65,6 +65,7 @@ export class EditorScene {
   /** Tipos de letra de los números que ya se descargaron (hasta entonces se dibuja con la de respaldo). */
   private fontsReady = new Set<NumberFont>();
   private tileTextures = new Map<string, THREE.CanvasTexture>();
+  private glowTexture: THREE.CanvasTexture | null = null;
   /** Imágenes de iconos subidos que aún se están cargando (la foto para la TV las espera). */
   private pendingIcons = new Set<Promise<void>>();
   private objects = new Map<string, THREE.Group>();
@@ -415,7 +416,9 @@ export class EditorScene {
         this.objects.set(o.id, group);
         this.objectRoot.add(group);
         this.loadModel(o.model).then((m) => {
-          if (m && this.objects.get(o.id) === group) group.add(m.clone(true));
+          if (!m || this.objects.get(o.id) !== group) return;
+          group.add(m.clone(true));
+          if (group.userData.pending) this.applyObjectLight(group, group.userData.pending as PlacedObject); // la caja del modelo ya existe
         });
         if (this.selected === o.id) this.gizmo.attach(group);
       }
@@ -424,7 +427,61 @@ export class EditorScene {
       g.userData.sx = o.sx ?? 1;
       g.userData.sz = o.sz ?? 1;
       g.scale.set(o.s * g.userData.sx, o.s, o.s * g.userData.sz);
+      g.userData.pending = o;
+      this.applyObjectLight(g, o);
     }
+  }
+
+  /** Luz del objeto: un punto de luz cálido en lo alto del modelo y un halo que se ve en la foto de la TV. */
+  private applyObjectLight(g: THREE.Group, o: PlacedObject) {
+    const lt = lightOf(o);
+    let rig = g.userData.rig as THREE.Group | undefined;
+    if (!lt?.on) {
+      if (rig) {
+        g.remove(rig);
+        (rig.children[1] as THREE.Sprite).material.dispose();
+        g.userData.rig = undefined;
+      }
+      return;
+    }
+    const box = this.boxes.get(o.model);
+    if (!box) return; // el modelo aún no cargó: se vuelve a llamar al cargar
+    if (!rig) {
+      const light = new THREE.PointLight();
+      light.decay = 2;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glow(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+      rig = new THREE.Group();
+      rig.add(light, sprite);
+      g.add(rig);
+      g.userData.rig = rig;
+    }
+    const [light, sprite] = rig.children as [THREE.PointLight, THREE.Sprite];
+    // en lo alto del modelo, donde está la llama o el cristal de la lámpara (coordenadas del modelo, sin escalar)
+    rig.position.set((box.min.x + box.max.x) / 2, box.min.y + (box.max.y - box.min.y) * 0.72, (box.min.z + box.max.z) / 2);
+    light.color.set(lt.color);
+    light.intensity = lt.intensity;
+    light.distance = lt.distance;
+    sprite.material.color.set(lt.color);
+    sprite.material.opacity = Math.min(0.85, 0.3 + lt.intensity / 250);
+    const world = Math.min(3, 0.8 + lt.distance * 0.08); // tamaño del halo en casillas
+    sprite.scale.set(world / g.scale.x, world / g.scale.y, 1);
+  }
+
+  private glow() {
+    if (!this.glowTexture) {
+      const c = document.createElement("canvas");
+      c.width = c.height = 128;
+      const ctx = c.getContext("2d")!;
+      const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+      grad.addColorStop(0, "rgba(255,255,255,1)");
+      grad.addColorStop(0.25, "rgba(255,255,255,0.45)");
+      grad.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 128, 128);
+      this.glowTexture = new THREE.CanvasTexture(c);
+      this.glowTexture.colorSpace = THREE.SRGBColorSpace;
+    }
+    return this.glowTexture;
   }
 
   // ------------------------------------------------------------------ encajar en la rejilla

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { History } from "./history";
-import { brushCells, flatten, groundAt, lookOf, MAX_LEVEL, newLayout, paint, parseLayout, raise, resize, TILE_COUNT, tileAnchor, tileTypeOf, toggleTile } from "./layout";
+import { brushCells, flatten, groundAt, lightOf, lookOf, MAX_LEVEL, newLayout, paint, parseLayout, raise, resize, TILE_COUNT, tileAnchor, tileTypeOf, toggleTile } from "./layout";
 
 describe("diseño del tablero", () => {
   it("el pincel pinta un cuadrado y no se sale del mundo", () => {
@@ -107,6 +107,23 @@ describe("números de las casillas", () => {
     expect(l?.numbers).toEqual({ show: false, size: 260, font: "creepster", pos: "center" });
     expect(parseLayout({ ...base, numbers: { font: "comic-sans", pos: "arriba", size: "grande" } })?.numbers).toEqual(base.numbers);
     expect(resize(l!, 20, 12).numbers).toEqual(l!.numbers);
+  });
+});
+
+describe("luces de los objetos", () => {
+  const obj = (model: string, light?: unknown) => ({ id: "a", model, x: 1, y: 0, z: 1, rx: 0, ry: 0, rz: 0, s: 1, ...(light ? { light } : {}) });
+  it("los faroles y las velas brillan por defecto y el resto no", () => {
+    expect(lightOf(obj("halloween/lantern_standing") as never)?.on).toBe(true);
+    expect(lightOf(obj("cementerio/candle-multiple") as never)?.on).toBe(true);
+    expect(lightOf(obj("halloween/pumpkin_orange_jackolantern") as never)?.on).toBe(true);
+    expect(lightOf(obj("naturaleza/tree_oak") as never)).toBeNull();
+    expect(lightOf(obj("halloween/pumpkin_orange") as never)).toBeNull();
+  });
+  it("se valida la luz propia y puede apagar la de serie", () => {
+    const l = parseLayout({ ...newLayout(10, 8), objects: [obj("halloween/lantern_standing", { on: false, color: "rojo", intensity: 9999, distance: 0 }), obj("naturaleza/tree_oak", { on: true, color: "#00ff88", intensity: 60, distance: 8 })] });
+    expect(l?.objects[0].light).toEqual({ on: false, color: "#ffb347", intensity: 200, distance: 2 });
+    expect(lightOf(l!.objects[0])?.on).toBe(false);
+    expect(lightOf(l!.objects[1])).toEqual({ on: true, color: "#00ff88", intensity: 60, distance: 8 });
   });
 });
 

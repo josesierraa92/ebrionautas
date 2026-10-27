@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { History } from "./history";
+import ObjectLightPanel from "./ObjectLightPanel";
 import TilesPanel from "./TilesPanel";
 import {
   flatten,
@@ -12,6 +13,7 @@ import {
   tileAt,
   toggleTile,
   GROUND_IDS,
+  lightOf,
   GROUNDS,
   groundAt,
   LIGHTS,
@@ -26,6 +28,7 @@ import {
   type BoardLayout,
   type GroundId,
   type LightId,
+  type ObjectLight,
   type PlacedObject,
 } from "./layout";
 import { EditorScene, type GizmoMode, type Tool } from "./scene";
@@ -154,6 +157,28 @@ export default function BoardEditor() {
     [commit],
   );
 
+  // los controles deslizantes de la luz cambian el diseño en vivo y apuntan un solo paso para deshacer
+  const lightBefore = useRef<BoardLayout | null>(null);
+  const liveLight = (id: string, light: ObjectLight) => {
+    const l = layoutRef.current;
+    lightBefore.current ??= l;
+    setLayout({ ...l, objects: l.objects.map((o) => (o.id === id ? { ...o, light } : o)) });
+  };
+  const endLiveLight = () => {
+    const before = lightBefore.current;
+    lightBefore.current = null;
+    if (before && before !== layoutRef.current) {
+      history.current.push(before);
+      setTick((t) => t + 1);
+    }
+  };
+  /** Copia esta luz a todos los objetos del mismo modelo (p. ej. todos los faroles). */
+  const applyLightToAll = (model: string, light: ObjectLight) => {
+    const l = layoutRef.current;
+    commit({ ...l, objects: l.objects.map((o) => (o.model === model ? { ...o, light } : o)) });
+    setStatus(`Luz aplicada a ${l.objects.filter((o) => o.model === model).length} objetos.`);
+  };
+
   const removeSelected = useCallback(() => {
     if (!selected) return;
     const l = layoutRef.current;
@@ -218,7 +243,7 @@ export default function BoardEditor() {
         if (!final) return setLive(o);
         setLive(null);
         const l = layoutRef.current;
-        commit({ ...l, objects: l.objects.map((x) => (x.id === o.id ? o : x)) });
+        commit({ ...l, objects: l.objects.map((x) => (x.id === o.id ? { ...o, ...(x.light && { light: x.light }) } : x)) });
       },
       onStamp: (x, y, z) => {
         const t = toolRef.current;
@@ -638,6 +663,14 @@ export default function BoardEditor() {
                   onChange={(e) => updateObject(sel.id, { y: groundAt(layoutRef.current, sel.x, sel.z) + Number(e.target.value) })}
                 />
               </label>
+              <ObjectLightPanel
+                obj={sel}
+                name={models.get(sel.model)?.name ?? sel.model}
+                onSet={(light) => updateObject(sel.id, { light })}
+                onLive={(light) => liveLight(sel.id, light)}
+                onLiveEnd={endLiveLight}
+                onApplyAll={(light) => applyLightToAll(sel.model, light)}
+              />
               <div className="grid grid-cols-2 gap-1">
                 <button className={`${btn} ${off}`} onClick={() => updateObject(sel.id, { y: groundAt(layoutRef.current, sel.x, sel.z) })}>
                   Al suelo
@@ -688,7 +721,7 @@ export default function BoardEditor() {
             </button>
           )}
           <p className="absolute right-3 bottom-3 rounded bg-black/50 px-2 py-1 text-xs opacity-80">
-            {layout.objects.length} modelos · mundo {layout.w}×{layout.h}
+            {layout.objects.length} modelos · {layout.objects.filter((o) => lightOf(o)?.on).length} luces · mundo {layout.w}×{layout.h}
           </p>
         </main>
 

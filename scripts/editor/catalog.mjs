@@ -24,6 +24,7 @@ const KITS = {
   naturaleza: { label: "Naturaleza", scale: 2 },
   supervivencia: { label: "Supervivencia", scale: 2 },
   ciudad: { label: "Ciudad", scale: 3 },
+  halloween: { label: "Halloween", scale: 0.5 }, // KayKit Halloween Bits: vienen ~4 veces más grandes
 };
 
 const kits = (await readdir(models, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
