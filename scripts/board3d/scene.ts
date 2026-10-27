@@ -7,6 +7,7 @@
 
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { BOARD, type Tile } from "@/game/board";
 import { DECOR, type Deco } from "@/game/decor";
 import { ISLAND, ISO_VIEW as VIEW, isoPos } from "@/game/isoPath";
@@ -29,10 +30,6 @@ const C = {
   dirt: "#6b4560",
   dirtDark: "#4a2c45",
   cream: "#f1e6d2", // hueso
-  trunk: "#5a3d4a",
-  cypress: ["#1f5a4c", "#2a6d5c"],
-  jacaranda: ["#a77bf0", "#8c5ae0", "#bf9bff"],
-  orangeTree: ["#ff9f1c", "#ff8a00", "#ffb347"],
   marigold: "#ff9500",
   white: "#fffaf0",
   gold: "#ffcf3f",
@@ -275,112 +272,80 @@ const vary = (gx: number, gy: number, k = 1) => {
   return v - Math.floor(v);
 };
 
-/** Ciprés de panteón: alto, oscuro y en forma de llama. */
-function cypress(v: number) {
+// --- Modelos 3D del Graveyard Kit de Kenney (CC0, scripts/board3d/models/graveyard) ---------
+const KENNEY = [
+  "pine", "pine-crooked", "pine-fall", "pine-fall-crooked", "gravestone-round", "gravestone-cross", "gravestone-decorative",
+  "gravestone-bevel", "gravestone-broken", "cross-wood", "candle-multiple", "candle", "altar-stone", "crypt-large",
+  "crypt-large-roof", "grave", "shovel-dirt", "iron-fence", "iron-fence-border-column", "lightpost-single", "lantern-candle",
+  "urn-round", "fire-basket", "rocks",
+] as const;
+type KenneyModel = (typeof KENNEY)[number];
+const models = new Map<KenneyModel, THREE.Object3D>();
+
+async function loadModels() {
+  const loader = new GLTFLoader();
+  await Promise.all(KENNEY.map(async (name) => models.set(name, (await loader.loadAsync(`/models/graveyard/${name}.glb`)).scene)));
+}
+
+/** Copia de un modelo, escalada para que mida `height` de alto (en casillas) y apoyada en el suelo. */
+function kenney(name: KenneyModel, height: number, turn = 0) {
+  const o = models.get(name)!.clone(true);
+  const box = new THREE.Box3().setFromObject(o);
+  o.scale.setScalar(height / (box.max.y - box.min.y));
+  o.position.y = -box.min.y * o.scale.y;
+  o.rotation.y = turn;
   const g = new THREE.Group();
-  g.add(cyl(0.05, 0.07, 0.2, C.trunk));
-  const body = sphere(0.26, mat(C.cypress[0], { roughness: 0.8 }), 0, 0.75, 0, 20);
-  body.scale.set(1, 2.6, 1);
-  g.add(body);
-  const top = sphere(0.2, mat(C.cypress[1], { roughness: 0.8 }), 0.03, 1.15, 0.02, 16);
-  top.scale.set(1, 2.2, 1);
-  g.add(top);
-  g.scale.setScalar(0.9 + v * 0.35);
+  g.add(o);
   return g;
 }
 
-/** Árbol redondo de copa morada (jacaranda) o naranja, con guirnalda de flores. */
-function roundTree(colors: string[], v: number) {
-  const g = new THREE.Group();
-  const h = 0.5;
-  g.add(cyl(0.07, 0.1, h, C.trunk));
-  const blobs: [number, number, number, number][] = [[0, h + 0.28, 0, 0.36], [0.24, h + 0.12, 0.1, 0.26], [-0.22, h + 0.14, -0.06, 0.27], [0.02, h + 0.08, 0.26, 0.24]];
-  blobs.forEach(([x, y, z, r], i) => g.add(sphere(r, colors[i % colors.length], x, y, z)));
-  g.scale.setScalar(0.95 + v * 0.25);
+/** Altura de la parte de arriba de un objeto (para poner cosas encima). */
+const topOf = (o: THREE.Object3D) => new THREE.Box3().setFromObject(o).max.y;
+
+/** Ofrenda: altar de piedra con velas, cempasúchil, pan de muerto y una calaverita de azúcar. */
+function ofrenda(v: number) {
+  const g = kenney("altar-stone", 0.32, Math.PI / 2);
+  const top = topOf(g);
+  g.add(kenney("candle-multiple", 0.16).translateX(-0.12).translateY(top).translateZ(0.08));
+  const bread = sphere(0.06, mat("#d9893b", { roughness: 0.7 }), 0.1, top + 0.03, 0.05, 14);
+  bread.scale.y = 0.6;
+  g.add(bread, sphere(0.05, mat("#fffaf0", { roughness: 0.4 }), 0.02, top + 0.05, -0.1, 14));
+  [-1, 1].forEach((s) => g.add(sphere(0.012, mat("#ff4f8b"), 0.02 + s * 0.017, top + 0.06, -0.06, 8)));
+  for (let k = 0; k < 5; k++) g.add(sphere(0.04, mat(k % 2 ? C.marigold : "#ff4f8b", { roughness: 0.9, flatShading: true }), -0.2 + k * 0.1, top + 0.02, -0.16 + v * 0.02, 6));
   return g;
 }
 
-/** Árbol seco y retorcido, con farolillos colgando. */
-function deadTree(v: number) {
-  const g = new THREE.Group();
-  const wood = mat("#4a3550", { roughness: 0.9 });
-  const trunk = mesh(new THREE.CylinderGeometry(0.05, 0.1, 0.9, 10), wood, 0, 0.45, 0);
-  trunk.rotation.z = 0.1;
-  g.add(trunk);
-  [[0.6, 0.7, 0.9], [0.75, -0.6, -1.1], [0.5, 0.4, 2.2], [0.85, -0.3, 0.3]].forEach(([y, rz, ry]) => {
-    const b = mesh(new THREE.CylinderGeometry(0.015, 0.04, 0.45, 8), wood, 0, y, 0);
-    b.rotation.set(0, ry, rz);
-    b.translateY(0.2);
-    g.add(b);
-  });
-  [[0.22, 0.62, 0.1], [-0.18, 0.7, -0.08], [0.05, 0.86, 0.2]].forEach(([x, y, z], k) => {
-    g.add(cyl(0.004, 0.004, 0.08, "#222", x, y, z, 4));
-    g.add(sphere(0.045, glow(["#ff9f1c", "#ff4f8b", "#b07cff"][k], 2), x, y - 0.03, z, 12));
-  });
-  g.scale.setScalar(1 + v * 0.3);
+/** Mausoleo: la cripta grande con su tejado y una cruz. */
+function mausoleum() {
+  const g = kenney("crypt-large", 0.62, Math.PI / 2);
+  const roof = kenney("crypt-large-roof", 0.3, Math.PI / 2);
+  roof.position.y = topOf(g) - 0.02;
+  // el tejado se escala por su altura: hay que igualarlo al ancho de la cripta
+  const wCrypt = new THREE.Box3().setFromObject(g).getSize(new THREE.Vector3());
+  const wRoof = new THREE.Box3().setFromObject(roof).getSize(new THREE.Vector3());
+  roof.scale.multiplyScalar(Math.max(wCrypt.x, wCrypt.z) / Math.max(wRoof.x, wRoof.z));
+  g.add(roof);
+  return g;
+}
+
+/** Tumba abierta junto a la salida: de aquí salieron los muertos a medianoche. */
+function grave() {
+  const g = kenney("grave", 0.12, Math.PI / 2);
+  g.add(kenney("gravestone-cross", 0.6, Math.PI / 2).translateX(-0.45));
+  g.add(kenney("shovel-dirt", 0.45, 0.6).translateX(0.1).translateZ(0.35));
   return g;
 }
 
 /** Mata de cempasúchil: hojas verdes con pompones naranjas. */
 function marigold(v: number) {
   const g = new THREE.Group();
-  g.add(sphere(0.16, "#2f6b3a", 0, 0.1, 0, 16));
+  // low poly, como los modelos de Kenney
+  g.add(mesh(new THREE.IcosahedronGeometry(0.16, 0), mat("#2f6b3a", { flatShading: true }), 0, 0.1, 0));
   for (let k = 0; k < 7; k++) {
     const a = k * 0.9 + v * 5;
     const r = k === 0 ? 0 : 0.11;
-    g.add(sphere(0.06, mat(k % 3 ? C.marigold : "#ffb627", { roughness: 0.9 }), Math.cos(a) * r, 0.2 + (k % 2) * 0.03, Math.sin(a) * r, 12));
+    g.add(mesh(new THREE.IcosahedronGeometry(0.06, 0), mat(k % 3 ? C.marigold : "#ffb627", { roughness: 0.9, flatShading: true }), Math.cos(a) * r, 0.2 + (k % 2) * 0.03, Math.sin(a) * r));
   }
-  return g;
-}
-
-/** Velas encendidas de distintas alturas. */
-function candles(v: number) {
-  const g = new THREE.Group();
-  [[0, 0, 0.26], [0.1, 0.06, 0.18], [-0.08, 0.08, 0.13], [0.04, -0.1, 0.1]].forEach(([x, z, h], k) => {
-    g.add(cyl(0.035, 0.035, h, mat("#fff4e0", { roughness: 0.6 }), x, 0, z, 14));
-    const flame = mesh(new THREE.ConeGeometry(0.022, 0.07, 10), glow("#ffb347", 3), x, h + 0.04, z);
-    g.add(flame);
-    if (k === 0) g.add(sphere(0.06, mat("#ffcf6b", { emissive: "#ff9f1c", emissiveIntensity: 1.2, transparent: true, opacity: 0.35 }), x, h + 0.04, z, 12));
-  });
-  g.rotation.y = v * 6;
-  return g;
-}
-
-/** Lápida redonda con cruz grabada y flores al pie. */
-function tombstone(v: number) {
-  const g = new THREE.Group();
-  const stone = mat("#9a96ad", { roughness: 0.85 });
-  const slab = new THREE.Shape();
-  slab.moveTo(-0.16, 0);
-  slab.lineTo(0.16, 0);
-  slab.lineTo(0.16, 0.28);
-  slab.absarc(0, 0.28, 0.16, 0, Math.PI, false);
-  slab.lineTo(-0.16, 0);
-  const geo = new THREE.ExtrudeGeometry(slab, { depth: 0.07, bevelEnabled: true, bevelSize: 0.015, bevelThickness: 0.015, bevelSegments: 2 });
-  geo.translate(0, 0, -0.035);
-  const m = mesh(geo, stone);
-  m.rotation.y = Math.PI / 4;
-  g.add(m);
-  const cross = new THREE.Group();
-  cross.add(mesh(new THREE.BoxGeometry(0.03, 0.14, 0.01), mat("#6e6a82")), mesh(new THREE.BoxGeometry(0.1, 0.03, 0.01), mat("#6e6a82"), 0, 0.03, 0));
-  cross.position.set(0.03, 0.3, 0.03);
-  cross.rotation.y = Math.PI / 4;
-  g.add(cross);
-  g.add(sphere(0.04, mat(C.marigold), 0.12, 0.03, 0.08, 10), sphere(0.035, mat("#ff4f8b"), 0.06, 0.03, 0.14, 10));
-  g.rotation.y = (v - 0.5) * 0.5;
-  return g;
-}
-
-/** Cruz de madera clavada en la tierra, con una corona de flores. */
-function woodCross(v: number) {
-  const g = new THREE.Group();
-  const wood = mat("#7a4a2c", { roughness: 0.9 });
-  g.add(mesh(new THREE.BoxGeometry(0.06, 0.5, 0.06), wood, 0, 0.25, 0));
-  const arm = mesh(new THREE.BoxGeometry(0.3, 0.06, 0.06), wood, 0, 0.36, 0);
-  g.add(arm);
-  const wreath = mesh(new THREE.TorusGeometry(0.07, 0.025, 8, 16), mat(C.marigold, { roughness: 0.9 }), 0, 0.36, 0.05);
-  g.add(wreath);
-  g.rotation.set(0, Math.PI / 4 + (v - 0.5) * 0.4, (v - 0.5) * 0.2);
   return g;
 }
 
@@ -394,73 +359,6 @@ function petals(v: number) {
     p.scale.y = 0.35;
     g.add(p);
   }
-  return g;
-}
-
-/** Ofrenda: altar de dos escalones con velas, flores, pan de muerto y una calaverita de azúcar. */
-function ofrenda() {
-  const g = new THREE.Group();
-  const cloth = mat("#c2185b", { roughness: 0.8 });
-  g.add(mesh(new THREE.BoxGeometry(0.5, 0.12, 0.36), cloth, 0, 0.06, 0));
-  g.add(mesh(new THREE.BoxGeometry(0.36, 0.12, 0.22), mat("#7b2cbf", { roughness: 0.8 }), -0.03, 0.18, -0.04));
-  // pan de muerto
-  const bread = sphere(0.06, mat("#d9893b", { roughness: 0.7 }), 0.12, 0.15, 0.08, 14);
-  bread.scale.y = 0.6;
-  g.add(bread);
-  // calaverita de azúcar
-  g.add(sphere(0.05, mat("#fffaf0", { roughness: 0.4 }), -0.1, 0.29, -0.02, 14));
-  [-1, 1].forEach((s) => g.add(sphere(0.013, mat("#ff4f8b"), -0.1 + s * 0.018, 0.3, 0.025, 8)));
-  // velas y flores
-  [[-0.2, 0.12], [0.2, -0.1]].forEach(([x, z]) => {
-    g.add(cyl(0.025, 0.025, 0.14, mat("#fff4e0"), x, 0.12, z, 10));
-    g.add(mesh(new THREE.ConeGeometry(0.016, 0.05, 8), glow("#ffb347", 3), x, 0.29, z));
-  });
-  [[0.05, 0.27, -0.1], [-0.18, 0.27, -0.1]].forEach(([x, y, z]) => g.add(sphere(0.045, mat(C.marigold, { roughness: 0.9 }), x, y, z, 12)));
-  g.rotation.y = Math.PI / 4;
-  return g;
-}
-
-/** Pequeño mausoleo con frontón, columnas y puerta. */
-function mausoleum() {
-  const g = new THREE.Group();
-  const stone = mat("#b9b3cc", { roughness: 0.8 });
-  const dark = mat("#4a3f66", { roughness: 0.8 });
-  g.add(mesh(new RoundedBoxGeometry(0.7, 0.08, 0.6, 2, 0.02), stone, 0, 0.04, 0));
-  g.add(mesh(new THREE.BoxGeometry(0.56, 0.5, 0.46), stone, 0, 0.33, 0));
-  const roof = new THREE.Shape();
-  roof.moveTo(-0.34, 0);
-  roof.lineTo(0.34, 0);
-  roof.lineTo(0, 0.2);
-  roof.closePath();
-  const r = new THREE.ExtrudeGeometry(roof, { depth: 0.54, bevelEnabled: false });
-  r.translate(0, 0, -0.27);
-  const rm = mesh(r, dark, 0, 0.58, 0);
-  rm.rotation.y = Math.PI / 2;
-  g.add(rm);
-  // puerta y columnas en la fachada que mira a la cámara (+x)
-  g.add(mesh(new THREE.BoxGeometry(0.01, 0.3, 0.18), dark, 0.285, 0.23, 0));
-  [-0.18, 0.18].forEach((z) => g.add(cyl(0.03, 0.03, 0.46, stone, 0.3, 0.08, z, 10)));
-  g.add(mesh(new THREE.BoxGeometry(0.02, 0.12, 0.02), mat(C.gold), 0.3, 0.7, 0), mesh(new THREE.BoxGeometry(0.02, 0.02, 0.07), mat(C.gold), 0.3, 0.73, 0));
-  g.add(cyl(0.02, 0.02, 0.08, mat("#fff4e0"), 0.33, 0.08, 0.13, 8), mesh(new THREE.ConeGeometry(0.014, 0.04, 8), glow("#ffb347", 3), 0.33, 0.18, 0.13));
-  g.rotation.y = -Math.PI / 4;
-  return g;
-}
-
-/** Tumba abierta junto a la salida: de aquí salieron los muertos a medianoche. */
-function grave() {
-  const g = new THREE.Group();
-  const hole = mesh(new THREE.BoxGeometry(0.34, 0.02, 0.6), mat("#1e1028"), 0, 0.005, 0);
-  g.add(hole);
-  const dirt = sphere(0.18, mat("#5a3a52", { roughness: 1 }), 0.28, 0.02, 0, 14);
-  dirt.scale.set(0.8, 0.5, 1.6);
-  g.add(dirt);
-  const head = tombstone(0.3);
-  head.position.set(-0.05, 0, -0.42);
-  g.add(head);
-  const shovel = mesh(new THREE.BoxGeometry(0.02, 0.4, 0.02), mat("#7a4a2c"), 0.32, 0.25, 0.2);
-  shovel.rotation.z = 0.3;
-  g.add(shovel);
-  g.rotation.y = Math.PI / 4;
   return g;
 }
 
@@ -559,22 +457,20 @@ function papelPicado(a: THREE.Vector3, b: THREE.Vector3, n = 12) {
 }
 
 /** Las cosas bajitas, más grandes para que se lean desde el sofá. */
-const PROP_SCALE: Partial<Record<Deco["kind"], number>> = {
-  marigold: 1.6, candles: 1.7, tombstone: 1.5, cross: 1.4, petals: 1.8, ofrenda: 1.7, jacaranda: 1.15, deadtree: 1.1, cypress: 1.05, grave: 1.5, sign: 1.3, mausoleum: 1.35,
-};
+const PROP_SCALE: Partial<Record<Deco["kind"], number>> = { marigold: 1.6, petals: 1.8, sign: 1.3, mausoleum: 1.25, grave: 1.3, ofrenda: 1.5 };
 
 function decoration(d: Deco) {
   const v = vary(d.gx, d.gy);
   const builders: Record<Deco["kind"], () => THREE.Object3D> = {
-    cypress: () => cypress(v),
-    jacaranda: () => roundTree(v > 0.5 ? C.jacaranda : C.orangeTree, v),
-    deadtree: () => deadTree(v),
+    cypress: () => kenney(v > 0.5 ? "pine" : "pine-crooked", 1.15 + v * 0.35),
+    jacaranda: () => kenney(v > 0.5 ? "pine-fall" : "pine-fall-crooked", 1.05 + v * 0.3),
+    deadtree: () => kenney("lightpost-single", 0.95),
     marigold: () => marigold(v),
-    candles: () => candles(v),
-    tombstone: () => tombstone(v),
-    cross: () => woodCross(v),
+    candles: () => kenney("candle-multiple", 0.32),
+    tombstone: () => kenney((["gravestone-round", "gravestone-cross", "gravestone-decorative", "gravestone-bevel", "gravestone-broken"] as const)[Math.floor(v * 5)], 0.62, v > 0.5 ? 0 : Math.PI / 2),
+    cross: () => kenney("cross-wood", 0.62, Math.PI / 2),
     petals: () => petals(v),
-    ofrenda: () => ofrenda(),
+    ofrenda: () => ofrenda(v),
     mausoleum: () => mausoleum(),
     grave: () => grave(),
     pond: () => pond(),
@@ -584,7 +480,7 @@ function decoration(d: Deco) {
   const o = builders[d.kind]();
   o.position.set(d.gx, 0, d.gy);
   o.scale.multiplyScalar(PROP_SCALE[d.kind] ?? 1);
-  if (["cypress", "jacaranda", "deadtree", "marigold"].includes(d.kind)) o.rotation.y += v * Math.PI * 2;
+  if (["cypress", "jacaranda", "marigold"].includes(d.kind)) o.rotation.y += v * Math.PI * 2;
   return shadowed(o);
 }
 
@@ -623,9 +519,9 @@ function goalTomb(at = isoPos(BOARD.length)) {
     g.add(cyl(0.035, 0.035, h, mat("#fff4e0"), x, 0.32, z, 12));
     g.add(mesh(new THREE.ConeGeometry(0.022, 0.07, 10), glow("#ffb347", 3), x, 0.32 + h + 0.035, z));
   });
-  // resplandor del amanecer detrás de la tumba
-  const dawn = mesh(new THREE.CircleGeometry(1.3, 48), new THREE.MeshBasicMaterial({ color: "#ffb347", transparent: true, opacity: 0.25, depthWrite: false }), -0.25, 1.5, -0.25);
-  dawn.lookAt(10, 1.5, 10);
+  // luz cálida del amanecer que asoma detrás de la tumba
+  const dawn = new THREE.PointLight("#ffb347", 6, 4, 1.4);
+  dawn.position.set(-0.4, 1.4, -0.4);
   g.add(dawn);
   g.position.set(gx, 0, gy);
   return g;
@@ -659,7 +555,7 @@ function renderer(width: number, height: number) {
   r.shadowMap.enabled = true;
   r.shadowMap.type = THREE.PCFSoftShadowMap;
   r.toneMapping = THREE.NeutralToneMapping;
-  r.toneMappingExposure = 1.1;
+  r.toneMappingExposure = 1.3;
   r.outputColorSpace = THREE.SRGBColorSpace;
   return r;
 }
@@ -674,7 +570,26 @@ function isoCamera(x: number, y: number, w: number, h: number, target = new THRE
 }
 
 /** Tablero completo: devuelve un PNG (data URL) del rectángulo VIEW a `scale` píxeles por píxel SVG. */
-export function renderBoard(scale: number) {
+/** Reja de hierro a lo largo del borde de la isla, de (x0,z0) a (x1,z1), con columnas cada tanto. */
+function ironFence(x0: number, z0: number, x1: number, z1: number) {
+  const g = new THREE.Group();
+  const len = Math.hypot(x1 - x0, z1 - z0);
+  const piece = kenney("iron-fence", 0.32);
+  const w = new THREE.Box3().setFromObject(piece).getSize(new THREE.Vector3()).x;
+  const n = Math.floor(len / w);
+  const yaw = -Math.atan2(z1 - z0, x1 - x0);
+  for (let i = 0; i < n; i++) {
+    const t = (i + 0.5) / n;
+    const p = i % 4 === 0 ? kenney("iron-fence-border-column", 0.4) : piece.clone(true);
+    p.position.set(x0 + (x1 - x0) * t, 0, z0 + (z1 - z0) * t);
+    p.rotation.y = yaw;
+    g.add(p);
+  }
+  return g;
+}
+
+export async function renderBoard(scale: number) {
+  await loadModels();
   const scene = new THREE.Scene();
   scene.add(island(), tiles(), goalTomb());
   for (const d of DECOR) scene.add(decoration(d));
@@ -689,8 +604,12 @@ export function renderBoard(scale: number) {
   scene.add(papelPicado(new THREE.Vector3(0.3, 1.25, -1), new THREE.Vector3(4.6, 1.25, -1)));
   scene.add(papelPicado(new THREE.Vector3(8.4, 1.15, -1), new THREE.Vector3(12.6, 1.15, -1)));
   scene.add(papelPicado(new THREE.Vector3(-1, 1.15, 1.6), new THREE.Vector3(-1, 1.15, 4.6), 9));
+  // rejas de hierro por el fondo y los lados (delante no: taparían las casillas)
+  scene.add(shadowed(ironFence(I0 + 1, I0 + 0.2, IX - 1, I0 + 0.2)));
+  scene.add(shadowed(ironFence(I0 + 0.2, I0 + 1, I0 + 0.2, IY - 1.6)));
+  scene.add(shadowed(ironFence(IX - 0.2, I0 + 1, IX - 0.2, IY - 1)));
   // luz cálida de las velas sobre el panteón
-  for (const d of DECOR.filter((x) => x.kind === "candles" || x.kind === "ofrenda")) {
+  for (const d of DECOR.filter((x) => x.kind === "candles" || x.kind === "ofrenda" || x.kind === "deadtree")) {
     const l = new THREE.PointLight("#ffa040", 2.2, 2.6, 1.6);
     l.position.set(d.gx, 0.5, d.gy);
     scene.add(l);
@@ -1005,7 +924,7 @@ export function renderTileIcons(px: number) {
 
 declare global {
   interface Window {
-    __render?: () => { board: string; aliens: string[]; icons: Record<string, string> };
+    __render?: () => Promise<{ board: string; aliens: string[]; icons: Record<string, string> }>;
   }
 }
-window.__render = () => ({ board: renderBoard(2.5), aliens: renderAliens(320), icons: renderTileIcons(256) });
+window.__render = async () => ({ board: await renderBoard(2.5), aliens: renderAliens(320), icons: renderTileIcons(256) });

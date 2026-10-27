@@ -5,7 +5,7 @@
 
 import { build } from "esbuild";
 import { createServer } from "node:http";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -28,7 +28,21 @@ const bundle = await build({
 const js = bundle.outputFiles[0].text;
 const html = `<!doctype html><html><body style="margin:0;background:#000"><script type="module">${js.replace(/<\/script>/g, "<\\/script>")}</script></body></html>`;
 
-const server = createServer((_, res) => {
+// Sirve la página y los modelos 3D (scripts/board3d/models, p. ej. el Graveyard Kit de Kenney, CC0).
+const models = join(root, "scripts", "board3d", "models");
+const TYPES = { ".glb": "model/gltf-binary", ".png": "image/png" };
+const server = createServer(async (req, res) => {
+  const url = decodeURIComponent(new URL(req.url, "http://x").pathname);
+  if (url.startsWith("/models/") && !url.includes("..")) {
+    try {
+      const file = join(models, url.slice("/models/".length));
+      res.writeHead(200, { "content-type": TYPES[file.slice(file.lastIndexOf("."))] ?? "application/octet-stream" });
+      res.end(await readFile(file));
+    } catch {
+      res.writeHead(404).end();
+    }
+    return;
+  }
   res.writeHead(200, { "content-type": "text/html" });
   res.end(html);
 }).listen(0);
@@ -41,6 +55,7 @@ page.on("console", (m) => m.type() === "error" && console.error(m.text()));
 await page.goto(`http://localhost:${port}/`);
 await page.waitForFunction(() => typeof window.__render === "function", null, { timeout: 60000 });
 console.log("renderizando…");
+// __render es asíncrono: primero carga los modelos 3D y luego renderiza
 const result = await page.evaluate(() => window.__render());
 await browser.close();
 server.close();

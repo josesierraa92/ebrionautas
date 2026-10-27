@@ -34,8 +34,8 @@ export const DECOR: Deco[] = [
   { gx: 12.2, gy: 1.7, kind: "marigold" },
   // bosque alrededor (detrás y a los lados)
   ...[0.3, 1.7, 4.6, 6, 8.4, 9.8, 11.2, 12.6].map((gx, i): Deco => ({ gx, gy: -1, kind: (["cypress", "jacaranda", "cypress", "deadtree", "jacaranda", "cypress", "cypress", "jacaranda"] as const)[i] })),
-  { gx: 3, gy: -1.1, kind: "mausoleum" },
-  { gx: 13.9, gy: -0.9, kind: "cypress" },
+  { gx: 3, gy: -1.1, kind: "cypress" },
+  { gx: -0.85, gy: -0.85, kind: "mausoleum" },
   ...[1.6, 4.6, 7.4].map((gy, i): Deco => ({ gx: -1, gy, kind: (["jacaranda", "cypress", "deadtree"] as const)[i] })),
   ...[0.4, 3.6, 6.6, 9.6].map((gy, i): Deco => ({ gx: 14.1, gy, kind: (["cypress", "cypress", "jacaranda", "cypress"] as const)[i] })),
   ...[3, 6.5, 10, 12.6].map((gx, i): Deco => ({ gx, gy: 10.1, kind: (["marigold", "petals", "marigold", "candles"] as const)[i] })),
