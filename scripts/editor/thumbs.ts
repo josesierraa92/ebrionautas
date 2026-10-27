@@ -20,6 +20,10 @@ async function thumbs(files: string[]): Promise<Record<string, string>> {
     try {
       const gltf = await loader.loadAsync(file);
       const model = gltf.scene;
+      model.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (mesh.isMesh) for (const m of [mesh.material].flat() as THREE.MeshStandardMaterial[]) if ("metalness" in m) m.metalness = 0;
+      });
       scene.add(model);
       // misma vista que el tablero: isométrica desde +x +z
       const box = new THREE.Box3().setFromObject(model);

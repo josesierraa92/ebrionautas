@@ -67,13 +67,14 @@ export default function BoardEditor() {
   const history = useRef(new History<BoardLayout>());
   const strokeBefore = useRef<BoardLayout | null>(null);
   const flattenLevel = useRef(0);
+  const shadowBefore = useRef<BoardLayout | null>(null);
 
   const [tool, setTool] = useState<Tool>("select");
   const [ground, setGround] = useState<GroundId>("dirt");
   const [brushSize, setBrushSize] = useState(1);
   const [gizmo, setGizmo] = useState<GizmoMode>("translate");
   const [snap, setSnap] = useState(true);
-  const [grid, setGrid] = useState(false);
+  const [grid, setGrid] = useState(true);
   const [randomTurn, setRandomTurn] = useState(true);
   const [stampModel, setStampModel] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -123,17 +124,19 @@ export default function BoardEditor() {
   }, [setLayout]);
 
   const addObject = useCallback(
-    (model: string, x: number, y: number, z: number, select: boolean) => {
+    async (model: string, x: number, y: number, z: number, select: boolean) => {
       const kitScale = catalogRef.current?.kits.find((k) => model.startsWith(k.id + "/"))?.scale ?? 1;
-      const ry = randomTurn && !select ? Math.random() * Math.PI * 2 : 0;
-      const o: PlacedObject = { id: newObjectId(), model, x, y, z, rx: 0, ry, rz: 0, s: kitScale };
+      // giro al azar: con Ajustar, de 90° en 90° para que siga alineado con la rejilla
+      const turn = randomTurn && !select ? (snap ? Math.floor(Math.random() * 4) * (Math.PI / 2) : Math.random() * Math.PI * 2) : 0;
+      let o: PlacedObject = { id: newObjectId(), model, x, y, z, rx: 0, ry: turn, rz: 0, s: kitScale };
+      if (snap && sceneRef.current) o = await sceneRef.current.snapObject(o, true);
       commit({ ...layoutRef.current, objects: [...layoutRef.current.objects, o] });
       if (select) {
         setTool("select");
         requestAnimationFrame(() => sceneRef.current?.select(o.id));
       }
     },
-    [commit, randomTurn],
+    [commit, randomTurn, snap],
   );
 
   const updateObject = useCallback(
@@ -392,10 +395,27 @@ export default function BoardEditor() {
             ))}
           </select>
         </label>
+        <label className="flex items-center gap-1 text-sm" title="Qué tan oscuras son las sombras">
+          Sombras
+          <input
+            type="range"
+            min={0}
+            max={100}
+            className="w-24"
+            value={Math.round(layout.shadow * 100)}
+            onPointerDown={() => (shadowBefore.current = layoutRef.current)}
+            onChange={(e) => setLayout({ ...layoutRef.current, shadow: Number(e.target.value) / 100 })}
+            onPointerUp={() => {
+              if (shadowBefore.current && shadowBefore.current !== layoutRef.current) history.current.push(shadowBefore.current);
+              shadowBefore.current = null;
+              setTick((t) => t + 1);
+            }}
+          />
+        </label>
         <button className={`${btn} ${grid ? on : off}`} onClick={() => setGrid(!grid)}>
           # Rejilla
         </button>
-        <button className={`${btn} ${snap ? on : off}`} onClick={() => setSnap(!snap)} title="Mover, girar y escalar a saltos">
+        <button className={`${btn} ${snap ? on : off}`} onClick={() => setSnap(!snap)} title="Encajar los modelos en la rejilla: casillas enteras y giros de 90°">
           🧲 Ajustar
         </button>
         <span className="mx-1 h-6 w-px bg-white/15" />
@@ -556,6 +576,18 @@ export default function BoardEditor() {
               <div className="grid grid-cols-2 gap-1">
                 <button className={`${btn} ${off}`} onClick={() => updateObject(sel.id, { y: groundAt(layoutRef.current, sel.x, sel.z) })}>
                   Al suelo
+                </button>
+                <button
+                  className={`${btn} col-span-2 ${off}`}
+                  title="Alinea el objeto con la rejilla y, si es una losa o un camino, le da el tamaño de casillas enteras"
+                  onClick={async () => {
+                    const o = layoutRef.current.objects.find((x) => x.id === sel.id);
+                    if (!o || !sceneRef.current) return;
+                    const n = await sceneRef.current.snapObject(o, true);
+                    updateObject(o.id, { ...n, sx: n.sx, sz: n.sz }); // sx/sz sin definir = sin estirar
+                  }}
+                >
+                  🧲 Encajar en la rejilla
                 </button>
                 <button className={`${btn} ${off}`} onClick={duplicateSelected} title="Ctrl+D">
                   Duplicar

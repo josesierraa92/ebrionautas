@@ -48,6 +48,9 @@ export type PlacedObject = {
   rz: number;
   /** Tamaño (escala uniforme). */
   s: number;
+  /** Estiramiento a lo ancho/largo del modelo (para que una losa ocupe casillas enteras). Por defecto 1. */
+  sx?: number;
+  sz?: number;
 };
 
 export type BoardLayout = {
@@ -60,6 +63,8 @@ export type BoardLayout = {
   height: number[];
   objects: PlacedObject[];
   light: LightId;
+  /** Fuerza de las sombras (0 = sin sombra, 1 = sombra negra). */
+  shadow: number;
 };
 
 export function newLayout(w = 32, h = 24): BoardLayout {
@@ -71,6 +76,7 @@ export function newLayout(w = 32, h = 24): BoardLayout {
     height: Array<number>(w * h).fill(2),
     objects: [],
     light: "dia",
+    shadow: 0.45,
   };
 }
 
@@ -128,7 +134,7 @@ export function resize(l: BoardLayout, w: number, h: number): BoardLayout {
       out.ground[y * w + x] = l.ground[cellIndex(l, x, y)];
       out.height[y * w + x] = l.height[cellIndex(l, x, y)];
     }
-  return { ...out, light: l.light, objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
+  return { ...out, light: l.light, shadow: l.shadow, objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
 }
 
 /** Altura (en unidades del mundo) de la superficie de una celda. Los líquidos quedan un poco hundidos. */
@@ -176,7 +182,13 @@ export function parseLayout(raw: unknown): BoardLayout | null {
       rz: num(p.rz),
       s: Math.max(0.05, Math.min(20, num(p.s, 1))),
     });
+    const last = objects[objects.length - 1];
+    for (const k of ["sx", "sz"] as const) {
+      const v = Math.max(0.1, Math.min(10, num(p[k], 1)));
+      if (v !== 1) last[k] = v;
+    }
   }
   const light = typeof r.light === "string" && r.light in LIGHTS ? (r.light as LightId) : "dia";
-  return { version: 1, w, h, ground, height, objects, light };
+  const shadow = Math.max(0, Math.min(1, num(r.shadow, 0.45)));
+  return { version: 1, w, h, ground, height, objects, light, shadow };
 }

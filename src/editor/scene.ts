@@ -34,10 +34,11 @@ const LIGHT_PRESETS: Record<
   /** fog: dónde empieza y acaba la niebla, en tamaños del mundo por delante/detrás del centro. */
   { bg: string; fog: [number, number] | null; sky: string; ground: string; hemi: number; sun: string; sunI: number; sunPos: [number, number, number] }
 > = {
-  dia: { bg: "#bcd8f0", fog: null, sky: "#d9ecff", ground: "#5a4a3a", hemi: 1.6, sun: "#fff3e0", sunI: 2.6, sunPos: [-10, 18, 3] },
-  atardecer: { bg: "#e9a07a", fog: [0.2, 2.2], sky: "#ffc8a0", ground: "#4a3040", hemi: 1.1, sun: "#ff9a50", sunI: 2.4, sunPos: [-14, 8, 6] },
-  noche: { bg: "#0e1420", fog: [0, 1.6], sky: "#4a5d86", ground: "#0d0f14", hemi: 1.0, sun: "#9db8ff", sunI: 1.3, sunPos: [-8, 16, -4] },
-  niebla: { bg: "#8a929a", fog: [-0.4, 1.0], sky: "#c9d0d6", ground: "#4a4a48", hemi: 1.5, sun: "#e8eef2", sunI: 0.9, sunPos: [-10, 18, 3] },
+  // Luz de relleno fuerte y sol suave: nada queda negro (el usuario no quiere zonas completamente oscuras).
+  dia: { bg: "#bcd8f0", fog: null, sky: "#eef6ff", ground: "#9a8a72", hemi: 2.3, sun: "#fff3e0", sunI: 1.5, sunPos: [-10, 18, 3] },
+  atardecer: { bg: "#e9a07a", fog: [0.2, 2.2], sky: "#ffd2b0", ground: "#7a5a60", hemi: 1.9, sun: "#ffa060", sunI: 1.5, sunPos: [-14, 10, 6] },
+  noche: { bg: "#0e1420", fog: [0, 1.6], sky: "#6a80b0", ground: "#2a2e3a", hemi: 1.5, sun: "#9db8ff", sunI: 0.9, sunPos: [-8, 16, -4] },
+  niebla: { bg: "#8a929a", fog: [-0.4, 1.0], sky: "#d9dfe4", ground: "#6a6a66", hemi: 2.1, sun: "#e8eef2", sunI: 0.7, sunPos: [-10, 18, 3] },
 };
 
 export class EditorScene {
@@ -56,6 +57,8 @@ export class EditorScene {
   private objects = new Map<string, THREE.Group>();
   private loader = new GLTFLoader();
   private models = new Map<string, Promise<THREE.Object3D | null>>();
+  /** Caja de cada modelo cargado (sin girar ni escalar), para encajarlo en la rejilla. */
+  private boxes = new Map<string, THREE.Box3>();
   private raycaster = new THREE.Raycaster();
   private layout: BoardLayout | null = null;
   private resizeObs: ResizeObserver;
@@ -81,7 +84,7 @@ export class EditorScene {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMapping = THREE.NeutralToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     container.appendChild(this.renderer.domElement);
     this.renderer.domElement.style.display = "block";
@@ -127,7 +130,14 @@ export class EditorScene {
       this.orbit.enabled = !e.value;
       const g = this.selectedGroup();
       if (e.value && g && this.layout) this.dragOffset = g.position.y - groundAt(this.layout, g.position.x, g.position.z);
-      if (!e.value) this.emitEdited(true);
+      if (!e.value) {
+        // al soltar tras girar o escalar, la huella cambió: se vuelve a encajar en la rejilla
+        if (g && this.snap) {
+          const p = this.snapXZ(g.userData.model, g.position.x, g.position.z, g.rotation.y, g.scale.y, g.userData.sx, g.userData.sz);
+          if (this.layout) g.position.set(p.x, groundAt(this.layout, p.x, p.z) + (g.position.y - groundAt(this.layout, g.position.x, g.position.z)), p.z);
+        }
+        this.emitEdited(true);
+      }
     });
     this.gizmo.addEventListener("objectChange", () => this.onGizmoChange());
     this.setGizmoMode("translate");
@@ -204,8 +214,9 @@ export class EditorScene {
 
   setGizmoMode(mode: GizmoMode) {
     this.gizmo.setMode(mode);
-    this.gizmo.setTranslationSnap(this.snap ? 0.25 : null);
-    this.gizmo.setRotationSnap(this.snap ? Math.PI / 12 : null);
+    // con Ajustar, mover encaja en la rejilla (onGizmoChange) y girar va de 90° en 90°
+    this.gizmo.setTranslationSnap(null);
+    this.gizmo.setRotationSnap(this.snap ? Math.PI / 2 : null);
     this.gizmo.setScaleSnap(this.snap ? 0.1 : null);
     // Mover: solo sobre el suelo (la altura se ajusta sola). Girar: solo alrededor del eje vertical.
     this.gizmo.showX = mode !== "rotate";
@@ -234,12 +245,12 @@ export class EditorScene {
   setLayout(l: BoardLayout) {
     const prev = this.layout;
     this.layout = l;
-    if (!prev || prev.ground !== l.ground || prev.height !== l.height) this.buildTerrain(l);
-    if (!prev || prev.w !== l.w || prev.h !== l.h) {
+    if (!prev || prev.ground !== l.ground || prev.height !== l.height) {
+      this.buildTerrain(l);
       this.buildGrid(l);
-      this.resetView();
     }
-    if (!prev || prev.light !== l.light) this.applyLight(l);
+    if (!prev || prev.w !== l.w || prev.h !== l.h) this.resetView();
+    if (!prev || prev.light !== l.light || prev.shadow !== l.shadow) this.applyLight(l);
     if (!prev || prev.objects !== l.objects) this.syncObjects(l.objects);
   }
 
@@ -297,15 +308,20 @@ export class EditorScene {
     set(this.liquid, lpos, lcol);
   }
 
+  /** Rejilla pegada a la cara de arriba de cada celda (sigue el terreno). */
   private buildGrid(l: BoardLayout) {
     this.grid.clear();
     const pts: number[] = [];
-    for (let x = 0; x <= l.w; x++) pts.push(x, 0, 0, x, 0, l.h);
-    for (let y = 0; y <= l.h; y++) pts.push(0, 0, y, l.w, 0, y);
+    for (let y = 0; y < l.h; y++)
+      for (let x = 0; x < l.w; x++) {
+        const t = l.height[y * l.w + x] * LEVEL - (LIQUIDS.includes(l.ground[y * l.w + x]) ? 0.15 : 0) + 0.01;
+        pts.push(x, t, y, x + 1, t, y, x, t, y, x, t, y + 1);
+        if (x === l.w - 1) pts.push(x + 1, t, y, x + 1, t, y + 1);
+        if (y === l.h - 1) pts.push(x, t, y + 1, x + 1, t, y + 1);
+      }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
     const lines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: "#000000", transparent: true, opacity: 0.18 }));
-    lines.position.y = 2 * LEVEL + 0.01;
     this.grid.add(lines);
   }
 
@@ -319,6 +335,7 @@ export class EditorScene {
     this.hemi.intensity = p.hemi;
     this.sun.color.set(p.sun);
     this.sun.intensity = p.sunI;
+    this.sun.shadow.intensity = l.shadow;
     const c = new THREE.Vector3(l.w / 2, 0, l.h / 2);
     const k = Math.max(l.w, l.h) / 16;
     this.sun.position.set(c.x + p.sunPos[0] * k, p.sunPos[1] * k, c.z + p.sunPos[2] * k);
@@ -336,11 +353,14 @@ export class EditorScene {
         ? this.loader.loadAsync(url).then(
             (g) => {
               g.scene.traverse((o) => {
-                if ((o as THREE.Mesh).isMesh) {
-                  o.castShadow = true;
-                  o.receiveShadow = true;
-                }
+                const mesh = o as THREE.Mesh;
+                if (!mesh.isMesh) return;
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                // algunos kits traen materiales metálicos: sin reflejos que reflejar se ven negros
+                for (const m of [mesh.material].flat() as THREE.MeshStandardMaterial[]) if ("metalness" in m) m.metalness = 0;
               });
+              this.boxes.set(id, new THREE.Box3().setFromObject(g.scene));
               return g.scene;
             },
             () => null,
@@ -375,8 +395,78 @@ export class EditorScene {
       }
       g.position.set(o.x, o.y, o.z);
       g.rotation.set(o.rx, o.ry, o.rz);
-      g.scale.setScalar(o.s);
+      g.userData.sx = o.sx ?? 1;
+      g.userData.sz = o.sz ?? 1;
+      g.scale.set(o.s * g.userData.sx, o.s, o.s * g.userData.sz);
     }
+  }
+
+  // ------------------------------------------------------------------ encajar en la rejilla
+
+  /** Huella en el suelo de un modelo girado y escalado, relativa a su punto de apoyo. */
+  private footprint(model: string, ry: number, s: number, sx = 1, sz = 1) {
+    const b = this.boxes.get(model);
+    if (!b) return null;
+    const c = Math.cos(ry);
+    const sn = Math.sin(ry);
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    for (const x of [b.min.x, b.max.x])
+      for (const z of [b.min.z, b.max.z]) {
+        const px = (x * sx * c + z * sz * sn) * s;
+        const pz = (-x * sx * sn + z * sz * c) * s;
+        minX = Math.min(minX, px);
+        maxX = Math.max(maxX, px);
+        minZ = Math.min(minZ, pz);
+        maxZ = Math.max(maxZ, pz);
+      }
+    return { minX, maxX, minZ, maxZ, height: (b.max.y - b.min.y) * s };
+  }
+
+  /**
+   * Posición encajada: si el objeto mide un número entero de casillas, sus bordes caen en las líneas de la
+   * rejilla; si no (un árbol, una lápida), queda centrado en su casilla.
+   */
+  private snapXZ(model: string, x: number, z: number, ry: number, s: number, sx = 1, sz = 1) {
+    const f = this.footprint(model, ry, s, sx, sz);
+    const axis = (p: number, min: number, max: number) => {
+      const w = max - min;
+      if (Math.round(w) >= 1 && Math.abs(w - Math.round(w)) < 0.1) return Math.round(p + min) - min;
+      const mid = (min + max) / 2;
+      return Math.floor(p + mid) + 0.5 - mid;
+    };
+    if (!f) return { x: Math.floor(x) + 0.5, z: Math.floor(z) + 0.5 };
+    return { x: axis(x, f.minX, f.maxX), z: axis(z, f.minZ, f.maxZ) };
+  }
+
+  /**
+   * Encaja un objeto en la rejilla: giro a 90°, posición en las casillas y, si es una pieza plana (losa,
+   * camino, baldosa) y `fit`, tamaño de un número entero de casillas.
+   */
+  async snapObject(o: PlacedObject, fit: boolean): Promise<PlacedObject> {
+    await this.loadModel(o.model);
+    const ry = Math.round(o.ry / (Math.PI / 2)) * (Math.PI / 2);
+    const s = o.s;
+    let sx = o.sx ?? 1;
+    let sz = o.sz ?? 1;
+    const b = this.boxes.get(o.model);
+    if (fit && b) {
+      // pieza plana (losa, camino, baldosa): se estira para ocupar casillas enteras a lo ancho y a lo largo
+      const w = (b.max.x - b.min.x) * s;
+      const d = (b.max.z - b.min.z) * s;
+      if (w > 0 && d > 0 && (b.max.y - b.min.y) * s < Math.max(w, d) * 0.25) {
+        sx = Math.max(1, Math.round(w)) / w;
+        sz = Math.max(1, Math.round(d)) / d;
+      }
+    }
+    const p = this.snapXZ(o.model, o.x, o.z, ry, s, sx, sz);
+    const lift = this.layout ? o.y - groundAt(this.layout, o.x, o.z) : 0;
+    const y = this.layout ? groundAt(this.layout, p.x, p.z) + lift : o.y;
+    const out: PlacedObject = { ...o, ry, s, x: p.x, y, z: p.z };
+    delete out.sx;
+    delete out.sz;
+    if (Math.abs(sx - 1) > 1e-3) out.sx = sx;
+    if (Math.abs(sz - 1) > 1e-3) out.sz = sz;
+    return out;
   }
 
   // ------------------------------------------------------------------ ratón
@@ -473,14 +563,22 @@ export class EditorScene {
     const g = this.selectedGroup();
     if (!g || !this.layout) return;
     const mode = this.gizmo.getMode();
-    if (mode === "translate") g.position.y = groundAt(this.layout, g.position.x, g.position.z) + this.dragOffset;
+    if (mode === "translate") {
+      if (this.snap) {
+        const p = this.snapXZ(g.userData.model, g.position.x, g.position.z, g.rotation.y, g.scale.y, g.userData.sx, g.userData.sz);
+        g.position.x = p.x;
+        g.position.z = p.z;
+      }
+      g.position.y = groundAt(this.layout, g.position.x, g.position.z) + this.dragOffset;
+    }
     if (mode === "scale") {
-      // tamaño uniforme: manda el eje que más cambió
-      const s = g.scale;
+      // tamaño uniforme (respetando el estiramiento de la losa): manda el eje que más cambió
+      const { sx, sz } = g.userData;
       const prev = g.userData.lastScale ?? 1;
-      const v = [s.x, s.y, s.z].reduce((a, b) => (Math.abs(b - prev) > Math.abs(a - prev) ? b : a), prev);
-      s.setScalar(Math.max(0.05, v));
-      g.userData.lastScale = s.x;
+      const v = [g.scale.x / sx, g.scale.y, g.scale.z / sz].reduce((a, b) => (Math.abs(b - prev) > Math.abs(a - prev) ? b : a), prev);
+      const k = Math.max(0.05, v);
+      g.scale.set(k * sx, k, k * sz);
+      g.userData.lastScale = k;
     }
     this.emitEdited(false);
   }
@@ -488,7 +586,8 @@ export class EditorScene {
   private emitEdited(final: boolean) {
     const g = this.selectedGroup();
     if (!g) return;
-    g.userData.lastScale = g.scale.x;
+    g.userData.lastScale = g.scale.y;
+    const { sx, sz } = g.userData;
     this.events.onObjectEdited(
       {
         id: g.userData.id,
@@ -499,7 +598,9 @@ export class EditorScene {
         rx: g.rotation.x,
         ry: g.rotation.y,
         rz: g.rotation.z,
-        s: g.scale.x,
+        s: g.scale.y,
+        ...(sx !== 1 && { sx }),
+        ...(sz !== 1 && { sz }),
       },
       final,
     );
