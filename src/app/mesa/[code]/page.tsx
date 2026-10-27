@@ -50,13 +50,13 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     return (
       <main className="mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center gap-6 px-4 py-8 text-center">
         <Link href="/" className="title-game text-5xl sm:text-6xl">
-          EBRIONAUTAS
+          MUERTOS DE SED
         </Link>
         {room.hasController ? (
           <div className="flex flex-col items-center gap-3">
             <p className="text-6xl">📱✅</p>
             <p className="font-display text-3xl">Celular conectado</p>
-            <p className="text-lg text-white/80">Agregad a la tripulación desde el celular y pulsad ¡DESPEGAR!</p>
+            <p className="text-lg text-white/80">Agregad a los jugadores desde el celular y pulsad ¡A LEVANTARSE!</p>
           </div>
         ) : (
           <>
@@ -135,7 +135,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     <main className="mx-auto flex min-h-dvh max-w-[1600px] flex-col gap-4 px-4 py-4 lg:flex-row lg:items-start">
       <section className="flex flex-col gap-3 lg:flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className="title-game text-3xl">EBRIONAUTAS</span>
+          <span className="title-game text-3xl">MUERTOS DE SED</span>
           <span className="flex items-center gap-2 font-display text-white/70">
             <SoundToggle />
             <button onClick={toggleFullscreen} aria-label="Pantalla completa" className="btn-game bg-btn-blue px-3 py-1.5 text-sm text-white">

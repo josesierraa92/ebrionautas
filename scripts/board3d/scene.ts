@@ -22,18 +22,18 @@ const mat = (color: string, opts: Partial<THREE.MeshStandardMaterialParameters> 
   new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0, ...opts });
 const glow = (color: string, intensity = 1.6) => mat(color, { emissive: color, emissiveIntensity: intensity, roughness: 0.4 });
 
+// Paleta "Muertos de Sed": panteón de noche, morado y naranja cempasúchil, rosa mexicano.
 const C = {
-  grass: "#a9dc5e",
-  grassLight: "#b9e46c",
-  dirt: "#c38551",
-  dirtDark: "#9c6238",
-  cream: "#f4e9d4",
-  trunk: "#a8683f",
-  pine: ["#3fc2b0", "#36b3a3", "#2ea496"],
-  leaf: ["#8fd453", "#7cc847", "#9edd5f"],
-  pink: ["#ff8fc8", "#f574b6", "#ffa8d6"],
-  bush: "#5fb94a",
-  red: "#ef4a5a",
+  grass: "#3f7a5a",
+  grassLight: "#4a8763",
+  dirt: "#6b4560",
+  dirtDark: "#4a2c45",
+  cream: "#f1e6d2", // hueso
+  trunk: "#5a3d4a",
+  cypress: ["#1f5a4c", "#2a6d5c"],
+  jacaranda: ["#a77bf0", "#8c5ae0", "#bf9bff"],
+  orangeTree: ["#ff9f1c", "#ff8a00", "#ffb347"],
+  marigold: "#ff9500",
   white: "#fffaf0",
   gold: "#ffcf3f",
   calimocho: "#c2185b",
@@ -238,7 +238,8 @@ function tile(type: Tile["type"], x: number, z: number) {
   // símbolo blanco sobre losas de color; sobre las claras (crema, duelo), del color de la casilla o azul tinta
   const light = top.r * 0.3 + top.g * 0.59 + top.b * 0.11 > 0.8;
   const ink = !colored ? s.bg[1] : light ? "#5468a8" : "#ffffff";
-  g.add(shadowed(mesh(TILE_GEO, new THREE.MeshStandardMaterial({ color: top, roughness: 0.55 }), x, TILE_TOP - 0.12, z)));
+  // un poco de brillo propio para que las casillas se lean de noche, como neón suave
+  g.add(shadowed(mesh(TILE_GEO, new THREE.MeshStandardMaterial({ color: top, roughness: 0.55, emissive: top, emissiveIntensity: 0.22 }), x, TILE_TOP - 0.12, z)));
   const decal = new THREE.MeshStandardMaterial({
     map: glyphTexture(type, ink, "#" + top.getHexString()),
     transparent: true,
@@ -267,8 +268,6 @@ const sphere = (r: number, color: string | THREE.Material, x = 0, y = 0, z = 0, 
   mesh(new THREE.SphereGeometry(r, seg, Math.round(seg * 0.75)), typeof color === "string" ? mat(color) : color, x, y, z);
 const cyl = (rt: number, rb: number, h: number, color: string | THREE.Material, x = 0, y = 0, z = 0, seg = 16) =>
   mesh(new THREE.CylinderGeometry(rt, rb, h, seg), typeof color === "string" ? mat(color) : color, x, y + h / 2, z);
-const cone = (r: number, h: number, color: string, x = 0, y = 0, z = 0) =>
-  mesh(new THREE.ConeGeometry(r, h, 18), mat(color, { roughness: 0.6 }), x, y + h / 2, z);
 
 /** Variación estable por posición (sin aleatorio: el render sale igual cada vez). */
 const vary = (gx: number, gy: number, k = 1) => {
@@ -276,203 +275,240 @@ const vary = (gx: number, gy: number, k = 1) => {
   return v - Math.floor(v);
 };
 
-function pine(v: number) {
+/** Ciprés de panteón: alto, oscuro y en forma de llama. */
+function cypress(v: number) {
   const g = new THREE.Group();
-  const s = 0.9 + v * 0.3;
-  g.add(cyl(0.07, 0.09, 0.3, C.trunk));
-  [0, 1, 2].forEach((i) => g.add(cone(0.46 - i * 0.1, 0.55, C.pine[i], 0, 0.22 + i * 0.32)));
-  g.scale.setScalar(s);
+  g.add(cyl(0.05, 0.07, 0.2, C.trunk));
+  const body = sphere(0.26, mat(C.cypress[0], { roughness: 0.8 }), 0, 0.75, 0, 20);
+  body.scale.set(1, 2.6, 1);
+  g.add(body);
+  const top = sphere(0.2, mat(C.cypress[1], { roughness: 0.8 }), 0.03, 1.15, 0.02, 16);
+  top.scale.set(1, 2.2, 1);
+  g.add(top);
+  g.scale.setScalar(0.9 + v * 0.35);
   return g;
 }
 
-function roundTree(colors: string[], v: number, tall = false) {
+/** Árbol redondo de copa morada (jacaranda) o naranja, con guirnalda de flores. */
+function roundTree(colors: string[], v: number) {
   const g = new THREE.Group();
-  const h = tall ? 0.75 : 0.5;
+  const h = 0.5;
   g.add(cyl(0.07, 0.1, h, C.trunk));
-  const blobs: [number, number, number, number][] = tall
-    ? [[0, h + 0.15, 0, 0.3], [0.12, h + 0.45, 0.05, 0.26], [-0.1, h + 0.7, -0.04, 0.2], [-0.16, h + 0.2, 0.12, 0.22]]
-    : [[0, h + 0.28, 0, 0.36], [0.24, h + 0.12, 0.1, 0.26], [-0.22, h + 0.14, -0.06, 0.27], [0.02, h + 0.08, 0.26, 0.24]];
+  const blobs: [number, number, number, number][] = [[0, h + 0.28, 0, 0.36], [0.24, h + 0.12, 0.1, 0.26], [-0.22, h + 0.14, -0.06, 0.27], [0.02, h + 0.08, 0.26, 0.24]];
   blobs.forEach(([x, y, z, r], i) => g.add(sphere(r, colors[i % colors.length], x, y, z)));
   g.scale.setScalar(0.95 + v * 0.25);
   return g;
 }
 
-function bush() {
+/** Árbol seco y retorcido, con farolillos colgando. */
+function deadTree(v: number) {
   const g = new THREE.Group();
-  g.add(sphere(0.17, C.bush, 0, 0.12, 0), sphere(0.13, "#6cc655", 0.17, 0.08, 0.05), sphere(0.12, "#56ad43", -0.15, 0.08, 0.07));
-  return g;
-}
-
-function mushroom(x: number, z: number, s: number) {
-  const g = new THREE.Group();
-  g.add(cyl(0.045, 0.055, 0.16, C.white));
-  const cap = mesh(new THREE.SphereGeometry(0.14, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat(C.red, { roughness: 0.45 }), 0, 0.15, 0);
-  cap.scale.y = 0.8;
-  g.add(cap);
-  for (const [dx, dy, dz] of [[0.06, 0.24, 0.07], [-0.07, 0.22, 0.06], [0.01, 0.25, -0.08], [0.1, 0.19, -0.04]]) g.add(sphere(0.022, C.white, dx, dy, dz, 10));
-  g.position.set(x, 0, z);
-  g.scale.setScalar(s);
-  return g;
-}
-
-function crystalRock() {
-  const g = new THREE.Group();
-  const rock = mesh(new THREE.DodecahedronGeometry(0.2, 0), mat("#9aa3b5", { flatShading: true, roughness: 0.85 }), 0, 0.1, 0);
-  rock.scale.set(1.2, 0.7, 1);
-  g.add(rock);
-  [[0, 0.32, 0, 0.06, 0.28], [0.08, 0.26, 0.05, 0.045, 0.2], [-0.07, 0.25, 0.04, 0.04, 0.18]].forEach(([x, y, z, r, h]) => {
-    const c = mesh(new THREE.ConeGeometry(r, h, 5), glow("#7fe6ff", 0.6), x, y, z);
-    c.rotation.z = x * 3;
-    g.add(c);
+  const wood = mat("#4a3550", { roughness: 0.9 });
+  const trunk = mesh(new THREE.CylinderGeometry(0.05, 0.1, 0.9, 10), wood, 0, 0.45, 0);
+  trunk.rotation.z = 0.1;
+  g.add(trunk);
+  [[0.6, 0.7, 0.9], [0.75, -0.6, -1.1], [0.5, 0.4, 2.2], [0.85, -0.3, 0.3]].forEach(([y, rz, ry]) => {
+    const b = mesh(new THREE.CylinderGeometry(0.015, 0.04, 0.45, 8), wood, 0, y, 0);
+    b.rotation.set(0, ry, rz);
+    b.translateY(0.2);
+    g.add(b);
   });
-  return g;
-}
-
-function logs() {
-  const g = new THREE.Group();
-  const wood = mat("#9b5d34");
-  const end = mat("#e3b07a");
-  [[-0.08, 0.07, 0], [0.08, 0.07, 0.02], [0, 0.19, 0.01]].forEach(([x, y, z]) => {
-    const l = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.42, 16), [wood, end, end]);
-    l.rotation.z = Math.PI / 2;
-    l.rotation.y = 0.5;
-    l.position.set(x, y, z);
-    g.add(l);
+  [[0.22, 0.62, 0.1], [-0.18, 0.7, -0.08], [0.05, 0.86, 0.2]].forEach(([x, y, z], k) => {
+    g.add(cyl(0.004, 0.004, 0.08, "#222", x, y, z, 4));
+    g.add(sphere(0.045, glow(["#ff9f1c", "#ff4f8b", "#b07cff"][k], 2), x, y - 0.03, z, 12));
   });
+  g.scale.setScalar(1 + v * 0.3);
   return g;
 }
 
-function flowers(v: number) {
+/** Mata de cempasúchil: hojas verdes con pompones naranjas. */
+function marigold(v: number) {
   const g = new THREE.Group();
-  for (let i = 0; i < 5; i++) {
-    const a = i * 1.3 + v * 6;
-    const x = Math.cos(a) * 0.17 * (i % 2 ? 1 : 0.5);
-    const z = Math.sin(a) * 0.17 * (i % 2 ? 1 : 0.5);
-    g.add(cyl(0.008, 0.008, 0.07, "#4f9a3a", x, 0, z, 6));
-    for (let p = 0; p < 5; p++) {
-      const pa = (p / 5) * Math.PI * 2;
-      const petal = sphere(0.025, C.white, x + Math.cos(pa) * 0.03, 0.075, z + Math.sin(pa) * 0.03, 8);
-      petal.scale.y = 0.4;
-      g.add(petal);
-    }
-    g.add(sphere(0.018, C.gold, x, 0.08, z, 8));
+  g.add(sphere(0.16, "#2f6b3a", 0, 0.1, 0, 16));
+  for (let k = 0; k < 7; k++) {
+    const a = k * 0.9 + v * 5;
+    const r = k === 0 ? 0 : 0.11;
+    g.add(sphere(0.06, mat(k % 3 ? C.marigold : "#ffb627", { roughness: 0.9 }), Math.cos(a) * r, 0.2 + (k % 2) * 0.03, Math.sin(a) * r, 12));
   }
   return g;
 }
 
-function cauldron() {
+/** Velas encendidas de distintas alturas. */
+function candles(v: number) {
   const g = new THREE.Group();
-  const wood = mat("#9b5d34");
-  [0, 1.05, 2.1].forEach((a) => {
-    const l = mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.36, 10), wood, 0, 0.04, 0);
-    l.rotation.z = Math.PI / 2;
-    l.rotation.y = a;
-    g.add(l);
+  [[0, 0, 0.26], [0.1, 0.06, 0.18], [-0.08, 0.08, 0.13], [0.04, -0.1, 0.1]].forEach(([x, z, h], k) => {
+    g.add(cyl(0.035, 0.035, h, mat("#fff4e0", { roughness: 0.6 }), x, 0, z, 14));
+    const flame = mesh(new THREE.ConeGeometry(0.022, 0.07, 10), glow("#ffb347", 3), x, h + 0.04, z);
+    g.add(flame);
+    if (k === 0) g.add(sphere(0.06, mat("#ffcf6b", { emissive: "#ff9f1c", emissiveIntensity: 1.2, transparent: true, opacity: 0.35 }), x, h + 0.04, z, 12));
   });
-  [0, 2.1, 4.2].forEach((a) => g.add(mesh(new THREE.ConeGeometry(0.05, 0.16, 8), glow("#ff9b2e", 2), Math.cos(a) * 0.05, 0.1, Math.sin(a) * 0.05)));
-  const pot = mesh(new THREE.SphereGeometry(0.17, 24, 16, 0, Math.PI * 2, Math.PI * 0.3, Math.PI * 0.7), mat("#2b2d3a", { roughness: 0.4, metalness: 0.4, side: THREE.DoubleSide }), 0, 0.26, 0);
-  g.add(pot);
-  const drink = mesh(new THREE.CircleGeometry(0.135, 24), glow(C.calimocho, 0.5), 0, 0.36, 0);
-  drink.rotation.x = -Math.PI / 2;
-  g.add(drink);
-  [[0.04, 0.38, 0.02], [-0.05, 0.39, -0.03]].forEach(([x, y, z]) => g.add(sphere(0.03, glow("#ff4f8b", 0.6), x, y, z, 10)));
+  g.rotation.y = v * 6;
   return g;
 }
 
-function tent() {
+/** Lápida redonda con cruz grabada y flores al pie. */
+function tombstone(v: number) {
   const g = new THREE.Group();
-  const tri = new THREE.Shape();
-  tri.moveTo(-0.38, 0);
-  tri.lineTo(0.38, 0);
-  tri.lineTo(0, 0.55);
-  tri.closePath();
-  const body = new THREE.ExtrudeGeometry(tri, { depth: 0.7, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2 });
-  body.translate(0, 0, -0.35);
-  const m = mesh(body, mat("#ffa53a", { roughness: 0.7 }));
+  const stone = mat("#9a96ad", { roughness: 0.85 });
+  const slab = new THREE.Shape();
+  slab.moveTo(-0.16, 0);
+  slab.lineTo(0.16, 0);
+  slab.lineTo(0.16, 0.28);
+  slab.absarc(0, 0.28, 0.16, 0, Math.PI, false);
+  slab.lineTo(-0.16, 0);
+  const geo = new THREE.ExtrudeGeometry(slab, { depth: 0.07, bevelEnabled: true, bevelSize: 0.015, bevelThickness: 0.015, bevelSegments: 2 });
+  geo.translate(0, 0, -0.035);
+  const m = mesh(geo, stone);
   m.rotation.y = Math.PI / 4;
   g.add(m);
-  const door = new THREE.Shape();
-  door.moveTo(-0.14, 0);
-  door.lineTo(0.14, 0);
-  door.lineTo(0, 0.32);
-  door.closePath();
-  const d = mesh(new THREE.ShapeGeometry(door), mat("#7a3b10"));
-  d.rotation.y = Math.PI / 4;
-  d.position.set(0.255, 0.001, 0.255);
-  g.add(d);
-  g.add(cyl(0.01, 0.01, 0.35, "#6b4a2f", -0.18, 0.5, -0.18, 6));
-  const flag = mesh(new THREE.PlaneGeometry(0.16, 0.1), mat("#3fe0a0", { side: THREE.DoubleSide }), -0.1, 0.8, -0.18);
-  g.add(flag);
+  const cross = new THREE.Group();
+  cross.add(mesh(new THREE.BoxGeometry(0.03, 0.14, 0.01), mat("#6e6a82")), mesh(new THREE.BoxGeometry(0.1, 0.03, 0.01), mat("#6e6a82"), 0, 0.03, 0));
+  cross.position.set(0.03, 0.3, 0.03);
+  cross.rotation.y = Math.PI / 4;
+  g.add(cross);
+  g.add(sphere(0.04, mat(C.marigold), 0.12, 0.03, 0.08, 10), sphere(0.035, mat("#ff4f8b"), 0.06, 0.03, 0.14, 10));
+  g.rotation.y = (v - 0.5) * 0.5;
   return g;
 }
 
-function rocket() {
+/** Cruz de madera clavada en la tierra, con una corona de flores. */
+function woodCross(v: number) {
   const g = new THREE.Group();
-  const body = mat("#f2f2f7", { roughness: 0.35, metalness: 0.2 });
-  const red = mat(C.red, { roughness: 0.5 });
-  g.add(cyl(0.16, 0.13, 0.55, body, 0, 0.12, 0));
-  g.add(mesh(new THREE.ConeGeometry(0.16, 0.3, 24), red, 0, 0.82, 0));
-  [0, 2.1, 4.2].forEach((a) => {
-    const fin = mesh(new THREE.BoxGeometry(0.03, 0.22, 0.16), red, Math.cos(a) * 0.15, 0.2, Math.sin(a) * 0.15);
-    fin.rotation.y = -a;
-    g.add(fin);
-  });
-  const win = mesh(new THREE.CircleGeometry(0.06, 20), glow("#7fe6ff", 0.5), 0.1, 0.52, 0.12);
-  win.lookAt(1, 0.52, 1.2);
-  g.add(win);
-  // aterrizaje forzoso: un poco torcido y echando humo
-  g.rotation.z = -0.25;
-  g.rotation.x = 0.15;
-  const smoke = new THREE.Group();
-  [[0.05, 0.05, 0.2, 0.09], [0.2, 0.12, 0.12, 0.07], [-0.12, 0.04, 0.15, 0.06]].forEach(([x, y, z, r]) => smoke.add(sphere(r, mat("#e7e3f0", { roughness: 1 }), x, y, z, 12)));
-  const out = new THREE.Group();
-  out.add(g, smoke);
-  return out;
+  const wood = mat("#7a4a2c", { roughness: 0.9 });
+  g.add(mesh(new THREE.BoxGeometry(0.06, 0.5, 0.06), wood, 0, 0.25, 0));
+  const arm = mesh(new THREE.BoxGeometry(0.3, 0.06, 0.06), wood, 0, 0.36, 0);
+  g.add(arm);
+  const wreath = mesh(new THREE.TorusGeometry(0.07, 0.025, 8, 16), mat(C.marigold, { roughness: 0.9 }), 0, 0.36, 0.05);
+  g.add(wreath);
+  g.rotation.set(0, Math.PI / 4 + (v - 0.5) * 0.4, (v - 0.5) * 0.2);
+  return g;
 }
 
-function pond() {
+/** Pétalos de cempasúchil por el suelo (el camino que guía a los muertos). */
+function petals(v: number) {
   const g = new THREE.Group();
-  const rim = mesh(new THREE.CylinderGeometry(0.98, 0.98, 0.02, 48), mat("#7fc451"), 0, 0.001, 0);
-  rim.scale.z = 0.62;
+  for (let k = 0; k < 14; k++) {
+    const a = k * 2.4 + v * 7;
+    const r = 0.05 + ((k * 37) % 10) / 40;
+    const p = sphere(0.025, mat(k % 4 ? C.marigold : "#ff4f8b", { roughness: 0.9 }), Math.cos(a) * r, 0.01, Math.sin(a) * r, 8);
+    p.scale.y = 0.35;
+    g.add(p);
+  }
+  return g;
+}
+
+/** Ofrenda: altar de dos escalones con velas, flores, pan de muerto y una calaverita de azúcar. */
+function ofrenda() {
+  const g = new THREE.Group();
+  const cloth = mat("#c2185b", { roughness: 0.8 });
+  g.add(mesh(new THREE.BoxGeometry(0.5, 0.12, 0.36), cloth, 0, 0.06, 0));
+  g.add(mesh(new THREE.BoxGeometry(0.36, 0.12, 0.22), mat("#7b2cbf", { roughness: 0.8 }), -0.03, 0.18, -0.04));
+  // pan de muerto
+  const bread = sphere(0.06, mat("#d9893b", { roughness: 0.7 }), 0.12, 0.15, 0.08, 14);
+  bread.scale.y = 0.6;
+  g.add(bread);
+  // calaverita de azúcar
+  g.add(sphere(0.05, mat("#fffaf0", { roughness: 0.4 }), -0.1, 0.29, -0.02, 14));
+  [-1, 1].forEach((s) => g.add(sphere(0.013, mat("#ff4f8b"), -0.1 + s * 0.018, 0.3, 0.025, 8)));
+  // velas y flores
+  [[-0.2, 0.12], [0.2, -0.1]].forEach(([x, z]) => {
+    g.add(cyl(0.025, 0.025, 0.14, mat("#fff4e0"), x, 0.12, z, 10));
+    g.add(mesh(new THREE.ConeGeometry(0.016, 0.05, 8), glow("#ffb347", 3), x, 0.29, z));
+  });
+  [[0.05, 0.27, -0.1], [-0.18, 0.27, -0.1]].forEach(([x, y, z]) => g.add(sphere(0.045, mat(C.marigold, { roughness: 0.9 }), x, y, z, 12)));
+  g.rotation.y = Math.PI / 4;
+  return g;
+}
+
+/** Pequeño mausoleo con frontón, columnas y puerta. */
+function mausoleum() {
+  const g = new THREE.Group();
+  const stone = mat("#b9b3cc", { roughness: 0.8 });
+  const dark = mat("#4a3f66", { roughness: 0.8 });
+  g.add(mesh(new RoundedBoxGeometry(0.7, 0.08, 0.6, 2, 0.02), stone, 0, 0.04, 0));
+  g.add(mesh(new THREE.BoxGeometry(0.56, 0.5, 0.46), stone, 0, 0.33, 0));
+  const roof = new THREE.Shape();
+  roof.moveTo(-0.34, 0);
+  roof.lineTo(0.34, 0);
+  roof.lineTo(0, 0.2);
+  roof.closePath();
+  const r = new THREE.ExtrudeGeometry(roof, { depth: 0.54, bevelEnabled: false });
+  r.translate(0, 0, -0.27);
+  const rm = mesh(r, dark, 0, 0.58, 0);
+  rm.rotation.y = Math.PI / 2;
+  g.add(rm);
+  // puerta y columnas en la fachada que mira a la cámara (+x)
+  g.add(mesh(new THREE.BoxGeometry(0.01, 0.3, 0.18), dark, 0.285, 0.23, 0));
+  [-0.18, 0.18].forEach((z) => g.add(cyl(0.03, 0.03, 0.46, stone, 0.3, 0.08, z, 10)));
+  g.add(mesh(new THREE.BoxGeometry(0.02, 0.12, 0.02), mat(C.gold), 0.3, 0.7, 0), mesh(new THREE.BoxGeometry(0.02, 0.02, 0.07), mat(C.gold), 0.3, 0.73, 0));
+  g.add(cyl(0.02, 0.02, 0.08, mat("#fff4e0"), 0.33, 0.08, 0.13, 8), mesh(new THREE.ConeGeometry(0.014, 0.04, 8), glow("#ffb347", 3), 0.33, 0.18, 0.13));
+  g.rotation.y = -Math.PI / 4;
+  return g;
+}
+
+/** Tumba abierta junto a la salida: de aquí salieron los muertos a medianoche. */
+function grave() {
+  const g = new THREE.Group();
+  const hole = mesh(new THREE.BoxGeometry(0.34, 0.02, 0.6), mat("#1e1028"), 0, 0.005, 0);
+  g.add(hole);
+  const dirt = sphere(0.18, mat("#5a3a52", { roughness: 1 }), 0.28, 0.02, 0, 14);
+  dirt.scale.set(0.8, 0.5, 1.6);
+  g.add(dirt);
+  const head = tombstone(0.3);
+  head.position.set(-0.05, 0, -0.42);
+  g.add(head);
+  const shovel = mesh(new THREE.BoxGeometry(0.02, 0.4, 0.02), mat("#7a4a2c"), 0.32, 0.25, 0.2);
+  shovel.rotation.z = 0.3;
+  g.add(shovel);
+  g.rotation.y = Math.PI / 4;
+  return g;
+}
+
+/** Fosa recién cavada (decoración). */
+function fosa() {
+  const g = new THREE.Group();
+  const rim = mesh(new THREE.TorusGeometry(0.36, 0.08, 10, 32), mat("#5a3a52", { roughness: 1 }), 0, 0.01, 0);
+  rim.rotation.x = Math.PI / 2;
+  rim.scale.y = 0.75;
   g.add(rim);
-  const lake = mesh(new THREE.CylinderGeometry(0.88, 0.88, 0.03, 48), mat(C.calimocho, { roughness: 0.15, metalness: 0.1 }), 0, 0.01, 0);
-  lake.scale.z = 0.55;
-  g.add(lake);
-  [[0.4, 0.12], [-0.45, -0.08], [0.1, -0.25]].forEach(([x, z]) => {
-    const pad = mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.01, 16, 1), mat("#6fcf4a"), x, 0.045, z);
-    g.add(pad);
-  });
-  return g;
-}
-
-function crater() {
-  const g = new THREE.Group();
-  const ring = mesh(new THREE.TorusGeometry(0.42, 0.09, 12, 40), mat("#86c454"), 0, 0.01, 0);
-  ring.rotation.x = Math.PI / 2;
-  ring.scale.y = 0.75;
-  g.add(ring);
-  const hole = mesh(new THREE.CircleGeometry(0.42, 40), mat("#3d7a2a"), 0, 0.012, 0);
+  const hole = mesh(new THREE.CircleGeometry(0.36, 32), mat("#1e1028"), 0, 0.012, 0);
   hole.rotation.x = -Math.PI / 2;
   hole.scale.y = 0.75;
   g.add(hole);
   return g;
 }
 
+function pond() {
+  const g = new THREE.Group();
+  const rim = mesh(new THREE.CylinderGeometry(0.98, 0.98, 0.02, 48), mat("#3f7a52"), 0, 0.001, 0);
+  rim.scale.z = 0.62;
+  g.add(rim);
+  const lake = mesh(new THREE.CylinderGeometry(0.88, 0.88, 0.03, 48), mat(C.calimocho, { roughness: 0.1, metalness: 0.1, emissive: "#5a0a2b", emissiveIntensity: 0.6 }), 0, 0.01, 0);
+  lake.scale.z = 0.55;
+  g.add(lake);
+  // velitas flotando en el lago
+  [[0.4, 0.12], [-0.45, -0.08], [0.1, -0.25], [-0.15, 0.2]].forEach(([x, z]) => {
+    g.add(cyl(0.04, 0.04, 0.03, mat("#fff4e0"), x, 0.03, z, 12));
+    g.add(mesh(new THREE.ConeGeometry(0.015, 0.05, 8), glow("#ffb347", 3), x, 0.085, z));
+  });
+  return g;
+}
+
 function sign() {
   const g = new THREE.Group();
-  const wood = mat("#a8683f");
+  const wood = mat("#7a4a2c");
   g.add(cyl(0.025, 0.025, 0.5, wood));
   const cv = document.createElement("canvas");
   cv.width = 256;
   cv.height = 96;
   const c = cv.getContext("2d")!;
-  c.fillStyle = "#b3743f";
+  c.fillStyle = "#6b3f2a";
   c.fillRect(0, 0, 256, 96);
-  c.fillStyle = "#fff4e0";
-  c.font = '900 56px "DejaVu Sans", Arial, sans-serif';
+  c.fillStyle = "#ffcf6b";
+  c.font = '900 50px "DejaVu Sans", Arial, sans-serif';
   c.textAlign = "center";
   c.textBaseline = "middle";
-  c.fillText("SALIDA", 128, 52);
+  c.fillText("PANTEÓN", 128, 52);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
   const board = mesh(new RoundedBoxGeometry(0.62, 0.24, 0.04, 2, 0.02), [wood, wood, wood, wood, mat("#ffffff", { map: tex }), wood] as unknown as THREE.Material, 0, 0.5, 0.03);
@@ -481,137 +517,126 @@ function sign() {
   return g;
 }
 
-/** Vasos rojos de fiesta tirados por el césped (la personalidad del planeta). */
-function partyCups(v: number) {
+/** Botella de mezcal y jarritos de barro tirados por el panteón (la fiesta de los muertos). */
+function mezcal(v: number) {
   const g = new THREE.Group();
-  const red = mat("#e8343f", { roughness: 0.45 });
-  const inside = mat("#fff6ec");
-  const a = mesh(new THREE.CylinderGeometry(0.06, 0.042, 0.13, 16, 1, true), red, 0, 0.065, 0);
-  g.add(a, mesh(new THREE.CircleGeometry(0.058, 16), inside, 0, 0.128, 0));
-  (g.children[1] as THREE.Mesh).rotation.x = -Math.PI / 2;
-  const b = mesh(new THREE.CylinderGeometry(0.06, 0.042, 0.13, 16), red, 0.16, 0.045, 0.06);
-  b.rotation.z = Math.PI / 2;
-  b.rotation.y = v * 3;
-  g.add(b);
+  const glass = mat("#9be7c4", { roughness: 0.1, transparent: true, opacity: 0.75 });
+  g.add(cyl(0.05, 0.05, 0.16, glass), cyl(0.02, 0.03, 0.07, glass, 0, 0.16, 0, 10), cyl(0.022, 0.022, 0.025, mat("#c2185b"), 0, 0.23, 0, 10));
+  const label = cyl(0.052, 0.052, 0.06, mat("#ffcf6b"), 0, 0.05, 0, 16);
+  g.add(label);
+  const clay = mat("#c8663b", { roughness: 0.8 });
+  const jar = cyl(0.045, 0.035, 0.08, clay, 0.12, 0, 0.06, 14);
+  g.add(jar);
+  const fallen = mesh(new THREE.CylinderGeometry(0.045, 0.035, 0.08, 14), clay, -0.1, 0.04, 0.1);
+  fallen.rotation.set(Math.PI / 2, 0, v * 3);
+  g.add(fallen);
   return g;
 }
 
-/** Guirnalda de luces de fiesta entre dos puntos. */
-function fairyLights(a: THREE.Vector3, b: THREE.Vector3, n = 14) {
+/** Guirnalda de papel picado entre dos puntos. */
+function papelPicado(a: THREE.Vector3, b: THREE.Vector3, n = 12) {
   const g = new THREE.Group();
-  const colors = ["#ffd84a", "#ff6fb5", "#6ff0ff", "#9dff6a"];
+  const colors = ["#ff4f8b", "#ff9f1c", "#b07cff", "#3fd0c9", "#ffd23f", "#7ee36b"];
   const pts: THREE.Vector3[] = [];
+  const dir = b.clone().sub(a);
+  const yaw = Math.atan2(-dir.z, dir.x);
   for (let i = 0; i <= n; i++) {
     const t = i / n;
     const p = a.clone().lerp(b, t);
-    p.y -= Math.sin(t * Math.PI) * 0.25;
+    p.y -= Math.sin(t * Math.PI) * 0.22;
     pts.push(p);
-    if (i > 0 && i < n) g.add(sphere(0.035, glow(colors[i % colors.length], 2.2), p.x, p.y - 0.04, p.z, 10));
+    if (i < n) {
+      const flag = mesh(new THREE.PlaneGeometry(0.2, 0.17), new THREE.MeshStandardMaterial({ color: colors[i % colors.length], side: THREE.DoubleSide, roughness: 0.7, emissive: colors[i % colors.length], emissiveIntensity: 0.25 }));
+      const q = a.clone().lerp(b, t + 0.5 / n);
+      q.y -= Math.sin((t + 0.5 / n) * Math.PI) * 0.22 + 0.09;
+      flag.position.copy(q);
+      flag.rotation.y = yaw;
+      g.add(flag);
+    }
   }
-  const wire = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.006, 4), mat("#3b2c4a"));
-  g.add(wire);
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.005, 4), mat("#3b2c4a")));
   return g;
 }
 
 /** Las cosas bajitas, más grandes para que se lean desde el sofá. */
-const PROP_SCALE: Partial<Record<Deco["kind"], number>> = { bush: 1.6, mush: 1.9, rock: 1.7, logs: 1.6, flowers: 1.8, cauldron: 1.9, tree: 1.15, tree2: 1.15, ptree: 1.15, pine: 1.1, rocket: 1.4, sign: 1.3, tent: 1.2 };
+const PROP_SCALE: Partial<Record<Deco["kind"], number>> = {
+  marigold: 1.6, candles: 1.7, tombstone: 1.5, cross: 1.4, petals: 1.8, ofrenda: 1.7, jacaranda: 1.15, deadtree: 1.1, cypress: 1.05, grave: 1.5, sign: 1.3, mausoleum: 1.35,
+};
 
 function decoration(d: Deco) {
   const v = vary(d.gx, d.gy);
-  let o: THREE.Object3D;
-  switch (d.kind) {
-    case "pine":
-      o = pine(v);
-      break;
-    case "tree":
-      o = roundTree(C.leaf, v);
-      break;
-    case "tree2":
-      o = roundTree(C.leaf, v, true);
-      break;
-    case "ptree":
-      o = roundTree(C.pink, v);
-      break;
-    case "bush":
-      o = bush();
-      break;
-    case "mush": {
-      o = new THREE.Group();
-      o.add(mushroom(0, 0, 1), mushroom(0.16, 0.1, 0.7), mushroom(-0.1, 0.14, 0.55));
-      break;
-    }
-    case "rock":
-      o = crystalRock();
-      break;
-    case "logs":
-      o = logs();
-      break;
-    case "flowers":
-      o = flowers(v);
-      break;
-    case "cauldron":
-      o = cauldron();
-      break;
-    case "tent":
-      o = tent();
-      break;
-    case "rocket":
-      o = rocket();
-      break;
-    case "pond":
-      o = pond();
-      break;
-    case "crater":
-      o = crater();
-      break;
-    case "sign":
-      o = sign();
-      break;
-  }
+  const builders: Record<Deco["kind"], () => THREE.Object3D> = {
+    cypress: () => cypress(v),
+    jacaranda: () => roundTree(v > 0.5 ? C.jacaranda : C.orangeTree, v),
+    deadtree: () => deadTree(v),
+    marigold: () => marigold(v),
+    candles: () => candles(v),
+    tombstone: () => tombstone(v),
+    cross: () => woodCross(v),
+    petals: () => petals(v),
+    ofrenda: () => ofrenda(),
+    mausoleum: () => mausoleum(),
+    grave: () => grave(),
+    pond: () => pond(),
+    fosa: () => fosa(),
+    sign: () => sign(),
+  };
+  const o = builders[d.kind]();
   o.position.set(d.gx, 0, d.gy);
   o.scale.multiplyScalar(PROP_SCALE[d.kind] ?? 1);
-  if (!["pond", "crater", "sign", "tent", "rocket"].includes(d.kind)) o.rotation.y += v * Math.PI * 2;
+  if (["cypress", "jacaranda", "deadtree", "marigold"].includes(d.kind)) o.rotation.y += v * Math.PI * 2;
   return shadowed(o);
 }
 
-// --- La Nave Nodriza (meta) ---------------------------------------------------------
-function mothership(at = isoPos(BOARD.length)) {
+// --- Tu Tumba (meta) -------------------------------------------------------------------
+/** La tumba de destino: lápida grande con arco de cempasúchil, velas y el resplandor del amanecer. */
+function goalTomb(at = isoPos(BOARD.length)) {
   const { gx, gy } = at;
   const g = new THREE.Group();
-  const pedestal = mesh(new RoundedBoxGeometry(1.25, 0.5, 1.25, 4, 0.1), mat(C.gold, { roughness: 0.35, metalness: 0.3 }), 0, 0.17, 0);
-  g.add(shadowed(pedestal));
-  const ship = new THREE.Group();
-  const hull = mesh(new THREE.SphereGeometry(1.25, 48, 24), mat("#c9c3e6", { roughness: 0.25, metalness: 0.6 }));
-  hull.scale.y = 0.26;
-  ship.add(hull);
-  const belly = mesh(new THREE.SphereGeometry(0.7, 32, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), mat("#7a6fc0", { roughness: 0.4, metalness: 0.5 }), 0, -0.05, 0);
-  belly.scale.y = 0.45;
-  ship.add(belly);
-  const dome = mesh(new THREE.SphereGeometry(0.55, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), mat("#9ff3ff", { roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.75, emissive: "#5fd7ff", emissiveIntensity: 0.25 }), 0, 0.18, 0);
-  ship.add(dome);
-  const colors = ["#ffd84a", "#ff6fb5", "#6ff0ff", "#9dff6a"];
-  for (let i = 0; i < 16; i++) {
-    const a = (i / 16) * Math.PI * 2;
-    ship.add(sphere(0.06, glow(colors[i % 4], 2.5), Math.cos(a) * 1.18, 0.02, Math.sin(a) * 1.18, 10));
+  g.add(shadowed(mesh(new RoundedBoxGeometry(1.25, 0.4, 1.25, 4, 0.1), mat("#b9b3cc", { roughness: 0.6 }), 0, 0.12, 0)));
+  const tomb = new THREE.Group();
+  const slab = new THREE.Shape();
+  slab.moveTo(-0.38, 0);
+  slab.lineTo(0.38, 0);
+  slab.lineTo(0.38, 0.7);
+  slab.absarc(0, 0.7, 0.38, 0, Math.PI, false);
+  slab.lineTo(-0.38, 0);
+  const geo = new THREE.ExtrudeGeometry(slab, { depth: 0.16, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 3 });
+  geo.translate(0, 0, -0.08);
+  tomb.add(mesh(geo, mat("#e9e3f5", { roughness: 0.5 })));
+  // cruz dorada y calavera grabada
+  tomb.add(mesh(new THREE.BoxGeometry(0.07, 0.34, 0.03), mat(C.gold, { metalness: 0.6, roughness: 0.3 }), 0, 0.82, 0.1));
+  tomb.add(mesh(new THREE.BoxGeometry(0.24, 0.07, 0.03), mat(C.gold, { metalness: 0.6, roughness: 0.3 }), 0, 0.88, 0.1));
+  tomb.add(sphere(0.1, mat("#fffaf0", { roughness: 0.4 }), 0, 0.42, 0.1, 18));
+  [-1, 1].forEach((s) => tomb.add(sphere(0.028, mat("#1e1028"), s * 0.035, 0.44, 0.18, 10)));
+  // arco de cempasúchil
+  for (let k = 0; k <= 16; k++) {
+    const a = (k / 16) * Math.PI;
+    tomb.add(sphere(0.07, mat(k % 3 ? C.marigold : "#ff4f8b", { roughness: 0.9 }), Math.cos(a) * 0.55, 0.15 + Math.sin(a) * 0.95, 0.12, 12));
   }
-  // bola de discoteca colgando: es una nave de fiesta
-  ship.add(cyl(0.008, 0.008, 0.25, "#888", 0, -0.55, 0, 6));
-  ship.add(sphere(0.12, mat("#f0f0ff", { roughness: 0.1, metalness: 1, flatShading: true }), 0, -0.6, 0, 8));
-  ship.position.y = 2.05;
-  ship.rotation.z = 0.05;
-  g.add(shadowed(ship));
-  // rayo abductor
-  const beam = mesh(new THREE.CylinderGeometry(0.45, 0.75, 1.55, 32, 1, true), new THREE.MeshBasicMaterial({ color: "#b8ffef", transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false }), 0, 1.2, 0);
-  g.add(beam);
+  tomb.position.y = 0.32;
+  tomb.rotation.y = Math.PI / 4;
+  g.add(shadowed(tomb));
+  // velas alrededor
+  [[0.45, 0.45], [-0.45, 0.45], [0.45, -0.45], [0.5, 0.05], [0.05, 0.5]].forEach(([x, z], k) => {
+    const h = 0.14 + (k % 3) * 0.05;
+    g.add(cyl(0.035, 0.035, h, mat("#fff4e0"), x, 0.32, z, 12));
+    g.add(mesh(new THREE.ConeGeometry(0.022, 0.07, 10), glow("#ffb347", 3), x, 0.32 + h + 0.035, z));
+  });
+  // resplandor del amanecer detrás de la tumba
+  const dawn = mesh(new THREE.CircleGeometry(1.3, 48), new THREE.MeshBasicMaterial({ color: "#ffb347", transparent: true, opacity: 0.25, depthWrite: false }), -0.25, 1.5, -0.25);
+  dawn.lookAt(10, 1.5, 10);
+  g.add(dawn);
   g.position.set(gx, 0, gy);
   return g;
 }
 
 // --- Escena y render ------------------------------------------------------------------
 function lights(scene: THREE.Scene, target: THREE.Vector3, shadowSize: number) {
-  scene.add(new THREE.HemisphereLight("#e6f2ff", "#86b85c", 1.1));
-  scene.add(new THREE.AmbientLight("#fff3e6", 0.25));
-  const sun = new THREE.DirectionalLight("#fff0d8", 2.3);
+  // noche de Día de Muertos: cielo morado, luz de luna lila y algo de calor de las velas
+  scene.add(new THREE.HemisphereLight("#9b7bff", "#3a2050", 1.25));
+  scene.add(new THREE.AmbientLight("#ffd9b0", 0.3));
+  const sun = new THREE.DirectionalLight("#d8ccff", 2.0);
   sun.position.set(target.x - 7, 12, target.z - 5);
   sun.target.position.copy(target);
   sun.castShadow = true;
@@ -634,7 +659,7 @@ function renderer(width: number, height: number) {
   r.shadowMap.enabled = true;
   r.shadowMap.type = THREE.PCFSoftShadowMap;
   r.toneMapping = THREE.NeutralToneMapping;
-  r.toneMappingExposure = 1.0;
+  r.toneMappingExposure = 1.1;
   r.outputColorSpace = THREE.SRGBColorSpace;
   return r;
 }
@@ -651,18 +676,25 @@ function isoCamera(x: number, y: number, w: number, h: number, target = new THRE
 /** Tablero completo: devuelve un PNG (data URL) del rectángulo VIEW a `scale` píxeles por píxel SVG. */
 export function renderBoard(scale: number) {
   const scene = new THREE.Scene();
-  scene.add(island(), tiles(), mothership());
+  scene.add(island(), tiles(), goalTomb());
   for (const d of DECOR) scene.add(decoration(d));
-  // personalidad: vasos de fiesta por el césped y guirnaldas de luces en el bosque del fondo
+  // la fiesta de los muertos: botellas de mezcal y jarritos tirados, y papel picado entre los árboles del fondo
   for (const [gx, gy] of [[2.6, 7.4], [8, 7.7], [5, 4.3], [11, 4.8], [3.4, 1.8], [9.4, 1.3], [12.8, 7.3]]) {
-    const c = shadowed(partyCups(vary(gx, gy, 2)));
+    const c = shadowed(mezcal(vary(gx, gy, 2)));
     c.position.set(gx, 0, gy);
-    c.scale.setScalar(1.8);
+    c.rotation.y = vary(gx, gy, 3) * 6;
+    c.scale.setScalar(1.7);
     scene.add(c);
   }
-  scene.add(fairyLights(new THREE.Vector3(0.3, 1.25, -1), new THREE.Vector3(4.6, 1.25, -1)));
-  scene.add(fairyLights(new THREE.Vector3(8.4, 1.15, -1), new THREE.Vector3(12.6, 1.15, -1)));
-  scene.add(fairyLights(new THREE.Vector3(-1, 1.15, 1.6), new THREE.Vector3(-1, 1.15, 4.6), 10));
+  scene.add(papelPicado(new THREE.Vector3(0.3, 1.25, -1), new THREE.Vector3(4.6, 1.25, -1)));
+  scene.add(papelPicado(new THREE.Vector3(8.4, 1.15, -1), new THREE.Vector3(12.6, 1.15, -1)));
+  scene.add(papelPicado(new THREE.Vector3(-1, 1.15, 1.6), new THREE.Vector3(-1, 1.15, 4.6), 9));
+  // luz cálida de las velas sobre el panteón
+  for (const d of DECOR.filter((x) => x.kind === "candles" || x.kind === "ofrenda")) {
+    const l = new THREE.PointLight("#ffa040", 2.2, 2.6, 1.6);
+    l.position.set(d.gx, 0.5, d.gy);
+    scene.add(l);
+  }
   lights(scene, new THREE.Vector3(6.5, 0, 4.5), 8192);
   const w = Math.round(VIEW.w * scale);
   const h = Math.round(VIEW.h * scale);
@@ -671,10 +703,11 @@ export function renderBoard(scale: number) {
   return r.domElement.toDataURL("image/png");
 }
 
-// --- Marcianos ------------------------------------------------------------------------
-// Todos comparten la misma silueta (cuerpo de gominola: ancho abajo, redondo arriba, patitas
-// y bracitos cortos) y su vaso de fiesta; cada uno se distingue por su "disfraz", como una
-// colección de muñecos. Se construyen mirando a +z y luego se giran hacia la cámara.
+// --- Calaveritas (fichas) ---------------------------------------------------------------
+// Todas comparten la misma silueta (cuerpo de gominola: ancho abajo, redondo arriba, patitas
+// y bracitos cortos), la cara de calaverita de azúcar y su jarrito de mezcal; cada una se
+// distingue por su disfraz, como una colección de muñecos. Se construyen mirando a +z y luego
+// se giran hacia la cámara.
 
 /** Perfil del cuerpo (radio, altura) para el torno. */
 const BODY_PROFILE = new THREE.SplineCurve(
@@ -713,230 +746,215 @@ function stick(o: THREE.Object3D, y: number, side = 0, out = 0) {
   return o;
 }
 
-type Look = "antenas" | "astronauta" | "cumple" | "dj" | "pirata" | "ciclope" | "rey" | "mago";
-const LOOKS: Look[] = ["antenas", "astronauta", "cumple", "dj", "pirata", "ciclope", "rey", "mago"];
-const INK = "#1b1f4b";
+type Look = "mariachi" | "luchador" | "catrina" | "novia" | "diablito" | "chaman" | "cura" | "rockero";
+const LOOKS: Look[] = ["mariachi", "luchador", "catrina", "novia", "diablito", "chaman", "cura", "rockero"];
+const INK = "#1e1028";
 
-function eye(size = 0.075) {
+/** Cuenca del ojo de la calavera: hueco oscuro con un brillo de color (los muertos tienen alma). */
+function socket(iris: string, size = 0.072) {
   const g = new THREE.Group();
-  const white = sphere(size, mat("#ffffff", { roughness: 0.15 }), 0, 0, 0, 24);
-  white.scale.z = 0.6;
-  const pupil = sphere(size * 0.6, mat(INK, { roughness: 0.15 }), 0, -size * 0.05, size * 0.38, 20);
-  pupil.scale.z = 0.6;
-  const shine = sphere(size * 0.2, mat("#ffffff", { roughness: 0.1 }), size * 0.22, size * 0.18, size * 0.62, 10);
-  g.add(white, pupil, shine);
+  const hole = sphere(size, mat(INK, { roughness: 0.3 }), 0, 0, 0, 24);
+  hole.scale.set(1, 1.1, 0.4);
+  const glowEye = sphere(size * 0.38, glow(iris, 1.4), size * 0.1, 0, size * 0.3, 14);
+  glowEye.scale.z = 0.5;
+  const shine = sphere(size * 0.14, mat("#ffffff"), size * 0.25, size * 0.25, size * 0.4, 8);
+  g.add(hole, glowEye, shine);
   return g;
 }
 
-function smile(open = false) {
-  if (open) {
-    const g = new THREE.Group();
-    const m = sphere(0.05, mat("#3a1030", { roughness: 0.6 }), 0, 0, 0, 16);
-    m.scale.set(1.2, 0.8, 0.35);
-    const tongue = sphere(0.025, mat("#ff6f8e"), 0, -0.018, 0.012, 12);
-    tongue.scale.z = 0.4;
-    g.add(m, tongue);
-    return g;
+/** Cara de calaverita de azúcar pintada sobre el cuerpo: máscara de hueso, cuencas, nariz y sonrisa cosida. */
+function sugarSkull(g: THREE.Group, accent: string, opts: { eyes?: boolean; mask?: boolean } = {}) {
+  const bone = mat("#fbf3e6", { roughness: 0.45, emissive: "#fbf3e6", emissiveIntensity: 0.12 });
+  // con máscara de hueso, los rasgos van por delante de ella (sobresale unos 4 cm del cuerpo)
+  const lift = opts.mask === false ? 0 : 1;
+  if (opts.mask !== false) {
+    const face = sphere(0.24, bone, 0, 0, 0, 32);
+    face.scale.set(1, 1.05, 0.32);
+    g.add(stick(face, EYE_Y - 0.06, 0, -0.035));
   }
-  // el arco va dentro de un grupo: stick() reorienta el grupo y el arco sigue boca arriba (sonrisa)
-  const g = new THREE.Group();
-  const m = mesh(new THREE.TorusGeometry(0.045, 0.012, 8, 20, Math.PI), mat(INK));
-  m.rotation.z = Math.PI;
-  g.add(m);
-  return g;
-}
-
-function cheeks(g: THREE.Group, y = MOUTH_Y + 0.03) {
+  if (opts.eyes !== false) for (const s of [-1, 1]) g.add(stick(socket(accent), EYE_Y, s * 0.095, 0.03 * lift));
+  // nariz de corazón al revés
   for (const s of [-1, 1]) {
-    const c = sphere(0.038, mat("#ff8fb0", { roughness: 0.7 }), 0, 0, 0, 12);
-    c.scale.z = 0.3;
-    g.add(stick(c, y, s * 0.17, -0.004));
+    const n = sphere(0.018, mat(INK), 0, 0, 0, 10);
+    n.scale.z = 0.4;
+    g.add(stick(n, MOUTH_Y + 0.055, s * 0.012, 0.004 + 0.04 * lift));
   }
+  // sonrisa cosida
+  const mouth = new THREE.Group();
+  const line = mesh(new THREE.TorusGeometry(0.08, 0.008, 6, 24, Math.PI * 0.7), mat(INK));
+  line.rotation.z = Math.PI + Math.PI * 0.15;
+  mouth.add(line);
+  for (let k = -3; k <= 3; k++) {
+    const a = -Math.PI / 2 + k * 0.17;
+    const st = mesh(new THREE.BoxGeometry(0.006, 0.035, 0.006), mat(INK), Math.cos(a) * 0.08, Math.sin(a) * 0.08 + 0.002, 0);
+    st.rotation.z = a + Math.PI / 2;
+    mouth.add(st);
+  }
+  g.add(stick(mouth, MOUTH_Y + 0.07, 0, 0.004 + 0.035 * lift));
+  // adornos de colores: puntitos en las mejillas y una flor en la frente
+  for (const s of [-1, 1]) {
+    for (let k = 0; k < 3; k++) {
+      const d = sphere(0.011, mat(accent), 0, 0, 0, 8);
+      d.scale.z = 0.4;
+      g.add(stick(d, MOUTH_Y + 0.02 + k * 0.022, s * (0.155 + (k % 2) * 0.012), 0.003 + 0.02 * lift));
+    }
+  }
+  const flower = new THREE.Group();
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2;
+    const pt = sphere(0.018, mat(accent), Math.cos(a) * 0.024, Math.sin(a) * 0.024, 0, 8);
+    pt.scale.z = 0.35;
+    flower.add(pt);
+  }
+  flower.add(sphere(0.012, mat(C.gold), 0, 0, 0.004, 8));
+  g.add(stick(flower, EYE_Y + 0.12, 0, 0.002 + 0.025 * lift));
 }
 
-function star(r: number, color: string, depth = 0.03) {
-  const sh = new THREE.Shape();
-  for (let k = 0; k < 10; k++) {
-    const rr = k % 2 ? r * 0.45 : r;
-    const a = (Math.PI / 5) * k + Math.PI / 2;
-    if (k === 0) sh.moveTo(rr * Math.cos(a), rr * Math.sin(a));
-    else sh.lineTo(rr * Math.cos(a), rr * Math.sin(a));
-  }
-  return mesh(new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: true, bevelSize: depth * 0.4, bevelThickness: depth * 0.4, bevelSegments: 2 }), mat(color, { roughness: 0.4 }));
-}
-
-function stripedTexture(a: string, b: string) {
-  const cv = document.createElement("canvas");
-  cv.width = 64;
-  cv.height = 64;
-  const c = cv.getContext("2d")!;
-  for (let i = 0; i < 8; i++) {
-    c.fillStyle = i % 2 ? a : b;
-    c.fillRect(0, i * 8, 64, 8);
-  }
-  const t = new THREE.CanvasTexture(cv);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-
+/** Calaverita fiestera: misma silueta para todos, cara de calavera de azúcar, jarrito de barro y un disfraz. */
 function alien(color: string, look: Look) {
   const g = new THREE.Group();
   const skin = mat(color, { roughness: 0.5 });
-  const dark = mat("#" + lighten(color, -0.3).getHexString(), { roughness: 0.6 });
-  const pale = "#" + lighten(color, 0.35).getHexString();
+  const dark = mat("#" + lighten(color, -0.35).getHexString(), { roughness: 0.6 });
 
-  // cuerpo, patitas y bracitos (iguales para todos)
+  // cuerpo (con el traje del color del jugador), patitas de hueso y bracitos
   g.add(mesh(new THREE.LatheGeometry(BODY_PROFILE, 64), skin));
   for (const s of [-1, 1]) {
-    const foot = sphere(0.085, dark, s * 0.15, 0.03, 0.12, 20);
+    const foot = sphere(0.085, mat("#fbf3e6", { roughness: 0.5 }), s * 0.15, 0.03, 0.12, 20);
     foot.scale.set(1, 0.55, 1.25);
     g.add(foot);
   }
-  // bracitos cortos a los lados (como muñones); el izquierdo sujeta el vaso
   for (const s of [-1, 1]) {
     const arm = sphere(0.075, skin, s * 0.36, 0.3, 0.06, 20);
     arm.scale.set(0.8, 1.25, 0.8);
     arm.rotation.z = s * 0.5;
     g.add(arm);
   }
-  // el vaso de fiesta, en la mano izquierda
-  const cup = mesh(new THREE.CylinderGeometry(0.065, 0.048, 0.14, 20), mat("#e8343f", { roughness: 0.45 }), -0.38, 0.27, 0.18);
-  const drink = mesh(new THREE.CircleGeometry(0.061, 20), glow(C.calimocho, 0.3), -0.38, 0.341, 0.18);
+  // jarrito de barro con mezcal, en la mano izquierda
+  const clay = mat("#c8663b", { roughness: 0.75 });
+  g.add(mesh(new THREE.CylinderGeometry(0.065, 0.05, 0.13, 20), clay, -0.38, 0.27, 0.18));
+  const handle = mesh(new THREE.TorusGeometry(0.035, 0.012, 8, 16), clay, -0.45, 0.28, 0.18);
+  handle.rotation.y = Math.PI / 2;
+  g.add(handle);
+  const drink = mesh(new THREE.CircleGeometry(0.058, 20), glow("#ffe9a8", 0.3), -0.38, 0.336, 0.18);
   drink.rotation.x = -Math.PI / 2;
-  g.add(cup, drink);
-
-  // cara por defecto: dos ojos, mofletes y sonrisa
-  const face = (eyes = true, mouthOpen = false) => {
-    if (eyes) for (const s of [-1, 1]) g.add(stick(eye(), EYE_Y, s * 0.11, -0.01));
-    cheeks(g);
-    g.add(stick(smile(mouthOpen), MOUTH_Y, 0, 0.002));
-  };
+  g.add(drink);
 
   switch (look) {
-    case "antenas":
-      face();
-      for (const s of [-1, 1]) {
-        const ant = new THREE.Group();
-        ant.add(cyl(0.014, 0.014, 0.24, dark, 0, 0, 0, 8), sphere(0.05, glow(pale, 0.5), 0, 0.26, 0, 16));
-        ant.position.set(s * 0.08, TOP - 0.06, 0);
-        ant.rotation.z = -s * 0.4;
-        g.add(ant);
-      }
-      break;
-    case "astronauta": {
-      face();
-      const helmet = mesh(new THREE.SphereGeometry(0.47, 40, 30), mat("#bff4ff", { roughness: 0.05, transparent: true, opacity: 0.28, depthWrite: false }), 0, 0.56, 0);
-      g.add(helmet);
-      const collar = mesh(new THREE.TorusGeometry(0.375, 0.035, 12, 40), mat("#e9ecf6", { roughness: 0.3, metalness: 0.4 }), 0, 0.2, 0);
-      collar.rotation.x = Math.PI / 2;
-      g.add(collar);
-      g.add(stick(star(0.06, C.gold), 0.24, 0, 0.0));
-      break;
-    }
-    case "cumple": {
-      face(true, true);
-      const hat = mesh(new THREE.ConeGeometry(0.15, 0.36, 24), mat("#ffffff", { map: stripedTexture("#ffd84a", "#3fc2ff"), roughness: 0.5 }), 0.03, TOP + 0.12, -0.02);
-      hat.rotation.z = -0.2;
-      g.add(hat, sphere(0.05, mat("#ff5fa2"), -0.01, TOP + 0.3, -0.02, 16));
-      const confetti = ["#ffd84a", "#3fc2ff", "#9dff6a", "#ffffff"];
-      [[0.28, -0.2], [0.2, 0.22], [0.66, -0.24], [0.7, 0.2], [0.14, 0.05]].forEach(([y, sd], k) => {
-        const c = sphere(0.02, mat(confetti[k % 4]), 0, 0, 0, 8);
-        c.scale.z = 0.3;
-        g.add(stick(c, y, sd, -0.002));
-      });
-      break;
-    }
-    case "dj": {
-      // gafas de sol en vez de ojos
-      for (const s of [-1, 1]) {
-        const lens = mesh(new RoundedBoxGeometry(0.15, 0.09, 0.03, 3, 0.03), mat(INK, { roughness: 0.15, metalness: 0.3 }));
-        g.add(stick(lens, EYE_Y, s * 0.09, 0.012));
-      }
-      g.add(stick(mesh(new THREE.BoxGeometry(0.06, 0.015, 0.015), mat(INK)), EYE_Y + 0.01, 0, 0.02));
-      cheeks(g);
-      g.add(stick(smile(true), MOUTH_Y - 0.01, 0, 0.002));
-      const band = mesh(new THREE.TorusGeometry(0.33, 0.025, 10, 40, Math.PI), mat("#2b2d3a", { roughness: 0.4 }), 0, 0.6, 0);
-      g.add(band);
-      for (const s of [-1, 1]) {
-        const cupEar = mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.07, 24), mat("#ff4f8b", { roughness: 0.4 }), s * 0.34, 0.6, 0);
-        cupEar.rotation.z = Math.PI / 2;
-        g.add(cupEar);
-      }
-      break;
-    }
-    case "pirata": {
-      g.add(stick(eye(), EYE_Y, -0.11, -0.01));
-      const patch = sphere(0.07, mat(INK, { roughness: 0.5 }), 0, 0, 0, 16);
-      patch.scale.z = 0.35;
-      g.add(stick(patch, EYE_Y + 0.01, 0.11, 0.0));
-      const strap = mesh(new THREE.TorusGeometry(0.33, 0.01, 6, 48), mat(INK), 0, 0.62, 0);
-      strap.rotation.set(Math.PI / 2 - 0.25, 0, 0);
-      g.add(strap);
-      cheeks(g);
-      g.add(stick(smile(), MOUTH_Y, 0, 0.002));
-      const bandana = mesh(new THREE.SphereGeometry(0.33, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2.2), mat("#2a3c9a", { roughness: 0.6 }), 0, 0.6, -0.005);
-      bandana.scale.set(1.06, 0.95, 1.06);
-      g.add(bandana);
-      for (const k of [0.4, -0.3]) g.add(sphere(0.02, mat("#ffffff"), Math.sin(k) * 0.3, 0.76, Math.cos(k) * 0.22, 8));
-      const knot = sphere(0.06, mat("#2a3c9a"), -0.12, 0.7, -0.29, 16);
-      g.add(knot);
-      const ring = mesh(new THREE.TorusGeometry(0.035, 0.01, 8, 20), mat(C.gold, { metalness: 0.8, roughness: 0.3 }), 0.35, 0.5, 0.06);
-      g.add(ring);
-      break;
-    }
-    case "ciclope": {
-      g.add(stick(eye(0.12), EYE_Y, 0, -0.02));
-      cheeks(g, MOUTH_Y - 0.01);
-      g.add(stick(smile(true), MOUTH_Y - 0.04, 0, 0.002));
-      for (const s of [-1, 1]) {
-        const horn = mesh(new THREE.ConeGeometry(0.045, 0.14, 16), mat("#fff4e0", { roughness: 0.5 }), s * 0.14, TOP - 0.04, 0);
-        horn.rotation.z = -s * 0.35;
-        g.add(horn);
-      }
-      break;
-    }
-    case "rey": {
-      face();
-      const crown = new THREE.Group();
-      const gold = mat(C.gold, { metalness: 0.7, roughness: 0.3 });
-      crown.add(mesh(new THREE.CylinderGeometry(0.17, 0.18, 0.08, 32, 1, true), new THREE.MeshStandardMaterial({ color: C.gold, metalness: 0.7, roughness: 0.3, side: THREE.DoubleSide }), 0, 0.04, 0));
-      for (let k = 0; k < 6; k++) {
-        const a = (k / 6) * Math.PI * 2;
-        crown.add(mesh(new THREE.ConeGeometry(0.035, 0.08, 4), gold, Math.cos(a) * 0.17, 0.12, Math.sin(a) * 0.17));
-        crown.add(sphere(0.018, glow(["#ff4f8b", "#6ff0ff", "#9dff6a"][k % 3], 0.4), Math.cos(a) * 0.175, 0.05, Math.sin(a) * 0.175, 8));
-      }
-      crown.position.y = TOP - 0.08;
-      crown.rotation.z = 0.12;
-      g.add(crown);
-      // pajarita
+    case "mariachi": {
+      sugarSkull(g, "#ff4f8b");
+      const black = mat("#1e1028", { roughness: 0.6 });
+      const brim = mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.03, 48), black, 0, TOP - 0.1, 0);
+      const crown = mesh(new THREE.CylinderGeometry(0.17, 0.22, 0.24, 32), black, 0, TOP - 0.08, 0);
+      const trim = mesh(new THREE.TorusGeometry(0.5, 0.015, 8, 48), mat(C.gold, { metalness: 0.7, roughness: 0.3 }), 0, TOP - 0.085, 0);
+      trim.rotation.x = Math.PI / 2;
+      const band = mesh(new THREE.TorusGeometry(0.21, 0.018, 8, 32), mat(C.gold, { metalness: 0.7, roughness: 0.3 }), 0, TOP - 0.03, 0);
+      band.rotation.x = Math.PI / 2;
+      g.add(brim, crown, trim, band);
+      // moño de charro
       const bow = new THREE.Group();
       for (const s of [-1, 1]) {
         const w = mesh(new THREE.ConeGeometry(0.05, 0.09, 4), mat("#c2185b"), s * 0.045, 0, 0);
         w.rotation.z = (s * Math.PI) / 2;
         bow.add(w);
       }
-      bow.add(sphere(0.022, mat("#c2185b"), 0, 0, 0.01, 10));
       g.add(stick(bow, 0.24, 0, 0.01));
       break;
     }
-    case "mago": {
-      for (const s of [-1, 1]) g.add(stick(eye(0.065), EYE_Y, s * 0.1, -0.01));
-      cheeks(g, MOUTH_Y + 0.06);
-      // barba blanca
-      [[0.42, 0, 0.07], [0.37, -0.07, 0.055], [0.37, 0.07, 0.055], [0.3, 0, 0.06]].forEach(([y, sd, r]) => {
-        const b = sphere(r, mat("#f4f1ff", { roughness: 0.9 }), 0, 0, 0, 16);
-        g.add(stick(b, y, sd, -0.02));
-      });
-      const hat = mesh(new THREE.ConeGeometry(0.28, 0.5, 32), mat("#3b2a8f", { roughness: 0.6 }), 0, TOP + 0.17, -0.02);
-      hat.rotation.set(-0.15, 0, -0.18);
-      const brim = mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.03, 40), mat("#3b2a8f", { roughness: 0.6 }), 0, TOP - 0.08, 0);
-      g.add(hat, brim);
-      [[0.95, 0.12, 0.2], [1.09, -0.05, 0.12], [0.87, -0.15, 0.24]].forEach(([y, x, z]) => {
-        const st = star(0.035, C.gold, 0.01);
-        st.position.set(x, y, z);
-        st.lookAt(x * 3, y, 2);
-        g.add(st);
-      });
+    case "luchador": {
+      // máscara de luchador en vez de la cara de hueso: de color, con ribetes y cuencas
+      sugarSkull(g, "#ffd23f", { mask: false });
+      const trimMat = mat("#ffd23f", { roughness: 0.4 });
+      for (const s of [-1, 1]) {
+        const ring = mesh(new THREE.TorusGeometry(0.085, 0.014, 8, 24), trimMat);
+        g.add(stick(ring, EYE_Y, s * 0.095, 0.004));
+      }
+      const crest = mesh(new THREE.BoxGeometry(0.04, 0.3, 0.05), trimMat, 0, TOP - 0.06, 0.12);
+      crest.rotation.x = -0.6;
+      g.add(crest);
+      // capa
+      const cape = mesh(new THREE.CylinderGeometry(0.3, 0.42, 0.55, 32, 1, true, Math.PI * 0.75, Math.PI * 1.5), mat("#ffd23f", { side: THREE.DoubleSide, roughness: 0.6 }), 0, 0.35, -0.03);
+      g.add(cape);
+      break;
+    }
+    case "catrina": {
+      sugarSkull(g, "#ff4f8b");
+      const hat = mat("#2b1840", { roughness: 0.6 });
+      const brim = mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.025, 48), hat, 0, TOP - 0.08, 0);
+      brim.rotation.x = -0.15;
+      const crown = mesh(new THREE.SphereGeometry(0.22, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), hat, 0, TOP - 0.08, -0.02);
+      g.add(brim, crown);
+      // flores y pluma
+      [[0.18, 0.05, "#ff4f8b"], [0.05, 0.2, C.marigold], [-0.12, 0.17, "#b07cff"], [0.22, -0.1, "#ffd23f"]].forEach(([x, z, c]) =>
+        g.add(sphere(0.06, mat(c as string, { roughness: 0.8 }), x as number, TOP - 0.02, z as number, 14)),
+      );
+      const feather = sphere(0.05, mat("#fbf3e6"), -0.15, TOP + 0.12, -0.05, 14);
+      feather.scale.set(0.6, 2.6, 0.6);
+      feather.rotation.z = 0.5;
+      g.add(feather);
+      break;
+    }
+    case "novia": {
+      sugarSkull(g, "#b07cff");
+      // velo y corona de flores
+      const veil = mesh(new THREE.SphereGeometry(0.42, 32, 20, Math.PI * 0.85, Math.PI * 1.3, 0, Math.PI * 0.62), mat("#ffffff", { transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false, roughness: 0.6 }), 0, 0.5, -0.02);
+      veil.scale.y = 1.15;
+      g.add(veil);
+      for (let k = 0; k < 9; k++) {
+        const a = (k / 9) * Math.PI * 2;
+        g.add(sphere(0.045, mat(k % 2 ? "#ffffff" : "#ff8fb0", { roughness: 0.8 }), Math.cos(a) * 0.19, TOP - 0.06, Math.sin(a) * 0.19, 12));
+      }
+      break;
+    }
+    case "diablito": {
+      sugarSkull(g, "#ffd23f");
+      for (const s of [-1, 1]) {
+        const horn = mesh(new THREE.ConeGeometry(0.05, 0.18, 16), mat("#2b1018", { roughness: 0.4 }), s * 0.15, TOP - 0.02, 0);
+        horn.rotation.z = -s * 0.45;
+        g.add(horn);
+      }
+      // colita con punta de flecha
+      const tail = mesh(new THREE.TorusGeometry(0.16, 0.018, 8, 24, Math.PI * 1.2), dark, -0.05, 0.22, -0.4);
+      tail.rotation.y = Math.PI / 2;
+      g.add(tail, mesh(new THREE.ConeGeometry(0.05, 0.08, 3), dark, -0.05, 0.38, -0.5));
+      break;
+    }
+    case "chaman": {
+      sugarSkull(g, "#3fd0c9");
+      // penacho de plumas
+      const colors = ["#ff4f8b", C.marigold, "#ffd23f", "#3fd0c9", "#b07cff"];
+      for (let k = -4; k <= 4; k++) {
+        const f = sphere(0.045, mat(colors[(k + 4) % colors.length], { roughness: 0.7 }), Math.sin(k * 0.3) * 0.22, TOP + 0.1, -0.04 - Math.cos(k * 0.3) * 0.04, 12);
+        f.scale.set(0.6, 2.8, 0.4);
+        f.rotation.z = -k * 0.28;
+        g.add(f);
+      }
+      const band = mesh(new THREE.TorusGeometry(0.27, 0.025, 8, 36), mat("#7a4a2c"), 0, TOP - 0.17, 0);
+      band.rotation.x = Math.PI / 2;
+      g.add(band);
+      break;
+    }
+    case "cura": {
+      sugarSkull(g, "#ffd23f");
+      // alzacuellos blanco y cruz dorada
+      g.add(stick(mesh(new THREE.BoxGeometry(0.08, 0.05, 0.02), mat("#ffffff")), 0.3, 0, 0.01));
+      const cross = new THREE.Group();
+      cross.add(mesh(new THREE.BoxGeometry(0.025, 0.1, 0.015), mat(C.gold, { metalness: 0.7, roughness: 0.3 })), mesh(new THREE.BoxGeometry(0.07, 0.025, 0.015), mat(C.gold, { metalness: 0.7, roughness: 0.3 }), 0, 0.02, 0));
+      g.add(stick(cross, 0.17, 0, 0.012));
+      // bonete negro
+      const hat = mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.12, 4), mat("#1e1028", { roughness: 0.6 }), 0, TOP - 0.02, 0);
+      hat.rotation.y = Math.PI / 4;
+      g.add(hat, sphere(0.035, mat("#c2185b"), 0, TOP + 0.06, 0, 10));
+      break;
+    }
+    case "rockero": {
+      sugarSkull(g, "#7ee36b", { eyes: false });
+      // gafas de sol y cresta punk
+      for (const s of [-1, 1]) g.add(stick(mesh(new RoundedBoxGeometry(0.15, 0.085, 0.03, 3, 0.03), mat(INK, { roughness: 0.15, metalness: 0.3 })), EYE_Y, s * 0.09, 0.045));
+      for (let k = 0; k < 6; k++) {
+        const spike = mesh(new THREE.ConeGeometry(0.045, 0.2, 8), mat("#7ee36b", { roughness: 0.5 }), 0, TOP - 0.02 - Math.abs(k - 2.5) * 0.03, 0.18 - k * 0.07);
+        spike.rotation.x = -0.3 + k * 0.12;
+        g.add(spike);
+      }
       break;
     }
   }
@@ -973,7 +991,7 @@ export function renderTileIcons(px: number) {
   for (const type of Object.keys(TILE_STYLE) as Tile["type"][]) {
     const scene = new THREE.Scene();
     const meta = type === "META";
-    scene.add(meta ? mothership({ gx: 0, gy: 0 }) : tile(type, 0, 0));
+    scene.add(meta ? goalTomb({ gx: 0, gy: 0 }) : tile(type, 0, 0));
     lights(scene, new THREE.Vector3(0, 0, 0), 1024);
     const r = renderer(px, px);
     const half = (meta ? 1.75 : 0.72) * K;

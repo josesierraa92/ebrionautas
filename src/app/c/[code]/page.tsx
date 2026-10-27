@@ -64,7 +64,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
       });
     return (
       <Shell>
-        <p className="text-6xl">📱👽</p>
+        <p className="text-6xl">📱💀</p>
         <p className="text-white/70">
           Mesa <b className="font-display text-btn-yellow">{code}</b>
         </p>
@@ -87,7 +87,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
     );
   }
 
-  // 2. Agregar la tripulación
+  // 2. Agregar a los muertos (jugadores)
   if (room.status === "LOBBY" || !room.game) {
     return (
       <>
@@ -114,7 +114,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 py-4">
       <div className="flex items-center justify-between">
-        <span className="title-game text-xl">EBRIONAUTAS</span>
+        <span className="title-game text-xl">MUERTOS DE SED</span>
         <button onClick={() => setMenu(true)} className="btn-game bg-btn-blue px-3 py-1 text-white" aria-label="Marcador e historial">
           ☰ MARCADOR
         </button>

@@ -1,5 +1,5 @@
 // Geometría del tablero en espiral, como el tablero original: la salida abajo a
-// la izquierda, el recorrido da vueltas hacia dentro y la Nave Nodriza (62) ocupa el centro.
+// la izquierda, el recorrido da vueltas hacia dentro y la tumba (62) ocupa el centro.
 //
 // En una cuadrícula de 9×9, dos vueltas completas (32 + 24 casillas) y un lado de
 // la tercera (5) suman 61 casillas; lo que queda es un rectángulo de 5×4 para la 62.

@@ -3,7 +3,7 @@
 //
 // Cuatro tramos de 14 casillas separados por dos filas de césped (para la
 // decoración) y unidos por conectores de 2 casillas: 14·4 + 2·3 = 62.
-// La salida está delante a la izquierda y la Nave Nodriza (62) al fondo a la izquierda.
+// La salida está delante a la izquierda y la tumba (62) al fondo a la izquierda.
 
 import { BOARD } from "./board";
 
@@ -45,7 +45,7 @@ export const isoSx = (gx: number, gy: number) => (gx - gy) * 50;
 export const isoSy = (gx: number, gy: number) => (gx + gy) * 25;
 /** La isla sobresale un poco del recorrido. */
 export const ISLAND = { x0: -1.3, x1: ISO_COLS + 0.3, y0: -1.3, y1: ISO_ROWS + 0.3, thickness: 46 };
-/** Rectángulo visible (píxeles SVG): la isla, la nave de arriba y la sombra de abajo. */
+/** Rectángulo visible (píxeles SVG): la isla, la meta de arriba y la sombra de abajo. */
 export const ISO_VIEW = {
   x: isoSx(ISLAND.x0, ISLAND.y1) - 30,
   y: isoSy(ISLAND.x0, ISLAND.y0) - 190,

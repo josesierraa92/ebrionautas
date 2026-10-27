@@ -5,17 +5,17 @@ import { jailBail, type GameState } from "./engine";
 
 const vasos = (n: number) => `${n} ${n === 1 ? "vaso" : "vasos"}`;
 
-/** Resultado de tirar estando perdido en el Cinturón de asteroides: con 5 o 6 escapa, si no bebe. */
+/** Resultado de tirar estando perdido en el Panteón en Niebla: con 5 o 6 escapa, si no bebe. */
 export function mazeOutcome(name: string, roll: number): { escaped: boolean; title: string; text: string } {
   return roll >= 5
-    ? { escaped: true, title: "¡Se salvó!", text: `${name} saca ${roll} y escapa del Cinturón de asteroides. No bebe y en su próximo turno vuelve a avanzar.` }
-    : { escaped: false, title: "¡Sigue perdido!", text: `${name} saca ${roll}: no es 5 ni 6. Bebe 1 vaso y sigue perdido entre asteroides.` };
+    ? { escaped: true, title: "¡Se salvó!", text: `${name} saca ${roll} y encuentra la salida del Panteón en Niebla. No bebe y en su próximo turno vuelve a avanzar.` }
+    : { escaped: false, title: "¡Sigue perdido!", text: `${name} saca ${roll}: no es 5 ni 6. Bebe 1 vaso y sigue perdido entre las tumbas.` };
 }
 
-/** Resultado de tirar estando en el calabozo: siempre sale, pero bebe 2 (1-3) o 4 (4-6). */
+/** Resultado de tirar estando en el Purgatorio: siempre sale, pero bebe 2 (1-3) o 4 (4-6). */
 export function jailOutcome(name: string, roll: number): { drinks: number; title: string; text: string } {
   const drinks = jailBail(roll);
-  return { drinks, title: "¡Fianza pagada!", text: `${name} saca ${roll}: bebe ${vasos(drinks)} y sale del calabozo. Ahora vuelve a tirar para avanzar.` };
+  return { drinks, title: "¡Sale del Purgatorio!", text: `${name} saca ${roll}: bebe ${vasos(drinks)} para pagar sus pecados y sale del Purgatorio. Ahora vuelve a tirar para avanzar.` };
 }
 
 /** Resultado de un duelo, una línea por rival: quién sacó cuánto y quién bebe. */
@@ -34,13 +34,13 @@ export function tileRule(n: number, game: GameState, playerId: string): { title:
   const name = p?.name ?? "El jugador";
   switch (tile.type) {
     case "SALIDA":
-      return { title: TILE_NAMES.SALIDA, text: "Tras la fiesta, los Ebrionautas se estrellaron en este planeta. Hay que ayudarlos a volver a la Nave Nodriza… aunque lleguen borrachos." };
+      return { title: TILE_NAMES.SALIDA, text: "Es medianoche del Día de Muertos: los muertos salen de sus tumbas para su única noche de fiesta. Deben volver antes de que salga el sol… aunque lleguen borrachos." };
     case "META":
-      return { title: TILE_NAMES.META, text: "¡A bordo! El primero en subir a la nave gana (como pueda tenerse en pie) y reparte el resto de la bebida como quiera." };
+      return { title: TILE_NAMES.META, text: "¡Antes del amanecer! El primero en volver a su tumba gana (como pueda tenerse en pie) y reparte el resto de la bebida como quiera." };
     case "POSADA":
-      return { title: TILE_NAMES.POSADA, text: `${name} reposta tranquilo: nadie le puede mandar beber hasta su próximo turno.` };
+      return { title: TILE_NAMES.POSADA, text: `${name} se refugia en La Capilla: es suelo sagrado y nadie le puede mandar beber hasta su próximo turno.` };
     case "A_BEBER":
-      return { title: "¡A beber!", text: `${name} reparte ${vasos(tile.amount)} entre quien quiera (también se los puede quedar).` };
+      return { title: "¡Ronda de mezcal!", text: `${name} reparte ${vasos(tile.amount)} entre quien quiera (también se los puede quedar).` };
     case "DUELO":
       return {
         title: TILE_NAMES.DUELO,
@@ -48,15 +48,15 @@ export function tileRule(n: number, game: GameState, playerId: string): { title:
       };
     case "OCA":
       return {
-        title: "¡De OVNI en OVNI!",
+        title: "¡De mariposa en mariposa!",
         text: tile.next
-          ? `${name} bebe 1 vaso diciendo «¡De OVNI en OVNI y bebo Calimocho!», el OVNI lo teletransporta al siguiente OVNI (casilla ${tile.next}) y vuelve a tirar.`
-          : `Es el último OVNI: ${name} bebe 1 vaso diciendo «¡De OVNI en OVNI y bebo Calimocho!» y vuelve a tirar.`,
+          ? `${name} bebe 1 vaso diciendo «¡De mariposa en mariposa y bebo porque me toca!»; la mariposa monarca (el alma que guía a los muertos) lo lleva a la siguiente mariposa (casilla ${tile.next}) y vuelve a tirar.`
+          : `Es la última mariposa: ${name} bebe 1 vaso diciendo «¡De mariposa en mariposa y bebo porque me toca!» y vuelve a tirar.`,
       };
     case "LABERINTO":
       return {
         title: TILE_NAMES.LABERINTO,
-        text: `${name} se pierde entre asteroides. En sus turnos tira el dado: con 5 o 6 escapa; si no, bebe 1 vaso y sigue perdido.`,
+        text: `${name} se pierde entre las tumbas y la niebla. En sus turnos tira el dado: con 5 o 6 escapa; si no, bebe 1 vaso y sigue perdido.`,
       };
     case "REGLA":
       return {
@@ -71,19 +71,19 @@ export function tileRule(n: number, game: GameState, playerId: string): { title:
     case "HIPNOSIS":
       return {
         title: TILE_NAMES.HIPNOSIS,
-        text: `${name} queda abducido: hasta su próximo turno, se bebe la mitad de todo lo que beban los demás.`,
+        text: `Un espíritu posee a ${name}: hasta su próximo turno, se bebe la mitad de todo lo que beban los demás.`,
       };
     case "CARCEL":
       return {
         title: TILE_NAMES.CARCEL,
-        text: `${name} va al calabozo. En su próximo turno tira el dado para salir: con 1, 2 o 3 bebe 2 vasos; con 4, 5 o 6 bebe 4. Después vuelve a tirar para avanzar. Si otro jugador cae en su celda antes, sale gratis.`,
+        text: `${name} cae al Purgatorio. En su próximo turno tira el dado para pagar sus pecados: con 1, 2 o 3 bebe 2 vasos; con 4, 5 o 6 bebe 4. Después vuelve a tirar para avanzar. Si otro jugador cae aquí antes, sale gratis.`,
       };
     case "MUERTE":
-      return { title: TILE_NAMES.MUERTE, text: `¡Qué mala suerte! El agujero negro se traga a ${name} y lo devuelve a la plataforma de despegue (casilla 1).` };
+      return { title: TILE_NAMES.MUERTE, text: `¡Qué mala suerte! ${name} cae en La Fosa y tiene que volver a empezar desde medianoche (casilla 1).` };
     case "PATINAZO":
       return {
         title: TILE_NAMES.PATINAZO,
-        text: `Para no caerse, ${name} elige: bebe ${vasos(tile.drinks)} de golpe o retrocede hasta la casilla ${tile.backTo}.`,
+        text: `${name} tropieza con una lápida. Para no caerse elige: bebe ${vasos(tile.drinks)} de golpe o rueda hasta la casilla ${tile.backTo}.`,
       };
     case "POSICION": {
       const others = game.players.filter((q) => q.id !== playerId && (tile.who === "detras" ? q.pos < (p?.pos ?? 0) : q.pos > (p?.pos ?? 0)));
@@ -95,12 +95,12 @@ export function tileRule(n: number, game: GameState, playerId: string): { title:
     case "RASGO":
       return {
         title: tile.title,
-        text: `Estudio de especímenes humanos: beben ${vasos(tile.drinks)} ${tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ")}.`,
+        text: `Juicio de los vivos: beben ${vasos(tile.drinks)} ${tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ")}.`,
       };
     case "ESCLAVO":
       return {
         title: TILE_NAMES.ESCLAVO,
-        text: `${name} elige un esclavo: cada vez que ${name} beba, el esclavo bebe lo mismo. Dura hasta que otro caiga en esta casilla.`,
+        text: `${name} firma un Pacto de Sangre con otro jugador: cada vez que ${name} beba, su pactado bebe lo mismo. Dura hasta que otro caiga en esta casilla.`,
       };
     case "RETO":
       return { title: tile.title, text: tile.text };

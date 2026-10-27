@@ -206,7 +206,7 @@ export function SaturnIcon({ className }: IconProps) {
 export function GameLogo({ className, lines = ["EBRIO", "NAUTAS"] }: { className?: string; lines?: [string, string] | string[] }) {
   const id = useIds("top", "bottom");
   return (
-    <svg viewBox="0 0 400 210" className={className} role="img" aria-label="Ebrionautas">
+    <svg viewBox="0 0 400 210" className={className} role="img" aria-label="Muertos de Sed">
       <defs>
         <linearGradient id={id.top} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fff6a8" />

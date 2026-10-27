@@ -11,17 +11,17 @@ import type { Landed } from "@/lib/useGameFx";
 export function decisionText(decision: Decision, name: string): [string, string] {
   switch (decision.kind) {
     case "DISTRIBUTE":
-      return ["Ronda de combustible", `${name} reparte ${decision.amount} ${decision.amount === 1 ? "vaso" : "vasos"} entre quien quiera.`];
+      return ["Ronda de mezcal", `${name} reparte ${decision.amount} ${decision.amount === 1 ? "vaso" : "vasos"} entre quien quiera.`];
     case "DUEL":
-      return ["Duelo de dados láser", `${name} reta hasta a ${decision.amount} ${decision.amount === 1 ? "rival" : "rivales"}. Quien saque menos, bebe.`];
+      return ["Duelo de calaveras", `${name} reta hasta a ${decision.amount} ${decision.amount === 1 ? "rival" : "rivales"}. Quien saque menos, bebe.`];
     case "SELECT_DRINKERS":
       return [decision.title, decision.text];
     case "PATINAZO":
-      return ["¡Resbalón en Saturno!", `${name}: bebe ${decision.drinks} de golpe o cae hasta la casilla ${decision.backTo}.`];
+      return ["¡Tropiezo con la lápida!", `${name}: bebe ${decision.drinks} de golpe o rueda hasta la casilla ${decision.backTo}.`];
     case "RULE":
-      return ["Ley del Consejo Galáctico", `${name} dicta una ley para todos. Quien la rompa, bebe.`];
+      return ["Ley del Más Allá", `${name} dicta una ley para todos. Quien la rompa, bebe.`];
     case "SLAVE":
-      return ["Esclavos", `${name} elige un esclavo: beberá cada vez que su amo beba.`];
+      return ["Pacto de Sangre", `${name} elige con quién hace el pacto: beberá cada vez que ${name} beba.`];
   }
 }
 
@@ -35,11 +35,11 @@ function decisionPrompt(decision: Decision, name: string): string {
     case "SELECT_DRINKERS":
       return "Marcad en el celular quién bebe.";
     case "PATINAZO":
-      return `${name} elige en el celular: beber o retroceder.`;
+      return `${name} elige en el celular: beber o rodar hacia atrás.`;
     case "RULE":
       return `${name} escribe su ley en el celular.`;
     case "SLAVE":
-      return `${name} elige a su esclavo en el celular.`;
+      return `${name} elige en el celular con quién hace el Pacto de Sangre.`;
   }
 }
 
@@ -52,7 +52,7 @@ type Props = { game: GameState; n: number; playerId: string; cardKey: number; re
 /** Contenido de la tarjeta (TV y celular): ícono, colores, título, regla y vasos. */
 export function cardContent(game: GameState, n: number, playerId: string, result?: Landed["result"]) {
   const player = game.players.find((p) => p.id === playerId) ?? currentPlayer(game);
-  // Resultado de una tirada sin moverse (asteroides, calabozo, duelo): verde si se salvó, rojo si bebe.
+  // Resultado de una tirada sin moverse (niebla, purgatorio, duelo): verde si se salvó, rojo si bebe.
   const style = result
     ? { icon: result.icon ?? (result.good ? "✨" : result.drinks ? "🔓" : "🍷"), bg: result.good ? ["#8be86b", "#2fae4a"] : ["#ff8a8a", "#d62a3f"] }
     : TILE_STYLE[getTile(n).type];

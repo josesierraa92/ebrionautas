@@ -4,7 +4,7 @@ import { LAST_TILE, type GameState } from "@/game/engine";
 
 type Props = {
   game: GameState;
-  /** Tamaño TV: letras y marcianos más grandes. */
+  /** Tamaño TV: letras y fichas más grandes. */
   big?: boolean;
   /** Si se pasa, muestra el botón +1 para penalizar a quien rompa la ley vigente. */
   onPenalty?: (id: string) => void;
@@ -33,9 +33,9 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
                 {p.gender && <span className={p.gender === "hombre" ? "text-btn-blue" : "text-btn-special"}>{p.gender === "hombre" ? "♂" : "♀"}</span>}{" "}
                 {p.status.inmune && <span title="Estación Abstemia: inmune">⛽</span>}
                 {p.status.hipnosis && <span title="Abducción mental">🌀</span>}
-                {p.status.laberinto && <span title="Perdido en el cinturón de asteroides">☄️</span>}
-                {p.status.carcel && <span title="En el calabozo">🚔</span>}
-                {game.slave?.slave === p.id && <span title="Esclavo">⛓️</span>}
+                {p.status.laberinto && <span title="Perdido en el Panteón en Niebla">🌫️</span>}
+                {p.status.carcel && <span title="En el Purgatorio">🔥</span>}
+                {game.slave?.slave === p.id && <span title="Pacto de Sangre">🩸</span>}
               </p>
               <div className="mt-1 flex items-center gap-2">
                 <div className="h-2 flex-1 overflow-hidden rounded-full border border-ink bg-space" title={`Casilla ${p.pos} de ${LAST_TILE}`}>

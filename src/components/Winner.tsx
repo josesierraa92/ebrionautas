@@ -8,10 +8,10 @@ export default function Winner({ winner, children }: { winner: Player; children?
       <div className="flex items-end justify-center gap-2">
         <span className="text-5xl">🏆</span>
         <Marciano avatar={avatarOf(winner)} expression="euforico" size={110} />
-        <span className="text-5xl">🛸</span>
+        <span className="text-5xl">🪦</span>
       </div>
       <h2 className="title-game text-4xl">¡{winner.name.toUpperCase()} GANA!</h2>
-      <p>Llegó a la Nave Nodriza (borracho, pero llegó). Que reparta el resto de bebida como quiera.</p>
+      <p>Volvió a su tumba antes del amanecer (borracho, pero a tiempo). Que reparta el resto de bebida como quiera.</p>
       {children}
     </div>
   );

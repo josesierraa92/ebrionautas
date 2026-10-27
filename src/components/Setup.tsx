@@ -30,7 +30,7 @@ export default function Setup({ onStart, busy = false, hint }: Props) {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 px-4 py-8">
-      <h1 className="title-game text-center text-5xl">TRIPULACIÓN</h1>
+      <h1 className="title-game text-center text-5xl">LOS MUERTOS</h1>
       {hint && <p className="text-center text-white/70">{hint}</p>}
 
       <ol className="flex flex-col gap-3">
@@ -41,7 +41,7 @@ export default function Setup({ onStart, busy = false, hint }: Props) {
               <input
                 value={p.name}
                 maxLength={16}
-                placeholder={`Ebrionauta ${i + 1}`}
+                placeholder={`Muerto ${i + 1}`}
                 aria-label={`Nombre del jugador ${i + 1}`}
                 onChange={(e) => set(i, { name: e.target.value })}
                 className="min-w-0 rounded-xl border-[3px] border-ink bg-white px-3 py-1.5 text-lg text-ink outline-none"
@@ -76,7 +76,7 @@ export default function Setup({ onStart, busy = false, hint }: Props) {
 
       {players.length < PLAYER_COLORS.length && (
         <button onClick={() => setPlayers([...players, { name: "", gender: null }])} className="btn-game bg-btn-blue py-3 text-xl text-white">
-          + AÑADIR EBRIONAUTA
+          + AÑADIR MUERTO
         </button>
       )}
 
@@ -85,7 +85,7 @@ export default function Setup({ onStart, busy = false, hint }: Props) {
         onClick={() => onStart(filled.map((p) => ({ name: p.name.trim(), gender: p.gender! })))}
         className="btn-game bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey"
       >
-        {busy ? "DESPEGANDO…" : "¡DESPEGAR!"}
+        {busy ? "LEVANTÁNDOSE…" : "¡A LEVANTARSE!"}
       </button>
       <p className="text-center text-sm text-white/60">
         {filled.length < 2

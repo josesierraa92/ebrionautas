@@ -1,8 +1,9 @@
 # CLAUDE.md
 
-Ebrionautas: juego de mesa virtual (tablero tipo Oca para beber, tema
-extraterrestres borrachos). Plan completo en `docs/plan-ebrionautas.md`:
-léelo antes de implementar algo nuevo.
+**Muertos de Sed** (antes "Ebrionautas"): juego de mesa virtual para beber (tablero tipo Oca) con tema de
+Día de Muertos: los muertos tienen una sola noche al año para salir de fiesta y deben volver a su tumba antes
+de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirla." Plan original en
+`docs/plan-ebrionautas.md` (escrito con el tema anterior de extraterrestres; las mecánicas siguen valiendo).
 
 - Stack: Next.js 15 (App Router, `src/`), TypeScript, Tailwind CSS v4.
 - Comandos: `npm run dev`, `npm run lint`, `npm test` (vitest), `npm run build`.
@@ -16,17 +17,18 @@ léelo antes de implementar algo nuevo.
 
 - `/mesa/[code]`: la TV crea la mesa, muestra un QR y luego el tablero y el marcador. Solo muestra.
 - `/c/[code]`: el único celular que controla la mesa (el primero que la reclama; la TV puede
-  liberarlo con "cambiar de celular"). Agrega la tripulación (nombre + hombre/mujer), tira y decide.
+  liberarlo con "cambiar de celular"). Agrega a los muertos/jugadores (nombre + hombre/mujer), tira y decide.
   En partida solo enseña un dado gigante (`src/components/DiceController.tsx`) que se tira tocándolo o
   agitando el celular (`src/lib/useShake.ts`; en iPhone pide permiso de movimiento), de quién es el turno
   y "Siguiente: nombre" para saber a quién pasarle el celular. Marcador, historial y tablero van en "☰ MARCADOR".
 - `/jugar`: sin TV, todo en una misma pantalla (partida guardada en localStorage).
 - El género resuelve solas las casillas Machos (2) y Hembras (11); el resto de casillas de
   "quién bebe" las marca el control.
-- Las fichas son 8 marcianos fijos, uno por color de jugador, con **la misma silueta** (cuerpo de gominola, patitas,
-  bracitos y su vaso de fiesta) y un "disfraz" distinto cada uno, como una colección (referencia Astrodraws del
-  usuario): verde antenas, azul astronauta, rosa cumpleañero, amarillo DJ, rojo pirata, turquesa cíclope, naranja rey,
-  morado mago (`alien()`/`LOOKS` en `scripts/board3d/scene.ts`). No hay pantalla para personalizarlos: perfiles,
+- Las fichas son 8 calaveritas fijas, una por color de jugador, con **la misma silueta** (cuerpo de gominola, patitas,
+  bracitos, cara de calaverita de azúcar y jarrito de mezcal) y un disfraz distinto cada una, como una colección
+  (referencia Astrodraws del usuario): verde mariachi, azul luchador, rosa catrina, amarillo novia, rojo diablito,
+  turquesa chamán, naranja cura, morado rockero (`alien()`/`LOOKS` en `scripts/board3d/scene.ts`; en el código el
+  componente sigue llamándose `Marciano` y las imágenes `public/art/alien/`). No hay pantalla para personalizarlos: perfiles,
   accesorios a elegir y votación por celular se quitaron a propósito; no reintroducirlos sin que lo pida.
 - El servidor es la autoridad: `src/server/rooms.ts` guarda la mesa, ejecuta el motor
   (dados incluidos) y solo acepta jugadas con la clave del control. API en `src/app/api/rooms/`.
@@ -44,12 +46,13 @@ léelo antes de implementar algo nuevo.
 - `src/game/isoPath.ts`: recorrido de las 62 casillas (4 tramos de 14 + conectores de 2). `src/components/BoardStage.tsx`
   pinta encima el dado y los títulos (`src/components/Fx.tsx`).
 - **Estética única** (pedido del usuario: "que todo tenga la misma estética", nada de "pedazos de muchos juegos"):
-  todo sale del mismo render 3D, con la misma luz, materiales y paleta. Dirección de arte: "planeta después de la
-  fiesta" (isla acogedora, pinos turquesa, árboles rosas, lago de calimocho, caldero, vasos rojos de fiesta,
-  guirnaldas de luces, nave nodriza con bola de discoteca, marcianos con su vaso).
+  todo sale del mismo render 3D, con la misma luz, materiales y paleta. Dirección de arte: panteón de Día de Muertos
+  de noche (luz de luna lila y de velas; cipreses, jacarandas, árboles secos con farolillos, cempasúchil, velas,
+  lápidas, cruces, ofrendas, mausoleo, papel picado, botellas de mezcal y jarritos; la meta es una tumba con arco
+  de cempasúchil y el resplandor del amanecer). Paleta: morado, naranja cempasúchil, rosa mexicano, hueso.
 - `scripts/board3d/scene.ts` (Three.js) construye la escena con código y `node scripts/board3d/render.mjs` la renderiza
   en Chromium sin pantalla (WebGL por software) a `public/art/board.webp` (tablero), `public/art/alien/<i>.webp`
-  (marciano por color de `PLAYER_COLORS`) y `public/art/<tipo>.webp` (losa de cada tipo, para tarjetas y títulos).
+  (calaverita por color de `PLAYER_COLORS`) y `public/art/<tipo>.webp` (losa de cada tipo, para tarjetas y títulos).
   Volver a ejecutarlo tras cambiar casillas, decoración (`src/game/decor.ts`) o colores. La cámara usa la misma
   proyección que la TV (`isoSx`/`isoSy`/`ISO_VIEW` en `src/game/isoPath.ts`), así que `IsoBoard` pone la imagen de
   fondo y encima solo las fichas y los números. La TV no necesita WebGL.
@@ -63,12 +66,14 @@ léelo antes de implementar algo nuevo.
   `src/components/TvCards.tsx`; lo principal es que se vea el tablero). El celular enseña la misma tarjeta arriba del
   dado (`PhoneRuleCard`, contenido compartido en `cardContent`). Con
   su regla explicada (`src/game/rules.ts`). Se queda hasta la siguiente tirada (para que dé tiempo a leerla);
-  si hay que decidir, además dice qué marcar en el celular. Al tirar perdido en los asteroides sale el resultado
+  si hay que decidir, además dice qué marcar en el celular. Al tirar perdido en el Panteón en Niebla sale el resultado
   (`mazeOutcome`: con 5 o 6 "¡Se salvó!", si no "¡Sigue perdido!" y bebe).
-- Calabozo (regla del usuario): en su turno el preso tira; con 1-3 bebe 2, con 4-6 bebe 4 (`jailBail`), sale
-  y vuelve a tirar para avanzar. No hay opción de esperar. La TV muestra la tarjeta "¡Fianza pagada!" (`jailOutcome`).
+- Purgatorio (cárcel; regla del usuario): en su turno el preso tira; con 1-3 bebe 2, con 4-6 bebe 4 (`jailBail`), sale
+  y vuelve a tirar para avanzar. No hay opción de esperar. La TV muestra la tarjeta "¡Sale del Purgatorio!" (`jailOutcome`).
 - Toda casilla que diga "tira el dado" debe enseñar después una tarjeta con lo que pasó (TV y celular):
-  asteroides (`mazeOutcome`), calabozo (`jailOutcome`) y duelo (`lastDuel` en el estado + `duelOutcome`).
-- Lore: la tripulación se estrelló tras la fiesta y hay que llevarla (borracha) a la **Nave Nodriza** (casilla 62).
-  Las "Ocas" son OVNIs teletransportadores 🛸. Nada de patos ni de "la Tierra" como meta.
+  niebla (`mazeOutcome`), purgatorio (`jailOutcome`) y duelo (`lastDuel` en el estado + `duelOutcome`).
+- Nombres de las casillas (`TILE_NAMES` en `board.ts`): Medianoche (salida), Tu Tumba (meta), Mariposa Monarca (oca:
+  "¡De mariposa en mariposa y bebo porque me toca!"), La Fosa (vuelve a la 1), Purgatorio (cárcel), Panteón en Niebla
+  (laberinto), Poseído, La Ouija, La Capilla (posada), Pacto de Sangre (esclavo), Ley del Más Allá, Ronda de mezcal,
+  Duelo de calaveras, Tropiezo con la lápida, Juicio de los vivos. Nada de extraterrestres, naves ni patos.
 - El menú del celular usa el tablero 2D en espiral (`src/components/Board.tsx`, `src/game/spiral.ts`).

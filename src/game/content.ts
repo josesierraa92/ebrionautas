@@ -1,4 +1,4 @@
-// Contenido para los retos: categorías del Examen de Humanología y trabalenguas.
+// Contenido para los retos: categorías de La Ouija y trabalenguas.
 
 export const CATEGORIES = [
   "marcas de cerveza",
@@ -15,7 +15,7 @@ export const CATEGORIES = [
   "animales de la selva",
   "apps del celular",
   "cosas que se hacen en una fiesta",
-  "planetas y lunas",
+  "películas de terror",
   "nombres de exnovios/exnovias (de cualquiera)",
   "cantantes colombianos",
   "comidas rápidas",
@@ -29,7 +29,7 @@ export const TONGUE_TWISTERS = [
   "El cielo está enladrillado, ¿quién lo desenladrillará? El desenladrillador que lo desenladrille buen desenladrillador será.",
   "Compré pocas copas, pocas copas compré, y como compré pocas copas, pocas copas pagué.",
   "Erre con erre cigarro, erre con erre barril, rápido corren los carros cargados de azúcar del ferrocarril.",
-  "Si el marciano bebe vino, el vino bebe al marciano.",
+  "Si la calaca bebe mezcal, el mezcal se bebe a la calaca.",
   "Pepe Pecas pica papas con un pico, con un pico pica papas Pepe Pecas.",
   "Me han dicho que has dicho un dicho que han dicho que he dicho yo.",
 ];

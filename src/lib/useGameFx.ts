@@ -17,24 +17,24 @@ export type DiceFx = { key: number; value: number; rolling: boolean };
 /**
  * Casilla donde acaba de caer alguien (para la tarjeta que explica la regla). Se queda
  * hasta la siguiente tirada para que dé tiempo a leerla. `result`: lo que pasó al tirar
- * sin moverse (perdido en los asteroides: se salvó o bebe; calabozo: cuánto bebe para salir).
+ * sin moverse (perdido en la niebla: se salvó o bebe; purgatorio: cuánto bebe para salir).
  */
 export type Landed = { key: number; n: number; playerId: string; result?: { good: boolean; title: string; text: string; drinks?: number; icon?: string } };
 
 /** Título grande y sonido según la casilla donde cae la ficha. */
 const EVENTS: Partial<Record<Tile["type"], { title: string; emoji: string; color: string; sound: keyof typeof sfx }>> = {
-  OCA: { title: "¡DE OVNI EN OVNI!", emoji: "🛸", color: "#7fd3ff", sound: "zap" },
-  CARCEL: { title: "¡AL CALABOZO!", emoji: "🚔", color: "#8a99b0", sound: "jail" },
-  MUERTE: { title: "¡AGUJERO NEGRO!", emoji: "🕳️", color: "#9b5de5", sound: "blackhole" },
-  PATINAZO: { title: "¡RESBALÓN!", emoji: "🪐", color: "#ff8a1f", sound: "slip" },
-  LABERINTO: { title: "¡PERDIDO EN LOS ASTEROIDES!", emoji: "☄️", color: "#5fd07a", sound: "spooky" },
-  HIPNOSIS: { title: "¡ABDUCIDO!", emoji: "🌀", color: "#f15bb5", sound: "spooky" },
-  POSADA: { title: "¡GASOLINERA ABSTEMIA!", emoji: "⛽", color: "#c08a52", sound: "land" },
-  A_BEBER: { title: "¡A BEBER!", emoji: "🍷", color: "#ffc61a", sound: "drink" },
-  DUELO: { title: "¡DUELO!", emoji: "🔫", color: "#ffffff", sound: "zap" },
+  OCA: { title: "¡DE MARIPOSA EN MARIPOSA!", emoji: "🦋", color: "#ff9f1c", sound: "zap" },
+  CARCEL: { title: "¡AL PURGATORIO!", emoji: "🔥", color: "#ff6b3d", sound: "jail" },
+  MUERTE: { title: "¡A LA FOSA!", emoji: "⚰️", color: "#b07cff", sound: "blackhole" },
+  PATINAZO: { title: "¡TROPIEZO!", emoji: "🪦", color: "#ff8a1f", sound: "slip" },
+  LABERINTO: { title: "¡PERDIDO EN LA NIEBLA!", emoji: "🌫️", color: "#c9b8ff", sound: "spooky" },
+  HIPNOSIS: { title: "¡POSEÍDO!", emoji: "👻", color: "#f15bb5", sound: "spooky" },
+  POSADA: { title: "¡A LA CAPILLA!", emoji: "⛪", color: "#ffd166", sound: "land" },
+  A_BEBER: { title: "¡RONDA DE MEZCAL!", emoji: "🥃", color: "#ffc61a", sound: "drink" },
+  DUELO: { title: "¡DUELO!", emoji: "💀", color: "#ffffff", sound: "zap" },
   REGLA: { title: "¡NUEVA LEY!", emoji: "⚖️", color: "#b98bf0", sound: "gavel" },
-  CULTURAL: { title: "¡EXAMEN DE HUMANOLOGÍA!", emoji: "❓", color: "#ff6b7d", sound: "land" },
-  ESCLAVO: { title: "¡ESCLAVOS!", emoji: "⛓️", color: "#d0d0d8", sound: "gavel" },
+  CULTURAL: { title: "¡LA OUIJA!", emoji: "🔮", color: "#ff6b7d", sound: "land" },
+  ESCLAVO: { title: "¡PACTO DE SANGRE!", emoji: "🩸", color: "#ff4f6b", sound: "gavel" },
 };
 
 /** Casillas por las que pasa la ficha al tirar `roll` desde `from` (rebota si se pasa de la 62). */
@@ -110,7 +110,7 @@ export function useGameFx(game: GameState | null) {
       const roller = before.players[before.turn];
       const key = ++seq.current;
       const n = mover ? (stepPath(startFrom[mover.id], game.lastRoll!).at(-1) ?? mover.pos) : roller.pos;
-      // Tirada sin moverse: perdido en los asteroides (se salva o bebe) o fianza del calabozo.
+      // Tirada sin moverse: perdido en la niebla (se salva o bebe) o salida del Purgatorio.
       const maze = roller.status.laberinto ? mazeOutcome(roller.name, game.lastRoll!) : null;
       const jail = roller.status.carcel ? jailOutcome(roller.name, game.lastRoll!) : null;
       const result = maze

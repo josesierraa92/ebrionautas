@@ -62,7 +62,7 @@ export default function JugarPage() {
       <section className="flex flex-col gap-3 lg:flex-1">
         <div className="flex items-center justify-between gap-2">
           <Link href="/" className="title-game text-2xl sm:text-3xl">
-            EBRIONAUTAS
+            MUERTOS DE SED
           </Link>
           <SoundToggle />
           <button

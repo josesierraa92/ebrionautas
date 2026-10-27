@@ -1,4 +1,5 @@
-// Las 62 casillas del tablero (reglas del "Nuevo Ocalimocho", tema galáctico).
+// Las 62 casillas del tablero (reglas del "Nuevo Ocalimocho", tema "Muertos de Sed":
+// los muertos salen una noche de fiesta y deben volver a su tumba antes del amanecer).
 // Ver docs/plan-ebrionautas.md §0.4 y §1. Los textos marcados con TODO están
 // pendientes de validar contra el tablero físico.
 
@@ -45,23 +46,23 @@ export const TRAIT_LABELS: Record<Trait, string> = {
 };
 
 export const TILE_NAMES: Record<Tile["type"], string> = {
-  SALIDA: "Aterrizaje forzoso",
-  META: "Nave Nodriza",
-  POSADA: "Estación de servicio Abstemia",
-  A_BEBER: "Ronda de combustible",
-  DUELO: "Duelo de dados láser",
-  OCA: "OVNI teletransportador",
-  LABERINTO: "Cinturón de asteroides",
-  REGLA: "Ley del Consejo Galáctico",
-  CULTURAL: "Examen de Humanología",
-  HIPNOSIS: "Abducción mental",
-  CARCEL: "Calabozo de la Policía Intergaláctica",
-  MUERTE: "Agujero negro",
-  PATINAZO: "Resbalón en los anillos de Saturno",
-  POSICION: "Estudio de especímenes humanos",
-  RASGO: "Estudio de especímenes humanos",
-  ESCLAVO: "Esclavos",
-  RETO: "Reto humano",
+  SALIDA: "Medianoche",
+  META: "Tu Tumba",
+  POSADA: "La Capilla",
+  A_BEBER: "Ronda de mezcal",
+  DUELO: "Duelo de calaveras",
+  OCA: "Mariposa Monarca",
+  LABERINTO: "Panteón en Niebla",
+  REGLA: "Ley del Más Allá",
+  CULTURAL: "La Ouija",
+  HIPNOSIS: "Poseído",
+  CARCEL: "Purgatorio",
+  MUERTE: "La Fosa",
+  PATINAZO: "Tropiezo con la lápida",
+  POSICION: "Juicio de los vivos",
+  RASGO: "Juicio de los vivos",
+  ESCLAVO: "Pacto de Sangre",
+  RETO: "Reto del Más Allá",
 };
 
 const OCAS = [8, 18, 28, 38, 48, 58];

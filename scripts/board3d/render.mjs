@@ -66,7 +66,7 @@ const frame = {
 for (const [i, a] of result.aliens.entries()) {
   await sharp(png(a)).extract(frame).webp({ quality: 90 }).toFile(join(out, "alien", `${i}.webp`));
 }
-console.log("ok", result.aliens.length, "marcianos");
+console.log("ok", result.aliens.length, "calaveritas");
 for (const [name, icon] of Object.entries(result.icons)) {
   await sharp(png(icon)).trim({ threshold: 0 }).webp({ quality: 90 }).toFile(join(out, `${name}.webp`));
 }

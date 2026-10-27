@@ -14,9 +14,9 @@ const body = Fredoka({
 });
 
 export const metadata: Metadata = {
-  title: "Ebrionautas",
+  title: "Muertos de Sed",
   description:
-    "Encuentros en la Tercera Copa: el juego de mesa de extraterrestres borrachos.",
+    "Muertos de Sed: el juego de mesa para beber del Día de Muertos. Vuelve a tu tumba antes del amanecer.",
 };
 
 export const viewport: Viewport = {

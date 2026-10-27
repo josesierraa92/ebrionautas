@@ -30,8 +30,8 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
   const [face, setFace] = useState(1);
   const [result, setResult] = useState<{ value: number; name: string; key: number; lost: boolean; jailed: boolean } | null>(null);
   const roller = useRef(me.name);
-  const wasLost = useRef(false); // tiró estando perdido en los asteroides
-  const wasJailed = useRef(false); // tiró estando en el calabozo
+  const wasLost = useRef(false); // tiró estando perdido en el Panteón en Niebla
+  const wasJailed = useRef(false); // tiró estando en el Purgatorio
   const rollerPos = useRef(me.pos);
   const seenRoll = useRef(game.rollSeq);
   // La misma tarjeta que la TV (casilla donde cayó o resultado de la tirada); se queda hasta la siguiente tirada.
@@ -109,7 +109,7 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
           </p>
         )}
         {result.jailed && (
-          <p className="btn-game bg-btn-red px-5 py-2 text-2xl text-white">🔓 BEBE {jailBail(result.value)} Y SALE DEL CALABOZO</p>
+          <p className="btn-game bg-btn-red px-5 py-2 text-2xl text-white">🔓 BEBE {jailBail(result.value)} Y SALE DEL PURGATORIO</p>
         )}
       </div>
     );
@@ -153,9 +153,9 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
       <div className="flex flex-col items-center gap-3">
         <p className="font-display text-xl">
           {me.status.laberinto
-            ? "Saca 5 o 6 para salir del laberinto"
+            ? "🌫️ Saca 5 o 6 para salir de la niebla"
             : me.status.carcel
-              ? "🚔 Calabozo: con 1-3 bebes 2, con 4-6 bebes 4 para salir"
+              ? "🔥 Purgatorio: con 1-3 bebes 2, con 4-6 bebes 4 para salir"
               : busy ? "Rodando…" : shake.state === "on" ? "📳 Agita el celular o toca el dado" : "👆 Toca el dado para tirar"}
         </p>
         {shake.state === "needs-permission" && (
