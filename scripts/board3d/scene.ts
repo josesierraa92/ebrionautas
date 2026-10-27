@@ -328,11 +328,10 @@ function mausoleum() {
   return g;
 }
 
-/** Tumba abierta junto a la salida: de aquí salieron los muertos a medianoche. */
+/** Tumba de tierra recién cavada con su cruz de madera en la cabecera (mirando a la cámara). */
 function grave() {
-  const g = kenney("grave", 0.12, Math.PI / 2);
-  g.add(kenney("gravestone-cross", 0.6, Math.PI / 2).translateX(-0.45));
-  g.add(kenney("shovel-dirt", 0.45, 0.6).translateX(0.1).translateZ(0.35));
+  const g = kenney("grave", 0.12);
+  g.add(kenney("cross-wood", 0.5).translateZ(-0.42));
   return g;
 }
 
@@ -346,49 +345,6 @@ function marigold(v: number) {
     const r = k === 0 ? 0 : 0.11;
     g.add(mesh(new THREE.IcosahedronGeometry(0.06, 0), mat(k % 3 ? C.marigold : "#ffb627", { roughness: 0.9, flatShading: true }), Math.cos(a) * r, 0.2 + (k % 2) * 0.03, Math.sin(a) * r));
   }
-  return g;
-}
-
-/** Pétalos de cempasúchil por el suelo (el camino que guía a los muertos). */
-function petals(v: number) {
-  const g = new THREE.Group();
-  for (let k = 0; k < 14; k++) {
-    const a = k * 2.4 + v * 7;
-    const r = 0.05 + ((k * 37) % 10) / 40;
-    const p = sphere(0.025, mat(k % 4 ? C.marigold : "#ff4f8b", { roughness: 0.9 }), Math.cos(a) * r, 0.01, Math.sin(a) * r, 8);
-    p.scale.y = 0.35;
-    g.add(p);
-  }
-  return g;
-}
-
-/** Fosa recién cavada (decoración). */
-function fosa() {
-  const g = new THREE.Group();
-  const rim = mesh(new THREE.TorusGeometry(0.36, 0.08, 10, 32), mat("#5a3a52", { roughness: 1 }), 0, 0.01, 0);
-  rim.rotation.x = Math.PI / 2;
-  rim.scale.y = 0.75;
-  g.add(rim);
-  const hole = mesh(new THREE.CircleGeometry(0.36, 32), mat("#1e1028"), 0, 0.012, 0);
-  hole.rotation.x = -Math.PI / 2;
-  hole.scale.y = 0.75;
-  g.add(hole);
-  return g;
-}
-
-function pond() {
-  const g = new THREE.Group();
-  const rim = mesh(new THREE.CylinderGeometry(0.98, 0.98, 0.02, 48), mat("#3f7a52"), 0, 0.001, 0);
-  rim.scale.z = 0.62;
-  g.add(rim);
-  const lake = mesh(new THREE.CylinderGeometry(0.88, 0.88, 0.03, 48), mat(C.calimocho, { roughness: 0.1, metalness: 0.1, emissive: "#5a0a2b", emissiveIntensity: 0.6 }), 0, 0.01, 0);
-  lake.scale.z = 0.55;
-  g.add(lake);
-  // velitas flotando en el lago
-  [[0.4, 0.12], [-0.45, -0.08], [0.1, -0.25], [-0.15, 0.2]].forEach(([x, z]) => {
-    g.add(cyl(0.04, 0.04, 0.03, mat("#fff4e0"), x, 0.03, z, 12));
-    g.add(mesh(new THREE.ConeGeometry(0.015, 0.05, 8), glow("#ffb347", 3), x, 0.085, z));
-  });
   return g;
 }
 
@@ -412,22 +368,6 @@ function sign() {
   const board = mesh(new RoundedBoxGeometry(0.62, 0.24, 0.04, 2, 0.02), [wood, wood, wood, wood, mat("#ffffff", { map: tex }), wood] as unknown as THREE.Material, 0, 0.5, 0.03);
   board.rotation.y = Math.PI / 4; // de cara a la cámara
   g.add(board);
-  return g;
-}
-
-/** Botella de mezcal y jarritos de barro tirados por el panteón (la fiesta de los muertos). */
-function mezcal(v: number) {
-  const g = new THREE.Group();
-  const glass = mat("#9be7c4", { roughness: 0.1, transparent: true, opacity: 0.75 });
-  g.add(cyl(0.05, 0.05, 0.16, glass), cyl(0.02, 0.03, 0.07, glass, 0, 0.16, 0, 10), cyl(0.022, 0.022, 0.025, mat("#c2185b"), 0, 0.23, 0, 10));
-  const label = cyl(0.052, 0.052, 0.06, mat("#ffcf6b"), 0, 0.05, 0, 16);
-  g.add(label);
-  const clay = mat("#c8663b", { roughness: 0.8 });
-  const jar = cyl(0.045, 0.035, 0.08, clay, 0.12, 0, 0.06, 14);
-  g.add(jar);
-  const fallen = mesh(new THREE.CylinderGeometry(0.045, 0.035, 0.08, 14), clay, -0.1, 0.04, 0.1);
-  fallen.rotation.set(Math.PI / 2, 0, v * 3);
-  g.add(fallen);
   return g;
 }
 
@@ -456,31 +396,31 @@ function papelPicado(a: THREE.Vector3, b: THREE.Vector3, n = 12) {
   return g;
 }
 
-/** Las cosas bajitas, más grandes para que se lean desde el sofá. */
-const PROP_SCALE: Partial<Record<Deco["kind"], number>> = { marigold: 1.6, petals: 1.8, sign: 1.3, mausoleum: 1.25, grave: 1.3, ofrenda: 1.5 };
-
+/** Altura de cada objeto en casillas (tabla de escala de la skill diseno-tablero). */
 function decoration(d: Deco) {
   const v = vary(d.gx, d.gy);
   const builders: Record<Deco["kind"], () => THREE.Object3D> = {
-    cypress: () => kenney(v > 0.5 ? "pine" : "pine-crooked", 1.15 + v * 0.35),
-    jacaranda: () => kenney(v > 0.5 ? "pine-fall" : "pine-fall-crooked", 1.05 + v * 0.3),
-    deadtree: () => kenney("lightpost-single", 0.95),
+    pine: () => kenney(v > 0.5 ? "pine" : "pine-crooked", 2.2 + v * 0.4),
+    pineFall: () => kenney(v > 0.5 ? "pine-fall" : "pine-fall-crooked", 2.1 + v * 0.4),
+    lantern: () => kenney("lightpost-single", 1.25),
+    crypt: () => mausoleum(),
+    tombstone: () => kenney((["gravestone-round", "gravestone-cross", "gravestone-decorative", "gravestone-bevel"] as const)[Math.floor(v * 4)], 0.5),
+    cross: () => kenney("cross-wood", 0.5),
+    candles: () => kenney("candle-multiple", 0.36),
     marigold: () => marigold(v),
-    candles: () => kenney("candle-multiple", 0.32),
-    tombstone: () => kenney((["gravestone-round", "gravestone-cross", "gravestone-decorative", "gravestone-bevel", "gravestone-broken"] as const)[Math.floor(v * 5)], 0.62, v > 0.5 ? 0 : Math.PI / 2),
-    cross: () => kenney("cross-wood", 0.62, Math.PI / 2),
-    petals: () => petals(v),
     ofrenda: () => ofrenda(v),
-    mausoleum: () => mausoleum(),
     grave: () => grave(),
-    pond: () => pond(),
-    fosa: () => fosa(),
     sign: () => sign(),
   };
   const o = builders[d.kind]();
   o.position.set(d.gx, 0, d.gy);
-  o.scale.multiplyScalar(PROP_SCALE[d.kind] ?? 1);
-  if (["cypress", "jacaranda", "marigold"].includes(d.kind)) o.rotation.y += v * Math.PI * 2;
+  o.rotation.y += d.turn ?? 0;
+  // solo la vegetación lleva una variación mínima de giro (regla: alineado a la cuadrícula)
+  if (d.kind === "pine" || d.kind === "pineFall" || d.kind === "marigold") o.rotation.y += (v - 0.5) * 0.35;
+  if (d.kind === "crypt") o.scale.multiplyScalar(2);
+  if (d.kind === "marigold") o.scale.multiplyScalar(1.6);
+  if (d.kind === "ofrenda") o.scale.multiplyScalar(1.5);
+  if (d.kind === "sign") o.scale.multiplyScalar(1.3);
   return shadowed(o);
 }
 
@@ -593,23 +533,17 @@ export async function renderBoard(scale: number) {
   const scene = new THREE.Scene();
   scene.add(island(), tiles(), goalTomb());
   for (const d of DECOR) scene.add(decoration(d));
-  // la fiesta de los muertos: botellas de mezcal y jarritos tirados, y papel picado entre los árboles del fondo
-  for (const [gx, gy] of [[2.6, 7.4], [8, 7.7], [5, 4.3], [11, 4.8], [3.4, 1.8], [9.4, 1.3], [12.8, 7.3]]) {
-    const c = shadowed(mezcal(vary(gx, gy, 2)));
-    c.position.set(gx, 0, gy);
-    c.rotation.y = vary(gx, gy, 3) * 6;
-    c.scale.setScalar(1.7);
-    scene.add(c);
-  }
-  scene.add(papelPicado(new THREE.Vector3(0.3, 1.25, -1), new THREE.Vector3(4.6, 1.25, -1)));
-  scene.add(papelPicado(new THREE.Vector3(8.4, 1.15, -1), new THREE.Vector3(12.6, 1.15, -1)));
-  scene.add(papelPicado(new THREE.Vector3(-1, 1.15, 1.6), new THREE.Vector3(-1, 1.15, 4.6), 9));
-  // rejas de hierro por el fondo y los lados (delante no: taparían las casillas)
-  scene.add(shadowed(ironFence(I0 + 1, I0 + 0.2, IX - 1, I0 + 0.2)));
-  scene.add(shadowed(ironFence(I0 + 0.2, I0 + 1, I0 + 0.2, IY - 1.6)));
-  scene.add(shadowed(ironFence(IX - 0.2, I0 + 1, IX - 0.2, IY - 1)));
-  // luz cálida de las velas sobre el panteón
-  for (const d of DECOR.filter((x) => x.kind === "candles" || x.kind === "ofrenda" || x.kind === "deadtree")) {
+  // papel picado colgado entre los árboles de la primera fila del fondo
+  scene.add(papelPicado(new THREE.Vector3(1.2, 1.4, -1.2), new THREE.Vector3(6, 1.4, -1.2), 14));
+  scene.add(papelPicado(new THREE.Vector3(8.4, 1.4, -1.2), new THREE.Vector3(13.2, 1.4, -1.2), 14));
+  // reja de hierro al borde de la isla: fondo y lados (delante no: taparía las casillas; a la izquierda
+  // deja la entrada junto a la salida)
+  const { y0: J0 } = ISLAND;
+  scene.add(shadowed(ironFence(I0 + 0.6, J0 + 0.25, IX - 0.6, J0 + 0.25)));
+  scene.add(shadowed(ironFence(I0 + 0.25, J0 + 0.6, I0 + 0.25, IY - 2.4)));
+  scene.add(shadowed(ironFence(IX - 0.25, J0 + 0.6, IX - 0.25, IY - 0.6)));
+  // luz cálida de velas, ofrenda y faroles
+  for (const d of DECOR.filter((x) => x.kind === "candles" || x.kind === "ofrenda" || x.kind === "lantern")) {
     const l = new THREE.PointLight("#ffa040", 2.2, 2.6, 1.6);
     l.position.set(d.gx, 0.5, d.gy);
     scene.add(l);

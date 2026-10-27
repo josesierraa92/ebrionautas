@@ -1,42 +1,66 @@
-// Decoración del tablero isométrico (en coordenadas de cuadrícula, ver isoPath.ts).
-// La comparten el render 3D del tablero (scripts/board3d) y la TV.
+// Decoración del tablero isométrico (coordenadas de cuadrícula, ver isoPath.ts). La comparten el render 3D
+// (scripts/board3d) y la TV. Sigue las reglas de .claude/skills/diseno-tablero: zonas, cuadrícula, ritmo y
+// simetría; nada encima del camino ni fuera de la isla (lo comprueba decor.test.ts).
+//
+// Recorrido: tramos en gy = 9, 6, 3, 0 (gx 0–13); conectores en (13, 8–7), (0, 5–4) y (13, 2–1).
 
 export type DecoKind =
-  | "cypress" | "jacaranda" | "deadtree" | "marigold" | "candles" | "tombstone" | "cross" | "petals" | "ofrenda" | "mausoleum" | "grave"
-  | "pond" | "fosa" | "sign";
-export type Deco = { gx: number; gy: number; kind: DecoKind };
+  | "pine" // pino verde (alto: solo en el marco)
+  | "pineFall" // pino de otoño, naranja (alto: solo en el marco)
+  | "lantern" // farol (alto: solo en el marco)
+  | "crypt" // cripta grande (detrás de la meta)
+  | "tombstone"
+  | "cross"
+  | "candles"
+  | "marigold" // mata de cempasúchil
+  | "ofrenda"
+  | "grave" // tumba de tierra con cruz
+  | "sign"; // letrero "PANTEÓN" en la salida
 
-// Panteón de Día de Muertos. Entre los tramos solo cosas bajitas (lo alto taparía las casillas de detrás);
-// cipreses, árboles y el mausoleo, en el borde.
+export type Deco = { gx: number; gy: number; kind: DecoKind; turn?: number };
+
+/** Objetos altos: solo pueden ir en el marco (detrás o a la izquierda), donde no tapan casillas. */
+export const TALL: DecoKind[] = ["pine", "pineFall", "lantern", "crypt"];
+
+const row = (kind: DecoKind | DecoKind[], gy: number, xs: number[], turn?: number): Deco[] =>
+  xs.map((gx, i) => ({ gx, gy, kind: Array.isArray(kind) ? kind[i % kind.length] : kind, turn }));
+
 export const DECOR: Deco[] = [
-  { gx: -0.8, gy: 9.8, kind: "grave" },
-  { gx: 0.4, gy: 10.1, kind: "sign" },
-  // entre el primer y el segundo tramo
-  { gx: 1.6, gy: 7.6, kind: "marigold" },
-  { gx: 3.6, gy: 7.8, kind: "candles" },
-  { gx: 6.5, gy: 7.5, kind: "pond" },
-  { gx: 9.2, gy: 7.9, kind: "petals" },
-  { gx: 10.6, gy: 7.5, kind: "cross" },
-  { gx: 12, gy: 7.8, kind: "tombstone" },
-  // entre el segundo y el tercero
-  { gx: 1.8, gy: 4.6, kind: "petals" },
-  { gx: 3.5, gy: 4.4, kind: "ofrenda" },
-  { gx: 5.4, gy: 4.8, kind: "marigold" },
-  { gx: 7.5, gy: 4.5, kind: "fosa" },
-  { gx: 9.8, gy: 4.6, kind: "candles" },
-  { gx: 11.8, gy: 4.4, kind: "petals" },
-  // entre el tercero y el cuarto
-  { gx: 2.2, gy: 1.6, kind: "tombstone" },
-  { gx: 4.3, gy: 1.5, kind: "marigold" },
-  { gx: 6.4, gy: 1.7, kind: "cross" },
-  { gx: 8.6, gy: 1.6, kind: "petals" },
-  { gx: 10.4, gy: 1.5, kind: "candles" },
-  { gx: 12.2, gy: 1.7, kind: "marigold" },
-  // bosque alrededor (detrás y a los lados)
-  ...[0.3, 1.7, 4.6, 6, 8.4, 9.8, 11.2, 12.6].map((gx, i): Deco => ({ gx, gy: -1, kind: (["cypress", "jacaranda", "cypress", "deadtree", "jacaranda", "cypress", "cypress", "jacaranda"] as const)[i] })),
-  { gx: 3, gy: -1.1, kind: "cypress" },
-  { gx: -0.85, gy: -0.85, kind: "mausoleum" },
-  ...[1.6, 4.6, 7.4].map((gy, i): Deco => ({ gx: -1, gy, kind: (["jacaranda", "cypress", "deadtree"] as const)[i] })),
-  ...[0.4, 3.6, 6.6, 9.6].map((gy, i): Deco => ({ gx: 14.1, gy, kind: (["cypress", "cypress", "jacaranda", "cypress"] as const)[i] })),
-  ...[3, 6.5, 10, 12.6].map((gx, i): Deco => ({ gx, gy: 10.1, kind: (["marigold", "petals", "marigold", "candles"] as const)[i] })),
+  // --- Franja 1 (entre los tramos 9 y 6): hilera de tumbas con velas entre ellas -------------------
+  ...row("tombstone", 7.5, [1, 3, 5, 7, 9, 11]),
+  ...row("candles", 7.5, [2, 4, 6, 8, 10]),
+  ...row("marigold", 7.5, [0, 12]),
+
+  // --- Franja 2 (entre 6 y 3): la ofrenda en el centro, simétrica ---------------------------------
+  { gx: 7, gy: 4.5, kind: "ofrenda" },
+  ...row("candles", 4.5, [6, 8]),
+  ...row("marigold", 4.5, [5, 9]),
+  ...row("cross", 4.5, [2.5, 11.5]),
+  ...row("marigold", 4.5, [1.5, 3.5, 10.5, 12.5]),
+
+  // --- Franja 3 (entre 3 y 0): tumbas de tierra recién cavadas, en fila ---------------------------
+  ...row("grave", 1.5, [1.5, 4.5, 7.5, 10.5]),
+  ...row("candles", 1.5, [3, 6, 9]),
+
+  // --- Marco de atrás: bosque en dos filas al tresbolillo, la cripta detrás de la meta ------------
+  { gx: -1.4, gy: -1.4, kind: "crypt" },
+  ...row(["pine", "pineFall"], -1.2, [1.2, 3.6, 6, 8.4, 10.8, 13.2]),
+  ...row(["pineFall", "pine"], -2, [2.4, 4.8, 7.2, 9.6, 12]),
+
+  // --- Marco izquierdo: bosque (lo alto aquí no tapa casillas) ------------------------------------
+  // dos filas al tresbolillo, como el fondo
+  ...[0.4, 2, 3.6, 5.2, 6.8].map((gy, i): Deco => ({ gx: i % 2 ? -1.3 : -2, gy, kind: i % 2 ? "pine" : "pineFall" })),
+
+  // --- Faroles en las esquinas del marco ------------------------------------------------------------
+  { gx: -1.2, gy: 8.2, kind: "lantern" },
+  { gx: 14.6, gy: -1.2, kind: "lantern" },
+
+  // --- Marco derecho y de delante: solo cosas bajas (lo alto taparía casillas) ----------------------
+  ...row("marigold", 0.5, [14.6]),
+  ...[2.5, 4.5, 6.5, 8.5].map((gy, i): Deco => ({ gx: 14.6, gy, kind: i % 2 ? "marigold" : "tombstone" })),
+  ...row("marigold", 10.3, [3, 6, 9, 12]),
+
+  // --- Salida: la tumba abierta de donde salieron los muertos, y el letrero -------------------------
+  { gx: -1.3, gy: 9.8, kind: "grave" },
+  { gx: -0.3, gy: 10.3, kind: "sign" },
 ];

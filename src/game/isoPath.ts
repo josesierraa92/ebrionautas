@@ -43,8 +43,8 @@ export function isPathCell(gx: number, gy: number): boolean {
 /** Píxeles (SVG) en pantalla de un punto del suelo. */
 export const isoSx = (gx: number, gy: number) => (gx - gy) * 50;
 export const isoSy = (gx: number, gy: number) => (gx + gy) * 25;
-/** La isla sobresale un poco del recorrido. */
-export const ISLAND = { x0: -1.3, x1: ISO_COLS + 0.3, y0: -1.3, y1: ISO_ROWS + 0.3, thickness: 46 };
+/** La isla deja margen alrededor del recorrido para el marco (bosque, reja, cripta). */
+export const ISLAND = { x0: -2.5, x1: ISO_COLS + 1.3, y0: -2.5, y1: ISO_ROWS + 0.9, thickness: 46 };
 /** Rectángulo visible (píxeles SVG): la isla, la meta de arriba y la sombra de abajo. */
 export const ISO_VIEW = {
   x: isoSx(ISLAND.x0, ISLAND.y1) - 30,
