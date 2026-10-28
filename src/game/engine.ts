@@ -3,7 +3,7 @@
 
 import type { AvatarConfig } from "./avatar";
 import { BOARD, TILE_NAMES, TRAIT_LABELS, getTile } from "./board";
-import { CATEGORIES, TONGUE_TWISTERS, pick } from "./content";
+import { TONGUE_TWISTERS, getCategories, pick } from "./content";
 
 export const LAST_TILE = BOARD.length;
 
@@ -56,6 +56,8 @@ export type GameState = {
   lastRoller?: string | null; // id de quien hizo la última tirada
   /** Vasos del último trago de regalo (1 a 3, al azar): la tarjeta de la casilla los enseña. */
   giftAmount?: number | null;
+  /** Categoría que salió en La Ouija (se queda hasta la siguiente). */
+  category?: string | null;
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
   /** Último duelo resuelto (los dados se tiran en el servidor): la TV y el celular enseñan el resultado. */
@@ -277,13 +279,16 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       log(s, `⚖️ ${p.name} dicta una nueva Ley del Más Allá.`);
       return decide(s, { kind: "RULE" });
 
-    case "CULTURAL":
+    case "CULTURAL": {
+      const category = pick(getCategories(), rng);
+      s.category = category; // la tarjeta de la casilla la enseña ({categoria})
       return decide(s, {
         kind: "SELECT_DRINKERS",
         drinks: 1,
         title: TILE_NAMES.CULTURAL,
-        text: `Categoría: "${pick(CATEGORIES, rng)}" (o ${p.name} elige otra). Por turnos decís una cada uno; quien se quede en blanco o repita, bebe.`,
+        text: `Categoría: "${category}" (o ${p.name} elige otra). Por turnos decís una cada uno; quien se quede en blanco o repita, bebe.`,
       });
+    }
 
     case "HIPNOSIS":
       p.status.hipnosis = true;

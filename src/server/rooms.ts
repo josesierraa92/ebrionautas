@@ -2,6 +2,8 @@
 // la autoridad: guarda la partida, tira los dados y solo acepta jugadas del control.
 
 import { defaultAvatar } from "@/game/avatar";
+import { DEFAULT_CATEGORIES, setCategories } from "@/game/content";
+import { loadCategories } from "./categories";
 import { applyAction, createGame, type Action, type GameState, type Gender } from "@/game/engine";
 import { PLAYER_COLORS } from "@/game/tileStyle";
 import { getStore } from "./store";
@@ -153,6 +155,8 @@ export async function resetRoom(code: string, who: string): Promise<void> {
 }
 
 export async function actInRoom(code: string, who: string, action: Action): Promise<void> {
+  // las categorías de La Ouija que dejó el admin (el motor las usa al caer alguien en la casilla)
+  if (action.type === "ROLL" || action.type === "DUEL_ROLL") setCategories(await loadCategories().catch(() => DEFAULT_CATEGORIES));
   await withRoom(code, (room) => {
     assertController(room, who);
     if (!room.game) throw new RoomError("La partida no ha empezado.", 409);

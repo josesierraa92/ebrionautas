@@ -1,6 +1,7 @@
 // Contenido para los retos: categorías de La Ouija y trabalenguas.
 
-export const CATEGORIES = [
+/** Categorías de serie (el admin puede cambiarlas desde el editor: ver `getCategories`). */
+export const DEFAULT_CATEGORIES = [
   "marcas de cerveza",
   "cócteles",
   "países de Sudamérica",
@@ -22,6 +23,24 @@ export const CATEGORIES = [
   "deportes olímpicos",
   "excusas para no ir a trabajar",
 ];
+
+let categories: string[] = DEFAULT_CATEGORIES;
+/** Las categorías vigentes de La Ouija (las de serie, o las que el admin dejó en el editor). */
+export const getCategories = () => categories;
+export function setCategories(list: string[]) {
+  categories = list.length ? list : DEFAULT_CATEGORIES;
+}
+/** Valida las categorías que llegan del editor o del almacén: textos cortos, sin repetir, hasta 200. */
+export function parseCategories(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return DEFAULT_CATEGORIES;
+  const out: string[] = [];
+  for (const x of raw) {
+    const t = typeof x === "string" ? x.replace(/\s+/g, " ").trim().slice(0, 60) : "";
+    if (t && !out.some((o) => o.toLowerCase() === t.toLowerCase())) out.push(t);
+    if (out.length >= 200) break;
+  }
+  return out.length ? out : DEFAULT_CATEGORIES;
+}
 
 export const TONGUE_TWISTERS = [
   "Tres tristes tigres tragaban trigo en un trigal.",

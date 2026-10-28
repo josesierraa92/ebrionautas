@@ -248,3 +248,8 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   la casilla ya no cuenta). Todos los títulos de la pantalla (banner de la casilla, panel de la TV y del celular) salen de la tarjeta
   (`cardTitle(key)` / `tileRule`), y `useGameFx` carga los textos propios al arrancar para que el primer título grande ya sea el editado.
 - Celular, decisiones: la tarjeta y las opciones van en **una sola pantalla** (tarjeta arriba, cómo repartir/elegir abajo); al terminar la decisión no se vuelve a enseñar la tarjeta (`dismissed`), pasa directo al siguiente turno.
+- **La Ouija: categorías** (pedido del usuario): al caer sale una al azar (`GameState.category`) y la tarjeta la enseña con el hueco
+  `{categoria}` (si un texto propio viejo no lo lleva, `tileRule` añade «Categoría: …»). La lista es editable en «📝 Tarjetas» (cuadro
+  «🔮 Categorías de La Ouija», una por línea) y se guarda en Redis (`cards:categories`, `src/server/categories.ts`; `GET /api/cards`
+  la devuelve en `categories` y `PUT /api/admin/cards` la guarda). El motor lee `getCategories()` (`game/content.ts`); el servidor la carga
+  antes de cada `ROLL`/`DUEL_ROLL` (`actInRoom`) y la TV/celular al abrir (`useCardTexts`). De serie: `DEFAULT_CATEGORIES`.

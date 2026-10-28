@@ -10,6 +10,7 @@ import { tileVars } from "@/game/rules";
 import { fetchCardTexts } from "@/lib/useCardTexts";
 import { tileArt, TILE_STYLE } from "@/game/tileStyle";
 import { BOARD } from "@/game/board";
+import { DEFAULT_CATEGORIES, getCategories, parseCategories } from "@/game/content";
 
 const CARDS = cardCatalog();
 
@@ -33,13 +34,19 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
   const [draft, setDraft] = useState<CardOverrides>({});
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
+  // categorías de La Ouija: una por línea
+  const [savedCats, setSavedCats] = useState<string[] | null>(null);
+  const [catsText, setCatsText] = useState("");
 
   useEffect(() => {
     void fetchCardTexts(true).then((o) => {
       setSaved(o);
       setDraft(o);
+      setSavedCats(getCategories());
+      setCatsText(getCategories().join("\n"));
     });
   }, []);
+  const cats = useMemo(() => parseCategories(catsText.split("\n")), [catsText]);
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -47,7 +54,7 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
     return CARDS.filter((c) => `${c.label} ${c.defaults.title} ${draft[c.key]?.title ?? ""} ${c.defaults.text} ${draft[c.key]?.text ?? ""} ${c.tiles.join(" ")}`.toLowerCase().includes(q));
   }, [search, draft]);
 
-  const changed = saved !== null && JSON.stringify(parseCardOverrides(draft)) !== JSON.stringify(saved);
+  const changed = saved !== null && (JSON.stringify(parseCardOverrides(draft)) !== JSON.stringify(saved) || JSON.stringify(cats) !== JSON.stringify(savedCats));
   const set = (key: string, field: "title" | "text", value: string) => setDraft((d) => ({ ...d, [key]: { ...d[key], [field]: value } }));
   const reset = (key: string) =>
     setDraft((d) => {
@@ -59,12 +66,15 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
   const save = async () => {
     setBusy(true);
     try {
-      const res = await fetch("/api/admin/cards", { method: "PUT", headers: { "content-type": "application/json", "x-admin-key": adminKey() }, body: JSON.stringify({ cards: parseCardOverrides(draft) }) });
+      const res = await fetch("/api/admin/cards", { method: "PUT", headers: { "content-type": "application/json", "x-admin-key": adminKey() }, body: JSON.stringify({ cards: parseCardOverrides(draft), categories: cats }) });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) return onStatus(body.error ?? "No se pudieron guardar las tarjetas.");
       const o = parseCardOverrides(body.cards);
       setSaved(o);
       setDraft(o);
+      const c = parseCategories(body.categories ?? cats);
+      setSavedCats(c);
+      setCatsText(c.join("\n"));
       await fetchCardTexts(true);
       onStatus("Tarjetas guardadas. La TV y los celulares las verán al recargar la página.");
     } catch {
@@ -97,6 +107,26 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
         </p>
 
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+          {!search.trim() && (
+            <div className="grid gap-1.5 rounded-xl bg-white/5 p-3">
+              <div className="flex items-center gap-2">
+                <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs">🔮 Categorías de La Ouija</span>
+                <span className="text-xs opacity-70">{cats.length} categorías · en cada Ouija sale una al azar y aparece en la tarjeta</span>
+                <button className="ml-auto text-xs text-amber-300 underline" onClick={() => setCatsText(DEFAULT_CATEGORIES.join("\n"))}>
+                  Volver a las de serie
+                </button>
+              </div>
+              <textarea
+                className="min-h-40 rounded-md bg-white/10 px-2 py-1.5 text-sm"
+                rows={8}
+                value={catsText}
+                onChange={(e) => setCatsText(e.target.value)}
+                placeholder="Una categoría por línea (por ejemplo: frutas)"
+                aria-label="Categorías de La Ouija"
+              />
+              <p className="text-[11px] opacity-70">Una por línea: cambia, borra o añade las que quieras (se guardan con «Guardar»). Máximo 60 letras cada una.</p>
+            </div>
+          )}
           {list.map((c) => (
             <CardEditor key={c.key} def={c} value={draft[c.key]} onChange={(f, v) => set(c.key, f, v)} onReset={() => reset(c.key)} />
           ))}

@@ -31,7 +31,7 @@ const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?:
   },
   LABERINTO: { vars: [NOMBRE], defaults: { title: TILE_NAMES.LABERINTO, text: "{nombre} se pierde entre las tumbas y la niebla. En sus turnos tira el dado: con 5 o 6 escapa; si no, bebe 1 vaso y sigue perdido." } },
   REGLA: { vars: [NOMBRE], defaults: { title: TILE_NAMES.REGLA, text: "{nombre} dicta una ley para todos (por ejemplo: prohibido decir «beber»). Dura hasta que alguien ponga otra. Quien la rompa, bebe 1 vaso." } },
-  CULTURAL: { vars: [{ name: "categoria", about: "la categoría que salió (solo al decidir quién bebe)" }], defaults: { title: TILE_NAMES.CULTURAL, text: "Sale una categoría. Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso." } },
+  CULTURAL: { vars: [{ name: "categoria", about: "la categoría que salió (al azar entre las de «Categorías»)" }], defaults: { title: TILE_NAMES.CULTURAL, text: "Categoría: «{categoria}». Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso." } },
   HIPNOSIS: { vars: [NOMBRE], defaults: { title: TILE_NAMES.HIPNOSIS, text: "Un espíritu posee a {nombre}: hasta su próximo turno, se bebe la mitad de todo lo que beban los demás." } },
   CARCEL: {
     vars: [NOMBRE],

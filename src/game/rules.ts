@@ -52,6 +52,8 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
     }
     case "RASGO":
       return { vasos: vasos(tile.drinks), quienes: tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ") };
+    case "CULTURAL":
+      return { nombre, categoria: game.category ?? "…" };
     default:
       return { nombre };
   }
@@ -59,5 +61,9 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
 
 /** Título y regla de la casilla `n` para el jugador `playerId`, con los datos de la partida (textos: `game/cards.ts`). */
 export function tileRule(n: number, game: GameState, playerId: string, extra: Record<string, string | number> = {}): { title: string; text: string } {
-  return cardText(cardKeyOf(getTile(n)), { ...tileVars(n, game, playerId), ...extra });
+  const tile = getTile(n);
+  const rule = cardText(cardKeyOf(tile), { ...tileVars(n, game, playerId), ...extra });
+  // un texto propio viejo de La Ouija puede no llevar el hueco {categoria}: la categoría que salió se añade siempre
+  if (tile.type === "CULTURAL" && game.category && !rule.text.includes(game.category)) return { ...rule, text: `${rule.text}\nCategoría: «${game.category}».` };
+  return rule;
 }

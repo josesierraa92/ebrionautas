@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyAction, createGame, type Action, type GameState, type Rng } from "./engine";
+import { setCategories, DEFAULT_CATEGORIES } from "./content";
+import { tileRule } from "./rules";
 
 /** Rng que produce exactamente los dados indicados (1-6), en orden. */
 function dice(...values: number[]): Rng {
@@ -248,3 +250,17 @@ describe("retos, género y deudas", () => {
     expect(act(s, { type: "DRANK", id: "p1" })).toBe(s);
   });
 });
+
+describe("La Ouija", () => {
+  it("saca una categoría al azar de las vigentes y la tarjeta la enseña", () => {
+    setCategories(["frutas", "cócteles", "animales"]);
+    try {
+      const s = rollFrom(game(), 10, 3, 4); // 13: La Ouija; el 2.º dado elige (4 -> 2.ª posición)
+      expect(s.category).toBe("cócteles");
+      expect(tileRule(13, s, "p1").text).toContain("cócteles");
+    } finally {
+      setCategories(DEFAULT_CATEGORIES);
+    }
+  });
+});
+
