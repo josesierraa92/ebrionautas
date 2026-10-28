@@ -1,10 +1,11 @@
 import { characterOf } from "@/game/characters";
-import { Die } from "@/components/Fx";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { getTile } from "@/game/board";
 import { currentPlayer, type Decision, type GameState } from "@/game/engine";
+import { cardKeyOf, hasCardOverride } from "@/game/cards";
 import { tileRule } from "@/game/rules";
+import { useCardTexts } from "@/lib/useCardTexts";
 import { TILE_STYLE, tileArt } from "@/game/tileStyle";
 import type { Landed } from "@/lib/useGameFx";
 
@@ -50,6 +51,19 @@ function decisionPrompt(decision: Decision, name: string): string {
  */
 type Props = { game: GameState; n: number; playerId: string; cardKey: number; result?: Landed["result"] };
 
+/**
+ * Retos y exámenes llevan su texto concreto (categoría, trabalenguas…) en la decisión; si el admin cambió la tarjeta
+ * desde el editor, se usa su texto y se le añade lo que sale al azar.
+ */
+function decisionRule(decision: Extract<NonNullable<GameState["decision"]>, { kind: "SELECT_DRINKERS" }>, n: number, game: GameState, playerId: string) {
+  const tile = getTile(n);
+  if (!hasCardOverride(cardKeyOf(tile))) return { title: decision.title, text: decision.text };
+  const categoria = /Categoría: "([^"]+)"/.exec(decision.text)?.[1] ?? "";
+  const rule = tileRule(n, game, playerId, { categoria });
+  const twister = /«([^»]+)»\s*$/.exec(decision.text)?.[1];
+  return twister && tile.type === "RETO" ? { ...rule, text: `${rule.text} «${twister}»` } : rule;
+}
+
 /** Contenido de la tarjeta (TV y celular): ícono, colores, título, regla y vasos. */
 export function cardContent(game: GameState, n: number, playerId: string, result?: Landed["result"]) {
   const player = game.players.find((p) => p.id === playerId) ?? currentPlayer(game);
@@ -60,7 +74,7 @@ export function cardContent(game: GameState, n: number, playerId: string, result
     : TILE_STYLE[tile.type];
   const decision = game.decision && currentPlayer(game).id === playerId ? game.decision : null;
   // Retos y exámenes llevan su texto concreto (categoría, trabalenguas…) en la decisión.
-  const rule = result ?? (decision?.kind === "SELECT_DRINKERS" ? { title: decision.title, text: decision.text } : tileRule(n, game, playerId));
+  const rule = result ?? (decision?.kind === "SELECT_DRINKERS" ? decisionRule(decision, n, game, playerId) : tileRule(n, game, playerId));
   const drinks =
     decision?.kind === "SELECT_DRINKERS"
       ? decision.drinks
@@ -81,6 +95,7 @@ export function cardContent(game: GameState, n: number, playerId: string, result
 }
 
 export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
+  useCardTexts();
   const { player, style, decision, rule, drinks, light } = cardContent(game, n, playerId, result);
   return (
     // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.
@@ -101,17 +116,13 @@ export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
           <p className="font-display leading-snug whitespace-pre-line" style={{ fontSize: "1.25cqw" }}>
             {rule.text}
           </p>
-          <div className="flex items-center justify-between gap-4" style={{ fontSize: "1.1cqw" }}>
-            <span className="flex items-center gap-[1cqw] font-display">
-              <Marciano avatar={avatarOf(player)} expression="feliz" size={40} className="h-auto w-[2.3cqw]" character={characterOf(game.players, player.id)} />
-              {player.name}
-            </span>
-            {drinks !== null && (
+          {drinks !== null && (
+            <div style={{ fontSize: "1.1cqw" }}>
               <span className="rounded-full border-[3px] border-ink bg-btn-red px-[1cqw] py-[0.2cqw] font-display text-white">
                 🍷 {drinks} {drinks === 1 ? "vaso" : "vasos"}
               </span>
-            )}
-          </div>
+            </div>
+          )}
           {decision && (
             <p className="rounded-2xl bg-btn-yellow/30 px-[0.8cqw] py-[0.4cqw] text-center font-display" style={{ fontSize: "1.1cqw" }}>
               📱 {decisionPrompt(decision, player.name)}
@@ -125,6 +136,7 @@ export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
 
 /** La misma tarjeta, en grande para leerla en el celular. */
 export function PhoneRuleCard({ game, n, playerId, cardKey, result }: Props) {
+  useCardTexts();
   const { player, style, rule, drinks, light } = cardContent(game, n, playerId, result);
   return (
     <div key={cardKey} className="card-pop w-full overflow-hidden rounded-2xl border-[3px] border-ink bg-[#fbf3e4] text-left shadow-[0_5px_0_#1b1f4b]">
@@ -151,7 +163,8 @@ export function PhoneRuleCard({ game, n, playerId, cardKey, result }: Props) {
  * Esquina de la TV: de quién es el turno y la última tirada (quién tiró y cuánto sacó).
  * Mientras la TV anima la tirada (`moving`, `rolling`) no se adelanta el resultado ni el turno siguiente.
  */
-export function TurnChip({ game, moving = false, rolling = false }: { game: GameState; moving?: boolean; rolling?: boolean }) {
+// Solo quién tiene el turno: el dado ya se ve grande en el tablero y el número sale en el título de la jugada.
+export function TurnChip({ game, moving = false }: { game: GameState; moving?: boolean; rolling?: boolean }) {
   const roller = game.players.find((p) => p.id === game.lastRoller);
   const winner = game.players.find((p) => p.id === game.winner);
   const who = winner ?? (moving && roller ? roller : currentPlayer(game));
@@ -162,16 +175,6 @@ export function TurnChip({ game, moving = false, rolling = false }: { game: Game
         <p className="text-sm text-white/70">{winner ? "¡Ganador!" : "Turno de"}</p>
         <p className="font-display text-3xl">{who.name}</p>
       </div>
-      {game.lastRoll && (
-        <>
-          <span className="h-12 w-[3px] rounded bg-white/20" />
-          <Die value={rolling ? 1 : game.lastRoll} className={`w-14 ${rolling ? "dice-tumble" : ""}`} />
-          <div className="leading-tight">
-            <p className="text-sm text-white/70">{rolling ? "Tirando…" : roller ? `${roller.name} sacó` : "Último dado"}</p>
-            <p className="font-display text-3xl">{rolling ? "?" : game.lastRoll}</p>
-          </div>
-        </>
-      )}
     </div>
   );
 }

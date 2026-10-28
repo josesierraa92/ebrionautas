@@ -42,6 +42,7 @@ import { EditorScene, type GizmoMode, type Tool } from "./scene";
 import type { Catalog, CatalogModel } from "./catalogTypes";
 import { loadModelScene, renderToken } from "./modelRender";
 import { nameFromFile, uploadModel, type CustomModel } from "./modelUpload";
+import CardsDialog from "./CardsDialog";
 import TokensDialog from "./TokensDialog";
 import { PLAYER_COLORS } from "@/game/tileStyle";
 
@@ -123,6 +124,7 @@ export default function BoardEditor() {
   const [custom, setCustom] = useState<CatalogModel[]>([]);
   const [uploadMode, setUploadMode] = useState<"blob" | "dev">("blob");
   const [tokensOpen, setTokensOpen] = useState(false);
+  const [cardsOpen, setCardsOpen] = useState(false);
   const [baseCatalog, setCatalog] = useState<Catalog | null>(null);
   const catalog = useMemo<Catalog | null>(
     () =>
@@ -760,7 +762,10 @@ export default function BoardEditor() {
           ))}
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <button className={`${btn} ${layout.tokens.some(Boolean) ? on : off}`} onClick={() => setTokensOpen(true)} title="Elegir el modelo de cada ficha de jugador">
+          <button className={`${btn} ${off}`} onClick={() => setCardsOpen(true)} title="Ver y cambiar el texto de todas las tarjetas del juego">
+          📝 Tarjetas
+        </button>
+        <button className={`${btn} ${layout.tokens.some(Boolean) ? on : off}`} onClick={() => setTokensOpen(true)} title="Elegir el modelo de cada ficha de jugador">
             🧟 Fichas
           </button>
           <button
@@ -1074,6 +1079,7 @@ export default function BoardEditor() {
           </div>
         </aside>
       </div>
+      {cardsOpen && <CardsDialog adminKey={() => adminKey() ?? ""} onClose={() => setCardsOpen(false)} onStatus={setStatus} />}
       {tokensOpen && catalog && <TokensDialog layout={layout} catalog={catalog} onChange={commit} onClose={() => setTokensOpen(false)} />}
     </div>
   );

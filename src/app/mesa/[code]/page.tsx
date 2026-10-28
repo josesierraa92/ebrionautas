@@ -116,13 +116,13 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
       <main className="fixed inset-0">
         <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare className="h-full">
           {overlays}
-          <div className="absolute top-[2%] right-[1.5%] z-50 flex items-center gap-2 opacity-60 transition-opacity hover:opacity-100">
+          <div className="absolute top-[2%] right-[1.5%] z-50 flex items-center gap-2">
             <SoundToggle />
-            <button onClick={toggleFullscreen} aria-label="Pantalla completa" className="btn-game bg-btn-blue px-3 py-1.5 text-sm text-white">
+            <button onClick={toggleFullscreen} aria-label="Pantalla completa" title="Pantalla completa" className="icon-btn">
               ⛶
             </button>
-            <button onClick={togglePanel} className="btn-game bg-btn-yellow px-3 py-1.5 text-sm text-white">
-              ◀ MARCADOR
+            <button onClick={togglePanel} aria-label="Marcador" title="Marcador" className="icon-btn">
+              ☰
             </button>
           </div>
         </BoardStage>
@@ -138,11 +138,11 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
           <span className="title-game text-3xl">MUERTOS DE SED</span>
           <span className="flex items-center gap-2 font-display text-white/70">
             <SoundToggle />
-            <button onClick={toggleFullscreen} aria-label="Pantalla completa" className="btn-game bg-btn-blue px-3 py-1.5 text-sm text-white">
+            <button onClick={toggleFullscreen} aria-label="Pantalla completa" title="Pantalla completa" className="icon-btn">
               ⛶
             </button>
-            <button onClick={togglePanel} className="btn-game bg-btn-yellow px-3 py-1.5 text-sm text-white">
-              SOLO TABLERO ▶
+            <button onClick={togglePanel} aria-label="Solo tablero" title="Solo tablero (oculta el marcador)" className="icon-btn">
+              ⤢
             </button>
             <span className="ml-2">Mesa {code}</span>
             {hostSecret && (

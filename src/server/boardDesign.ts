@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { put } from "@vercel/blob";
 import { parseLayout, type BoardLayout } from "@/editor/layout";
 import { PLAYER_COLORS } from "@/game/tileStyle";
+import { parseCardOverrides, type CardOverrides } from "@/game/cards";
 import { parsePublished, type PublishedBoard } from "@/game/publishedBoard";
 import { RoomError } from "./rooms";
 import { getStore } from "./store";
@@ -50,6 +51,24 @@ export async function saveDesign(raw: unknown): Promise<BoardLayout> {
   if (json.length > MAX_BYTES) throw new RoomError("El diseño es demasiado grande para guardarlo.", 413);
   await getStore().set(KEY, json, TEN_YEARS);
   return layout;
+}
+
+const CARDS_KEY = "cards:custom";
+
+/** Textos de las tarjetas que cambió el admin (solo lo que difiere de los de serie). */
+export async function loadCardTexts(): Promise<CardOverrides> {
+  const raw = await getStore().get(CARDS_KEY);
+  try {
+    return raw ? parseCardOverrides(JSON.parse(raw)) : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function saveCardTexts(raw: unknown): Promise<CardOverrides> {
+  const cards = parseCardOverrides(raw);
+  await getStore().set(CARDS_KEY, JSON.stringify(cards), TEN_YEARS);
+  return cards;
 }
 
 /** Tablero que usa la TV (o null: la TV usa el tablero de serie). */

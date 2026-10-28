@@ -102,6 +102,14 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
   su regla explicada (`src/game/rules.ts`). Se queda hasta la siguiente tirada (para que dé tiempo a leerla);
   si hay que decidir, además dice qué marcar en el celular. Al tirar perdido en el Panteón en Niebla sale el resultado
   (`mazeOutcome`: con 5 o 6 "¡Se salvó!", si no "¡Sigue perdido!" y bebe).
+- **Tarjetas editables** («📝 Tarjetas» en el editor, `CardsDialog.tsx`): cada tarjeta distinta (una por clase de casilla;
+  en Machos/Cegatos…, retos y posiciones, una por título; más las de resultado de niebla y purgatorio) con su título y
+  texto. `src/game/cards.ts` es el catálogo (`cardCatalog`, `cardKeyOf`) con los textos de serie y huecos `{nombre}`,
+  `{vasos}`… que rellena `tileRule` (`rules.ts`); lo que cambia el admin se guarda aparte del tablero en Redis
+  (`cards:custom`, `GET /api/cards`, `PUT /api/admin/cards`) y la TV y el celular lo cargan con `useCardTexts` al
+  abrir. En las decisiones de retos/exámenes (`decisionRule` en `TvCards`) se usa el texto propio y se le añade lo que
+  sale al azar (categoría, trabalenguas). La TV: el chip de turno solo muestra quién juega (sin el dado: el dado
+  grande ya se ve) y la tarjeta no repite el nombre; los botones de arriba son iconos discretos (`.icon-btn`).
 - Purgatorio (cárcel; regla del usuario): en su turno el preso tira; con 1-3 bebe 2, con 4-6 bebe 4 (`jailBail`), sale
   y vuelve a tirar para avanzar. No hay opción de esperar. La TV muestra la tarjeta "¡Sale del Purgatorio!" (`jailOutcome`).
 - Toda casilla que diga "tira el dado" debe enseñar después una tarjeta con lo que pasó (TV y celular):

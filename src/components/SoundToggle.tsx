@@ -18,8 +18,8 @@ export default function SoundToggle() {
 
   if (locked && !muted) {
     return (
-      <button onClick={() => unlock()?.then(() => setLocked(false))} className="btn-game animate-pulse bg-btn-yellow px-3 py-1.5 text-sm text-white">
-        🔊 ACTIVAR SONIDO
+      <button onClick={() => unlock()?.then(() => setLocked(false))} aria-label="Activar sonido" title="Activar sonido" className="icon-btn animate-pulse">
+        🔇
       </button>
     );
   }
@@ -31,7 +31,8 @@ export default function SoundToggle() {
         unlock();
       }}
       aria-label={muted ? "Activar sonido" : "Silenciar"}
-      className="btn-game bg-btn-blue px-3 py-1.5 text-sm text-white"
+      title={muted ? "Activar sonido" : "Silenciar"}
+      className="icon-btn"
     >
       {muted ? "🔇" : "🔊"}
     </button>

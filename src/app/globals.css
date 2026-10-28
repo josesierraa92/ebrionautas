@@ -195,3 +195,20 @@ body {
   0% { transform: translateY(8%) scale(0.85) rotate(-4deg); }
   100% { transform: translateY(0) scale(1) rotate(0deg); }
 }
+
+/* Botones de la TV (sonido, pantalla completa, marcador): solo el icono, discretos y sin marco */
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 9999px;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: rgb(255 255 255 / 0.85);
+  background: rgb(10 14 28 / 0.4);
+  backdrop-filter: blur(4px);
+  opacity: 0.55;
+  transition: opacity 0.2s, background 0.2s;
+}
+.icon-btn:hover, .icon-btn:focus-visible { opacity: 1; background: rgb(10 14 28 / 0.7); }

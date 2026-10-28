@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { newLayout } from "@/editor/layout";
-import { checkAdmin, loadDesign, loadDevImage, loadDevToken, loadPublished, loadPublishedLayout, publishBoard, saveDesign, unpublishBoard } from "./boardDesign";
+import { loadCardTexts, saveCardTexts, checkAdmin, loadDesign, loadDevImage, loadDevToken, loadPublished, loadPublishedLayout, publishBoard, saveDesign, unpublishBoard } from "./boardDesign";
 import { resetMemoryStore } from "./store";
 
 describe("diseño del tablero en el servidor", () => {
@@ -16,6 +16,17 @@ describe("diseño del tablero en el servidor", () => {
     const l = newLayout(12, 10);
     await saveDesign(l);
     expect(await loadDesign()).toEqual(l);
+  });
+
+  it("guarda solo los textos de tarjetas que cambian y descarta lo que no existe", async () => {
+    expect(await loadCardTexts()).toEqual({});
+    const saved = await saveCardTexts({
+      A_BEBER: { title: "¡Ronda!", text: "{nombre} reparte {vasos}." },
+      "RETO:Cómicos": { text: "Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos." }, // igual que el de serie: no se guarda
+      NOEXISTE: { title: "x" },
+    });
+    expect(saved).toEqual({ A_BEBER: { title: "¡Ronda!", text: "{nombre} reparte {vasos}." } });
+    expect(await loadCardTexts()).toEqual(saved);
   });
 
   it("rechaza diseños inválidos", async () => {

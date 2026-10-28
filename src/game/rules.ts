@@ -1,21 +1,21 @@
 // Explicación de cada casilla para la tarjeta grande de la TV: qué es y cuál es la regla.
 
-import { TILE_NAMES, TRAIT_LABELS, getTile } from "./board";
+import { TRAIT_LABELS, getTile } from "./board";
+import { RESULT_KEYS, cardKeyOf, cardText } from "./cards";
 import { jailBail, type GameState } from "./engine";
 
 const vasos = (n: number) => `${n} ${n === 1 ? "vaso" : "vasos"}`;
 
 /** Resultado de tirar estando perdido en el Panteón en Niebla: con 5 o 6 escapa, si no bebe. */
 export function mazeOutcome(name: string, roll: number): { escaped: boolean; title: string; text: string } {
-  return roll >= 5
-    ? { escaped: true, title: "¡Se salvó!", text: `${name} saca ${roll} y encuentra la salida del Panteón en Niebla. No bebe y en su próximo turno vuelve a avanzar.` }
-    : { escaped: false, title: "¡Sigue perdido!", text: `${name} saca ${roll}: no es 5 ni 6. Bebe 1 vaso y sigue perdido entre las tumbas.` };
+  const escaped = roll >= 5;
+  return { escaped, ...cardText(escaped ? RESULT_KEYS.mazeOk : RESULT_KEYS.mazeNo, { nombre: name, dado: roll }) };
 }
 
 /** Resultado de tirar estando en el Purgatorio: siempre sale, pero bebe 2 (1-3) o 4 (4-6). */
 export function jailOutcome(name: string, roll: number): { drinks: number; title: string; text: string } {
   const drinks = jailBail(roll);
-  return { drinks, title: "¡Sale del Purgatorio!", text: `${name} saca ${roll}: bebe ${vasos(drinks)} para pagar sus pecados y sale del Purgatorio. Ahora vuelve a tirar para avanzar.` };
+  return { drinks, ...cardText(RESULT_KEYS.jail, { nombre: name, dado: roll, vasos: vasos(drinks) }) };
 }
 
 /** Resultado de un duelo, una línea por rival: quién sacó cuánto y quién bebe. */
@@ -27,82 +27,33 @@ export function duelOutcome(game: GameState): { title: string; text: string } | 
   return { title: "¡Resultado del duelo!", text: lines.join("\n") };
 }
 
-/** Título y regla de la casilla `n` para el jugador `playerId`, con los datos de la partida. */
-export function tileRule(n: number, game: GameState, playerId: string): { title: string; text: string } {
+/** Título y regla de la casilla `n` para el jugador `playerId`, con los datos de la partida (textos: `game/cards.ts`). */
+export function tileRule(n: number, game: GameState, playerId: string, extra: Record<string, string | number> = {}): { title: string; text: string } {
   const tile = getTile(n);
   const p = game.players.find((q) => q.id === playerId);
-  const name = p?.name ?? "El jugador";
+  const nombre = p?.name ?? "El jugador";
+  const key = cardKeyOf(tile);
   switch (tile.type) {
-    case "SALIDA":
-      return { title: TILE_NAMES.SALIDA, text: "Es medianoche del Día de Muertos: los muertos salen de sus tumbas para su única noche de fiesta. Deben volver antes de que salga el sol… aunque lleguen borrachos." };
-    case "META":
-      return { title: TILE_NAMES.META, text: "¡Antes del amanecer! El primero en volver a su tumba gana (como pueda tenerse en pie) y reparte el resto de la bebida como quiera." };
-    case "POSADA":
-      return { title: TILE_NAMES.POSADA, text: `${name} se refugia en La Capilla: es suelo sagrado y nadie le puede mandar beber hasta su próximo turno.` };
     case "A_BEBER":
-      return { title: "¡Ronda de mezcal!", text: `${name} reparte ${vasos(tile.amount)} entre quien quiera (también se los puede quedar).` };
+      return cardText(key, { nombre, vasos: vasos(tile.amount) });
     case "DUELO":
-      return {
-        title: TILE_NAMES.DUELO,
-        text: `${name} reta hasta a ${tile.amount} ${tile.amount === 1 ? "rival" : "rivales"}. Uno a uno tiran el dado: quien saque menos bebe 1 vaso. Si empatan, se repite.`,
-      };
+      return cardText(key, { nombre, rivales: `${tile.amount} ${tile.amount === 1 ? "rival" : "rivales"}` });
     case "OCA":
-      return {
-        title: "¡De murciélago en murciélago!",
-        text: tile.next
-          ? `${name} bebe 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!»; el murciélago lo lleva volando a la siguiente casilla de murciélago (la ${tile.next}) y vuelve a tirar.`
-          : `Es el último murciélago: ${name} bebe 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» y vuelve a tirar.`,
-      };
-    case "LABERINTO":
-      return {
-        title: TILE_NAMES.LABERINTO,
-        text: `${name} se pierde entre las tumbas y la niebla. En sus turnos tira el dado: con 5 o 6 escapa; si no, bebe 1 vaso y sigue perdido.`,
-      };
-    case "REGLA":
-      return {
-        title: TILE_NAMES.REGLA,
-        text: `${name} dicta una ley para todos (por ejemplo: prohibido decir «beber»). Dura hasta que alguien ponga otra. Quien la rompa, bebe 1 vaso.`,
-      };
-    case "CULTURAL":
-      return {
-        title: TILE_NAMES.CULTURAL,
-        text: "Sale una categoría. Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso.",
-      };
-    case "HIPNOSIS":
-      return {
-        title: TILE_NAMES.HIPNOSIS,
-        text: `Un espíritu posee a ${name}: hasta su próximo turno, se bebe la mitad de todo lo que beban los demás.`,
-      };
-    case "CARCEL":
-      return {
-        title: TILE_NAMES.CARCEL,
-        text: `${name} cae al Purgatorio. En su próximo turno tira el dado para pagar sus pecados: con 1, 2 o 3 bebe 2 vasos; con 4, 5 o 6 bebe 4. Después vuelve a tirar para avanzar. Si otro jugador cae aquí antes, sale gratis.`,
-      };
-    case "MUERTE":
-      return { title: TILE_NAMES.MUERTE, text: `¡Qué mala suerte! ${name} cae en La Fosa y tiene que volver a empezar desde medianoche (casilla 1).` };
+      return cardText(key, { nombre, destino: tile.next ? `el murciélago lo lleva volando a la siguiente casilla de murciélago (la ${tile.next})` : "es el último murciélago" });
     case "PATINAZO":
-      return {
-        title: TILE_NAMES.PATINAZO,
-        text: `${name} tropieza con una lápida. Para no caerse elige: bebe ${vasos(tile.drinks)} de golpe o rueda hasta la casilla ${tile.backTo}.`,
-      };
+      return cardText(key, { nombre, vasos: vasos(tile.drinks), casilla: tile.backTo });
     case "POSICION": {
       const others = game.players.filter((q) => q.id !== playerId && (tile.who === "detras" ? q.pos < (p?.pos ?? 0) : q.pos > (p?.pos ?? 0)));
-      return {
-        title: tile.title,
-        text: `Beben ${vasos(tile.drinks)} todos los que van ${tile.who === "detras" ? "por detrás" : "por delante"} de ${name}${others.length ? `: ${others.map((q) => q.name).join(", ")}.` : ". Esta vez, nadie."}`,
-      };
+      return cardText(key, {
+        nombre,
+        vasos: vasos(tile.drinks),
+        lado: tile.who === "detras" ? "por detrás" : "por delante",
+        lista: others.length ? `: ${others.map((q) => q.name).join(", ")}.` : ". Esta vez, nadie.",
+      });
     }
     case "RASGO":
-      return {
-        title: tile.title,
-        text: `Juicio de los vivos: beben ${vasos(tile.drinks)} ${tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ")}.`,
-      };
-    case "ESCLAVO":
-      return {
-        title: TILE_NAMES.ESCLAVO,
-        text: `${name} firma un Pacto de Sangre con otro jugador: cada vez que ${name} beba, su pactado bebe lo mismo. Dura hasta que otro caiga en esta casilla.`,
-      };
-    case "RETO":
-      return { title: tile.title, text: tile.text };
+      return cardText(key, { vasos: vasos(tile.drinks), quienes: tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ") });
+    default:
+      return cardText(key, { nombre, ...extra });
   }
 }
