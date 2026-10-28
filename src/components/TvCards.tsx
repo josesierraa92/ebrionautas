@@ -156,7 +156,7 @@ export function TurnChip({ game, moving = false, rolling = false }: { game: Game
   const winner = game.players.find((p) => p.id === game.winner);
   const who = winner ?? (moving && roller ? roller : currentPlayer(game));
   return (
-    <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center gap-3 rounded-2xl border-[3px] border-ink bg-ink/85 py-2 pr-5 pl-2 text-white">
+    <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center gap-3 rounded-2xl border-[3px] border-ink bg-ink/85 py-2 pr-5 pl-2 text-white max-md:top-16 max-md:scale-90 max-md:origin-top-left">
       <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={60} character={characterOf(game.players, who.id)} />
       <div className="leading-tight">
         <p className="text-sm text-white/70">{winner ? "¡Ganador!" : "Turno de"}</p>
