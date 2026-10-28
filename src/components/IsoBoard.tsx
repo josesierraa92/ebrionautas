@@ -4,6 +4,7 @@ import { BOARD, type Tile } from "@/game/board";
 import type { Player } from "@/game/engine";
 import { ISO_VIEW, isoPos, isoSx as sx, isoSy as sy } from "@/game/isoPath";
 import type { PublishedBoard } from "@/game/publishedBoard";
+import { PLAYER_COLORS } from "@/game/tileStyle";
 import { usePublishedBoard } from "@/lib/usePublishedBoard";
 
 // Tablero isométrico de la TV. El tablero (terreno, casillas, decoración) es una imagen renderizada en 3D de
@@ -35,6 +36,8 @@ type Geometry = {
   /** El de serie pinta los números encima; el publicado ya los trae en la imagen. */
   numbers: boolean;
   bg?: string;
+  /** Tamaño de cada ficha propia respecto al zombi de serie, por color de jugador (PLAYER_COLORS). */
+  tokenScale?: (number | null)[];
   /** Zoom de la cámara al seguir una ficha (si falta, el que deja ver unas VISIBLE_CELLS casillas). */
   zoom?: number;
 };
@@ -59,6 +62,8 @@ function publishedGeometry(b: PublishedBoard): Geometry {
     cell: b.cell,
     numbers: false,
     bg: b.bg,
+    // solo cambia el tamaño de las fichas que el admin personalizó
+    tokenScale: (b.tokens ?? []).map((t, i) => (t ? (b.tokenScale?.[i] ?? 1) : null)),
   };
 }
 
@@ -107,7 +112,8 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
     const off = (i - (group.length - 1) / 2) * (group.length > 2 ? 0.24 : 0.32);
     const x = base.x + off * geo.cell;
     const y = base.y + 4 * k;
-    const size = (group.length > 3 ? 64 : 86) * k;
+    const mul = geo.tokenScale?.[PLAYER_COLORS.indexOf(avatarOf(p).skin.toLowerCase())] ?? 1;
+    const size = (group.length > 3 ? 64 : 86) * k * mul;
     const isCurrent = p.id === current && !winner;
     const isFlying = p.id === flying;
     standing.push({

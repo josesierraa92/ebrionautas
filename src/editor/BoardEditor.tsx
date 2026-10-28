@@ -33,8 +33,11 @@ import {
 } from "./layout";
 import { EditorScene, type GizmoMode, type Tool } from "./scene";
 
-type CatalogModel = { id: string; kit: string; name: string; file: string; thumb: string };
-type Catalog = { kits: { id: string; label: string; scale: number }[]; models: CatalogModel[] };
+import type { Catalog, CatalogModel } from "./catalogTypes";
+import { loadModelScene, renderToken } from "./modelRender";
+import { nameFromFile, uploadModel, type CustomModel } from "./modelUpload";
+import TokensDialog from "./TokensDialog";
+import { PLAYER_COLORS } from "@/game/tileStyle";
 
 const DRAFT_KEY = "ebrio-editor:borrador";
 const ADMIN_KEY = "ebrio-editor:clave";
@@ -63,13 +66,14 @@ function readDraft(): BoardLayout | null {
   }
 }
 
+const toCatalogModel = (m: CustomModel): CatalogModel => ({ id: m.id, kit: "mios", name: m.name, file: m.url, thumb: m.thumb, scale: m.scale });
+
 const deg = (r: number) => Math.round((r * 180) / Math.PI);
 const rad = (d: number) => (d * Math.PI) / 180;
 
 export default function BoardEditor() {
   const viewRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<EditorScene | null>(null);
-  const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [layout, setLayoutState] = useState<BoardLayout>(() => newLayout());
   const layoutRef = useRef(layout);
   const history = useRef(new History<BoardLayout>());
@@ -96,9 +100,24 @@ export default function BoardEditor() {
   const [, setTick] = useState(0); // para refrescar los botones de deshacer
   const [size, setSize] = useState({ w: layout.w, h: layout.h });
 
+  // el catálogo de serie (public/models/catalog.json) más los modelos propios que el admin subió
+  const [custom, setCustom] = useState<CatalogModel[]>([]);
+  const [uploadMode, setUploadMode] = useState<"blob" | "dev">("blob");
+  const [tokensOpen, setTokensOpen] = useState(false);
+  const [baseCatalog, setCatalog] = useState<Catalog | null>(null);
+  const catalog = useMemo<Catalog | null>(
+    () =>
+      baseCatalog && {
+        kits: [...baseCatalog.kits, { id: "mios", label: "Mis modelos", scale: 1 }],
+        models: [...custom, ...baseCatalog.models],
+      },
+    [baseCatalog, custom],
+  );
   const catalogRef = useRef(catalog);
   catalogRef.current = catalog;
   const models = useMemo(() => new Map(catalog?.models.map((m) => [m.id, m]) ?? []), [catalog]);
+  const modelsRef = useRef(models);
+  modelsRef.current = models;
 
   // ---------------------------------------------------------------- cambios del diseño
 
@@ -136,7 +155,7 @@ export default function BoardEditor() {
 
   const addObject = useCallback(
     async (model: string, x: number, y: number, z: number, select: boolean) => {
-      const kitScale = catalogRef.current?.kits.find((k) => model.startsWith(k.id + "/"))?.scale ?? 1;
+      const kitScale = catalogRef.current?.models.find((m) => m.id === model)?.scale ?? catalogRef.current?.kits.find((k) => model.startsWith(k.id + "/"))?.scale ?? 1;
       // giro al azar: con Ajustar, de 90° en 90° para que siga alineado con la rejilla
       const turn = randomTurn && !select ? (snap ? Math.floor(Math.random() * 4) * (Math.PI / 2) : Math.random() * Math.PI * 2) : 0;
       let o: PlacedObject = { id: newObjectId(), model, x, y, z, rx: 0, ry: turn, rz: 0, s: kitScale };
@@ -203,14 +222,23 @@ export default function BoardEditor() {
       .then((r) => r.json())
       .then((c: Catalog) => setCatalog(c))
       .catch(() => setStatus("No se pudo cargar el catálogo de modelos."));
+    // modelos propios (si falla no pasa nada: solo faltan "Mis modelos")
+    fetch("/api/models", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((b: { models: CustomModel[]; mode: "blob" | "dev" }) => {
+        setCustom(b.models.map(toCatalogModel));
+        setUploadMode(b.mode);
+      })
+      .catch(() => undefined);
   }, []);
 
   // las herramientas que usan los callbacks de la escena se leen de refs (la escena se crea una vez)
+  const catalogReady = !!baseCatalog;
   const toolRef = useRef({ tool, ground, brushSize, stampModel, addObject });
   toolRef.current = { tool, ground, brushSize, stampModel, addObject };
 
   useEffect(() => {
-    if (!catalog || !viewRef.current) return;
+    if (!catalogReady || !viewRef.current) return;
     const scene = new EditorScene(viewRef.current, {
       onStroke: (x, y, phase) => {
         const t = toolRef.current;
@@ -251,7 +279,7 @@ export default function BoardEditor() {
         if (t.stampModel) t.addObject(t.stampModel, x, y, z, false);
       },
     });
-    scene.modelUrl = (id) => models.get(id)?.file;
+    scene.modelUrl = (id) => modelsRef.current.get(id)?.file;
     sceneRef.current = scene;
     const draft = readDraft();
     if (draft) setLayout(draft);
@@ -261,7 +289,7 @@ export default function BoardEditor() {
       scene.dispose();
       sceneRef.current = null;
     };
-  }, [catalog, models, commit, setLayout]);
+  }, [catalogReady, commit, setLayout]);
 
   useEffect(() => {
     sceneRef.current?.setLayout(layout);
@@ -278,11 +306,11 @@ export default function BoardEditor() {
     return () => clearTimeout(t);
   }, [layout]);
 
-  useEffect(() => sceneRef.current?.setTool(tool), [tool, catalog]);
-  useEffect(() => sceneRef.current?.setBrushSize(brushSize), [brushSize, catalog]);
-  useEffect(() => sceneRef.current?.setGizmoMode(gizmo), [gizmo, catalog]);
-  useEffect(() => sceneRef.current?.setSnap(snap), [snap, catalog]);
-  useEffect(() => sceneRef.current?.setGrid(grid), [grid, catalog]);
+  useEffect(() => sceneRef.current?.setTool(tool), [tool, catalogReady]);
+  useEffect(() => sceneRef.current?.setBrushSize(brushSize), [brushSize, catalogReady]);
+  useEffect(() => sceneRef.current?.setGizmoMode(gizmo), [gizmo, catalogReady]);
+  useEffect(() => sceneRef.current?.setSnap(snap), [snap, catalogReady]);
+  useEffect(() => sceneRef.current?.setGrid(grid), [grid, catalogReady]);
 
   // ---------------------------------------------------------------- teclado
 
@@ -357,6 +385,33 @@ export default function BoardEditor() {
     }
   };
 
+  /** Sube un modelo .glb propio y lo deja en "Mis modelos". */
+  const onUploadModel = async (file: File | undefined) => {
+    if (!file) return;
+    const name = window.prompt("¿Cómo se llama este modelo?", nameFromFile(file));
+    if (!name) return;
+    try {
+      const m = await uploadModel(file, name, adminKey() ?? "", uploadMode, setStatus);
+      setCustom((list) => [toCatalogModel(m), ...list]);
+      setKit("mios");
+      setStatus(`«${m.name}» ya está en Mis modelos.`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "No se pudo subir el modelo.";
+      if (/clave/i.test(msg)) localStorage.removeItem(ADMIN_KEY);
+      setStatus(msg);
+    }
+  };
+
+  const onDeleteModel = async (m: CatalogModel) => {
+    const inUse = layoutRef.current.objects.filter((o) => o.model === m.id).length + layoutRef.current.tokens.filter((t) => t?.model === m.id).length;
+    if (!window.confirm(`¿Borrar «${m.name}»?${inUse ? ` Se usa ${inUse} ${inUse === 1 ? "vez" : "veces"} en tu tablero y dejará de verse.` : ""}`)) return;
+    const res = await fetch(`/api/admin/models?id=${encodeURIComponent(m.id)}`, { method: "DELETE", headers: { "x-admin-key": adminKey() ?? "" } });
+    if (res.status === 401) localStorage.removeItem(ADMIN_KEY);
+    if (!res.ok) return setStatus((await res.json().catch(() => ({}))).error ?? "No se pudo borrar.");
+    setCustom((list) => list.filter((x) => x.id !== m.id));
+    setStatus(`«${m.name}» borrado.`);
+  };
+
   /** Renderiza el tablero con la cámara de la TV y lo publica: desde entonces las mesas lo usan. */
   const publish = async () => {
     const l = layoutRef.current;
@@ -370,12 +425,19 @@ export default function BoardEditor() {
     try {
       setStatus("Renderizando el tablero…");
       const shot = await scene.renderForTV();
+      // fichas propias: cada una se dibuja con la cámara de la TV (las que no se cambiaron van null: zombi de serie)
+      const tokens: (string | null)[] = [];
+      for (const [i, t] of l.tokens.entries()) {
+        const file = t && modelsRef.current.get(t.model)?.file;
+        tokens.push(t && file ? renderToken(await loadModelScene(file), t, PLAYER_COLORS[i]) : null);
+      }
+      const tokenScale = l.tokens.map((t) => t?.size ?? 1);
       setStatus("Subiendo…");
       const key = adminKey() ?? "";
       const res = await fetch("/api/admin/publish", {
         method: "POST",
         headers: { "content-type": "application/json", "x-admin-key": key },
-        body: JSON.stringify(shot),
+        body: JSON.stringify({ ...shot, tokens, tokenScale }),
       });
       const body = await res.json().catch(() => ({}));
       if (res.status === 401) localStorage.removeItem(ADMIN_KEY);
@@ -544,6 +606,9 @@ export default function BoardEditor() {
           )}
         </label>
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <button className={`${btn} ${layout.tokens.some(Boolean) ? on : off}`} onClick={() => setTokensOpen(true)} title="Elegir el modelo de cada ficha de jugador">
+            🧟 Fichas
+          </button>
           <button
             className={`${btn} ${off}`}
             onClick={() => window.confirm("¿Empezar un tablero vacío? Se puede deshacer.") && commit({ ...newLayout(layout.w, layout.h), light: layout.light })}
@@ -754,6 +819,18 @@ export default function BoardEditor() {
                 </button>
               ))}
             </div>
+            <label className={`${btn} ${off} cursor-pointer text-center text-xs`} title="Sube un modelo .glb tuyo (Poly Pizza, Kenney, Sketchfab…)">
+              ⬆ Subir modelo (.glb)
+              <input
+                type="file"
+                accept=".glb,model/gltf-binary"
+                className="hidden"
+                onChange={(e) => {
+                  void onUploadModel(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
+            </label>
             <input
               placeholder="Buscar (tree, grave, rock…)"
               className="rounded-md bg-white/10 px-2 py-1.5 text-sm"
@@ -762,9 +839,11 @@ export default function BoardEditor() {
             />
           </div>
           <div className="grid flex-1 grid-cols-3 content-start gap-1.5 overflow-y-auto px-3 pb-3">
+            {kit === "mios" && visible.length === 0 && <p className="col-span-3 text-xs opacity-60">Aún no has subido modelos. Usa el botón «Subir modelo (.glb)».</p>}
             {visible.map((m) => (
+              <div key={m.id} className="group relative">
               <button
-                key={m.id}
+                className={`w-full rounded-lg bg-white/5 p-1 hover:bg-white/15 ${stampModel === m.id ? "ring-2 ring-amber-400" : ""}`}
                 draggable
                 onDragStart={(e) => e.dataTransfer.setData("text/x-model", m.id)}
                 onClick={() => {
@@ -772,15 +851,25 @@ export default function BoardEditor() {
                   setTool("stamp");
                 }}
                 title={m.name}
-                className={`rounded-lg bg-white/5 p-1 hover:bg-white/15 ${stampModel === m.id ? "ring-2 ring-amber-400" : ""}`}
               >
                 <img src={m.thumb} alt={m.name} loading="lazy" draggable={false} className="aspect-square w-full" />
                 <span className="block truncate text-[10px] opacity-70">{m.name}</span>
               </button>
+              {m.kit === "mios" && (
+                <button
+                  className="absolute top-0.5 right-0.5 hidden h-5 w-5 rounded-full bg-red-500/90 text-xs leading-5 group-hover:block"
+                  title="Borrar este modelo"
+                  onClick={() => void onDeleteModel(m)}
+                >
+                  ×
+                </button>
+              )}
+              </div>
             ))}
           </div>
         </aside>
       </div>
+      {tokensOpen && catalog && <TokensDialog layout={layout} catalog={catalog} onChange={commit} onClose={() => setTokensOpen(false)} />}
     </div>
   );
 }

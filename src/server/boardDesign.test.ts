@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { newLayout } from "@/editor/layout";
-import { checkAdmin, loadDesign, loadDevImage, loadPublished, publishBoard, saveDesign, unpublishBoard } from "./boardDesign";
+import { checkAdmin, loadDesign, loadDevImage, loadDevToken, loadPublished, publishBoard, saveDesign, unpublishBoard } from "./boardDesign";
 import { resetMemoryStore } from "./store";
 
 describe("diseño del tablero en el servidor", () => {
@@ -46,6 +46,22 @@ describe("diseño del tablero en el servidor", () => {
     expect((await loadDevImage())?.toString("ascii", 0, 4)).toBe("RIFF");
     await unpublishBoard();
     expect(await loadPublished()).toBeNull();
+  });
+
+  it("publica las fichas propias y deja null las que no se cambiaron", async () => {
+    vi.stubEnv("BLOB_READ_WRITE_TOKEN", "");
+    const tiles = Array.from({ length: 62 }, (_, i) => ({ x: i * 10, y: 50 }));
+    const webp = "data:image/webp;base64,UklGRg==";
+    const shot = { image: webp, width: 1000, height: 800, cell: 40, bg: "#112233", tiles, tokens: [null, webp, null, null, null, null, null, null], tokenScale: [1, 9, 1, 1, 1, 1, 1, 1] };
+    const b = await publishBoard(shot);
+    expect(b.tokens?.[0]).toBeNull();
+    expect(b.tokens?.[1]).toMatch(/^\/api\/board\/token\/1\?v=/);
+    expect((await loadDevToken(1))?.toString("ascii", 0, 4)).toBe("RIFF");
+    expect(b.tokenScale?.[1]).toBe(2.5);
+    expect(await loadDevToken(0)).toBeNull();
+    // sin fichas propias no se guarda la lista
+    expect((await publishBoard({ ...shot, tokens: undefined })).tokens).toBeUndefined();
+    await expect(publishBoard({ ...shot, tokens: ["javascript:1"] })).rejects.toThrow("ficha 1");
   });
 
   it("no publica sin las 62 casillas ni con una imagen rara", async () => {

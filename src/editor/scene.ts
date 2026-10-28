@@ -1033,7 +1033,8 @@ export class EditorScene {
     this.renderer.render(this.scene, cam);
     let image = this.renderer.domElement.toDataURL("image/webp", 0.85);
     // el servidor acepta hasta ~4 MB: si pesa más, se baja la calidad
-    for (const q of [0.75, 0.6]) if (image.length > 4_000_000) image = this.renderer.domElement.toDataURL("image/webp", q);
+    // la petición lleva también las fichas y Vercel admite ~4,5 MB: el tablero debe quedar por debajo de ~3,3 MB
+    for (const q of [0.75, 0.62, 0.5, 0.4]) if (image.length > 3_300_000) image = this.renderer.domElement.toDataURL("image/webp", q);
     this.renderer.setPixelRatio(ratio);
     for (const o of hidden) o.visible = true;
     this.resize();

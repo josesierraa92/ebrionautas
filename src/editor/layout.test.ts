@@ -138,6 +138,21 @@ describe("neblina", () => {
   });
 });
 
+describe("fichas de los jugadores", () => {
+  it("son 8, vacías por defecto, y se validan", () => {
+    const base = newLayout(10, 8);
+    expect(base.tokens).toHaveLength(8);
+    expect(base.tokens.every((t) => t === null)).toBe(true);
+    const tokens = [{ model: "mios/robot", size: 9, turn: -90, base: false }, { model: "../x" }, null, "hola"];
+    const l = parseLayout({ ...base, tokens });
+    expect(l?.tokens).toHaveLength(8);
+    expect(l?.tokens[0]).toEqual({ model: "mios/robot", size: 2.5, turn: 270, base: false });
+    expect(l?.tokens.slice(1).every((t) => t === null)).toBe(true);
+    expect(parseLayout({ ...base, tokens: undefined })?.tokens).toHaveLength(8);
+    expect(resize({ ...base, tokens: l!.tokens }, 20, 12).tokens).toEqual(l!.tokens);
+  });
+});
+
 describe("deshacer", () => {
   it("deshace y rehace en orden", () => {
     const h = new History<number>();

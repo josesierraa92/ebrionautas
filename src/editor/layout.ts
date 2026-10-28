@@ -91,9 +91,20 @@ export type BoardLayout = {
   tileStyles: Partial<Record<TileType, TileLook>>;
   /** Aspecto de los números de las casillas. */
   numbers: NumberStyle;
+  /** Modelo de cada una de las 8 fichas (null = el zombi de serie). */
+  tokens: (TokenSpec | null)[];
 };
 
 export type Cell = { x: number; y: number };
+
+/**
+ * Modelo de una ficha de jugador (una por color de PLAYER_COLORS). Si falta, la TV usa el zombi de serie.
+ * `base` pone una peana del color del jugador (los modelos propios no tienen camisa de color para distinguirlos).
+ */
+export type TokenSpec = { model: string; size: number; turn: number; base: boolean };
+export const TOKEN_COUNT = 8;
+export const TOKEN_SIZE = { min: 0.4, max: 2.5 };
+export const DEFAULT_TOKEN: Omit<TokenSpec, "model"> = { size: 1.4, turn: 0, base: true };
 
 /** Tipos de letra para los números de las casillas (fuentes de Google ya incluidas en la app o en el editor). */
 export const NUMBER_FONTS = {
@@ -165,6 +176,7 @@ export function newLayout(w = 32, h = 24): BoardLayout {
     tiles: [],
     tileStyles: {},
     numbers: DEFAULT_NUMBERS,
+    tokens: Array<TokenSpec | null>(TOKEN_COUNT).fill(null),
   };
 }
 
@@ -222,7 +234,7 @@ export function resize(l: BoardLayout, w: number, h: number): BoardLayout {
       out.ground[y * w + x] = l.ground[cellIndex(l, x, y)];
       out.height[y * w + x] = l.height[cellIndex(l, x, y)];
     }
-  return { ...out, light: l.light, shadow: l.shadow, mist: l.mist, tileStyles: l.tileStyles, numbers: l.numbers, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
+  return { ...out, light: l.light, shadow: l.shadow, mist: l.mist, tileStyles: l.tileStyles, numbers: l.numbers, tokens: l.tokens, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
 }
 
 /** Altura (en unidades del mundo) de la superficie de una celda. Los líquidos quedan un poco hundidos. */
@@ -315,7 +327,17 @@ export function parseLayout(raw: unknown): BoardLayout | null {
     font: typeof n.font === "string" && n.font in NUMBER_FONTS ? (n.font as NumberFont) : DEFAULT_NUMBERS.font,
     pos: typeof n.pos === "string" && n.pos in NUMBER_POSITIONS ? (n.pos as NumberPosition) : DEFAULT_NUMBERS.pos,
   };
-  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers };
+  const tokens: (TokenSpec | null)[] = Array.from({ length: TOKEN_COUNT }, (_, i) => {
+    const t = (Array.isArray(r.tokens) ? r.tokens[i] : null) as Record<string, unknown> | null;
+    if (!t || typeof t !== "object" || typeof t.model !== "string" || !/^[\w-]+\/[\w.-]+$/.test(t.model)) return null;
+    return {
+      model: t.model,
+      size: Math.max(TOKEN_SIZE.min, Math.min(TOKEN_SIZE.max, num(t.size, DEFAULT_TOKEN.size))),
+      turn: ((Math.round(num(t.turn, 0)) % 360) + 360) % 360,
+      base: typeof t.base === "boolean" ? t.base : DEFAULT_TOKEN.base,
+    };
+  });
+  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers, tokens };
 }
 
 /** Un emoji/texto corto o una imagen pequeña subida desde el editor. */

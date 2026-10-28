@@ -1,6 +1,6 @@
 import { useId } from "react";
 import type { AvatarConfig, Expression } from "@/game/avatar";
-import { alienArt } from "@/game/tileStyle";
+import { useTokenArt } from "@/lib/usePublishedBoard";
 
 const INK = "#1b1f4b";
 const BODY = "M50 14 C77 14 88 40 88 66 C88 90 72 100 50 100 C28 100 12 90 12 66 C12 40 23 14 50 14 Z";
@@ -23,7 +23,7 @@ export default function Marciano({ avatar, expression = "normal", size = 64, cla
   const clip = `body-${useId().replace(/:/g, "")}`;
   const dark = shade(avatar.skin, -0.25);
   const { costume } = avatar;
-  const art = alienArt(avatar.skin);
+  const art = useTokenArt(avatar.skin);
 
   // Los colores de jugador tienen su marciano 3D; el dibujo en SVG queda para cualquier otro color.
   if (art) {

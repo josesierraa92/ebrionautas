@@ -111,7 +111,15 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   (`NUMBER_FONTS`; las extra se cargan en `src/editor/fonts.ts` con next/font, que no admite `...` en las opciones)
   y posición (abajo/arriba/izquierda/derecha/centro, tal como se ve en pantalla). El color del icono y del número es
   el mismo y se elige por tipo (`iconColor`).
-- Pendiente: fase 3 (subir modelos propios y elegir el modelo de cada zombi).
+- Fase 3 (hecha): **modelos propios** y **fichas**. «⬆ Subir modelo (.glb)» (catálogo, pestaña «Mis modelos»):
+  `modelUpload.ts` dibuja la miniatura, calcula la escala (lado mayor ≈ 2 casillas), sube el .glb directo a Vercel Blob
+  (`/api/admin/models/upload`, `handleUpload`; sin Blob, en desarrollo, `PUT /api/admin/models/dev` lo guarda en el
+  almacén) y lo apunta en Redis (`src/server/customModels.ts`, `GET /api/models`). Los ids son `mios/<nombre>-xxxx`.
+  «🧟 Fichas» (`TokensDialog.tsx`): `tokens` del layout, un `TokenSpec` (modelo, giro, tamaño en la TV, peana del color
+  del jugador) por cada color de `PLAYER_COLORS`; al publicar, `modelRender.ts` dibuja cada ficha con la cámara de la
+  TV (imagen 252×408, pies abajo) y se suben a Blob (`tokens` y `tokenScale` de `PublishedBoard`). La TV las lee con
+  `useTokenArt` (`usePublishedBoard.ts`), que usa `Marciano`; `IsoBoard` aplica `tokenScale`. Las fichas sin cambiar
+  siguen siendo el zombi de serie. La petición de publicar lleva todo junto: el tablero se limita a ~3,3 MB.
 - Datos: `src/editor/layout.ts` (formato `BoardLayout`, funciones puras con tests), `history.ts` (deshacer),
   `scene.ts` (Three.js: dibuja el diseño y recoge el ratón), `BoardEditor.tsx` (la interfaz).
 - Se guarda en Redis (`src/server/boardDesign.ts`, API `src/app/api/admin/board`). Guardar pide la clave

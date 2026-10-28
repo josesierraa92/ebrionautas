@@ -10,6 +10,8 @@ const KEY = "board:design";
 const PUBLISHED_KEY = "board:published";
 /** Solo en desarrollo, sin Vercel Blob: la imagen se guarda en el almacén y la sirve /api/board/image. */
 const IMAGE_KEY = "board:image";
+const TOKEN_KEY = (i: number) => `board:token:${i}`;
+const MAX_TOKEN_BYTES = 450_000;
 const TEN_YEARS = 10 * 365 * 24 * 3600;
 const MAX_BYTES = 900_000; // Upstash acepta peticiones de hasta 1 MB
 
@@ -56,6 +58,12 @@ export async function loadPublished(): Promise<PublishedBoard | null> {
   }
 }
 
+/** Imagen de una ficha guardada en el almacén (solo desarrollo). */
+export async function loadDevToken(i: number): Promise<Buffer | null> {
+  const raw = Number.isInteger(i) && i >= 0 && i < 8 ? await getStore().get(TOKEN_KEY(i)) : null;
+  return raw ? Buffer.from(raw, "base64") : null;
+}
+
 /** Imagen guardada en el almacén (solo desarrollo). */
 export async function loadDevImage(): Promise<Buffer | null> {
   const raw = await getStore().get(IMAGE_KEY);
@@ -84,7 +92,29 @@ export async function publishBoard(raw: Record<string, unknown>): Promise<Publis
   } else {
     throw new RoomError("Falta conectar Vercel Blob (BLOB_READ_WRITE_TOKEN) para guardar la imagen del tablero.", 503);
   }
-  const board: PublishedBoard = { ...data, version, image };
+  // fichas propias: una imagen por color de jugador (o null para dejar el zombi de serie)
+  const tokens: (string | null)[] = [];
+  for (let i = 0; i < 8; i++) {
+    const t = Array.isArray(raw.tokens) ? raw.tokens[i] : null;
+    if (t === null || t === undefined) {
+      tokens.push(null);
+      continue;
+    }
+    const tm = typeof t === "string" ? /^data:image\/webp;base64,([A-Za-z0-9+/=]+)$/.exec(t) : null;
+    if (!tm) throw new RoomError(`La imagen de la ficha ${i + 1} no es válida.`);
+    const tb = Buffer.from(tm[1], "base64");
+    if (tb.length > MAX_TOKEN_BYTES) throw new RoomError(`La imagen de la ficha ${i + 1} es demasiado grande.`, 413);
+    if (process.env.BLOB_READ_WRITE_TOKEN) tokens.push((await put(`tablero/ficha-${i}-${version}.webp`, tb, { access: "public", contentType: "image/webp" })).url);
+    else {
+      await getStore().set(TOKEN_KEY(i), tm[1], TEN_YEARS);
+      tokens.push(`/api/board/token/${i}?v=${version}`);
+    }
+  }
+  const tokenScale = Array.from({ length: 8 }, (_, i) => {
+    const v = Array.isArray(raw.tokenScale) ? raw.tokenScale[i] : 1;
+    return typeof v === "number" && Number.isFinite(v) ? Math.min(2.5, Math.max(0.4, v)) : 1;
+  });
+  const board: PublishedBoard = { ...data, version, image, ...(tokens.some(Boolean) && { tokens, tokenScale }) };
   await getStore().set(PUBLISHED_KEY, JSON.stringify(board), TEN_YEARS);
   return board;
 }

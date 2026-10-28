@@ -15,6 +15,10 @@ export type PublishedBoard = {
   cell: number;
   /** Color de fondo (el cielo del render), para rellenar alrededor de la imagen. */
   bg: string;
+  /** Imagen de la ficha de cada color de jugador (PLAYER_COLORS); null = el zombi de serie. */
+  tokens?: (string | null)[];
+  /** Tamaño en pantalla de cada ficha propia respecto al zombi de serie (1 = igual). */
+  tokenScale?: number[];
 };
 
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
