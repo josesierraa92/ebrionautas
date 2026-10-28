@@ -122,9 +122,11 @@ export async function publishBoard(raw: Record<string, unknown>): Promise<Publis
     return typeof v === "number" && Number.isFinite(v) ? Math.min(2.5, Math.max(0.4, v)) : 1;
   });
   // la hoja de personajes la sube el navegador a Blob como la imagen grande: solo se aceptan esas direcciones
-  const { characters, ...rest } = data;
+  const { characters, chunks, ...rest } = data;
   const okSheet = characters && BLOB_IMAGE.test(characters.image);
-  const board: PublishedBoard = { ...rest, version, image, ...(okSheet && { characters }), ...(tokens.some(Boolean) && { tokens, tokenScale }) };
+  // los mosaicos en alta resolución, igual: solo si todos vienen de Blob y la imagen pequeña también
+  const okChunks = direct && chunks && chunks.urls.every((u) => BLOB_IMAGE.test(u));
+  const board: PublishedBoard = { ...rest, version, image, ...(okSheet && { characters }), ...(okChunks && { chunks }), ...(tokens.some(Boolean) && { tokens, tokenScale }) };
   await getStore().set(PUBLISHED_KEY, JSON.stringify(board), TEN_YEARS);
   return board;
 }

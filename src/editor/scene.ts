@@ -1224,12 +1224,25 @@ export class EditorScene {
    * cae cada casilla en la imagen, para poner encima las fichas.
    */
   /**
-   * Foto del tablero para la TV con la cámara de `tvView`. Con `asBlob`, a la resolución que hace falta para que la
-   * TV (acercada a `tvView.tiles` casillas) se vea con 1,2 píxeles de imagen por píxel en una TV de 1920 (como el tablero de serie), hasta 8192 px; se dibuja por trozos
-   * (el navegador no deja pintar WebGL tan grande de una vez) y se devuelve como archivo para subirlo a Blob. Sin
-   * `asBlob`, 2400 px en data URL (desarrollo, va dentro de la petición).
+   * Foto del tablero para la TV con la cámara de `tvView`.
+   *
+   * Con `hd` (producción), en **mosaicos** de 2048 px a la resolución que hace falta para que la TV, acercada a
+   * `tvView.tiles` casillas, se vea 1:1 en una pantalla de 3840 píxeles físicos (TV 4K o cualquier pantalla con escala
+   * de 200 %, como el editor, que dibuja a la densidad real de la pantalla), hasta 16 000 px. Cada mosaico se sube
+   * aparte y la TV solo descodifica los que enseña; además sale una imagen pequeña de todo (`overview`) que se ve
+   * mientras cargan. Sin `hd` (desarrollo, sin Blob): una sola imagen de 2400 px en data URL.
    */
-  async renderForTV(asBlob = false): Promise<{ image: string; blob?: Blob; width: number; height: number; tiles: { x: number; y: number }[]; cell: number; bg: string; zoom: number }> {
+  async renderForTV(hd = false, maxSize = 16000): Promise<{
+    image: string;
+    overview?: Blob;
+    chunks?: { size: number; cols: number; rows: number; blobs: Blob[] };
+    width: number;
+    height: number;
+    tiles: { x: number; y: number }[];
+    cell: number;
+    bg: string;
+    zoom: number;
+  }> {
     const l = this.layout;
     if (!l) throw new Error("No hay diseño");
     await Promise.all([...this.models.values(), this.needFont(l.numbers.font)]);
@@ -1277,8 +1290,8 @@ export class EditorScene {
     cam.updateProjectionMatrix();
     // píxeles por unidad del mundo: el rombo de una casilla mide TILE_SIZE·√2 unidades de ancho
     const tileW = TILE_SIZE * Math.SQRT2;
-    const MAX = 8192;
-    let ppu = asBlob ? 2304 / (tileW * l.tvView.tiles) : 2400 / (2 * hw);
+    const MAX = hd ? maxSize : 2400; // (maxSize: para pruebas con WebGL por software, que va lento)
+    let ppu = hd ? 3840 / (tileW * l.tvView.tiles) : 2400 / (2 * hw);
     ppu = Math.min(ppu, MAX / (2 * hw), MAX / (2 * hh));
     const width = Math.round(2 * hw * ppu);
     const height = Math.round(2 * hh * ppu);
@@ -1287,30 +1300,43 @@ export class EditorScene {
     for (const o of hidden) o.visible = false;
     const ratio = this.renderer.getPixelRatio();
     this.renderer.setPixelRatio(1);
-    // por trozos: cada uno con su parte de la cámara (setViewOffset) y pegado en un lienzo grande
-    const out = document.createElement("canvas");
-    out.width = width;
-    out.height = height;
-    const ctx = out.getContext("2d")!;
+    // por trozos (WebGL no deja pintar tan grande de una vez): cada uno con su parte de la cámara (setViewOffset)
     const gl = this.renderer.getContext();
     const vp = gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array;
     const chunk = Math.min(2048, vp[0], vp[1]);
-    for (let y = 0; y < height; y += chunk)
-      for (let x = 0; x < width; x += chunk) {
+    const cols = Math.ceil(width / chunk);
+    const rows = Math.ceil(height / chunk);
+    // imagen pequeña de todo: la de desarrollo, o la que se ve en la TV mientras cargan los mosaicos
+    const small = hd ? Math.min(1, 2400 / width) : 1;
+    const out = document.createElement("canvas");
+    out.width = Math.round(width * small);
+    out.height = Math.round(height * small);
+    const ctx = out.getContext("2d")!;
+    ctx.imageSmoothingQuality = "high";
+    const piece = document.createElement("canvas");
+    const blobs: Blob[] = [];
+    const toBlob = (c: HTMLCanvasElement, q: number) => new Promise<Blob>((ok, fail) => c.toBlob((b) => (b ? ok(b) : fail(new Error("sin imagen"))), "image/webp", q));
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++) {
+        const [x, y] = [c * chunk, r * chunk];
         const cw = Math.min(chunk, width - x);
         const ch = Math.min(chunk, height - y);
         cam.setViewOffset(width, height, x, y, cw, ch);
         this.renderer.setSize(cw, ch, false);
         this.renderer.render(this.scene, cam);
-        ctx.drawImage(this.renderer.domElement, x, y);
+        ctx.drawImage(this.renderer.domElement, x * small, y * small, cw * small, ch * small);
+        if (hd) {
+          piece.width = cw;
+          piece.height = ch;
+          piece.getContext("2d")!.drawImage(this.renderer.domElement, 0, 0);
+          blobs.push(await toBlob(piece, 0.92));
+        }
       }
     cam.clearViewOffset();
     let image = "";
-    let blob: Blob | undefined;
-    if (asBlob) {
-      // va directo a Vercel Blob (sin el límite de ~4,5 MB de las funciones), así que no se baja la calidad
-      blob = await new Promise<Blob>((ok, fail) => out.toBlob((b) => (b ? ok(b) : fail(new Error("sin imagen"))), "image/webp", 0.92));
-    } else {
+    let overview: Blob | undefined;
+    if (hd) overview = await toBlob(out, 0.85);
+    else {
       image = out.toDataURL("image/webp", 0.85);
       // la petición lleva también las fichas y Vercel admite ~4,5 MB: el tablero debe quedar por debajo de ~3,3 MB
       for (const q of [0.75, 0.62, 0.5, 0.4]) if (image.length > 3_300_000) image = out.toDataURL("image/webp", q);
@@ -1329,6 +1355,6 @@ export class EditorScene {
     const bg = "#" + (this.scene.background as THREE.Color).getHexString();
     // cuánto acerca la TV para que quepan tvView.tiles casillas a lo ancho
     const zoom = Math.max(1, width / (cell * l.tvView.tiles));
-    return { image, blob, width, height, tiles, cell, bg, zoom };
+    return { image, overview, ...(hd && { chunks: { size: chunk, cols, rows, blobs } }), width, height, tiles, cell, bg, zoom };
   }
 }

@@ -141,12 +141,16 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   serie 45°/45°/6, más cenital y cerca que la isométrica, pedido del usuario). «🎥 Usar esta vista en la TV» copia el
   ángulo y el acercamiento de la cámara del editor (`currentView`); «📺 Vista TV» la enseña (`resetView(true)`). Las
   fichas propias se dibujan con ese mismo ángulo (`renderToken(..., view)`).
-- Calidad en la TV: `renderForTV(true)` encuadra solo las casillas + 5 de margen y calcula la resolución para que la
-  TV acercada tenga ~1,2 px de imagen por px en una TV de 1920 (2304 px a lo ancho de lo visible, como el tablero de serie; máx. 8192 px), pintando por trozos de 2048 con `setViewOffset` (WebGL no deja
-  más de una vez) en un lienzo 2D; la imagen sube directo a Blob desde el navegador (`/api/admin/publish/upload`, sin
-  el límite de 4,5 MB). `PublishedBoard.zoom` le dice a `IsoBoard` cuánto acercar. Sin Blob (desarrollo) cae a
-  2400 px dentro de la petición (≤ ~3,3 MB). En desarrollo el editor deja la escena en `window.__editorScene` para
-  pruebas con Playwright.
+- Calidad en la TV (el usuario la vio "borrosa" frente al editor, que dibuja a la densidad real de la pantalla):
+  `renderForTV(true)` encuadra solo las casillas + 5 de margen y saca el tablero en **mosaicos** de 2048 px a la
+  resolución que hace falta para que la TV acercada se vea 1:1 en 3840 píxeles físicos (TV 4K o pantalla con escala de
+  200 %), hasta 16 000 px. Se pintan por trozos con `setViewOffset`; cada mosaico se sube aparte directo a Blob
+  (`/api/admin/publish/upload`) y se publica en `PublishedBoard.chunks`; `image` es entonces una versión de 2400 px
+  que se ve mientras cargan. `IsoBoard` coloca los mosaicos (solapados 1 px, sin costuras) y el navegador solo
+  descodifica los que se ven. Los zombis también van a doble resolución (hoja de 384×576 por dibujo). Sin Blob
+  (desarrollo) cae a una sola imagen de 2400 px dentro de la petición (≤ ~3,3 MB). `PublishedBoard.zoom` le dice a
+  `IsoBoard` cuánto acercar. En desarrollo el editor deja la escena en `window.__editorScene` y
+  `window.__renderCharacterSheet` para pruebas con Playwright.
 - Hasta **16 jugadores** (`PLAYER_COLORS` en `tileStyle.ts`: cada color tiene su imagen `public/art/alien/<i>.webp` con
   un accesorio distinto, `LOOKS` en `scripts/board3d/scene.ts`; el editor tiene una ficha por color). Para más,
   añadir colores y accesorios y volver a correr `node scripts/board3d/render.mjs` (restaurar con git los archivos que

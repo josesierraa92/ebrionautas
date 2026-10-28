@@ -50,6 +50,13 @@ describe("diseño del tablero en el servidor", () => {
     const blobUrl = "https://abc123.public.blob.vercel-storage.com/tablero/personajes-1-xyz.webp";
     expect((await publishBoard({ ...shot, characters: { ...sheet, image: blobUrl } })).characters).toEqual({ ...sheet, image: blobUrl });
     expect((await publishBoard({ ...shot, characters: { ...sheet, image: "javascript:alert(1)" } })).characters).toBeUndefined();
+    // mosaicos en alta resolución: solo con la imagen y todos los trozos en Blob, y que cuadren con el tamaño
+    const tile = (i: number) => `https://abc123.public.blob.vercel-storage.com/tablero/mosaico-1-${i}.webp`;
+    const hd = { ...shot, image: blobUrl, width: 5000, height: 3000, chunks: { size: 2048, cols: 3, rows: 2, urls: [0, 1, 2, 3, 4, 5].map(tile) } };
+    expect((await publishBoard(hd)).chunks?.urls).toHaveLength(6);
+    expect((await publishBoard({ ...hd, chunks: { ...hd.chunks, cols: 2 } })).chunks).toBeUndefined();
+    expect((await publishBoard({ ...hd, chunks: { ...hd.chunks, urls: [...hd.chunks.urls.slice(1), "https://malo.com/x.webp"] } })).chunks).toBeUndefined();
+    expect((await publishBoard({ ...shot, chunks: hd.chunks })).chunks).toBeUndefined();
     expect((await loadDevImage())?.toString("ascii", 0, 4)).toBe("RIFF");
     await unpublishBoard();
     expect(await loadPublished()).toBeNull();

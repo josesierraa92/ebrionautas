@@ -454,29 +454,47 @@ export default function BoardEditor() {
     const scene = sceneRef.current;
     if (!scene) return;
     try {
-      setStatus("Renderizando el tablero…");
-      // alta resolución (la TV acerca mucho): la imagen sube directo a Vercel Blob; sin Blob (desarrollo) se usa la
-      // versión pequeña que cabe en la petición
+      setStatus("Renderizando el tablero en alta resolución…");
+      // alta resolución en mosaicos que suben directo a Vercel Blob (la TV solo carga los que enseña); sin Blob
+      // (desarrollo) se usa una imagen pequeña que cabe en la petición
       const key = adminKey() ?? "";
-      let shot = await scene.renderForTV(true);
+      const send = (name: string, file: Blob) =>
+        upload(`tablero/${name}.webp`, file, { access: "public", contentType: "image/webp", handleUploadUrl: "/api/admin/publish/upload", clientPayload: key }).then((b) => b.url);
+      const hd = await scene.renderForTV(true);
+      const { overview, chunks: pieces, ...rest } = hd;
+      let shot: Omit<typeof hd, "overview" | "chunks"> = rest;
       let imageUrl: string | null = null;
+      let chunks: { size: number; cols: number; rows: number; urls: string[] } | null = null;
       try {
-        setStatus("Subiendo la imagen del tablero…");
-        const blob = await upload(`tablero/tablero-${Date.now()}.webp`, shot.blob!, { access: "public", contentType: "image/webp", handleUploadUrl: "/api/admin/publish/upload", clientPayload: key });
-        imageUrl = blob.url;
+        const v = Date.now();
+        imageUrl = await send(`tablero-${v}`, overview!);
+        const urls: string[] = new Array(pieces!.blobs.length);
+        let done = 0;
+        // de 4 en 4, para no saturar la conexión
+        for (let i = 0; i < pieces!.blobs.length; i += 4)
+          await Promise.all(
+            pieces!.blobs.slice(i, i + 4).map((file, j) =>
+              send(`mosaico-${v}-${i + j}`, file).then((url) => {
+                urls[i + j] = url;
+                setStatus(`Subiendo el tablero… ${++done}/${pieces!.blobs.length}`);
+              }),
+            ),
+          );
+        chunks = { size: pieces!.size, cols: pieces!.cols, rows: pieces!.rows, urls };
       } catch {
+        imageUrl = null;
+        chunks = null;
         shot = await scene.renderForTV();
       }
-      delete shot.blob;
-      // personajes zombi dibujados con el mismo ángulo que el tablero (sin Blob, la TV usa la hoja de serie)
+      // personajes zombi dibujados con el mismo ángulo que el tablero, a doble resolución (sin Blob, la TV usa la
+      // hoja de serie)
       let characters: CharacterSheet | null = null;
       if (imageUrl)
         try {
           setStatus("Dibujando a los zombis…");
-          const { canvas, feet, span } = await renderCharacterSheet(l.tvView);
+          const { canvas, feet, span } = await renderCharacterSheet(l.tvView, 384, 576);
           const file = await new Promise<Blob>((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error("sin imagen"))), "image/webp", 0.9));
-          const blob = await upload(`tablero/personajes-${Date.now()}.webp`, file, { access: "public", contentType: "image/webp", handleUploadUrl: "/api/admin/publish/upload", clientPayload: key });
-          characters = { image: blob.url, cw: canvas.width / SHEET_COLS, ch: canvas.height / CHARACTERS.length, feet, span };
+          characters = { image: await send(`personajes-${Date.now()}`, file), cw: canvas.width / SHEET_COLS, ch: canvas.height / CHARACTERS.length, feet, span };
         } catch {
           characters = null;
         }
@@ -491,7 +509,7 @@ export default function BoardEditor() {
       const res = await fetch("/api/admin/publish", {
         method: "POST",
         headers: { "content-type": "application/json", "x-admin-key": key },
-        body: JSON.stringify({ ...shot, ...(imageUrl && { image: imageUrl }), ...(characters && { characters }), characterScale: l.characterSize, tokens, tokenScale }),
+        body: JSON.stringify({ ...shot, ...(imageUrl && { image: imageUrl }), ...(chunks && { chunks }), ...(characters && { characters }), characterScale: l.characterSize, tokens, tokenScale }),
       });
       const body = await res.json().catch(() => ({}));
       if (res.status === 401) localStorage.removeItem(ADMIN_KEY);

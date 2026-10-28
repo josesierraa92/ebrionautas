@@ -26,6 +26,11 @@ export type PublishedBoard = {
   characters?: CharacterSheet;
   /** Tamaño de los personajes zombi elegido en el editor (1 = el de serie). */
   characterScale?: number;
+  /**
+   * El tablero en alta resolución, en mosaicos de `size`×`size` px (los del borde, más pequeños), fila a fila:
+   * `urls[fila * cols + columna]`. `image` es entonces una versión pequeña de todo que se ve mientras cargan.
+   */
+  chunks?: { size: number; cols: number; rows: number; urls: string[] };
 };
 
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -46,5 +51,12 @@ export function parsePublished(raw: unknown): Omit<PublishedBoard, "image" | "ve
   const zoom = finite(r.zoom) ? Math.min(12, Math.max(1, r.zoom)) : undefined;
   const characters = parseSheet(r.characters);
   const characterScale = finite(r.characterScale) ? Math.min(2, Math.max(0.5, r.characterScale)) : undefined;
-  return { width, height, cell, bg, tiles: tiles as { x: number; y: number }[], ...(zoom && { zoom }), ...(characters && { characters }), ...(characterScale && { characterScale }) };
+  const c = r.chunks as Record<string, unknown> | undefined;
+  const chunks =
+    c && finite(c.size) && finite(c.cols) && finite(c.rows) && Array.isArray(c.urls) && c.size >= 256 && c.size <= 4096 &&
+    c.cols * c.rows === c.urls.length && c.urls.length <= 256 && c.urls.every((u) => typeof u === "string") &&
+    c.cols === Math.ceil(width / c.size) && c.rows === Math.ceil(height / c.size)
+      ? { size: c.size, cols: c.cols, rows: c.rows, urls: c.urls as string[] }
+      : undefined;
+  return { width, height, cell, bg, tiles: tiles as { x: number; y: number }[], ...(zoom && { zoom }), ...(characters && { characters }), ...(characterScale && { characterScale }), ...(chunks && { chunks }) };
 }

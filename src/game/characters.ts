@@ -27,7 +27,7 @@ const POSES: Pose[] = ["idle", "walkA", "walkB"];
 export type CharacterSheet = { image: string; cw: number; ch: number; feet: number; span: number };
 
 /** La hoja de serie, dibujada con la cámara isométrica del tablero de serie (scripts/characters/sheet.mjs). */
-export const STOCK_SHEET: CharacterSheet = { image: "/art/zombis.webp", cw: 192, ch: 288, feet: 0.758, span: 1.714 };
+export const STOCK_SHEET: CharacterSheet = { image: "/art/zombis.webp", cw: 384, ch: 576, feet: 0.758, span: 1.714 };
 
 /** Valida una hoja publicada. */
 export function parseSheet(raw: unknown): CharacterSheet | undefined {

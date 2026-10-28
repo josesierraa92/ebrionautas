@@ -15,7 +15,7 @@ const page = await browser.newPage();
 await page.goto(base + "/admin/editor");
 await page.waitForFunction(() => window.__renderCharacterSheet, null, { timeout: 180000 });
 const r = await page.evaluate(async () => {
-  const { canvas, feet, span } = await window.__renderCharacterSheet({ az: 45, el: 30, tiles: 9 });
+  const { canvas, feet, span } = await window.__renderCharacterSheet({ az: 45, el: 30, tiles: 9 }, 384, 576); // doble resolución: nítidos en pantallas con escala
   const blob = await new Promise((ok) => canvas.toBlob(ok, "image/webp", 0.9));
   const buf = new Uint8Array(await blob.arrayBuffer());
   let bin = "";

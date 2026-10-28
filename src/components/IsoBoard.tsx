@@ -45,6 +45,8 @@ type Geometry = {
   sheet: CharacterSheet;
   /** Tamaño de los personajes zombi (el elegido en el editor; 1 = el de serie). */
   characterScale: number;
+  /** El tablero en alta resolución, en mosaicos (si no, solo `image`). */
+  chunks?: PublishedBoard["chunks"];
   /** Zoom de la cámara al seguir una ficha (si falta, el que deja ver unas VISIBLE_CELLS casillas). */
   zoom?: number;
 };
@@ -76,6 +78,7 @@ function publishedGeometry(b: PublishedBoard): Geometry {
     zoom: b.zoom, // el acercamiento de la vista elegida en el editor
     sheet: b.characters ?? STOCK_SHEET, // dibujados con el mismo ángulo que el tablero
     characterScale: b.characterScale ?? 1,
+    chunks: b.chunks,
   };
 }
 
@@ -190,6 +193,26 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
         >
           {/* terreno, casillas y decoración: render 3D hecho de antemano */}
           <img src={geo.image} alt="" draggable={false} decoding="async" className="absolute inset-0 h-full w-full max-w-none select-none" />
+          {/* en alta resolución: los mosaicos encima de la imagen pequeña (que se ve mientras cargan). Cada uno se
+              solapa 1 px con el siguiente para que no se vean costuras */}
+          {geo.chunks?.urls.map((url, i) => {
+            const { size, cols } = geo.chunks!;
+            const [x, y] = [(i % cols) * size, Math.floor(i / cols) * size];
+            const [w, h] = [Math.min(size, view.w - x), Math.min(size, view.h - y)];
+            const left = Math.floor(x * s);
+            const top = Math.floor(y * s);
+            return (
+              <img
+                key={url}
+                src={url}
+                alt=""
+                draggable={false}
+                decoding="async"
+                className="absolute max-w-none select-none"
+                style={{ left, top, width: Math.ceil((x + w) * s) - left + 1, height: Math.ceil((y + h) * s) - top + 1 }}
+              />
+            );
+          })}
           {geo.numbers && (
             <svg viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} width={cw} height={ch} className="pointer-events-none absolute inset-0">
               {BOARD.filter((t) => t.type !== "META").map((tile) => (
