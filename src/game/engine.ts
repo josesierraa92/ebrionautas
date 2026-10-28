@@ -54,6 +54,8 @@ export type GameState = {
   slave: { master: string; slave: string } | null;
   lastRoll: number | null;
   lastRoller?: string | null; // id de quien hizo la última tirada
+  /** Vasos del último trago de regalo (1 a 3, al azar): la tarjeta de la casilla los enseña. */
+  giftAmount?: number | null;
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
   /** Último duelo resuelto (los dados se tiran en el servidor): la TV y el celular enseñan el resultado. */
@@ -241,8 +243,13 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       return endTurn(s);
 
     case "A_BEBER":
-      log(s, `🥃 Ronda de mezcal: ${p.name} reparte ${tile.amount} ${vasos(tile.amount)}.`);
-      return decide(s, { kind: "DISTRIBUTE", amount: tile.amount });
+    {
+      // trago de regalo: de 1 a 3 vasos, al azar (el número de la casilla ya no cuenta)
+      const amount = 1 + Math.floor(rng() * 3);
+      s.giftAmount = amount;
+      log(s, `🥃 Trago de regalo: ${p.name} reparte ${amount} ${vasos(amount)}.`);
+      return decide(s, { kind: "DISTRIBUTE", amount });
+    }
 
     case "DUELO":
       if (others.length === 0) return endTurn(s);

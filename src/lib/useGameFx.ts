@@ -6,6 +6,7 @@ import { getTile, type Tile } from "@/game/board";
 import { duelOutcome, jailOutcome, mazeOutcome, tileRule } from "@/game/rules";
 import { DEFAULT_ICON, type IconName } from "@/editor/icons";
 import { sfx } from "./sfx";
+import { useCardTexts } from "./useCardTexts";
 
 // Tiempos de las animaciones: tranquilos y fluidos (el usuario los vio "súper rápidos" con 450/140/450/1200 ms).
 // IsoBoard usa los mismos para que la ficha llegue a cada casilla justo cuando empieza el siguiente paso.
@@ -59,6 +60,7 @@ export function stepPath(from: number, roll: number): number[] {
  * grandes de cada casilla y los sonidos.
  */
 export function useGameFx(game: GameState | null) {
+  useCardTexts(); // los títulos propios de las tarjetas deben estar cargados antes del primer título grande
   const [shown, setShown] = useState<Record<string, number>>({});
   const [flying, setFlying] = useState<string | null>(null);
   const [dice, setDice] = useState<DiceFx | null>(null);

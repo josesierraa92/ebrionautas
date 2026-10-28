@@ -3,7 +3,7 @@ import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { getTile } from "@/game/board";
 import { currentPlayer, type Decision, type GameState } from "@/game/engine";
-import { cardKeyOf, hasCardOverride } from "@/game/cards";
+import { cardKeyOf, cardTitle, hasCardOverride } from "@/game/cards";
 import { tileRule } from "@/game/rules";
 import { useCardTexts } from "@/lib/useCardTexts";
 import GameCard from "@/components/GameCard";
@@ -15,19 +15,19 @@ import type { Landed } from "@/lib/useGameFx";
 export function decisionText(decision: Decision, name: string): [string, string] {
   switch (decision.kind) {
     case "DISTRIBUTE":
-      return ["Ronda de mezcal", `${name} reparte ${decision.amount} ${decision.amount === 1 ? "vaso" : "vasos"} entre quien quiera.`];
+      return [cardTitle("A_BEBER"), `${name} reparte ${decision.amount} ${decision.amount === 1 ? "vaso" : "vasos"} entre quien quiera.`];
     case "DUEL":
-      return ["Duelo de calaveras", `${name} reta hasta a ${decision.amount} ${decision.amount === 1 ? "rival" : "rivales"}. Quien saque menos, bebe.`];
+      return [cardTitle("DUELO"), `${name} reta hasta a ${decision.amount} ${decision.amount === 1 ? "rival" : "rivales"}. Quien saque menos, bebe.`];
     case "DUEL_ROLL":
-      return ["Duelo de calaveras", `${name} y su rival tiran el dado: quien saque menos, bebe.`];
+      return [cardTitle("DUELO"), `${name} y su rival tiran el dado: quien saque menos, bebe.`];
     case "SELECT_DRINKERS":
       return [decision.title, decision.text];
     case "PATINAZO":
-      return ["¡Tropiezo con la lápida!", `${name}: bebe ${decision.drinks} de golpe o rueda hasta la casilla ${decision.backTo}.`];
+      return [cardTitle("PATINAZO"), `${name}: bebe ${decision.drinks} de golpe o rueda hasta la casilla ${decision.backTo}.`];
     case "RULE":
-      return ["Ley del Más Allá", `${name} dicta una ley para todos. Quien la rompa, bebe.`];
+      return [cardTitle("REGLA"), `${name} dicta una ley para todos. Quien la rompa, bebe.`];
     case "SLAVE":
-      return ["Pacto de Sangre", `${name} elige con quién hace el pacto: beberá cada vez que ${name} beba.`];
+      return [cardTitle("ESCLAVO"), `${name} elige con quién hace el pacto: beberá cada vez que ${name} beba.`];
   }
 }
 
@@ -98,7 +98,7 @@ export function cardContent(game: GameState, n: number, playerId: string, result
             : "drinks" in tile
               ? tile.drinks
               : "amount" in tile && tile.type === "A_BEBER"
-                ? tile.amount
+                ? (game.giftAmount ?? tile.amount)
                 : null;
   // Encabezado claro (dado, gasolinera…): el texto pequeño va oscuro para que se lea.
   const light = !result && !TILE_STYLE[tile.type].dark;

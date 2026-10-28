@@ -100,6 +100,9 @@ export function cardText(key: string, vars: Record<string, string | number>): Ca
   return { title: fillCard(o?.title ?? base.title, vars), text: fillCard(o?.text ?? base.text, vars) };
 }
 
+/** Solo el título de una tarjeta (con el que cambió el admin, si lo hay), para los rótulos de las decisiones. */
+export const cardTitle = (key: string) => cardText(key, {}).title;
+
 /** Valida lo que llega del servidor o del editor: solo claves y huecos que existen, textos de tamaño razonable. */
 export function parseCardOverrides(raw: unknown): CardOverrides {
   const out: CardOverrides = {};

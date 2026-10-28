@@ -33,7 +33,7 @@ describe("movimiento", () => {
   });
 
   it("rebota si se pasa de la 62", () => {
-    const s = rollFrom(game(), 59, 6); // 65 -> 59
+    const s = rollFrom(game(), 59, 6, 1); // 65 -> 59
     expect(s.players[0].pos).toBe(59);
   });
 
@@ -74,9 +74,13 @@ describe("casillas", () => {
     expect(s.players[2].drunk).toBe(0);
   });
 
-  it("A beber: reparte exactamente la cantidad indicada", () => {
-    let s = rollFrom(game(), 4, 2); // 6, x1
-    expect(s.decision).toEqual({ kind: "DISTRIBUTE", amount: 1 });
+  it("Trago de regalo: reparte de 1 a 3 vasos al azar, exactamente la cantidad", () => {
+    for (const [die, amount] of [[1, 1], [3, 2], [6, 3]] as const) {
+      const s = rollFrom(game(), 4, 2, die); // casilla 6
+      expect(s.decision).toEqual({ kind: "DISTRIBUTE", amount });
+      expect(s.giftAmount).toBe(amount);
+    }
+    let s = rollFrom(game(), 4, 2, 1); // 1 vaso
     expect(act(s, { type: "DISTRIBUTE", drinks: { p2: 2 } })).toBe(s);
     s = act(s, { type: "DISTRIBUTE", drinks: { p2: 1 } });
     expect(s.players[1].drunk).toBe(1);
@@ -177,7 +181,7 @@ describe("estados", () => {
   it("Estación Abstemia: inmune a lo que mandan otros", () => {
     let s = rollFrom(game(), 1, 3); // Ana en 4
     expect(s.players[0].status.inmune).toBe(true);
-    s = rollFrom(s, 3, 3); // Beto en 6, x1
+    s = rollFrom(s, 3, 3, 1); // Beto en 6, x1
     expect(act(s, { type: "DISTRIBUTE", drinks: { p1: 1 } }).players[0].drunk).toBe(0);
   });
 
@@ -190,7 +194,7 @@ describe("estados", () => {
 
   it("Abducción mental: el hipnotizado absorbe la mitad", () => {
     let s = rollFrom(game(), 14, 3); // Ana en 17
-    s = rollFrom(s, 12, 2); // Beto en 14, x2
+    s = rollFrom(s, 12, 2, 3); // Beto en 14, regala 2
     s = act(s, { type: "DISTRIBUTE", drinks: { p3: 2 } });
     expect(s.players[0].drunk).toBe(1);
     expect(s.players[2].drunk).toBe(1);

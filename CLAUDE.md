@@ -244,3 +244,6 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   La pantalla de la tarjeta lleva arriba «Turno de NOMBRE» con su avatar (de quién es la tarjeta).
 - Cámara de la TV: sigue a la ficha que se mueve y, al terminar la jugada (`settled`, cuando el `TurnChip` pasa a «Turno de X»), se va a
   enfocar a quien tiene el turno (`focus` que devuelve `useGameFx`).
+- **Trago de regalo** (casillas A_BEBER, antes «Ronda de mezcal»): reparte de **1 a 3 vasos al azar** (`giftAmount` en el estado; el número de
+  la casilla ya no cuenta). Todos los títulos de la pantalla (banner de la casilla, panel de la TV y del celular) salen de la tarjeta
+  (`cardTitle(key)` / `tileRule`), y `useGameFx` carga los textos propios al arrancar para que el primer título grande ya sea el editado.

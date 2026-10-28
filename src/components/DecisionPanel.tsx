@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Die } from "@/components/Fx";
+import { cardTitle } from "@/game/cards";
 import { useShake } from "@/lib/useShake";
 import type { Action, Decision, Player } from "@/game/engine";
 
@@ -52,7 +53,7 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
 
     case "PATINAZO":
       return (
-        <Card title="¡Tropiezo con la lápida!" text="Para no caerte:">
+        <Card title={cardTitle("PATINAZO")} text="Para no caerte:">
           <button onClick={() => onAction({ type: "PATINAZO", choice: "drink" })} className="btn-game bg-btn-green py-3 text-lg text-white">
             BEBER {decision.drinks} DE GOLPE
           </button>
@@ -67,7 +68,7 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
 
     case "SLAVE":
       return (
-        <Card title="Pacto de Sangre" text="Elige con quién haces el pacto: beberá cada vez que tú bebas.">
+        <Card title={cardTitle("ESCLAVO")} text="Elige con quién haces el pacto: beberá cada vez que tú bebas.">
           {others.map((p) => (
             <button key={p.id} onClick={() => onAction({ type: "CHOOSE_SLAVE", id: p.id })} className="btn-game py-2 text-lg text-white" style={{ background: p.color }}>
               {p.name}
@@ -95,7 +96,7 @@ function Distribute({ amount, players, onDone }: { amount: number; players: Play
   const change = (id: string, delta: number) => setDrinks({ ...drinks, [id]: Math.max(0, (drinks[id] ?? 0) + delta) });
 
   return (
-    <Card title="Ronda de mezcal" text={`Reparte ${amount} ${amount === 1 ? "vaso" : "vasos"}. Te quedan ${left}.`}>
+    <Card title={cardTitle("A_BEBER")} text={`Reparte ${amount} ${amount === 1 ? "vaso" : "vasos"}. Te quedan ${left}.`}>
       {players.map((p) => (
         <div key={p.id} className="flex items-center gap-2">
           <span className="size-4 rounded-full border-2 border-ink" style={{ background: p.color }} />
@@ -209,7 +210,7 @@ function PickPlayers(props: {
 
 function RuleInput({ onDone }: { onDone: () => void }) {
   return (
-    <Card title="Ley del Más Allá" text="Dicta tu ley en voz alta para todos. Dura hasta que alguien dicte otra. Quien la rompa, bebe.">
+    <Card title={cardTitle("REGLA")} text="Dicta tu ley en voz alta para todos. Dura hasta que alguien dicte otra. Quien la rompa, bebe.">
       <button onClick={onDone} className="btn-game bg-btn-green py-3 text-lg text-white">
         YA LA DICTÉ
       </button>
