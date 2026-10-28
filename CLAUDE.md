@@ -40,7 +40,7 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
   `tvView` y la sube a Blob (`PublishedBoard.characters`). Los retratos del marcador, tarjetas, celular y ganador
   usan la misma hoja (`Marciano` con `character`). Las fichas propias del editor («🧟 Fichas») siguen mandando.
   No hay pantalla para personalizarlos: perfiles, accesorios a elegir y votación por celular se quitaron a
-  propósito; no reintroducirlos sin que lo pida.
+  propósito; no reintroducirlos sin que lo pida. A la mujer «a» se le quitan las muletas que trae el kit (`PROPS`).
 - El servidor es la autoridad: `src/server/rooms.ts` guarda la mesa, ejecuta el motor
   (dados incluidos) y solo acepta jugadas con la clave del control. API en `src/app/api/rooms/`.
   Los clientes consultan la mesa cada 1 s (`src/lib/room-client.ts`) y solo aceptan versiones nuevas.
@@ -50,8 +50,18 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
 
 ## Tablero isométrico, animaciones y sonido
 
-- La TV y `/jugar` usan el **tablero isométrico** (`src/components/IsoBoard.tsx`): una imagen 3D pre-renderizada
-  (ver abajo) con las fichas en SVG encima. Nada de WebGL en el navegador: el 3D en vivo rompía en la TV del usuario.
+- **Tablero en 3D en vivo** (lo principal ahora; el usuario veía la imagen "borrosa" y lenta de cargar frente al
+  editor): si hay diseño publicado (`PublishedBoard.live`, el diseño se guarda al publicar y lo da
+  `GET /api/board/layout`), `IsoBoard` monta `LiveBoard` (`src/components/LiveBoard.tsx` + `src/live/liveBoard.ts`): el
+  mismo motor del editor (`EditorScene` con `{ viewer: true }`: sin herramientas, cámara de `tvView` que sigue con
+  suavidad a la ficha, sombras del escenario congeladas tras `ready()`) dibuja el tablero a la resolución real de la
+  pantalla, y los jugadores son los zombis 3D (`loadAll` de `characterSheet.ts`, clonados con SkeletonUtils) con sus
+  animaciones `idle` (respira) y `walk`, girando hacia donde van, con un saltito por casilla, arco en los vuelos, luz
+  propia suave y el nombre en HTML encima. Mientras carga se ve la imagen; si no hay WebGL o no llega a ~24 fps, se
+  queda la imagen (y esa TV lo recuerda: `localStorage` `ebrio:tablero` = `imagen`; `?imagen` lo fuerza y `?3d`
+  quita la comprobación de velocidad, para pruebas).
+- Respaldo: **tablero isométrico en imagen** (`IsoBoard`): una imagen 3D pre-renderizada (ver abajo) con las fichas
+  encima.
 - Cámara: la imagen del tablero se pinta una vez ya acercada (tamaño final) y la cámara solo la desplaza con
   `translate3d` (la tarjeta gráfica, sin repintar); las fichas son capas HTML aparte que también se mueven con
   transform. No animar el `viewBox` (repintaba la imagen enorme en cada fotograma: todo iba lento) ni escalar con CSS
@@ -144,7 +154,7 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - Calidad en la TV (el usuario la vio "borrosa" frente al editor, que dibuja a la densidad real de la pantalla):
   `renderForTV(true)` encuadra solo las casillas + 5 de margen y saca el tablero en **mosaicos** de 2048 px a la
   resolución que hace falta para que la TV acercada se vea 1:1 en 3840 píxeles físicos (TV 4K o pantalla con escala de
-  200 %), hasta 16 000 px. Se pintan por trozos con `setViewOffset`; cada mosaico se sube aparte directo a Blob
+  200 %), hasta 8192 px (ya es solo el respaldo del 3D en vivo). Se pintan por trozos con `setViewOffset`; cada mosaico se sube aparte directo a Blob
   (`/api/admin/publish/upload`) y se publica en `PublishedBoard.chunks`; `image` es entonces una versión de 2400 px
   que se ve mientras cargan. `IsoBoard` coloca los mosaicos (solapados 1 px, sin costuras) y el navegador solo
   descodifica los que se ven. Los zombis también van a doble resolución (hoja de 384×576 por dibujo). Sin Blob

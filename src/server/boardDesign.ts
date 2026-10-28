@@ -9,6 +9,8 @@ import { getStore } from "./store";
 
 const KEY = "board:design";
 const PUBLISHED_KEY = "board:published";
+/** El diseño tal cual se publicó: la TV lo dibuja en 3D en vivo (el borrador del editor puede seguir cambiando). */
+const PUBLISHED_LAYOUT_KEY = "board:published-layout";
 /** Solo en desarrollo, sin Vercel Blob: la imagen se guarda en el almacén y la sirve /api/board/image. */
 const IMAGE_KEY = "board:image";
 const TOKEN_KEY = (i: number) => `board:token:${i}`;
@@ -126,12 +128,28 @@ export async function publishBoard(raw: Record<string, unknown>): Promise<Publis
   const okSheet = characters && BLOB_IMAGE.test(characters.image);
   // los mosaicos en alta resolución, igual: solo si todos vienen de Blob y la imagen pequeña también
   const okChunks = direct && chunks && chunks.urls.every((u) => BLOB_IMAGE.test(u));
-  const board: PublishedBoard = { ...rest, version, image, ...(okSheet && { characters }), ...(okChunks && { chunks }), ...(tokens.some(Boolean) && { tokens, tokenScale }) };
+  const layout = raw.layout ? parseLayout(raw.layout) : null;
+  const layoutJson = layout && JSON.stringify(layout);
+  const live = !!layoutJson && layoutJson.length <= MAX_BYTES;
+  if (live) await getStore().set(PUBLISHED_LAYOUT_KEY, layoutJson, TEN_YEARS);
+  const board: PublishedBoard = { ...rest, version, image, ...(okSheet && { characters }), ...(okChunks && { chunks }), ...(tokens.some(Boolean) && { tokens, tokenScale }), ...(live && { live: true }) };
   await getStore().set(PUBLISHED_KEY, JSON.stringify(board), TEN_YEARS);
   return board;
+}
+
+/** El diseño publicado, para dibujarlo en 3D en la TV (o null). */
+export async function loadPublishedLayout(): Promise<BoardLayout | null> {
+  const raw = await getStore().get(PUBLISHED_LAYOUT_KEY);
+  if (!raw) return null;
+  try {
+    return parseLayout(JSON.parse(raw));
+  } catch {
+    return null;
+  }
 }
 
 /** Vuelve al tablero de serie. */
 export async function unpublishBoard() {
   await getStore().del(PUBLISHED_KEY);
+  await getStore().del(PUBLISHED_LAYOUT_KEY);
 }

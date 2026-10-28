@@ -134,10 +134,53 @@ function yellowEyes(mesh: THREE.Mesh, map: THREE.Texture) {
   pos.needsUpdate = true;
 }
 
-type Loaded = { root: THREE.Object3D; clips: THREE.AnimationClip[] };
+/**
+ * Objetos que trae en las manos algún personaje del kit y que no queremos (la mujer «a» lleva unas muletas): piezas
+ * del cuerpo con los brazos en cruz que salen más allá de las manos (|x| > 0,42), las pintadas con la columna gris de
+ * la paleta (el palo) y las azules pegadas a la mano (el agarre).
+ */
+const PROPS: Record<string, (minAbsX: number, maxAbsX: number, u: number) => boolean> = {
+  // muletas: el palo (gris), la punta y el agarre azules que quedan en la mano
+  "character-female-a": (minAbsX, maxAbsX, u) => maxAbsX > 0.42 || (u >= 192 && u < 256) || (minAbsX > 0.25 && u >= 320 && u < 384),
+};
+
+/** Quita del cuerpo las piezas que `PROPS` marca (se quitan sus triángulos). */
+function dropProps(mesh: THREE.Mesh, id: string) {
+  const drop = PROPS[id];
+  const geo = mesh.geometry;
+  if (!drop || !geo.index || !geo.attributes.position || !geo.attributes.uv) return;
+  const pos = geo.attributes.position;
+  const uv = geo.attributes.uv;
+  const index = Array.from(geo.index.array);
+  const parent = Array.from({ length: pos.count }, (_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  for (let t = 0; t < index.length; t += 3) {
+    const a = find(index[t]);
+    parent[find(index[t + 1])] = a;
+    parent[find(index[t + 2])] = a;
+  }
+  const parts = new Map<number, number[]>();
+  for (let i = 0; i < pos.count; i++) {
+    const r = find(i);
+    if (!parts.has(r)) parts.set(r, []);
+    parts.get(r)!.push(i);
+  }
+  const gone = new Set<number>();
+  for (const vs of parts.values()) {
+    const xs = vs.map((i) => Math.abs(pos.getX(i)));
+    if (drop(Math.min(...xs), Math.max(...xs), uv.getX(vs[0]) * 512)) for (const i of vs) gone.add(i);
+  }
+  if (!gone.size) return;
+  const keep: number[] = [];
+  for (let t = 0; t < index.length; t += 3) if (!gone.has(index[t])) keep.push(index[t], index[t + 1], index[t + 2]);
+  geo.setIndex(keep);
+}
+
+export type Loaded = { root: THREE.Object3D; clips: THREE.AnimationClip[] };
 let loading: Promise<Loaded[]> | null = null;
 
-function loadAll(): Promise<Loaded[]> {
+/** Los 12 personajes ya convertidos en zombi (piel verde y ojos amarillos), con sus animaciones. */
+export function loadAll(): Promise<Loaded[]> {
   loading ??= Promise.all(
     CHARACTERS.map(
       (id) =>
@@ -152,6 +195,7 @@ function loadAll(): Promise<Loaded[]> {
                 mesh.frustumCulled = false; // con la animación la caja de la malla no es la de reposo
                 const orig = [mesh.material].flat()[0] as THREE.MeshStandardMaterial;
                 if (/head/i.test(mesh.name) && orig.map) yellowEyes(mesh, orig.map);
+                if (/body/i.test(mesh.name)) dropProps(mesh, id);
                 mesh.material = ([mesh.material].flat() as THREE.MeshStandardMaterial[]).map((orig) => {
                   const m = orig.clone();
                   if ("metalness" in m) m.metalness = 0;

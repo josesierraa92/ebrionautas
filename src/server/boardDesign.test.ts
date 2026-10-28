@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { newLayout } from "@/editor/layout";
-import { checkAdmin, loadDesign, loadDevImage, loadDevToken, loadPublished, publishBoard, saveDesign, unpublishBoard } from "./boardDesign";
+import { checkAdmin, loadDesign, loadDevImage, loadDevToken, loadPublished, loadPublishedLayout, publishBoard, saveDesign, unpublishBoard } from "./boardDesign";
 import { resetMemoryStore } from "./store";
 
 describe("diseño del tablero en el servidor", () => {
@@ -57,6 +57,13 @@ describe("diseño del tablero en el servidor", () => {
     expect((await publishBoard({ ...hd, chunks: { ...hd.chunks, cols: 2 } })).chunks).toBeUndefined();
     expect((await publishBoard({ ...hd, chunks: { ...hd.chunks, urls: [...hd.chunks.urls.slice(1), "https://malo.com/x.webp"] } })).chunks).toBeUndefined();
     expect((await publishBoard({ ...shot, chunks: hd.chunks })).chunks).toBeUndefined();
+    // con el diseño, la TV puede dibujarlo en 3D en vivo
+    expect((await publishBoard(shot)).live).toBeUndefined();
+    const layout = { ...newLayout(12, 10), tiles: Array.from({ length: 62 }, () => ({ x: 0, y: 0 })) };
+    expect((await publishBoard({ ...shot, layout })).live).toBe(true);
+    expect((await loadPublishedLayout())?.w).toBe(12);
+    await unpublishBoard();
+    expect(await loadPublishedLayout()).toBeNull();
     expect((await loadDevImage())?.toString("ascii", 0, 4)).toBe("RIFF");
     await unpublishBoard();
     expect(await loadPublished()).toBeNull();

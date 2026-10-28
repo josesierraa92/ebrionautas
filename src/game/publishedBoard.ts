@@ -31,6 +31,8 @@ export type PublishedBoard = {
    * `urls[fila * cols + columna]`. `image` es entonces una versión pequeña de todo que se ve mientras cargan.
    */
   chunks?: { size: number; cols: number; rows: number; urls: string[] };
+  /** Se publicó también el diseño (GET /api/board/layout): la TV puede dibujarlo en 3D en vivo. */
+  live?: boolean;
 };
 
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);

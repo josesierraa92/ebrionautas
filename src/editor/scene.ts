@@ -107,11 +107,23 @@ export class EditorScene {
   /** Ruta de cada modelo del catálogo (id -> url del .glb). */
   modelUrl: (id: string) => string | undefined = () => undefined;
 
+  /**
+   * Modo visor (la TV juega con el tablero en 3D en vivo, como un videojuego): sin herramientas de edición ni ayudas,
+   * con la cámara de `tvView` siguiendo el punto que se le pida (`lookAt`) y `onFrame` para animar lo que se añada.
+   */
+  private viewer: boolean;
+  private look = new THREE.Vector3();
+  private lookGoal = new THREE.Vector3();
+  /** Se llama en cada fotograma del visor con los segundos desde el anterior (para animar las fichas). */
+  onFrame: ((dt: number) => void) | null = null;
+
   constructor(
     private container: HTMLElement,
     private events: SceneEvents,
+    opts: { viewer?: boolean } = {},
   ) {
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    this.viewer = !!opts.viewer;
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: !this.viewer, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -185,6 +197,26 @@ export class EditorScene {
     this.setGizmoMode("translate");
 
     const el = this.renderer.domElement;
+    if (this.viewer) {
+      this.orbit.enabled = false;
+      for (const o of [this.grid, this.bounds, this.brush, this.gizmo.getHelper()]) o.visible = false;
+      this.resizeObs = new ResizeObserver(() => this.resize());
+      this.resizeObs.observe(container);
+      this.resize();
+      let last = performance.now();
+      const viewLoop = (now: number) => {
+        this.frame = requestAnimationFrame(viewLoop);
+        const dt = Math.min(0.1, (now - last) / 1000);
+        last = now;
+        this.onFrame?.(dt);
+        // la cámara sigue el punto pedido con suavidad (como en Mario Party), sin saltos
+        this.look.lerp(this.lookGoal, 1 - Math.exp(-dt * 2.6));
+        this.placeViewerCamera();
+        this.renderer.render(this.scene, this.camera);
+      };
+      this.frame = requestAnimationFrame(viewLoop);
+      return;
+    }
     el.addEventListener("pointerdown", this.onPointerDown);
     el.addEventListener("pointermove", this.onPointerMove);
     window.addEventListener("pointerup", this.onPointerUp);
@@ -207,6 +239,7 @@ export class EditorScene {
     cancelAnimationFrame(this.frame);
     this.resizeObs.disconnect();
     window.removeEventListener("pointerup", this.onPointerUp);
+    this.onFrame = null;
     this.gizmo.dispose();
     this.orbit.dispose();
     this.renderer.dispose();
@@ -220,15 +253,84 @@ export class EditorScene {
     const w = this.container.clientWidth || 1;
     const h = this.container.clientHeight || 1;
     this.renderer.setSize(w, h);
+    if (this.viewer) {
+      // visor: caben tvView.tiles casillas a lo ancho de la pantalla, a la resolución real de la pantalla
+      const tiles = this.layout?.tvView.tiles ?? 6;
+      const vw = TILE_SIZE * Math.SQRT2 * tiles;
+      Object.assign(this.camera, { left: -vw / 2, right: vw / 2, top: (vw * h) / w / 2, bottom: -(vw * h) / w / 2, zoom: 1 });
+      this.camera.updateProjectionMatrix();
+      return;
+    }
     const view = this.layout ? (this.layout.w + this.layout.h) * 0.42 : 20;
     const aspect = w / h;
     Object.assign(this.camera, { left: (-view * aspect) / 2, right: (view * aspect) / 2, top: view / 2, bottom: -view / 2 });
     this.camera.updateProjectionMatrix();
   }
 
+  // ------------------------------------------------------------------ visor (la TV)
+
+  private placeViewerCamera() {
+    if (!this.layout) return;
+    const dir = new THREE.Vector3(...tvDirection(this.layout.tvView));
+    this.camera.position.copy(this.look).addScaledVector(dir, CAM_DIST);
+    this.camera.lookAt(this.look);
+  }
+
+  /** Visor: hacia dónde mira la cámara (se acerca con suavidad; con `instant`, de golpe). */
+  lookAt(p: THREE.Vector3, instant = false) {
+    this.lookGoal.copy(p);
+    if (instant) this.look.copy(p);
+  }
+
+  /** Centro de la cara de arriba de la casilla n (1..62), donde se apoyan las fichas. */
+  tileCenter(n: number): THREE.Vector3 | null {
+    const l = this.layout;
+    const t = l?.tiles[n - 1];
+    if (!l || !t) return null;
+    return new THREE.Vector3(t.x + TILE_SIZE / 2, this.tileTop(l, t) + 0.14, t.y + TILE_SIZE / 2);
+  }
+
+  /** Añade algo a la escena (las fichas del visor). */
+  add(o: THREE.Object3D) {
+    this.scene.add(o);
+  }
+
+  /** Punto del mundo en píxeles CSS del contenedor (para los nombres encima de las fichas). */
+  toScreen(p: THREE.Vector3) {
+    const v = p.clone().project(this.camera);
+    return { x: ((v.x + 1) / 2) * this.container.clientWidth, y: ((1 - v.y) / 2) * this.container.clientHeight, visible: v.z < 1 };
+  }
+
+  /** Dirección de la cámara de la TV vista desde arriba (para colocar varias fichas en fila en pantalla). */
+  screenRight() {
+    const az = ((this.layout?.tvView.az ?? 45) * Math.PI) / 180;
+    return new THREE.Vector3(Math.cos(az), 0, -Math.sin(az));
+  }
+
+  /**
+   * Espera a que estén todos los modelos, tipos de letra e iconos; en el visor congela las sombras (el escenario no se
+   * mueve: se calculan una vez y no en cada fotograma, que es lo caro).
+   */
+  async ready() {
+    const l = this.layout;
+    if (!l) return;
+    await Promise.all([...this.models.values(), this.needFont(l.numbers.font)]);
+    if (l.numbers.show) {
+      this.dropTileTextures();
+      this.buildTiles(l);
+    }
+    await Promise.all([...this.pendingIcons]);
+    await new Promise((ok) => requestAnimationFrame(ok));
+    if (this.viewer) {
+      this.renderer.shadowMap.autoUpdate = false;
+      this.renderer.shadowMap.needsUpdate = true;
+    }
+  }
+
   /** Vista de la TV (`tvView` del diseño), centrada en el mundo: con `close`, acercada como la TV; si no, todo el mundo. */
   resetView(close = false) {
     if (!this.layout) return;
+    if (this.viewer) return this.resize(); // en el visor la cámara la lleva lookAt
     const c = new THREE.Vector3(this.layout.w / 2, 0, this.layout.h / 2);
     const dir = new THREE.Vector3(...tvDirection(this.layout.tvView));
     this.camera.position.copy(c).addScaledVector(dir, CAM_DIST);
@@ -1232,7 +1334,7 @@ export class EditorScene {
    * aparte y la TV solo descodifica los que enseña; además sale una imagen pequeña de todo (`overview`) que se ve
    * mientras cargan. Sin `hd` (desarrollo, sin Blob): una sola imagen de 2400 px en data URL.
    */
-  async renderForTV(hd = false, maxSize = 16000): Promise<{
+  async renderForTV(hd = false, maxSize = 8192): Promise<{ // (la imagen ya es solo el respaldo del 3D en vivo)
     image: string;
     overview?: Blob;
     chunks?: { size: number; cols: number; rows: number; blobs: Blob[] };

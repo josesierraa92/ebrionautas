@@ -509,7 +509,7 @@ export default function BoardEditor() {
       const res = await fetch("/api/admin/publish", {
         method: "POST",
         headers: { "content-type": "application/json", "x-admin-key": key },
-        body: JSON.stringify({ ...shot, ...(imageUrl && { image: imageUrl }), ...(chunks && { chunks }), ...(characters && { characters }), characterScale: l.characterSize, tokens, tokenScale }),
+        body: JSON.stringify({ ...shot, ...(imageUrl && { image: imageUrl }), ...(chunks && { chunks }), ...(characters && { characters }), characterScale: l.characterSize, tokens, tokenScale, layout: l }),
       });
       const body = await res.json().catch(() => ({}));
       if (res.status === 401) localStorage.removeItem(ADMIN_KEY);

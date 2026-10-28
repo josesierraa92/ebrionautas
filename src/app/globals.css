@@ -107,6 +107,18 @@ body {
   50% { transform: translateY(-5%); }
 }
 .mc-hop { animation: mc-hop 0.7s ease-in-out infinite; }
+/* Nombres encima de los zombis del tablero 3D (los coloca liveBoard.ts en cada fotograma) */
+.live-name {
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+  line-height: 1;
+  font-family: var(--font-lilita), sans-serif;
+  -webkit-text-stroke: 0.3em #1b1f4b;
+  paint-order: stroke fill;
+  will-change: transform;
+}
 /* Personajes zombi del tablero: respiran (el pecho sube y baja: se estiran un poco desde los pies). Con `transform`
    (no la propiedad `scale`, que los navegadores de TV antiguos no conocen); el espejo va en otra capa por dentro. */
 .zb-breathe { animation: zb-breathe 2.8s ease-in-out infinite; animation-delay: var(--zb-delay, 0s); }

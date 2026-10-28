@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { parseLayout, type BoardLayout } from "@/editor/layout";
 import type { PublishedBoard } from "@/game/publishedBoard";
 import { PLAYER_COLORS, alienArt } from "@/game/tileStyle";
 
@@ -35,6 +36,26 @@ export function usePublishedBoard(): PublishedBoard | null | undefined {
     };
   }, []);
   return board;
+}
+
+let layoutRequest: Promise<BoardLayout | null> | null = null;
+
+/** Diseño publicado (para dibujar el tablero en 3D en vivo): undefined mientras carga, null si no hay. */
+export function usePublishedLayout(enabled: boolean): BoardLayout | null | undefined {
+  const [layout, setLayout] = useState<BoardLayout | null | undefined>(undefined);
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    layoutRequest ??= fetch("/api/board/layout", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b) => parseLayout(b?.layout) ?? null)
+      .catch(() => null);
+    layoutRequest.then((l) => alive && setLayout(l));
+    return () => {
+      alive = false;
+    };
+  }, [enabled]);
+  return enabled ? layout : null;
 }
 
 /** Dibujo de la ficha de un color de jugador: la publicada desde el editor o, si no hay, el zombi de serie. */

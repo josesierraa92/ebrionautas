@@ -8,7 +8,8 @@ import type { PublishedBoard } from "@/game/publishedBoard";
 import { CHARACTER_HEIGHT, characterOf, SHEET_COLS, CHARACTERS, spriteOf, STOCK_SHEET, type CharacterSheet } from "@/game/characters";
 import { PLAYER_COLORS } from "@/game/tileStyle";
 import { FLY_MS, STEP_MS } from "@/lib/useGameFx";
-import { usePublishedBoard } from "@/lib/usePublishedBoard";
+import LiveBoard from "@/components/LiveBoard";
+import { usePublishedBoard, usePublishedLayout } from "@/lib/usePublishedBoard";
 
 // Tablero isométrico de la TV. El tablero (terreno, casillas, decoración) es una imagen renderizada en 3D de
 // antemano: la publicada desde el editor (/admin/editor) o, si no hay, la de serie (scripts/board3d). Aquí solo
@@ -101,10 +102,51 @@ function useBoxSize() {
   return [ref, size] as const;
 }
 
+/** ¿Se pidió el tablero en imagen? (`?imagen` en la dirección, o lo recuerda esta TV si el 3D le fue mal). */
+function wantsImage() {
+  try {
+    return new URLSearchParams(location.search).has("imagen") || localStorage.getItem("ebrio:tablero") === "imagen";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Tablero de la TV. Si hay diseño publicado, se dibuja en **3D en vivo** (`LiveBoard`: nítido a la resolución de la
+ * pantalla, como un videojuego); mientras carga, y si el aparato no tiene 3D o va lento, se ve la imagen pre-renderizada.
+ */
 export default function IsoBoard(props: Props) {
   const published = usePublishedBoard();
+  const [mode, setMode] = useState<"loading" | "on" | "off">(() => (typeof window !== "undefined" && wantsImage() ? "off" : "loading"));
+  const layout = usePublishedLayout(!!published?.live && mode !== "off");
   if (published === undefined) return <div className="h-full w-full" />;
-  return <IsoBoardView {...props} geo={published ? publishedGeometry(published) : DEFAULT_GEOMETRY} />;
+  const geo = published ? publishedGeometry(published) : DEFAULT_GEOMETRY;
+  return (
+    <div className="relative h-full w-full">
+      {mode !== "on" && <IsoBoardView {...props} geo={geo} />}
+      {layout && mode !== "off" && (
+        <LiveBoard
+          layout={layout}
+          players={props.players}
+          current={props.current}
+          winner={props.winner}
+          shown={props.shown}
+          flying={props.flying}
+          focus={props.focus}
+          characterScale={geo.characterScale}
+          onReady={() => setMode("on")}
+          onFail={(why) => {
+            console.warn("Tablero 3D desactivado:", why);
+            if (why === "lento")
+              try {
+                localStorage.setItem("ebrio:tablero", "imagen");
+              } catch {}
+            setMode("off");
+          }}
+        />
+      )}
+    </div>
+  );
 }
 
 /**
