@@ -21,6 +21,9 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
   En partida solo enseña un dado gigante (`src/components/DiceController.tsx`) que se tira tocándolo o
   agitando el celular (`src/lib/useShake.ts`; en iPhone pide permiso de movimiento) y de quién es el turno
   (el usuario quitó el "Siguiente: nombre" de debajo del dado). Marcador, historial y tablero van en "☰ MARCADOR".
+- Inicio (`src/app/page.tsx`): la portada `public/art/portada.webp` (ya trae el logo «Muertos de Sed»; la dio el
+  usuario). En horizontal (TV) ocupa toda la pantalla y los tres accesos van abajo en una fila (`HomeActions`); en
+  vertical (celular) va arriba a todo el ancho y los botones debajo.
 - `/jugar`: sin TV, todo en una misma pantalla (partida guardada en localStorage).
 - El género resuelve solas las casillas Machos (2) y Hembras (11); el resto de casillas de
   "quién bebe" las marca el control.
