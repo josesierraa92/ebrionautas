@@ -608,159 +608,6 @@ export default function BoardEditor() {
         <button className={`${btn} ${off}`} onClick={redo} disabled={!history.current.canRedo} title="Ctrl+Y">
           ↷ Rehacer
         </button>
-        <span className="mx-1 h-6 w-px bg-white/15" />
-        <button className={`${btn} ${off}`} onClick={() => sceneRef.current?.resetView(true)} title="Ver el tablero con el ángulo y el acercamiento de la TV">
-          📺 Vista TV
-        </button>
-        <button
-          className={`${btn} ${off}`}
-          title="La TV usará el ángulo y el acercamiento que tienes ahora en pantalla (luego, Publicar)"
-          onClick={() => {
-            const v = sceneRef.current?.currentView();
-            if (!v) return;
-            commit({ ...layoutRef.current, tvView: v });
-            setStatus(`Vista de la TV fijada: ${Math.round(v.el)}° de altura y unas ${Math.round(v.tiles)} casillas a lo ancho. Publica para verla en la TV.`);
-          }}
-        >
-          🎥 Usar esta vista en la TV
-        </button>
-        {/* zoom e inclinación de la cámara de la TV, a mano (se ve al momento en «Vista TV») */}
-        <label className="flex items-center gap-1 text-sm" title="Cuánto acerca la TV a la ficha: más zoom = menos casillas a lo ancho">
-          Zoom TV
-          <input
-            type="range"
-            min={TV_VIEW_LIMITS.tiles.min}
-            max={TV_VIEW_LIMITS.tiles.max}
-            step={0.5}
-            className="w-24"
-            value={TV_VIEW_LIMITS.tiles.min + TV_VIEW_LIMITS.tiles.max - layout.tvView.tiles}
-            onPointerDown={() => (viewBefore.current = layoutRef.current)}
-            onChange={(e) => setTvView({ tiles: TV_VIEW_LIMITS.tiles.min + TV_VIEW_LIMITS.tiles.max - Number(e.target.value) })}
-            onPointerUp={endTvView}
-          />
-          <span className="w-16 text-xs opacity-70">{layout.tvView.tiles.toFixed(1)} casillas</span>
-        </label>
-        <label className="flex items-center gap-1 text-sm" title="Inclinación de la cámara de la TV: más grados = más desde arriba">
-          Ángulo
-          <input
-            type="range"
-            min={TV_VIEW_LIMITS.el.min}
-            max={TV_VIEW_LIMITS.el.max}
-            className="w-20"
-            value={layout.tvView.el}
-            onPointerDown={() => (viewBefore.current = layoutRef.current)}
-            onChange={(e) => setTvView({ el: Number(e.target.value) })}
-            onPointerUp={endTvView}
-          />
-          <span className="w-8 text-xs opacity-70">{Math.round(layout.tvView.el)}°</span>
-        </label>
-        <label className="flex items-center gap-1 text-sm">
-          Luz
-          <select
-            className="rounded-md bg-white/10 px-2 py-1"
-            value={layout.light}
-            onChange={(e) => commit({ ...layoutRef.current, light: e.target.value as LightId })}
-          >
-            {Object.entries(LIGHTS).map(([id, label]) => (
-              <option key={id} value={id} className="bg-[#1c1f27]">
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-1 text-sm" title="Qué tan oscuras son las sombras">
-          Sombras
-          <input
-            type="range"
-            min={0}
-            max={100}
-            className="w-24"
-            value={Math.round(layout.shadow * 100)}
-            onPointerDown={() => (shadowBefore.current = layoutRef.current)}
-            onChange={(e) => setLayout({ ...layoutRef.current, shadow: Number(e.target.value) / 100 })}
-            onPointerUp={() => {
-              if (shadowBefore.current && shadowBefore.current !== layoutRef.current) history.current.push(shadowBefore.current);
-              shadowBefore.current = null;
-              setTick((t) => t + 1);
-            }}
-          />
-        </label>
-        <label className="flex items-center gap-1 text-sm" title="Neblina alrededor de la zona editable">
-          Neblina
-          <input
-            type="range"
-            min={0}
-            max={100}
-            className="w-24"
-            value={Math.round(layout.mist * 100)}
-            onPointerDown={() => (mistBefore.current = layoutRef.current)}
-            onChange={(e) => setLayout({ ...layoutRef.current, mist: Number(e.target.value) / 100 })}
-            onPointerUp={() => {
-              if (mistBefore.current && mistBefore.current !== layoutRef.current) history.current.push(mistBefore.current);
-              mistBefore.current = null;
-              setTick((t) => t + 1);
-            }}
-          />
-        </label>
-        <button className={`${btn} ${grid ? on : off}`} onClick={() => setGrid(!grid)}>
-          # Rejilla
-        </button>
-        <button className={`${btn} ${snap ? on : off}`} onClick={() => setSnap(!snap)} title="Encajar los modelos en la rejilla: casillas enteras y giros de 90°">
-          🧲 Ajustar
-        </button>
-        <span className="mx-1 h-6 w-px bg-white/15" />
-        <label className="flex items-center gap-1 text-sm">
-          Mundo
-          <input
-            type="number"
-            min={MIN_SIZE}
-            max={MAX_SIZE}
-            className="w-14 rounded-md bg-white/10 px-1 py-1"
-            value={size.w}
-            onChange={(e) => setSize({ ...size, w: Number(e.target.value) })}
-          />
-          ×
-          <input
-            type="number"
-            min={MIN_SIZE}
-            max={MAX_SIZE}
-            className="w-14 rounded-md bg-white/10 px-1 py-1"
-            value={size.h}
-            onChange={(e) => setSize({ ...size, h: Number(e.target.value) })}
-          />
-          {(size.w !== layout.w || size.h !== layout.h) && (
-            <button className={`${btn} ${on}`} onClick={() => commit(resize(layoutRef.current, size.w, size.h))}>
-              Aplicar
-            </button>
-          )}
-        </label>
-        {/* ampliar el mundo por el lado que haga falta, sin mover lo construido */}
-        <div className="flex items-center gap-1 text-sm" title="Agrandar el mundo 8 casillas por ese lado (lo construido no se mueve)">
-          Ampliar
-          {(
-            [
-              ["x-", "↖", "arriba a la izquierda"],
-              ["z-", "↗", "arriba a la derecha"],
-              ["z+", "↙", "abajo a la izquierda"],
-              ["x+", "↘", "abajo a la derecha"],
-            ] as const
-          ).map(([side, arrow, where]) => (
-            <button
-              key={side}
-              className={`${btn} ${off} px-2`}
-              title={`Agrandar 8 casillas hacia ${where}`}
-              onClick={() => {
-                const l = layoutRef.current;
-                const next = expand(l, side, 8);
-                if (next === l) return setStatus(`El mundo ya tiene el tamaño máximo (${MAX_SIZE} casillas).`);
-                commit(next);
-                setStatus(`Mundo de ${next.w}×${next.h}. Lo que construiste no se movió.`);
-              }}
-            >
-              {arrow}
-            </button>
-          ))}
-        </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <button className={`${btn} ${off}`} onClick={() => setCardsOpen(true)} title="Ver y cambiar el texto de todas las tarjetas del juego">
           📝 Tarjetas
@@ -968,6 +815,172 @@ export default function BoardEditor() {
               </div>
             </div>
           )}
+
+          {/* ------------------------------------------------ ajustes (antes en la barra de arriba) */}
+          <section className="grid gap-2 rounded-xl bg-white/5 p-2.5">
+            <h3 className="font-display text-sm text-amber-400">📺 Cámara de la TV</h3>
+        <div className="flex gap-1">
+          <button className={`${btn} ${off} flex-1`} onClick={() => sceneRef.current?.resetView(true)} title="Ver el tablero con el ángulo y el acercamiento de la TV">
+          📺 Vista TV
+        </button>
+        <button
+          className={`${btn} ${off} flex-1`}
+          title="La TV usará el ángulo y el acercamiento que tienes ahora en pantalla (luego, Publicar)"
+          onClick={() => {
+            const v = sceneRef.current?.currentView();
+            if (!v) return;
+            commit({ ...layoutRef.current, tvView: v });
+            setStatus(`Vista de la TV fijada: ${Math.round(v.el)}° de altura y unas ${Math.round(v.tiles)} casillas a lo ancho. Publica para verla en la TV.`);
+          }}
+        >
+          🎥 Fijar esta vista
+        </button>
+        </div>
+        {/* zoom e inclinación de la cámara de la TV, a mano (se ve al momento en «Vista TV») */}
+        <label className="flex items-center gap-2 text-sm" title="Cuánto acerca la TV a la ficha: más zoom = menos casillas a lo ancho">
+          Zoom TV
+          <input
+            type="range"
+            min={TV_VIEW_LIMITS.tiles.min}
+            max={TV_VIEW_LIMITS.tiles.max}
+            step={0.5}
+            className="min-w-0 flex-1"
+            value={TV_VIEW_LIMITS.tiles.min + TV_VIEW_LIMITS.tiles.max - layout.tvView.tiles}
+            onPointerDown={() => (viewBefore.current = layoutRef.current)}
+            onChange={(e) => setTvView({ tiles: TV_VIEW_LIMITS.tiles.min + TV_VIEW_LIMITS.tiles.max - Number(e.target.value) })}
+            onPointerUp={endTvView}
+          />
+          <span className="w-20 text-right text-xs opacity-70">{layout.tvView.tiles.toFixed(1)} casillas</span>
+        </label>
+        <label className="flex items-center gap-2 text-sm" title="Inclinación de la cámara de la TV: más grados = más desde arriba">
+          Ángulo
+          <input
+            type="range"
+            min={TV_VIEW_LIMITS.el.min}
+            max={TV_VIEW_LIMITS.el.max}
+            className="min-w-0 flex-1"
+            value={layout.tvView.el}
+            onPointerDown={() => (viewBefore.current = layoutRef.current)}
+            onChange={(e) => setTvView({ el: Number(e.target.value) })}
+            onPointerUp={endTvView}
+          />
+          <span className="w-20 text-right text-xs opacity-70">{Math.round(layout.tvView.el)}°</span>
+        </label>
+          </section>
+          <section className="grid gap-2 rounded-xl bg-white/5 p-2.5">
+            <h3 className="font-display text-sm text-amber-400">🌙 Ambiente</h3>
+        <label className="flex items-center gap-2 text-sm">
+          Luz
+          <select
+            className="rounded-md bg-white/10 px-2 py-1"
+            value={layout.light}
+            onChange={(e) => commit({ ...layoutRef.current, light: e.target.value as LightId })}
+          >
+            {Object.entries(LIGHTS).map(([id, label]) => (
+              <option key={id} value={id} className="bg-[#1c1f27]">
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm" title="Qué tan oscuras son las sombras">
+          Sombras
+          <input
+            type="range"
+            min={0}
+            max={100}
+            className="min-w-0 flex-1"
+            value={Math.round(layout.shadow * 100)}
+            onPointerDown={() => (shadowBefore.current = layoutRef.current)}
+            onChange={(e) => setLayout({ ...layoutRef.current, shadow: Number(e.target.value) / 100 })}
+            onPointerUp={() => {
+              if (shadowBefore.current && shadowBefore.current !== layoutRef.current) history.current.push(shadowBefore.current);
+              shadowBefore.current = null;
+              setTick((t) => t + 1);
+            }}
+          />
+        </label>
+        <label className="flex items-center gap-2 text-sm" title="Neblina alrededor de la zona editable">
+          Neblina
+          <input
+            type="range"
+            min={0}
+            max={100}
+            className="min-w-0 flex-1"
+            value={Math.round(layout.mist * 100)}
+            onPointerDown={() => (mistBefore.current = layoutRef.current)}
+            onChange={(e) => setLayout({ ...layoutRef.current, mist: Number(e.target.value) / 100 })}
+            onPointerUp={() => {
+              if (mistBefore.current && mistBefore.current !== layoutRef.current) history.current.push(mistBefore.current);
+              mistBefore.current = null;
+              setTick((t) => t + 1);
+            }}
+          />
+        </label>
+          </section>
+          <section className="grid gap-2 rounded-xl bg-white/5 p-2.5">
+            <h3 className="font-display text-sm text-amber-400">🧱 Edición y mundo</h3>
+        <div className="flex gap-1">
+        <button className={`${btn} ${grid ? on : off} flex-1`} onClick={() => setGrid(!grid)}>
+          # Rejilla
+        </button>
+        <button className={`${btn} ${snap ? on : off} flex-1`} onClick={() => setSnap(!snap)} title="Encajar los modelos en la rejilla: casillas enteras y giros de 90°">
+          🧲 Ajustar
+        </button>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          Mundo
+          <input
+            type="number"
+            min={MIN_SIZE}
+            max={MAX_SIZE}
+            className="w-14 rounded-md bg-white/10 px-1 py-1"
+            value={size.w}
+            onChange={(e) => setSize({ ...size, w: Number(e.target.value) })}
+          />
+          ×
+          <input
+            type="number"
+            min={MIN_SIZE}
+            max={MAX_SIZE}
+            className="w-14 rounded-md bg-white/10 px-1 py-1"
+            value={size.h}
+            onChange={(e) => setSize({ ...size, h: Number(e.target.value) })}
+          />
+          {(size.w !== layout.w || size.h !== layout.h) && (
+            <button className={`${btn} ${on}`} onClick={() => commit(resize(layoutRef.current, size.w, size.h))}>
+              Aplicar
+            </button>
+          )}
+        </label>
+        {/* ampliar el mundo por el lado que haga falta, sin mover lo construido */}
+        <div className="flex items-center gap-2 text-sm" title="Agrandar el mundo 8 casillas por ese lado (lo construido no se mueve)">
+          Ampliar
+          {(
+            [
+              ["x-", "↖", "arriba a la izquierda"],
+              ["z-", "↗", "arriba a la derecha"],
+              ["z+", "↙", "abajo a la izquierda"],
+              ["x+", "↘", "abajo a la derecha"],
+            ] as const
+          ).map(([side, arrow, where]) => (
+            <button
+              key={side}
+              className={`${btn} ${off} px-2`}
+              title={`Agrandar 8 casillas hacia ${where}`}
+              onClick={() => {
+                const l = layoutRef.current;
+                const next = expand(l, side, 8);
+                if (next === l) return setStatus(`El mundo ya tiene el tamaño máximo (${MAX_SIZE} casillas).`);
+                commit(next);
+                setStatus(`Mundo de ${next.w}×${next.h}. Lo que construiste no se movió.`);
+              }}
+            >
+              {arrow}
+            </button>
+          ))}
+        </div>
+          </section>
 
           <div className="mt-auto text-xs leading-relaxed opacity-60">
             <p>Clic derecho + arrastrar: girar la cámara</p>
