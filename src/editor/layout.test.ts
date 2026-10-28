@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { History } from "./history";
-import { brushCells, flatten, groundAt, lightOf, lookOf, MAX_LEVEL, newLayout, paint, parseLayout, raise, resize, TILE_COUNT, tileAnchor, tileTypeOf, toggleTile } from "./layout";
+import { brushCells, expand, flatten, groundAt, lightOf, lookOf, MAX_LEVEL, MAX_SIZE, newLayout, paint, parseLayout, raise, resize, TILE_COUNT, tileAnchor, tileTypeOf, toggleTile } from "./layout";
 
 describe("diseño del tablero", () => {
   it("el pincel pinta un cuadrado y no se sale del mundo", () => {
@@ -139,17 +139,49 @@ describe("neblina", () => {
 });
 
 describe("fichas de los jugadores", () => {
-  it("son 8, vacías por defecto, y se validan", () => {
+  it("hay una por color de jugador, vacías por defecto, y se validan", () => {
     const base = newLayout(10, 8);
-    expect(base.tokens).toHaveLength(8);
+    expect(base.tokens).toHaveLength(16);
     expect(base.tokens.every((t) => t === null)).toBe(true);
     const tokens = [{ model: "mios/robot", size: 9, turn: -90, base: false }, { model: "../x" }, null, "hola"];
     const l = parseLayout({ ...base, tokens });
-    expect(l?.tokens).toHaveLength(8);
+    expect(l?.tokens).toHaveLength(16);
     expect(l?.tokens[0]).toEqual({ model: "mios/robot", size: 2.5, turn: 270, base: false });
     expect(l?.tokens.slice(1).every((t) => t === null)).toBe(true);
-    expect(parseLayout({ ...base, tokens: undefined })?.tokens).toHaveLength(8);
+    expect(parseLayout({ ...base, tokens: undefined })?.tokens).toHaveLength(16);
+    // un diseño guardado con 8 fichas sigue valiendo (se completa con las nuevas)
+    expect(parseLayout({ ...base, tokens: Array(8).fill(null) })?.tokens).toHaveLength(16);
     expect(resize({ ...base, tokens: l!.tokens }, 20, 12).tokens).toEqual(l!.tokens);
+  });
+});
+
+describe("ampliar el mundo", () => {
+  const base = () => {
+    let l = paint(newLayout(10, 8), 0, 0, 1, "water");
+    l = raise(l, 9, 7, 1, 3);
+    return { ...l, tiles: [{ x: 2, y: 2 }], objects: [{ id: "a", model: "cementerio/grave", x: 3.5, y: 0.5, z: 4.5, rx: 0, ry: 0, rz: 0, s: 1 }] };
+  };
+  it("por el lado + no mueve nada y continúa el terreno del borde", () => {
+    const l = expand(base(), "x+", 5);
+    expect([l.w, l.h]).toEqual([15, 8]);
+    expect(l.objects[0].x).toBe(3.5);
+    expect(l.tiles[0]).toEqual({ x: 2, y: 2 });
+    expect(l.height[7 * 15 + 14]).toBe(5); // el borde (2 + 3 de altura) se repite en lo nuevo
+    expect(l.ground[0]).toBe("water");
+  });
+  it("por el lado - corre las casillas y los objetos", () => {
+    const l = expand(expand(base(), "x-", 4), "z-", 3);
+    expect([l.w, l.h]).toEqual([14, 11]);
+    expect(l.tiles[0]).toEqual({ x: 6, y: 5 });
+    expect(l.objects[0].x).toBe(7.5);
+    expect(l.objects[0].z).toBe(7.5);
+    expect(l.ground[3 * 14 + 4]).toBe("water"); // el agua de la esquina viajó con todo
+    expect(l.ground[0]).toBe("water"); // y la esquina nueva continúa el agua
+  });
+  it("respeta el máximo y no cambia nada si no cabe", () => {
+    expect(expand(base(), "z+", 500).h).toBe(MAX_SIZE);
+    const full = expand(base(), "z+", 500);
+    expect(expand(full, "z+", 4)).toBe(full);
   });
 });
 

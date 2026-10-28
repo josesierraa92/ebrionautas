@@ -108,16 +108,20 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
     const base = geo.at(pos);
     const group = groups.get(pos)!;
     const i = group.indexOf(p);
-    // Varias fichas en una casilla: en fila a lo ancho de la losa.
-    const off = (i - (group.length - 1) / 2) * (group.length > 2 ? 0.24 : 0.32);
-    const x = base.x + off * geo.cell;
-    const y = base.y + 4 * k;
+    // Varias fichas en una casilla: hasta 4 en fila a lo ancho de la losa; si son más, en cuadrícula y más chicas.
+    const n = group.length;
+    const cols = n <= 4 ? n : Math.ceil(Math.sqrt(n));
+    const rows = Math.ceil(n / cols);
+    const hOff = ((i % cols) - (cols - 1) / 2) * (n > 4 ? 0.2 : n > 2 ? 0.24 : 0.32);
+    const dOff = n > 4 ? (Math.floor(i / cols) - (rows - 1) / 2) * 0.17 : 0; // hacia delante o hacia atrás en la losa
+    const x = base.x + hOff * geo.cell;
+    const y = base.y + 4 * k + dOff * geo.cell * 0.5;
     const mul = geo.tokenScale?.[PLAYER_COLORS.indexOf(avatarOf(p).skin.toLowerCase())] ?? 1;
-    const size = (group.length > 3 ? 64 : 86) * k * mul;
+    const size = (n > 8 ? 46 : n > 3 ? 62 : 86) * k * mul;
     const isCurrent = p.id === current && !winner;
     const isFlying = p.id === flying;
     standing.push({
-      d: base.y + 0.6 * k + i * 0.01,
+      d: base.y + 0.6 * k + dOff * geo.cell * 0.5 + i * 0.01,
       key: p.id,
       el: (
         <g
@@ -145,13 +149,13 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
             y={-size * 1.08}
             textAnchor="middle"
             fontFamily="var(--font-lilita), sans-serif"
-            fontSize={(group.length > 3 ? 13 : 16) * k}
+            fontSize={(n > 8 ? 11 : n > 3 ? 13 : 16) * k}
             fill={isCurrent ? "#ffe066" : "#ffffff"}
             stroke="#1b1f4b"
             strokeWidth={5 * k}
             paintOrder="stroke"
           >
-            {p.name}
+            {n > 8 && !isCurrent ? "" : p.name}
           </text>
         </g>
       ),

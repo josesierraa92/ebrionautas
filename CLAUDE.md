@@ -120,6 +120,14 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   TV (imagen 252×408, pies abajo) y se suben a Blob (`tokens` y `tokenScale` de `PublishedBoard`). La TV las lee con
   `useTokenArt` (`usePublishedBoard.ts`), que usa `Marciano`; `IsoBoard` aplica `tokenScale`. Las fichas sin cambiar
   siguen siendo el zombi de serie. La petición de publicar lleva todo junto: el tablero se limita a ~3,3 MB.
+- Hasta **16 jugadores** (`PLAYER_COLORS` en `tileStyle.ts`: cada color tiene su imagen `public/art/alien/<i>.webp` con
+  un accesorio distinto, `LOOKS` en `scripts/board3d/scene.ts`; el editor tiene una ficha por color). Para más,
+  añadir colores y accesorios y volver a correr `node scripts/board3d/render.mjs` (restaurar con git los archivos que
+  no sean `alien/` si cambian). Con más de 4 en una casilla, `IsoBoard` los pone en cuadrícula y más chicos.
+- Editor: selección múltiple (recuadro arrastrando en vacío, Mayús/Ctrl + clic, Ctrl+A) con un pivote que mueve y gira
+  el grupo (`startMulti`/`onMultiChange` en `scene.ts`). Girar con 🧲 Ajustar = flechas ↺ ↻ de 90° como en Los Sims
+  (`rotateSelection`, HTML que la escena coloca sobre la selección); sin Ajustar = anillo libre. Mundo ampliable por
+  cada lado (`expand` en `layout.ts`, botones ↖ ↗ ↙ ↘ de 8 casillas; máximo `MAX_SIZE` = 96) sin mover lo construido.
 - Datos: `src/editor/layout.ts` (formato `BoardLayout`, funciones puras con tests), `history.ts` (deshacer),
   `scene.ts` (Three.js: dibuja el diseño y recoge el ratón), `BoardEditor.tsx` (la interfaz).
 - Se guarda en Redis (`src/server/boardDesign.ts`, API `src/app/api/admin/board`). Guardar pide la clave

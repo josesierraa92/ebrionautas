@@ -2,6 +2,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { put } from "@vercel/blob";
 import { parseLayout, type BoardLayout } from "@/editor/layout";
+import { PLAYER_COLORS } from "@/game/tileStyle";
 import { parsePublished, type PublishedBoard } from "@/game/publishedBoard";
 import { RoomError } from "./rooms";
 import { getStore } from "./store";
@@ -60,7 +61,7 @@ export async function loadPublished(): Promise<PublishedBoard | null> {
 
 /** Imagen de una ficha guardada en el almacén (solo desarrollo). */
 export async function loadDevToken(i: number): Promise<Buffer | null> {
-  const raw = Number.isInteger(i) && i >= 0 && i < 8 ? await getStore().get(TOKEN_KEY(i)) : null;
+  const raw = Number.isInteger(i) && i >= 0 && i < PLAYER_COLORS.length ? await getStore().get(TOKEN_KEY(i)) : null;
   return raw ? Buffer.from(raw, "base64") : null;
 }
 
@@ -94,7 +95,7 @@ export async function publishBoard(raw: Record<string, unknown>): Promise<Publis
   }
   // fichas propias: una imagen por color de jugador (o null para dejar el zombi de serie)
   const tokens: (string | null)[] = [];
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < PLAYER_COLORS.length; i++) {
     const t = Array.isArray(raw.tokens) ? raw.tokens[i] : null;
     if (t === null || t === undefined) {
       tokens.push(null);
@@ -110,7 +111,7 @@ export async function publishBoard(raw: Record<string, unknown>): Promise<Publis
       tokens.push(`/api/board/token/${i}?v=${version}`);
     }
   }
-  const tokenScale = Array.from({ length: 8 }, (_, i) => {
+  const tokenScale = Array.from({ length: PLAYER_COLORS.length }, (_, i) => {
     const v = Array.isArray(raw.tokenScale) ? raw.tokenScale[i] : 1;
     return typeof v === "number" && Number.isFinite(v) ? Math.min(2.5, Math.max(0.4, v)) : 1;
   });

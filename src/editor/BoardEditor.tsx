@@ -21,6 +21,7 @@ import {
   MIN_SIZE,
   newLayout,
   newObjectId,
+  expand,
   paint,
   parseLayout,
   raise,
@@ -92,7 +93,9 @@ export default function BoardEditor() {
   const [grid, setGrid] = useState(true);
   const [randomTurn, setRandomTurn] = useState(true);
   const [stampModel, setStampModel] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const selected = selectedIds.length === 1 ? selectedIds[0] : null; // el panel completo es para un solo objeto
+  const handleRef = useRef<HTMLDivElement>(null);
   const [live, setLive] = useState<PlacedObject | null>(null);
   const [kit, setKit] = useState("todos");
   const [search, setSearch] = useState("");
@@ -200,20 +203,38 @@ export default function BoardEditor() {
   };
 
   const removeSelected = useCallback(() => {
-    if (!selected) return;
+    if (!selectedIds.length) return;
     const l = layoutRef.current;
-    commit({ ...l, objects: l.objects.filter((o) => o.id !== selected) });
-    setSelected(null);
-  }, [commit, selected]);
+    const gone = new Set(selectedIds);
+    commit({ ...l, objects: l.objects.filter((o) => !gone.has(o.id)) });
+    setSelectedIds([]);
+  }, [commit, selectedIds]);
 
   const duplicateSelected = useCallback(() => {
-    const o = layoutRef.current.objects.find((x) => x.id === selected);
-    if (!o) return;
-    const copy = { ...o, id: newObjectId(), x: o.x + 1, z: o.z + 1 };
-    copy.y = groundAt(layoutRef.current, copy.x, copy.z) + (o.y - groundAt(layoutRef.current, o.x, o.z));
-    commit({ ...layoutRef.current, objects: [...layoutRef.current.objects, copy] });
-    requestAnimationFrame(() => sceneRef.current?.select(copy.id));
-  }, [commit, selected]);
+    const l = layoutRef.current;
+    const originals = l.objects.filter((o) => selectedIds.includes(o.id));
+    if (!originals.length) return;
+    // las copias van una casilla corridas y quedan elegidas, para moverlas enseguida
+    const copies = originals.map((o) => {
+      const copy = { ...o, id: newObjectId(), x: o.x + 1, z: o.z + 1 };
+      copy.y = groundAt(l, copy.x, copy.z) + (o.y - groundAt(l, o.x, o.z));
+      return copy;
+    });
+    commit({ ...l, objects: [...l.objects, ...copies] });
+    requestAnimationFrame(() => sceneRef.current?.setSelection(copies.map((c) => c.id)));
+  }, [commit, selectedIds]);
+
+  /** Pone en el suelo / encaja en la rejilla lo elegido (uno o varios). */
+  const fixSelected = async (kind: "ground" | "grid") => {
+    const l = layoutRef.current;
+    const picked = l.objects.filter((o) => selectedIds.includes(o.id));
+    const next = new Map<string, PlacedObject>();
+    for (const o of picked) {
+      if (kind === "ground") next.set(o.id, { ...o, y: groundAt(l, o.x, o.z) });
+      else if (sceneRef.current) next.set(o.id, { ...(await sceneRef.current.snapObject(o, true)), ...(o.light && { light: o.light }) });
+    }
+    commit({ ...layoutRef.current, objects: layoutRef.current.objects.map((o) => next.get(o.id) ?? o) });
+  };
 
   // ---------------------------------------------------------------- escena 3D
 
@@ -264,15 +285,16 @@ export default function BoardEditor() {
           setTick((t) => t + 1);
         }
       },
-      onSelect: (id) => {
-        setSelected(id);
+      onSelect: (ids) => {
+        setSelectedIds(ids);
         setLive(null);
       },
-      onObjectEdited: (o, final) => {
-        if (!final) return setLive(o);
+      onObjectsEdited: (list, final) => {
+        if (!final) return setLive(list.length === 1 ? list[0] : null);
         setLive(null);
         const l = layoutRef.current;
-        commit({ ...l, objects: l.objects.map((x) => (x.id === o.id ? { ...o, ...(x.light && { light: x.light }) } : x)) });
+        const byId = new Map(list.map((o) => [o.id, o]));
+        commit({ ...l, objects: l.objects.map((x) => (byId.has(x.id) ? { ...byId.get(x.id)!, ...(x.light && { light: x.light }) } : x)) });
       },
       onStamp: (x, y, z) => {
         const t = toolRef.current;
@@ -280,6 +302,7 @@ export default function BoardEditor() {
       },
     });
     scene.modelUrl = (id) => modelsRef.current.get(id)?.file;
+    scene.setRotateHandle(handleRef.current);
     sceneRef.current = scene;
     const draft = readDraft();
     if (draft) setLayout(draft);
@@ -326,6 +349,10 @@ export default function BoardEditor() {
       } else if ((e.ctrlKey || e.metaKey) && k === "y") {
         e.preventDefault();
         redo();
+      } else if ((e.ctrlKey || e.metaKey) && k === "a") {
+        e.preventDefault();
+        setTool("select");
+        sceneRef.current?.selectAll();
       } else if ((e.ctrlKey || e.metaKey) && k === "d") {
         e.preventDefault();
         duplicateSelected();
@@ -605,6 +632,33 @@ export default function BoardEditor() {
             </button>
           )}
         </label>
+        {/* ampliar el mundo por el lado que haga falta, sin mover lo construido */}
+        <div className="flex items-center gap-1 text-sm" title="Agrandar el mundo 8 casillas por ese lado (lo construido no se mueve)">
+          Ampliar
+          {(
+            [
+              ["x-", "↖", "arriba a la izquierda"],
+              ["z-", "↗", "arriba a la derecha"],
+              ["z+", "↙", "abajo a la izquierda"],
+              ["x+", "↘", "abajo a la derecha"],
+            ] as const
+          ).map(([side, arrow, where]) => (
+            <button
+              key={side}
+              className={`${btn} ${off} px-2`}
+              title={`Agrandar 8 casillas hacia ${where}`}
+              onClick={() => {
+                const l = layoutRef.current;
+                const next = expand(l, side, 8);
+                if (next === l) return setStatus(`El mundo ya tiene el tamaño máximo (${MAX_SIZE} casillas).`);
+                commit(next);
+                setStatus(`Mundo de ${next.w}×${next.h}. Lo que construiste no se movió.`);
+              }}
+            >
+              {arrow}
+            </button>
+          ))}
+        </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <button className={`${btn} ${layout.tokens.some(Boolean) ? on : off}`} onClick={() => setTokensOpen(true)} title="Elegir el modelo de cada ficha de jugador">
             🧟 Fichas
@@ -692,6 +746,36 @@ export default function BoardEditor() {
                 <input type="checkbox" checked={randomTurn} onChange={(e) => setRandomTurn(e.target.checked)} />
                 Giro al azar (natural para árboles y rocas)
               </label>
+            </div>
+          )}
+
+          {selectedIds.length > 1 && (
+            <div className="grid gap-2 rounded-lg bg-white/5 p-2 text-sm">
+              <p className="font-semibold">{selectedIds.length} objetos elegidos</p>
+              <div className="flex gap-1">
+                {GIZMOS.filter((g) => g.id !== "scale").map((g) => (
+                  <button key={g.id} className={`${btn} flex-1 px-1 ${gizmo === g.id ? on : off}`} onClick={() => setGizmo(g.id)} title={`Tecla ${g.key}`}>
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs opacity-70">
+                Se mueven y giran juntos. Mayús o Ctrl + clic suma o quita uno; arrastra un recuadro en vacío para elegir varios.
+              </p>
+              <div className="grid grid-cols-2 gap-1">
+                <button className={`${btn} ${off}`} onClick={() => void fixSelected("ground")}>
+                  Al suelo
+                </button>
+                <button className={`${btn} ${off}`} onClick={() => void fixSelected("grid")} title="Alinea cada objeto con la rejilla">
+                  🧲 Encajar
+                </button>
+                <button className={`${btn} ${off}`} onClick={duplicateSelected} title="Ctrl+D">
+                  Duplicar
+                </button>
+                <button className={`${btn} bg-red-500/80 hover:bg-red-500`} onClick={removeSelected} title="Supr">
+                  Borrar
+                </button>
+              </div>
             </div>
           )}
 
@@ -785,6 +869,8 @@ export default function BoardEditor() {
             <p>Shift + clic derecho: desplazar</p>
             <p>Rueda: acercar / alejar</p>
             <p>Arrastra un modelo del catálogo al suelo, o haz clic en él para sellar copias.</p>
+            <p>Mayús + clic o un recuadro en vacío: elegir varios · Ctrl+A todo</p>
+            <p>Girar con 🧲 Ajustar: flechas ↺ ↻ de 90°; sin Ajustar: libre</p>
             <p>Ctrl+Z deshacer · Ctrl+D duplicar · Supr borrar</p>
           </div>
         </aside>
@@ -797,6 +883,25 @@ export default function BoardEditor() {
           onPointerDown={() => (document.activeElement as HTMLElement | null)?.blur()}
         >
           <div ref={viewRef} className="absolute inset-0" />
+          {/* flechas de giro rápido (Ajustar + Girar): de 90° en 90°, como en Los Sims. Las coloca la escena. */}
+          <div ref={handleRef} className="pointer-events-none absolute top-0 left-0 z-10 hidden">
+            <div className="pointer-events-auto flex -translate-x-1/2 -translate-y-full gap-1.5 pb-1">
+              <button
+                className="grid h-9 w-9 place-items-center rounded-full bg-amber-400 text-lg font-bold text-black shadow-lg ring-2 ring-black/40 hover:bg-amber-300"
+                title="Girar a la izquierda (90°)"
+                onClick={() => sceneRef.current?.rotateSelection(Math.PI / 2)}
+              >
+                ↺
+              </button>
+              <button
+                className="grid h-9 w-9 place-items-center rounded-full bg-amber-400 text-lg font-bold text-black shadow-lg ring-2 ring-black/40 hover:bg-amber-300"
+                title="Girar a la derecha (90°)"
+                onClick={() => sceneRef.current?.rotateSelection(-Math.PI / 2)}
+              >
+                ↻
+              </button>
+            </div>
+          </div>
           {!catalog && <p className="absolute inset-0 grid place-items-center text-lg opacity-70">Cargando modelos…</p>}
           {status && (
             <button className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-sm" onClick={() => setStatus("")}>

@@ -17,9 +17,10 @@ export type SceneEvents = {
   /** Trazo de pincel sobre una celda (phase "start" al apretar, "move" al pasar a otra celda). */
   onStroke: (x: number, y: number, phase: "start" | "move") => void;
   onStrokeEnd: () => void;
-  onSelect: (id: string | null) => void;
-  /** Un objeto cambió con el gizmo; `final` al soltar el ratón. */
-  onObjectEdited: (o: PlacedObject, final: boolean) => void;
+  /** La selección cambió: ids de los objetos elegidos (vacío = ninguno). */
+  onSelect: (ids: string[]) => void;
+  /** Uno o varios objetos cambiaron (gizmo, flechas de giro); `final` al soltar el ratón. */
+  onObjectsEdited: (list: PlacedObject[], final: boolean) => void;
   /** Clic con la herramienta de sellar: colocar el modelo en ese punto. */
   onStamp: (x: number, y: number, z: number) => void;
 };
@@ -90,8 +91,17 @@ export class EditorScene {
   private down: { x: number; y: number; button: number } | null = null;
   private stroking = false;
   private lastCell = "";
-  private selected: string | null = null;
+  private selectedIds: string[] = [];
   private dragOffset = 0;
+  /** Con varios objetos elegidos el gizmo mueve este pivote y los objetos lo siguen. */
+  private pivot = new THREE.Object3D();
+  private multiStart: { center: THREE.Vector3; entries: { id: string; pos: THREE.Vector3; ry: number; lift: number }[] } | null = null;
+  private mode: GizmoMode = "translate";
+  /** Flechas de giro rápido (HTML, las pone el editor): solo con Ajustar y la herramienta Girar. */
+  private handleEl: HTMLElement | null = null;
+  private handleOn = false;
+  private marqueeEl: HTMLDivElement;
+  private marquee: { x0: number; y0: number; active: boolean } | null = null;
   private snap = true;
 
   /** Ruta de cada modelo del catálogo (id -> url del .glb). */
@@ -147,20 +157,31 @@ export class EditorScene {
     this.gizmo = new TransformControls(this.camera, this.renderer.domElement);
     this.gizmo.setSize(1.1);
     this.scene.add(this.gizmo.getHelper());
+    this.scene.add(this.pivot);
     this.gizmo.addEventListener("dragging-changed", (e) => {
       this.orbit.enabled = !e.value;
-      const g = this.selectedGroup();
-      if (e.value && g && this.layout) this.dragOffset = g.position.y - groundAt(this.layout, g.position.x, g.position.z);
+      if (!this.layout) return;
+      if (this.selectedIds.length > 1) {
+        if (e.value) this.startMulti();
+        else this.finishMulti();
+        return;
+      }
+      const g = this.singleGroup();
+      if (e.value && g) this.dragOffset = g.position.y - groundAt(this.layout, g.position.x, g.position.z);
       if (!e.value) {
         // al soltar tras girar o escalar, la huella cambió: se vuelve a encajar en la rejilla
         if (g && this.snap) {
           const p = this.snapXZ(g.userData.model, g.position.x, g.position.z, g.rotation.y, g.scale.y, g.userData.sx, g.userData.sz);
-          if (this.layout) g.position.set(p.x, groundAt(this.layout, p.x, p.z) + (g.position.y - groundAt(this.layout, g.position.x, g.position.z)), p.z);
+          g.position.set(p.x, groundAt(this.layout, p.x, p.z) + (g.position.y - groundAt(this.layout, g.position.x, g.position.z)), p.z);
         }
         this.emitEdited(true);
       }
     });
-    this.gizmo.addEventListener("objectChange", () => this.onGizmoChange());
+    this.gizmo.addEventListener("objectChange", () => (this.selectedIds.length > 1 ? this.onMultiChange() : this.onGizmoChange()));
+    // recuadro de selección (arrastrar en vacío con la herramienta Seleccionar)
+    this.marqueeEl = document.createElement("div");
+    Object.assign(this.marqueeEl.style, { position: "absolute", display: "none", border: "1px dashed #ffd23f", background: "rgba(255,210,63,0.12)", pointerEvents: "none", zIndex: "5" });
+    container.appendChild(this.marqueeEl);
     this.setGizmoMode("translate");
 
     const el = this.renderer.domElement;
@@ -177,6 +198,7 @@ export class EditorScene {
       this.frame = requestAnimationFrame(loop);
       this.orbit.update();
       this.renderer.render(this.scene, this.camera);
+      this.updateHandle();
     };
     loop();
   }
@@ -189,6 +211,7 @@ export class EditorScene {
     this.orbit.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
+    this.marqueeEl.remove();
   }
 
   // ------------------------------------------------------------------ cámara
@@ -234,31 +257,79 @@ export class EditorScene {
   }
 
   setGizmoMode(mode: GizmoMode) {
-    this.gizmo.setMode(mode);
-    // con Ajustar, mover encaja en la rejilla (onGizmoChange) y girar va de 90° en 90°
+    this.mode = mode;
+    // con varios objetos no hay tamaño: se mueven y se giran en bloque
+    const effective: GizmoMode = this.selectedIds.length > 1 && mode === "scale" ? "translate" : mode;
+    this.gizmo.setMode(effective);
+    // con Ajustar, mover encaja en la rejilla (onGizmoChange)
     this.gizmo.setTranslationSnap(null);
-    this.gizmo.setRotationSnap(this.snap ? Math.PI / 2 : null);
+    this.gizmo.setRotationSnap(null);
     this.gizmo.setScaleSnap(this.snap ? 0.1 : null);
     // Mover: solo sobre el suelo (la altura se ajusta sola). Girar: solo alrededor del eje vertical.
-    this.gizmo.showX = mode !== "rotate";
-    this.gizmo.showZ = mode !== "rotate";
-    this.gizmo.showY = mode !== "translate";
+    this.gizmo.showX = effective !== "rotate";
+    this.gizmo.showZ = effective !== "rotate";
+    this.gizmo.showY = effective !== "translate";
+    // Girar con Ajustar: no hay anillo, hay flechas de 90° (como en Los Sims). Sin Ajustar: anillo libre.
+    this.handleOn = effective === "rotate" && this.snap && this.selectedIds.length > 0;
+    this.gizmo.enabled = !this.handleOn;
+    this.gizmo.getHelper().visible = !this.handleOn && this.selectedIds.length > 0;
   }
 
   setGrid(on: boolean) {
     this.grid.visible = on;
   }
 
-  select(id: string | null, notify = true) {
-    this.selected = id;
-    const g = id ? this.objects.get(id) : undefined;
-    if (g) this.gizmo.attach(g);
-    else this.gizmo.detach();
-    if (notify) this.events.onSelect(g ? id : null);
+  /** Elemento HTML con las flechas de giro (el editor lo coloca y la escena lo mueve sobre la selección). */
+  setRotateHandle(el: HTMLElement | null) {
+    this.handleEl = el;
   }
 
-  private selectedGroup() {
-    return this.selected ? this.objects.get(this.selected) : undefined;
+  /** Está activo el giro por flechas (Ajustar + Girar): el editor muestra o no el texto de ayuda. */
+  get usesRotateArrows() {
+    return this.handleOn;
+  }
+
+  select(id: string | null, notify = true) {
+    this.setSelection(id ? [id] : [], notify);
+  }
+
+  selectAll() {
+    this.setSelection([...this.objects.keys()]);
+  }
+
+  setSelection(ids: string[], notify = true) {
+    this.selectedIds = [...new Set(ids)].filter((id) => this.objects.has(id));
+    this.attachGizmo();
+    if (notify) this.events.onSelect(this.selectedIds);
+  }
+
+  /** Suma o quita un objeto de la selección (Mayús o Ctrl + clic). */
+  toggleSelect(id: string) {
+    this.setSelection(this.selectedIds.includes(id) ? this.selectedIds.filter((x) => x !== id) : [...this.selectedIds, id]);
+  }
+
+  private singleGroup() {
+    return this.selectedIds.length === 1 ? this.objects.get(this.selectedIds[0]) : undefined;
+  }
+
+  private selectionCenter() {
+    const c = new THREE.Vector3();
+    const groups = this.selectedIds.map((id) => this.objects.get(id)!).filter(Boolean);
+    for (const g of groups) c.add(g.position);
+    return groups.length ? c.multiplyScalar(1 / groups.length) : c;
+  }
+
+  /** Engancha el gizmo al objeto (uno) o al pivote (varios). */
+  private attachGizmo() {
+    const n = this.selectedIds.length;
+    if (n === 0) this.gizmo.detach();
+    else if (n === 1) this.gizmo.attach(this.objects.get(this.selectedIds[0])!);
+    else {
+      this.pivot.position.copy(this.selectionCenter());
+      this.pivot.quaternion.identity();
+      this.gizmo.attach(this.pivot);
+    }
+    this.setGizmoMode(this.mode);
   }
 
   // ------------------------------------------------------------------ dibujar el diseño
@@ -453,7 +524,7 @@ export class EditorScene {
     const keep = new Set(list.map((o) => o.id));
     for (const [id, g] of this.objects)
       if (!keep.has(id)) {
-        if (this.selected === id) this.select(null);
+        if (this.selectedIds.includes(id)) this.setSelection(this.selectedIds.filter((x) => x !== id));
         this.objectRoot.remove(g);
         this.objects.delete(id);
       }
@@ -471,7 +542,7 @@ export class EditorScene {
           group.add(m.clone(true));
           if (group.userData.pending) this.applyObjectLight(group, group.userData.pending as PlacedObject); // la caja del modelo ya existe
         });
-        if (this.selected === o.id) this.gizmo.attach(group);
+        if (this.selectedIds.includes(o.id)) this.attachGizmo();
       }
       g.position.set(o.x, o.y, o.z);
       g.rotation.set(o.rx, o.ry, o.rz);
@@ -689,6 +760,7 @@ export class EditorScene {
   private onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0) return;
     this.down = { x: e.clientX, y: e.clientY, button: e.button };
+    if (this.tool === "select" && this.gizmo.axis === null) this.marquee = { x0: e.clientX, y0: e.clientY, active: false };
     if (this.tool === "select" || this.tool === "stamp") return;
     const g = this.pickGround(e);
     if (!g) return;
@@ -704,6 +776,7 @@ export class EditorScene {
   }
 
   private onPointerMove = (e: PointerEvent) => {
+    if (this.marquee) this.updateMarquee(e);
     if (this.tool === "select") return;
     const g = this.pickGround(e);
     this.updateBrush(g);
@@ -723,6 +796,11 @@ export class EditorScene {
       this.events.onStrokeEnd();
       return;
     }
+    if (this.marquee?.active) {
+      this.finishMarquee(e);
+      return;
+    }
+    this.marquee = null;
     if (!down || e.target !== this.renderer.domElement) return;
     const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5;
     if (moved) return;
@@ -731,8 +809,57 @@ export class EditorScene {
       if (g) this.events.onStamp(g.x, g.y, g.z);
       return;
     }
-    if (this.tool === "select" && !this.gizmo.dragging && this.gizmo.axis === null) this.select(this.pickObject(e));
+    if (this.tool === "select" && !this.gizmo.dragging && this.gizmo.axis === null) {
+      const id = this.pickObject(e);
+      // Mayús o Ctrl: suma o quita ese objeto de la selección; sin ellos, solo ese objeto (o ninguno)
+      if (id && (e.shiftKey || e.ctrlKey || e.metaKey)) this.toggleSelect(id);
+      else if (!id && (e.shiftKey || e.ctrlKey || e.metaKey)) return;
+      else this.select(id);
+    }
   };
+
+  // ------------------------------------------------------------------ recuadro de selección
+
+  private localPoint(e: { clientX: number; clientY: number }) {
+    const r = this.renderer.domElement.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  private updateMarquee(e: PointerEvent) {
+    const m = this.marquee;
+    if (!m || (e.buttons & 1) === 0) return;
+    if (!m.active && Math.hypot(e.clientX - m.x0, e.clientY - m.y0) < 6) return;
+    m.active = true;
+    const a = this.localPoint({ clientX: m.x0, clientY: m.y0 });
+    const b = this.localPoint(e);
+    Object.assign(this.marqueeEl.style, {
+      display: "block",
+      left: `${Math.min(a.x, b.x)}px`,
+      top: `${Math.min(a.y, b.y)}px`,
+      width: `${Math.abs(a.x - b.x)}px`,
+      height: `${Math.abs(a.y - b.y)}px`,
+    });
+  }
+
+  /** Elige los objetos cuyo centro cae dentro del recuadro (con Mayús o Ctrl se suman a los que ya había). */
+  private finishMarquee(e: PointerEvent) {
+    const m = this.marquee!;
+    this.marquee = null;
+    this.marqueeEl.style.display = "none";
+    const a = this.localPoint({ clientX: m.x0, clientY: m.y0 });
+    const b = this.localPoint(e);
+    const [x0, x1] = [Math.min(a.x, b.x), Math.max(a.x, b.x)];
+    const [y0, y1] = [Math.min(a.y, b.y), Math.max(a.y, b.y)];
+    const w = this.renderer.domElement.clientWidth;
+    const h = this.renderer.domElement.clientHeight;
+    const inside: string[] = [];
+    for (const [id, g] of this.objects) {
+      const c = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()).project(this.camera);
+      const [px, py] = [((c.x + 1) / 2) * w, ((1 - c.y) / 2) * h];
+      if (px >= x0 && px <= x1 && py >= y0 && py <= y1) inside.push(id);
+    }
+    this.setSelection(e.shiftKey || e.ctrlKey || e.metaKey ? [...this.selectedIds, ...inside] : inside);
+  }
 
   private updateBrush(g: ReturnType<EditorScene["pickGround"]>) {
     const l = this.layout;
@@ -763,7 +890,7 @@ export class EditorScene {
   // ------------------------------------------------------------------ gizmo
 
   private onGizmoChange() {
-    const g = this.selectedGroup();
+    const g = this.singleGroup();
     if (!g || !this.layout) return;
     const mode = this.gizmo.getMode();
     if (mode === "translate") {
@@ -786,27 +913,122 @@ export class EditorScene {
     this.emitEdited(false);
   }
 
-  private emitEdited(final: boolean) {
-    const g = this.selectedGroup();
-    if (!g) return;
+  private placedOf(g: THREE.Group): PlacedObject {
     g.userData.lastScale = g.scale.y;
     const { sx, sz } = g.userData;
-    this.events.onObjectEdited(
-      {
-        id: g.userData.id,
-        model: g.userData.model,
-        x: g.position.x,
-        y: g.position.y,
-        z: g.position.z,
-        rx: g.rotation.x,
-        ry: g.rotation.y,
-        rz: g.rotation.z,
-        s: g.scale.y,
-        ...(sx !== 1 && { sx }),
-        ...(sz !== 1 && { sz }),
-      },
-      final,
-    );
+    return {
+      id: g.userData.id,
+      model: g.userData.model,
+      x: g.position.x,
+      y: g.position.y,
+      z: g.position.z,
+      rx: g.rotation.x,
+      ry: g.rotation.y,
+      rz: g.rotation.z,
+      s: g.scale.y,
+      ...(sx !== 1 && { sx }),
+      ...(sz !== 1 && { sz }),
+    };
+  }
+
+  private emitEdited(final: boolean) {
+    const g = this.singleGroup();
+    if (g) this.events.onObjectsEdited([this.placedOf(g)], final);
+  }
+
+  // ------------------------------------------------------------------ varios objetos a la vez
+
+  private startMulti() {
+    if (!this.layout) return;
+    const center = this.pivot.position.clone();
+    const entries = this.selectedIds.map((id) => {
+      const g = this.objects.get(id)!;
+      return { id, pos: g.position.clone(), ry: g.rotation.y, lift: g.position.y - groundAt(this.layout!, g.position.x, g.position.z) };
+    });
+    this.multiStart = { center, entries };
+  }
+
+  /** Mueve y gira todos los objetos elegidos según lo que hizo el gizmo con el pivote. */
+  private onMultiChange() {
+    const st = this.multiStart;
+    const l = this.layout;
+    if (!st || !l) return;
+    let dx = this.pivot.position.x - st.center.x;
+    let dz = this.pivot.position.z - st.center.z;
+    if (this.snap) [dx, dz] = [Math.round(dx), Math.round(dz)]; // saltos de una casilla: lo alineado sigue alineado
+    const q = this.pivot.quaternion;
+    const turn = 2 * Math.atan2(q.y, q.w); // giro alrededor de la vertical
+    const [c, sn] = [Math.cos(turn), Math.sin(turn)];
+    const list: PlacedObject[] = [];
+    for (const e of st.entries) {
+      const g = this.objects.get(e.id);
+      if (!g) continue;
+      const rx = e.pos.x - st.center.x;
+      const rz = e.pos.z - st.center.z;
+      const x = st.center.x + rx * c + rz * sn + dx;
+      const z = st.center.z - rx * sn + rz * c + dz;
+      g.position.set(x, groundAt(l, x, z) + e.lift, z);
+      g.rotation.y = e.ry + turn;
+      list.push(this.placedOf(g));
+    }
+    this.events.onObjectsEdited(list, false);
+  }
+
+  private finishMulti() {
+    this.multiStart = null;
+    const list = this.selectedIds.map((id) => this.objects.get(id)).filter((g): g is THREE.Group => !!g).map((g) => this.placedOf(g));
+    this.events.onObjectsEdited(list, true);
+    this.pivot.position.copy(this.selectionCenter());
+    this.pivot.quaternion.identity();
+  }
+
+  /**
+   * Gira la selección un cuarto de vuelta (las flechas ↺ ↻): uno solo sobre sí mismo, varios alrededor de su centro.
+   * Después cada objeto se vuelve a encajar en la rejilla porque su huella cambia.
+   */
+  rotateSelection(turn: number) {
+    const l = this.layout;
+    const groups = this.selectedIds.map((id) => this.objects.get(id)).filter((g): g is THREE.Group => !!g);
+    if (!l || !groups.length) return;
+    const center = this.selectionCenter();
+    // el centro del grupo se lleva a la rejilla (medias casillas) para que girar no desalinee nada
+    const cx = groups.length > 1 ? Math.round(center.x * 2) / 2 : 0;
+    const cz = groups.length > 1 ? Math.round(center.z * 2) / 2 : 0;
+    const [c, sn] = [Math.cos(turn), Math.sin(turn)];
+    for (const g of groups) {
+      const lift = g.position.y - groundAt(l, g.position.x, g.position.z);
+      let [x, z] = [g.position.x, g.position.z];
+      if (groups.length > 1) [x, z] = [cx + (x - cx) * c + (z - cz) * sn, cz - (x - cx) * sn + (z - cz) * c];
+      g.rotation.y += turn;
+      if (this.snap) {
+        const p = this.snapXZ(g.userData.model, x, z, g.rotation.y, g.scale.y, g.userData.sx, g.userData.sz);
+        [x, z] = [p.x, p.z];
+      }
+      g.position.set(x, groundAt(l, x, z) + lift, z);
+    }
+    this.events.onObjectsEdited(groups.map((g) => this.placedOf(g)), true);
+    this.attachGizmo();
+  }
+
+  /** Cada fotograma: pone las flechas de giro encima de lo elegido. */
+  private updateHandle() {
+    const el = this.handleEl;
+    if (!el) return;
+    if (!this.handleOn || !this.selectedIds.length) {
+      el.style.display = "none";
+      return;
+    }
+    const box = new THREE.Box3();
+    for (const id of this.selectedIds) {
+      const g = this.objects.get(id);
+      if (g) box.union(new THREE.Box3().setFromObject(g));
+    }
+    const top = box.getCenter(new THREE.Vector3());
+    top.y = box.max.y + 0.15;
+    top.project(this.camera);
+    const [w, h] = [this.renderer.domElement.clientWidth, this.renderer.domElement.clientHeight];
+    el.style.display = "flex";
+    el.style.transform = `translate(${((top.x + 1) / 2) * w}px, ${((1 - top.y) / 2) * h}px)`;
   }
 
   // ------------------------------------------------------------------ casillas del juego

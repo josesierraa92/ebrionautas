@@ -41,6 +41,15 @@ export const PLAYER_COLORS = [
   "#00d1c1",
   "#ff8a1f",
   "#9b5de5",
+  // 9-16: más jugadores (cada color lleva su propio accesorio, ver LOOKS en scripts/board3d/scene.ts)
+  "#ff7eb6",
+  "#8fdcff",
+  "#b8f35a",
+  "#c9cdd6",
+  "#8c5a2a",
+  "#243b9e",
+  "#f4efe0",
+  "#3b3b48",
 ];
 
 /** Marciano 3D (generado con IA) del color de un jugador, o null si el color no es de la lista. */

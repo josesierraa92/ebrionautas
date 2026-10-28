@@ -1,5 +1,5 @@
 import { BOARD, TILE_NAMES, type Tile } from "@/game/board";
-import { TILE_STYLE } from "@/game/tileStyle";
+import { PLAYER_COLORS, TILE_STYLE } from "@/game/tileStyle";
 import { DEFAULT_ICON, iconValue } from "./icons";
 
 // Diseño del tablero hecho en el editor (/admin/editor): un terreno de celdas pintables con altura
@@ -37,7 +37,7 @@ export type LightId = keyof typeof LIGHTS;
 export const LEVEL = 0.25;
 export const MAX_LEVEL = 16;
 export const MIN_SIZE = 8;
-export const MAX_SIZE = 64;
+export const MAX_SIZE = 96;
 
 export type PlacedObject = {
   id: string;
@@ -91,7 +91,7 @@ export type BoardLayout = {
   tileStyles: Partial<Record<TileType, TileLook>>;
   /** Aspecto de los números de las casillas. */
   numbers: NumberStyle;
-  /** Modelo de cada una de las 8 fichas (null = el zombi de serie). */
+  /** Modelo de cada ficha, una por color de jugador (null = el zombi de serie). */
   tokens: (TokenSpec | null)[];
 };
 
@@ -102,7 +102,7 @@ export type Cell = { x: number; y: number };
  * `base` pone una peana del color del jugador (los modelos propios no tienen camisa de color para distinguirlos).
  */
 export type TokenSpec = { model: string; size: number; turn: number; base: boolean };
-export const TOKEN_COUNT = 8;
+export const TOKEN_COUNT = PLAYER_COLORS.length;
 export const TOKEN_SIZE = { min: 0.4, max: 2.5 };
 export const DEFAULT_TOKEN: Omit<TokenSpec, "model"> = { size: 1.4, turn: 0, base: true };
 
@@ -222,6 +222,40 @@ export function flatten(l: BoardLayout, cx: number, cy: number, size: number, le
       changed = true;
     }
   return changed ? { ...l, height: next } : l;
+}
+
+/** Lado del mundo por el que se amplía: "x+" es la derecha-abajo en pantalla, "z+" izquierda-abajo, "x-" izquierda-arriba, "z-" derecha-arriba. */
+export type Side = "x+" | "x-" | "z+" | "z-";
+
+/**
+ * Agranda el mundo `n` casillas por un lado, sin mover nada de lo construido (las casillas y los objetos se corren si
+ * el lado nuevo queda antes). El terreno nuevo continúa el del borde (mismo suelo y altura), así no queda un corte.
+ */
+export function expand(l: BoardLayout, side: Side, n: number): BoardLayout {
+  const horizontal = side === "x+" || side === "x-";
+  const room = (horizontal ? MAX_SIZE - l.w : MAX_SIZE - l.h);
+  n = Math.min(Math.round(n), room);
+  if (n <= 0) return l;
+  const w = l.w + (horizontal ? n : 0);
+  const h = l.h + (horizontal ? 0 : n);
+  const ox = side === "x-" ? n : 0;
+  const oy = side === "z-" ? n : 0;
+  const out = newLayout(w, h);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const src = cellIndex(l, Math.min(l.w - 1, Math.max(0, x - ox)), Math.min(l.h - 1, Math.max(0, y - oy)));
+      out.ground[y * w + x] = l.ground[src];
+      out.height[y * w + x] = l.height[src];
+    }
+  return {
+    ...l,
+    w,
+    h,
+    ground: out.ground,
+    height: out.height,
+    tiles: l.tiles.map((t) => ({ x: t.x + ox, y: t.y + oy })),
+    objects: l.objects.map((o) => ({ ...o, x: o.x + ox, z: o.z + oy })),
+  };
 }
 
 /** Cambia el tamaño del mundo conservando lo pintado; lo que queda fuera se pierde. */

@@ -52,7 +52,7 @@ describe("diseño del tablero en el servidor", () => {
     vi.stubEnv("BLOB_READ_WRITE_TOKEN", "");
     const tiles = Array.from({ length: 62 }, (_, i) => ({ x: i * 10, y: 50 }));
     const webp = "data:image/webp;base64,UklGRg==";
-    const shot = { image: webp, width: 1000, height: 800, cell: 40, bg: "#112233", tiles, tokens: [null, webp, null, null, null, null, null, null], tokenScale: [1, 9, 1, 1, 1, 1, 1, 1] };
+    const shot = { image: webp, width: 1000, height: 800, cell: 40, bg: "#112233", tiles, tokens: [null, webp, ...Array(14).fill(null)], tokenScale: [1, 9, ...Array(14).fill(1)] };
     const b = await publishBoard(shot);
     expect(b.tokens?.[0]).toBeNull();
     expect(b.tokens?.[1]).toMatch(/^\/api\/board\/token\/1\?v=/);

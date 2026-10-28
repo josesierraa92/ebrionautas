@@ -576,8 +576,14 @@ export async function renderBoard(scale: number) {
 // tienen la misma silueta. Cada jugador se distingue por la camisa de su color y un accesorio en la
 // cabeza; todos con los brazos hacia delante (pose de zombi) y una botella en la mano.
 
-type Look = "casco" | "gorra" | "novia" | "obra" | "vaquero" | "gas" | "cono" | "chistera";
-const LOOKS: Look[] = ["casco", "gorra", "novia", "obra", "vaquero", "gas", "cono", "chistera"];
+type Look =
+  | "casco" | "gorra" | "novia" | "obra" | "vaquero" | "gas" | "cono" | "chistera"
+  | "pirata" | "mago" | "corona" | "mohicano" | "cuernos" | "gorro" | "cerebro" | "bombero";
+// un accesorio por color de PLAYER_COLORS (16 jugadores)
+const LOOKS: Look[] = [
+  "casco", "gorra", "novia", "obra", "vaquero", "gas", "cono", "chistera",
+  "pirata", "mago", "corona", "mohicano", "cuernos", "gorro", "cerebro", "bombero",
+];
 
 /** Accesorio de cabeza, en coordenadas de la cabeza: `top` es la coronilla, `w` el ancho y `front` la cara. */
 function headgear(look: Look, w: number, top: number, front: number) {
@@ -631,6 +637,44 @@ function headgear(look: Look, w: number, top: number, front: number) {
     case "cono": // cono de tráfico en la cabeza
       g.add(mesh(new THREE.ConeGeometry(w * 0.45, w * 1.1, 10), m("#e8641e"), 0, top + w * 0.5, 0));
       g.add(mesh(new THREE.CylinderGeometry(w * 0.27, w * 0.32, w * 0.15, 10), m("#e8e2d4"), 0, top + w * 0.45, 0));
+      break;
+    case "pirata": // tricornio negro con filo dorado y una calavera
+      g.add(dome(w * 0.62, "#1a1a1f", 0.5), mesh(new THREE.CylinderGeometry(w * 0.95, w * 0.95, w * 0.05, 3), m("#232329"), 0, top - w * 0.04, 0));
+      g.add(mesh(new THREE.SphereGeometry(w * 0.1, 8, 6), m("#e8e2d4"), 0, top + w * 0.06, front * 0.9));
+      break;
+    case "mago": // sombrero puntiagudo morado con una estrella
+      g.add(mesh(new THREE.CylinderGeometry(w * 0.85, w * 0.85, w * 0.05, 14), m("#3a1d6b"), 0, top + w * 0.02, 0));
+      g.add(mesh(new THREE.ConeGeometry(w * 0.5, w * 1.5, 10), m("#4a2688"), 0, top + w * 0.78, 0));
+      g.add(mesh(new THREE.OctahedronGeometry(w * 0.12), glow("#ffd23f", 0.6), 0, top + w * 0.5, front * 0.55));
+      break;
+    case "corona": // corona dorada de picos
+      g.add(mesh(new THREE.CylinderGeometry(w * 0.5, w * 0.5, w * 0.2, 12), m("#d9a520", { metalness: 0.2 }), 0, top + w * 0.05, 0));
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2;
+        g.add(mesh(new THREE.ConeGeometry(w * 0.1, w * 0.28, 5), m("#f0c038"), Math.cos(a) * w * 0.43, top + w * 0.28, Math.sin(a) * w * 0.43));
+      }
+      break;
+    case "mohicano": // cresta de pinchos de colores
+      for (let k = 0; k < 5; k++) g.add(mesh(new THREE.ConeGeometry(w * 0.1, w * (0.5 - Math.abs(k - 2) * 0.08), 5), m(["#e53fd6", "#ff8a1f", "#ffd23f", "#8dff6a", "#2f7bf5"][k]), 0, top + w * 0.18, (k - 2) * w * 0.2));
+      break;
+    case "cuernos": // cuernos de diablo rojos
+      for (const sx of [-1, 1]) {
+        const horn = mesh(new THREE.ConeGeometry(w * 0.13, w * 0.5, 8), m("#b01020"), sx * w * 0.32, top + w * 0.12, 0);
+        horn.rotation.z = -sx * 0.45;
+        g.add(horn);
+      }
+      break;
+    case "gorro": // gorro de lana con pompón
+      g.add(dome(w * 0.58, "#c0392b", 0.8), mesh(new THREE.CylinderGeometry(w * 0.6, w * 0.6, w * 0.14, 12), m("#e8e2d4"), 0, top - w * 0.12, 0));
+      g.add(mesh(new THREE.SphereGeometry(w * 0.15, 8, 6), m("#e8e2d4"), 0, top + w * 0.36, 0));
+      break;
+    case "cerebro": // cerebro al aire (es un zombi)
+      for (const sx of [-1, 1]) g.add(mesh(new THREE.SphereGeometry(w * 0.34, 8, 6), m("#e58aa0"), sx * w * 0.2, top + w * 0.08, 0));
+      g.add(mesh(new THREE.SphereGeometry(w * 0.26, 8, 6), m("#d97088"), 0, top + w * 0.26, 0));
+      break;
+    case "bombero": // casco rojo de bombero con visera trasera
+      g.add(dome(w * 0.64, "#c0261f"), mesh(new THREE.CylinderGeometry(w * 0.7, w * 0.7, w * 0.04, 14), m("#a01c16"), 0, top - w * 0.1, 0));
+      g.add(mesh(new THREE.BoxGeometry(w * 0.3, w * 0.22, w * 0.05), m("#f0c038"), 0, top + w * 0.08, front * 0.6));
       break;
     case "chistera":
       g.add(mesh(new THREE.CylinderGeometry(w * 0.7, w * 0.7, w * 0.05, 14), m("#151515"), 0, top + w * 0.02, 0));

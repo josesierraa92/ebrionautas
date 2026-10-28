@@ -82,15 +82,15 @@ export default function TokensDialog({
 
         <div className="flex min-h-0 flex-1 gap-4">
           {/* las 8 fichas */}
-          <div className="grid w-64 shrink-0 grid-cols-2 content-start gap-2">
+          <div className="grid w-72 shrink-0 grid-cols-3 content-start gap-2 overflow-y-auto pr-1">
             {PLAYER_COLORS.map((color, i) => (
               <button
                 key={color}
                 onClick={() => setSlot(i)}
                 className={`flex flex-col items-center rounded-xl p-2 ${slot === i ? "bg-amber-400/20 ring-2 ring-amber-400" : "bg-white/5 hover:bg-white/10"}`}
               >
-                <span className="grid h-24 w-full place-items-end">
-                  {imageOf(i) ? <img src={imageOf(i)} alt="" className="max-h-24 object-contain" /> : <span className="mb-8 text-xs opacity-60">dibujando…</span>}
+                <span className="grid h-20 w-full place-items-end">
+                  {imageOf(i) ? <img src={imageOf(i)} alt="" className="max-h-20 object-contain" /> : <span className="mb-8 text-xs opacity-60">dibujando…</span>}
                 </span>
                 <span className="mt-1 flex items-center gap-1.5 text-xs">
                   <span className="h-3 w-3 rounded-full" style={{ background: color }} />
