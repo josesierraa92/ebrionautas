@@ -41,7 +41,9 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
     return last ? { key: 0, n: last.pos, playerId: last.id } : null;
   });
 
-  const canRoll = game.phase === "ROLL" && !busy && !result;
+  // tarjeta ya cerrada con «Siguiente turno» (por su clave): hasta que salga otra, se ve el dado
+  const [dismissed, setDismissed] = useState<number | null>(null);
+  const canRoll = game.phase === "ROLL" && !busy && !result && (!card || dismissed === card.key);
   const roll = () => {
     if (!canRoll) return;
     roller.current = me.name;
@@ -109,8 +111,8 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
         <p className="font-display text-2xl text-white/80">{result.name} sacó</p>
-        <Die key={result.key} value={result.value} className={`dice-land ${card ? "w-36" : "w-56"}`} />
-        <p className="title-game text-6xl">{result.value}</p>
+        <Die key={result.key} value={result.value} className="dice-land w-56" />
+        <p className="title-game text-7xl">{result.value}</p>
         {result.lost && (
           <p className={`btn-game px-5 py-2 text-2xl text-white ${result.value >= 5 ? "bg-btn-green" : "bg-btn-red"}`}>
             {result.value >= 5 ? "✨ ¡SE SALVÓ! NO BEBE" : "🍷 SIGUE PERDIDO: BEBE 1"}
@@ -119,11 +121,21 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
         {result.jailed && (
           <p className="btn-game bg-btn-red px-5 py-2 text-2xl text-white">🔓 BEBE {jailBail(result.value)} Y SALE DEL PURGATORIO</p>
         )}
-        {card && (
-          <div className="w-full text-left">
-            <PhoneRuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={card.result} />
-          </div>
-        )}
+      </div>
+    );
+  }
+
+  // Tras la tirada (y al llegar el turno): la tarjeta a pantalla completa y abajo «SIGUIENTE TURNO»; al tocarlo sale
+  // «Le toca a …» con el dado en medio.
+  if (game.phase === "ROLL" && card && dismissed !== card.key) {
+    return (
+      <div className="flex flex-1 flex-col justify-between gap-4">
+        <div className="flex flex-1 flex-col justify-center">
+          <PhoneRuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={card.result} unit="19px" />
+        </div>
+        <button onClick={() => setDismissed(card.key)} className="btn-game bg-btn-green py-4 text-2xl text-white">
+          SIGUIENTE TURNO ▶
+        </button>
       </div>
     );
   }
@@ -146,15 +158,9 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-between gap-3 text-center">
-      {/* la tarjeta de la última casilla (o resultado) se ve siempre, también al esperar la tirada */}
-      {card && (
-        <div className="w-full text-left">
-          <PhoneRuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={card.result} />
-        </div>
-      )}
+    <div className="flex flex-1 flex-col items-center justify-between gap-4 text-center">
       <div className="flex items-center gap-3">
-        <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={card ? 64 : 84} animated character={characterOf(game.players, me.id)} />
+        <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={84} animated character={characterOf(game.players, me.id)} />
         <div className="min-w-0 text-left">
           <p className="font-display text-lg text-white/70">Le toca a</p>
           <h2 className="title-game max-w-full truncate text-5xl">{me.name.toUpperCase()}</h2>
@@ -167,7 +173,7 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
         aria-label={`Tirar el dado por ${me.name}`}
         className="grid place-items-center rounded-[2.5rem] p-2 outline-none focus-visible:ring-4 focus-visible:ring-btn-yellow"
       >
-        <Die value={busy ? face : (game.lastRoll ?? 6)} className={`${card ? "w-40" : "w-60"} ${busy ? "dice-tumble" : "dice-idle"}`} />
+        <Die value={busy ? face : (game.lastRoll ?? 6)} className={`w-60 ${busy ? "dice-tumble" : "dice-idle"}`} />
       </button>
 
       <div className="flex flex-col items-center gap-3">

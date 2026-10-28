@@ -235,5 +235,7 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   quien reta y luego su rival (`DUEL_ROLL` en el motor; `DuelRoll` en `DecisionPanel`), con empate se repite y con varios rivales se juega una
   ronda por rival. Cada tirada sube `rollSeq` y `lastRoller` (la TV anima el dado con el nombre de quien tira: `DiceFx.by`). La tarjeta del
   duelo se queda en la TV y el celular explicando qué hacer; al final sale la de resultados (`lastDuel`).
-- La tarjeta de la última casilla (o su resultado) se ve **siempre** en el celular (pedido del usuario): encima del dado de turno y también
-  en la pantalla del resultado de la tirada, no solo cuando hay que decidir. Con ella el dado y el avatar se achican (`DiceController`).
+- Celular, flujo de turno (pedido del usuario): tras la tirada (y al llegar el turno) se ve **solo la tarjeta de la casilla a pantalla completa**
+  (`PhoneRuleCard` con `unit="19px"`) y abajo el botón «SIGUIENTE TURNO ▶»; al tocarlo sale «Le toca a …» con el dado en medio
+  (`DiceController`, estado `dismissed` por clave de tarjeta; no se puede tirar con la tarjeta abierta). Cuando hay que decidir, la tarjeta
+  va encima de las opciones, como antes.
