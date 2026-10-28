@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { BOARD, type Tile } from "@/game/board";
@@ -72,41 +72,20 @@ function publishedGeometry(b: PublishedBoard): Geometry {
 /** Con zoom se ven unas 9 casillas a lo ancho, más o menos como el tablero de serie. */
 const VISIBLE_CELLS = 9;
 
-/** Encuadre de la cámara: acerca el tablero centrado en (x, y), sin salirse de la vista. */
-function frame(view: View, zoom: number, x: number, y: number): View {
-  const w = view.w / zoom;
-  const h = view.h / zoom;
-  return {
-    x: Math.min(Math.max(x - w / 2, view.x), view.x + view.w - w),
-    y: Math.min(Math.max(y - h / 2, view.y), view.y + view.h - h),
-    w,
-    h,
-  };
-}
-
-/**
- * Anima el encuadre cambiando el viewBox (no con una transformación CSS): así el navegador vuelve a pintar la
- * imagen del tablero a la resolución final en cada paso y no se ve borrosa al acercar.
- */
-function useTween(target: View) {
-  const [cur, setCur] = useState(target);
-  const curRef = useRef(target);
-  useEffect(() => {
-    const from = curRef.current;
-    const t0 = performance.now();
-    let raf = 0;
-    const step = (now: number) => {
-      const t = Math.min(1, (now - t0) / 500);
-      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      const v = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, w: from.w + (target.w - from.w) * e, h: from.h + (target.h - from.h) * e };
-      curRef.current = v;
-      setCur(v);
-      if (t < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [target.x, target.y, target.w, target.h]);
-  return cur;
+/** Tamaño del contenedor en píxeles de pantalla. */
+function useBoxSize() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setSize({ w: el.clientWidth, h: el.clientHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, size] as const;
 }
 
 export default function IsoBoard(props: Props) {
@@ -115,106 +94,123 @@ export default function IsoBoard(props: Props) {
   return <IsoBoardView {...props} geo={published ? publishedGeometry(published) : DEFAULT_GEOMETRY} />;
 }
 
+/**
+ * Rendimiento y nitidez en la TV: la imagen del tablero se pinta UNA vez al tamaño final (ya acercada) y la cámara
+ * solo la desplaza con `translate3d`, que mueve la tarjeta gráfica sin volver a pintar nada. Las fichas son capas
+ * HTML aparte que también se mueven con transform. Antes se animaba el viewBox del SVG, que repintaba la imagen de
+ * 8192 px en cada fotograma (todo iba lentísimo), y antes de eso se escalaba con CSS (se veía borroso).
+ */
 function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: Props & { geo: Geometry }) {
+  const [boxRef, box] = useBoxSize();
   const at = (p: Player) => shown?.[p.id] ?? p.pos;
   const k = geo.cell / 100; // escala respecto al tablero de serie
   const { view } = geo;
 
-  // Todo lo que va "de pie" se ordena por profundidad (más abajo en pantalla = más cerca) para que lo de
-  // delante tape a lo de atrás.
-  const standing: { d: number; key: string; el: React.ReactNode }[] = [];
-  if (geo.numbers)
-    for (const tile of BOARD) {
-      if (tile.type === "META") continue;
-      standing.push({ d: geo.at(tile.n).y, key: `i${tile.n}`, el: <TileNumber tile={tile} geo={geo} /> });
-    }
-
-  const groups = new Map<number, Player[]>();
-  for (const p of players) groups.set(at(p), [...(groups.get(at(p)) ?? []), p]);
-  for (const p of players) {
-    const pos = at(p);
-    const base = geo.at(pos);
-    const group = groups.get(pos)!;
-    const i = group.indexOf(p);
-    // Varias fichas en una casilla: hasta 4 en fila a lo ancho de la losa; si son más, en cuadrícula y más chicas.
-    const n = group.length;
-    const cols = n <= 4 ? n : Math.ceil(Math.sqrt(n));
-    const rows = Math.ceil(n / cols);
-    const hOff = ((i % cols) - (cols - 1) / 2) * (n > 4 ? 0.2 : n > 2 ? 0.24 : 0.32);
-    const dOff = n > 4 ? (Math.floor(i / cols) - (rows - 1) / 2) * 0.17 : 0; // hacia delante o hacia atrás en la losa
-    const x = base.x + hOff * geo.cell;
-    const y = base.y + 4 * k + dOff * geo.cell * 0.5;
-    const mul = geo.tokenScale?.[PLAYER_COLORS.indexOf(avatarOf(p).skin.toLowerCase())] ?? 1;
-    const size = (n > 8 ? 46 : n > 3 ? 62 : 86) * k * mul;
-    const isCurrent = p.id === current && !winner;
-    const isFlying = p.id === flying;
-    standing.push({
-      d: base.y + 0.6 * k + dOff * geo.cell * 0.5 + i * 0.01,
-      key: p.id,
-      el: (
-        <g
-          style={{
-            transform: `translate(${x}px, ${y}px)`,
-            transition: isFlying ? "transform .45s cubic-bezier(.4,-.4,.5,1.4)" : "transform .12s ease-out",
-          }}
-        >
-          <ellipse cx={0} cy={0} rx={size * 0.3} ry={size * 0.12} fill="#1d3b12" opacity=".3" />
-          <g className={isFlying ? "token-fly" : undefined}>
-            <svg x={-size / 2} y={-size * 1.02} width={size} height={size * 1.2} overflow="visible">
-              <Marciano
-                avatar={avatarOf(p)}
-                expression={expressionFor(p, { winner, isTurn: isCurrent })}
-                title={p.name}
-                size={size}
-                animated
-                className={isCurrent ? "mc-hop" : "mc-bob"}
-              />
-            </svg>
-          </g>
-          {/* nombre encima de cada ficha */}
-          <text
-            x={0}
-            y={-size * 1.08}
-            textAnchor="middle"
-            fontFamily="var(--font-lilita), sans-serif"
-            fontSize={(n > 8 ? 11 : n > 3 ? 13 : 16) * k}
-            fill={isCurrent ? "#ffe066" : "#ffffff"}
-            stroke="#1b1f4b"
-            strokeWidth={5 * k}
-            paintOrder="stroke"
-          >
-            {n > 8 && !isCurrent ? "" : p.name}
-          </text>
-        </g>
-      ),
-    });
-  }
-  standing.sort((a, b) => a.d - b.d);
-
   const focused = players.find((p) => p.id === focus);
   const cam = focused ? geo.at(at(focused)) : null;
-  const zoom = geo.zoom ?? Math.max(1, view.w / (geo.cell * VISIBLE_CELLS));
-  const target = cam ? frame(view, zoom, cam.x, cam.y - 40 * k) : view;
-  const vb = useTween(target);
+  const zoom = cam ? (geo.zoom ?? Math.max(1, view.w / (geo.cell * VISIBLE_CELLS))) : 1;
+  // escala: el encuadre (la vista / zoom) llena la pantalla; el publicado recortando, el de serie entero
+  const fit = geo.numbers ? Math.min : Math.max;
+  const s = box.w && box.h ? fit(box.w / (view.w / zoom), box.h / (view.h / zoom)) : 0;
+  const cw = view.w * s;
+  const ch = view.h * s;
+  const fx = cam ? cam.x : view.x + view.w / 2;
+  const fy = cam ? cam.y - 40 * k : view.y + view.h / 2;
+  const pan = (size: number, content: number, c: number) => (content <= size ? (size - content) / 2 : Math.min(0, Math.max(size - content, size / 2 - c)));
+  const tx = Math.round(pan(box.w, cw, (fx - view.x) * s));
+  const ty = Math.round(pan(box.h, ch, (fy - view.y) * s));
+  const px = (x: number, y: number) => ({ x: (x - view.x) * s, y: (y - view.y) * s });
+
+  // Fichas (y números del tablero de serie) ordenadas por profundidad: más abajo en pantalla = más cerca.
+  const groups = new Map<number, Player[]>();
+  for (const p of players) groups.set(at(p), [...(groups.get(at(p)) ?? []), p]);
+  const tokens = players
+    .map((p) => {
+      const pos = at(p);
+      const base = geo.at(pos);
+      const group = groups.get(pos)!;
+      const i = group.indexOf(p);
+      // Varias fichas en una casilla: hasta 4 en fila a lo ancho de la losa; si son más, en cuadrícula y más chicas.
+      const n = group.length;
+      const cols = n <= 4 ? n : Math.ceil(Math.sqrt(n));
+      const rows = Math.ceil(n / cols);
+      const hOff = ((i % cols) - (cols - 1) / 2) * (n > 4 ? 0.2 : n > 2 ? 0.24 : 0.32);
+      const dOff = n > 4 ? (Math.floor(i / cols) - (rows - 1) / 2) * 0.17 : 0; // hacia delante o hacia atrás en la losa
+      const mul = geo.tokenScale?.[PLAYER_COLORS.indexOf(avatarOf(p).skin.toLowerCase())] ?? 1;
+      return {
+        p,
+        n,
+        at: px(base.x + hOff * geo.cell, base.y + 4 * k + dOff * geo.cell * 0.5),
+        d: base.y + 0.6 * k + dOff * geo.cell * 0.5 + i * 0.01,
+        size: (n > 8 ? 46 : n > 3 ? 62 : 86) * k * mul * s,
+      };
+    })
+    .sort((a, b) => a.d - b.d);
 
   return (
-    <svg
-      viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
-      // el tablero publicado llena la pantalla (recortando un poco si hace falta); el de serie se ve entero
-      preserveAspectRatio={geo.numbers ? undefined : "xMidYMid slice"}
-      className="h-full w-full"
-      role="img"
-      aria-label="Tablero"
-      style={geo.bg ? { background: geo.bg } : undefined}
+    <div ref={boxRef} className="relative h-full w-full overflow-hidden" role="img" aria-label="Tablero" style={geo.bg ? { background: geo.bg } : undefined}>
+      {s > 0 && (
+        <div
+          className="absolute top-0 left-0"
+          style={{ width: cw, height: ch, transform: `translate3d(${tx}px, ${ty}px, 0)`, transition: "transform .5s ease-in-out", willChange: "transform" }}
+        >
+          {/* terreno, casillas y decoración: render 3D hecho de antemano */}
+          <img src={geo.image} alt="" draggable={false} decoding="async" className="absolute inset-0 h-full w-full max-w-none select-none" />
+          {geo.numbers && (
+            <svg viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} width={cw} height={ch} className="pointer-events-none absolute inset-0">
+              {BOARD.filter((t) => t.type !== "META").map((tile) => (
+                <TileNumber key={tile.n} tile={tile} geo={geo} />
+              ))}
+            </svg>
+          )}
+          {tokens.map((t, z) => (
+            <Token key={t.p.id} t={t} z={z + 1} k={k * s} current={current} winner={winner} flying={flying} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Una ficha: capa HTML propia que se mueve con transform (la tarjeta gráfica, sin repintar el tablero). */
+function Token({ t, z, k, current, winner, flying }: { t: { p: Player; n: number; at: { x: number; y: number }; size: number }; z: number; k: number; current: string; winner?: string | null; flying?: string | null }) {
+  const { p, n, size } = t;
+  const isCurrent = p.id === current && !winner;
+  const isFlying = p.id === flying;
+  return (
+    <div
+      className="pointer-events-none absolute top-0 left-0"
+      style={{
+        zIndex: z,
+        transform: `translate3d(${t.at.x}px, ${t.at.y}px, 0)`,
+        transition: isFlying ? "transform .45s cubic-bezier(.4,-.4,.5,1.4)" : "transform .12s ease-out",
+        willChange: "transform",
+      }}
     >
-      <g>
-        {/* terreno, casillas y decoración: render 3D hecho de antemano */}
-        <image href={geo.image} x={view.x} y={view.y} width={view.w} height={view.h} />
-        {standing.map((s) => (
-          <g key={s.key}>{s.el}</g>
-        ))}
-      </g>
-    </svg>
+      <div className="absolute rounded-[50%]" style={{ left: -size * 0.3, top: -size * 0.12, width: size * 0.6, height: size * 0.24, background: "#1d3b12", opacity: 0.3 }} />
+      <div className={`absolute ${isFlying ? "token-fly" : ""}`} style={{ left: -size / 2, top: -size * 1.02, width: size, height: size * 1.2 }}>
+        <Marciano avatar={avatarOf(p)} expression={expressionFor(p, { winner, isTurn: isCurrent })} title={p.name} size={size} animated className={isCurrent ? "mc-hop" : "mc-bob"} />
+      </div>
+      {/* nombre encima de cada ficha */}
+      {!(n > 8 && !isCurrent) && (
+        <div
+          className="absolute whitespace-nowrap"
+          style={{
+            left: 0,
+            top: -size * 1.08,
+            transform: "translate(-50%, -100%)",
+            fontFamily: "var(--font-lilita), sans-serif",
+            fontSize: (n > 8 ? 11 : n > 3 ? 13 : 16) * k,
+            lineHeight: 1,
+            color: isCurrent ? "#ffe066" : "#ffffff",
+            WebkitTextStroke: `${5 * k}px #1b1f4b`,
+            paintOrder: "stroke fill",
+          }}
+        >
+          {p.name}
+        </div>
+      )}
+    </div>
   );
 }
 

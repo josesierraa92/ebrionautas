@@ -1225,7 +1225,7 @@ export class EditorScene {
    */
   /**
    * Foto del tablero para la TV con la cámara de `tvView`. Con `asBlob`, a la resolución que hace falta para que la
-   * TV (acercada a `tvView.tiles` casillas) se vea 1:1 en una pantalla de ~2560 px, hasta 8192 px; se dibuja por trozos
+   * TV (acercada a `tvView.tiles` casillas) se vea con 1,2 píxeles de imagen por píxel en una TV de 1920 (como el tablero de serie), hasta 8192 px; se dibuja por trozos
    * (el navegador no deja pintar WebGL tan grande de una vez) y se devuelve como archivo para subirlo a Blob. Sin
    * `asBlob`, 2400 px en data URL (desarrollo, va dentro de la petición).
    */
@@ -1278,7 +1278,7 @@ export class EditorScene {
     // píxeles por unidad del mundo: el rombo de una casilla mide TILE_SIZE·√2 unidades de ancho
     const tileW = TILE_SIZE * Math.SQRT2;
     const MAX = 8192;
-    let ppu = asBlob ? 2560 / (tileW * l.tvView.tiles) : 2400 / (2 * hw);
+    let ppu = asBlob ? 2304 / (tileW * l.tvView.tiles) : 2400 / (2 * hw);
     ppu = Math.min(ppu, MAX / (2 * hw), MAX / (2 * hh));
     const width = Math.round(2 * hw * ppu);
     const height = Math.round(2 * hh * ppu);

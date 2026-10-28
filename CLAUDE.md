@@ -40,7 +40,10 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
 
 - La TV y `/jugar` usan el **tablero isométrico** (`src/components/IsoBoard.tsx`): una imagen 3D pre-renderizada
   (ver abajo) con las fichas en SVG encima. Nada de WebGL en el navegador: el 3D en vivo rompía en la TV del usuario.
-- Cámara (se anima cambiando el `viewBox` del SVG, no con transform CSS: así la imagen se repinta nítida): el tablero está siempre con zoom (`ZOOM` en `IsoBoard`) y sigue a la última ficha que tiró (`focus` de
+- Cámara: la imagen del tablero se pinta una vez ya acercada (tamaño final) y la cámara solo la desplaza con
+  `translate3d` (la tarjeta gráfica, sin repintar); las fichas son capas HTML aparte que también se mueven con
+  transform. No animar el `viewBox` (repintaba la imagen enorme en cada fotograma: todo iba lento) ni escalar con CSS
+  (borroso). El tablero está siempre con zoom (`ZOOM` en `IsoBoard`) y sigue a la última ficha que tiró (`focus` de
   `useGameFx`; antes de la primera tirada, al jugador de turno). El usuario no quiere que se aleje. Animaciones rápidas. Cada losa lleva su número de pie en el borde delantero.
 - `src/game/isoPath.ts`: recorrido de las 62 casillas (camino serpenteante estilo Mario Party, `ROUTE`) y la proyección. `src/components/BoardStage.tsx`
   pinta encima el dado y los títulos (`src/components/Fx.tsx`).
@@ -125,7 +128,7 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   ángulo y el acercamiento de la cámara del editor (`currentView`); «📺 Vista TV» la enseña (`resetView(true)`). Las
   fichas propias se dibujan con ese mismo ángulo (`renderToken(..., view)`).
 - Calidad en la TV: `renderForTV(true)` encuadra solo las casillas + 5 de margen y calcula la resolución para que la
-  TV acercada se vea 1:1 en ~2560 px (máx. 8192 px), pintando por trozos de 2048 con `setViewOffset` (WebGL no deja
+  TV acercada tenga ~1,2 px de imagen por px en una TV de 1920 (2304 px a lo ancho de lo visible, como el tablero de serie; máx. 8192 px), pintando por trozos de 2048 con `setViewOffset` (WebGL no deja
   más de una vez) en un lienzo 2D; la imagen sube directo a Blob desde el navegador (`/api/admin/publish/upload`, sin
   el límite de 4,5 MB). `PublishedBoard.zoom` le dice a `IsoBoard` cuánto acercar. Sin Blob (desarrollo) cae a
   2400 px dentro de la petición (≤ ~3,3 MB). En desarrollo el editor deja la escena en `window.__editorScene` para
