@@ -89,13 +89,15 @@ export function setCardOverrides(o: CardOverrides) {
 /** ¿El admin cambió algo de esta tarjeta? */
 export const hasCardOverride = (key: string) => !!overrides[key];
 
+/** Rellena los huecos {x} de un texto con `vars` (los que no estén se dejan tal cual). */
+export const fillCard = (s: string, vars: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
+
 /** Texto de una tarjeta con los huecos rellenados: el del admin si lo cambió y, si no, el de serie. */
 export function cardText(key: string, vars: Record<string, string | number>): CardText {
   const d = defOf(key);
   const base = d?.defaults ?? { title: "", text: "" };
   const o = overrides[key];
-  const fill = (s: string) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
-  return { title: fill(o?.title ?? base.title), text: fill(o?.text ?? base.text) };
+  return { title: fillCard(o?.title ?? base.title, vars), text: fillCard(o?.text ?? base.text, vars) };
 }
 
 /** Valida lo que llega del servidor o del editor: solo claves y huecos que existen, textos de tamaño razonable. */

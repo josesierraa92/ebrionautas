@@ -27,33 +27,37 @@ export function duelOutcome(game: GameState): { title: string; text: string } | 
   return { title: "¡Resultado del duelo!", text: lines.join("\n") };
 }
 
-/** Título y regla de la casilla `n` para el jugador `playerId`, con los datos de la partida (textos: `game/cards.ts`). */
-export function tileRule(n: number, game: GameState, playerId: string, extra: Record<string, string | number> = {}): { title: string; text: string } {
+/** Los datos con que se rellenan los huecos de la tarjeta de la casilla `n` para el jugador `playerId`. */
+export function tileVars(n: number, game: GameState, playerId: string): Record<string, string | number> {
   const tile = getTile(n);
   const p = game.players.find((q) => q.id === playerId);
   const nombre = p?.name ?? "El jugador";
-  const key = cardKeyOf(tile);
   switch (tile.type) {
     case "A_BEBER":
-      return cardText(key, { nombre, vasos: vasos(tile.amount) });
+      return { nombre, vasos: vasos(tile.amount) };
     case "DUELO":
-      return cardText(key, { nombre, rivales: `${tile.amount} ${tile.amount === 1 ? "rival" : "rivales"}` });
+      return { nombre, rivales: `${tile.amount} ${tile.amount === 1 ? "rival" : "rivales"}` };
     case "OCA":
-      return cardText(key, { nombre, destino: tile.next ? `el murciélago lo lleva volando a la siguiente casilla de murciélago (la ${tile.next})` : "es el último murciélago" });
+      return { nombre, destino: tile.next ? `el murciélago lo lleva volando a la siguiente casilla de murciélago (la ${tile.next})` : "es el último murciélago" };
     case "PATINAZO":
-      return cardText(key, { nombre, vasos: vasos(tile.drinks), casilla: tile.backTo });
+      return { nombre, vasos: vasos(tile.drinks), casilla: tile.backTo };
     case "POSICION": {
       const others = game.players.filter((q) => q.id !== playerId && (tile.who === "detras" ? q.pos < (p?.pos ?? 0) : q.pos > (p?.pos ?? 0)));
-      return cardText(key, {
+      return {
         nombre,
         vasos: vasos(tile.drinks),
         lado: tile.who === "detras" ? "por detrás" : "por delante",
         lista: others.length ? `: ${others.map((q) => q.name).join(", ")}.` : ". Esta vez, nadie.",
-      });
+      };
     }
     case "RASGO":
-      return cardText(key, { vasos: vasos(tile.drinks), quienes: tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ") });
+      return { vasos: vasos(tile.drinks), quienes: tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ") };
     default:
-      return cardText(key, { nombre, ...extra });
+      return { nombre };
   }
+}
+
+/** Título y regla de la casilla `n` para el jugador `playerId`, con los datos de la partida (textos: `game/cards.ts`). */
+export function tileRule(n: number, game: GameState, playerId: string, extra: Record<string, string | number> = {}): { title: string; text: string } {
+  return cardText(cardKeyOf(getTile(n)), { ...tileVars(n, game, playerId), ...extra });
 }

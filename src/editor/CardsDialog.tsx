@@ -4,12 +4,29 @@
 // una casilla). Las casillas que comparten tarjeta (p. ej. las 6 «Ronda de mezcal») se muestran una sola vez, con los
 // números de casilla que la usan. Se guardan aparte del tablero y valen para todas las mesas (`/api/admin/cards`).
 import { useEffect, useMemo, useState } from "react";
-import { cardCatalog, parseCardOverrides, type CardDef, type CardOverrides } from "@/game/cards";
+import { cardCatalog, fillCard, parseCardOverrides, RESULT_KEYS, type CardDef, type CardOverrides } from "@/game/cards";
+import { createGame } from "@/game/engine";
+import { tileVars } from "@/game/rules";
 import { fetchCardTexts } from "@/lib/useCardTexts";
 import { tileArt, TILE_STYLE } from "@/game/tileStyle";
 import { BOARD } from "@/game/board";
 
 const CARDS = cardCatalog();
+
+/** Con qué se rellenan los huecos en la vista previa: una partida de ejemplo (Ana juega; Beto va detrás y Carla delante). */
+function sampleVars(def: CardDef): Record<string, string | number> {
+  if (def.tiles.length === 0) return def.key === RESULT_KEYS.jail ? { nombre: "Ana", dado: 5, vasos: "4 vasos" } : { nombre: "Ana", dado: def.key === RESULT_KEYS.mazeOk ? 6 : 3 };
+  const n = def.tiles[0];
+  const game = createGame([
+    { name: "Ana", color: "#00ff88", gender: "mujer" },
+    { name: "Beto", color: "#4488ff", gender: "hombre" },
+    { name: "Carla", color: "#ff66aa", gender: "mujer" },
+  ]);
+  game.players[0].pos = n;
+  game.players[1].pos = Math.max(1, n - 3);
+  game.players[2].pos = n + 3;
+  return { ...tileVars(n, game, game.players[0].id), categoria: "Animales" };
+}
 
 export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey: () => string; onClose: () => void; onStatus: (msg: string) => void }) {
   const [saved, setSaved] = useState<CardOverrides | null>(null);
@@ -96,19 +113,26 @@ function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { 
   const edited = (value?.title !== undefined && value.title !== def.defaults.title) || (value?.text !== undefined && value.text !== def.defaults.text);
   const first = def.tiles[0] ? BOARD[def.tiles[0] - 1] : null;
   const style = first ? TILE_STYLE[first.type] : { bg: ["#8be86b", "#2fae4a"] };
-  // vista previa: los huecos con un ejemplo
-  const preview = (s: string) => s.replace(/\{(\w+)\}/g, (_, k: string) => `‹${k}›`);
+  // vista previa: tal como sale en el juego, con los huecos rellenados con una partida de ejemplo
+  const vars = useMemo(() => sampleVars(def), [def]);
+  const preview = (x: string) => fillCard(x, vars);
   return (
     <div className={`flex gap-3 rounded-xl p-3 ${edited ? "bg-amber-400/10 ring-1 ring-amber-400/60" : "bg-white/5"}`}>
-      <div className="w-48 shrink-0">
-        <div className="overflow-hidden rounded-xl border-2 border-black/60 bg-[#fbf3e4] text-[#1b1f4b]">
-          <div className="flex items-center gap-2 px-2 py-1.5" style={{ background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}>
-            {first && <img src={tileArt(first.type)} alt="" className="h-8 w-auto shrink-0" />}
-            <p className="font-display text-sm leading-tight text-white drop-shadow-[0_2px_0_rgba(0,0,0,.35)]">{preview(title) || "…"}</p>
+      <div className="w-72 shrink-0">
+        {/* igual que la tarjeta de la TV */}
+        <div className="overflow-hidden rounded-[1.2rem] border-[3px] border-[#1b1f4b] bg-[#fbf3e4] text-[#1b1f4b] shadow-[0_5px_0_#1b1f4b]">
+          <div className="flex items-center gap-3 px-3.5 py-2.5" style={{ background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}>
+            {first && <img src={tileArt(first.type)} alt="" className="h-auto w-14 shrink-0 drop-shadow-[0_3px_0_rgba(0,0,0,.3)]" />}
+            <div className="min-w-0">
+              <p className="font-display text-[11px] text-white/90">{def.tiles.length ? `Casilla ${def.tiles[0]}` : "Resultado"}</p>
+              <h4 className="font-display text-xl leading-tight text-white drop-shadow-[0_2px_0_rgba(0,0,0,.35)]">{preview(title) || "…"}</h4>
+            </div>
           </div>
-          <p className="px-2 py-1.5 text-[11px] leading-snug whitespace-pre-line">{preview(text) || "…"}</p>
+          <p className="px-3.5 py-3 font-display text-[15px] leading-snug whitespace-pre-line">{preview(text) || "…"}</p>
         </div>
-        <p className="mt-1 text-[11px] opacity-70">{def.tiles.length ? `Casilla${def.tiles.length > 1 ? "s" : ""} ${def.tiles.join(", ")}` : "Al tirar el dado (resultado)"}</p>
+        <p className="mt-1.5 text-[11px] opacity-70">
+          {def.tiles.length ? `Casilla${def.tiles.length > 1 ? "s" : ""} ${def.tiles.join(", ")}` : "Al tirar el dado"} · así se ve en el juego (con Ana de ejemplo)
+        </p>
       </div>
       <div className="grid min-w-0 flex-1 content-start gap-1.5">
         <div className="flex items-center gap-2">
