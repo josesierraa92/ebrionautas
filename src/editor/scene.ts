@@ -214,6 +214,13 @@ export class EditorScene {
       let windowStart = last;
       let windowFrames = 0;
       let good = 0;
+      // `?debug` en la dirección: rótulo con los fotogramas por segundo y la resolución (para ajustar según la TV)
+      let debugEl: HTMLDivElement | null = null;
+      if (new URLSearchParams(location.search).has("debug")) {
+        debugEl = document.createElement("div");
+        Object.assign(debugEl.style, { position: "absolute", left: "8px", bottom: "8px", padding: "4px 8px", background: "rgba(0,0,0,.7)", color: "#0f0", font: "14px monospace", zIndex: "9", pointerEvents: "none" });
+        container.appendChild(debugEl);
+      }
       const viewLoop = (now: number) => {
         this.frame = requestAnimationFrame(viewLoop);
         // como en las consolas: 30 fotogramas por segundo fijos (la mitad de trabajo que a 60 y se ve igual de fluido
@@ -221,14 +228,19 @@ export class EditorScene {
         if (now - last < 1000 / VIEWER_FPS - 4) return;
         const dt = Math.min(0.1, (now - last) / 1000);
         last = now;
-        // resolución dinámica: si no llega a ~24 fps baja la resolución interna (hasta la mitad); si va sobrado la sube
+        // resolución dinámica: si no llega a ~24 fps baja la resolución interna (hasta 0,75: más abajo se ve pixelado y no gana
+        // casi nada); si va sobrado la sube
         windowFrames++;
         if (now - windowStart > 1000) {
           const fps = (windowFrames * 1000) / (now - windowStart);
           windowStart = now;
           windowFrames = 0;
-          if (fps < 24 && this.resScale > 0.5) {
-            this.resScale = Math.max(0.5, this.resScale - 0.15);
+          if (debugEl) {
+            const i = this.renderer.info.render;
+            debugEl.textContent = `${fps.toFixed(0)} fps · res ${(this.resScale * 100).toFixed(0)}% · ${this.renderer.domElement.width}×${this.renderer.domElement.height} · ${i.calls} dibujos · ${(i.triangles / 1000).toFixed(0)}k tri`;
+          }
+          if (fps < 24 && this.resScale > 0.75) {
+            this.resScale = Math.max(0.75, this.resScale - 0.1);
             good = 0;
             this.resize();
           } else if (fps >= 28 && this.resScale < 1 && ++good >= 5) {

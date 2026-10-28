@@ -222,8 +222,9 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   nombre en mayúsculas con sombra dura del color del jugador y filete de color abajo.
 - **Modo TV ligero** (el 3D en vivo iba injugable en la TV real: dado y fichas bloqueados). En el visor (`EditorScene` con `viewer`):
   30 fps fijos (`VIEWER_FPS`), ancho interno máximo de 1920 px (`VIEWER_MAX_W`: una TV 4K lo escala sola) con **resolución dinámica**
-  (`resScale`, baja hasta 0,5 si no llega a 24 fps y vuelve a subir), sombras PCF de 2048, **sin focos de luz reales** en los faroles (solo
+  (`resScale`, baja hasta 0,75 si no llega a 24 fps y vuelve a subir), sombras PCF de 2048, **sin focos de luz reales** en los faroles (solo
   el brillo emisivo, el halo y un charco de luz pintado en el suelo: `pool`), `mergeStatic()` junta el escenario fijo en pocas mallas por
   material y por trozo de 24 celdas (de ~400 dibujos a unos 70) y `compileAsync` precompila los shaders. El editor y la foto de la TV no
   cambian (siguen con focos y 4096). Medido en Chromium por software con el tablero real: 0,4 fps → 5 fps (≈10× más rápido). La
   comprobación de velocidad de `LiveBoard` empieza a los 6 s.
+  `?debug` en la dirección de la TV enseña fps, resolución y dibujos.
