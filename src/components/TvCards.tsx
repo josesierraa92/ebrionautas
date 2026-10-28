@@ -129,7 +129,7 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
       <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={60} character={characterOf(game.players, who.id)} />
       <div className="leading-tight">
         <p className="font-display text-base leading-none text-[#c9a8ff]">{winner ? "¡Ganador!" : "Turno de"}</p>
-        <p className="font-display -mt-1 text-3xl leading-none uppercase">{who.name}</p>
+        <p className="font-display mt-px text-3xl leading-none uppercase">{who.name}</p>
       </div>
     </div>
   );
