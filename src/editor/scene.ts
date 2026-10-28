@@ -5,6 +5,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { builtinIcon, drawIcon } from "./icons";
 import { findLamp, type Lamp } from "./lamp";
 import { lightOf, NUMBER_FONTS, parseTvView, tvDirection, type NumberFont, type NumberStyle, type TvView } from "./layout";
@@ -27,6 +28,9 @@ export type SceneEvents = {
 
 const BASE = -0.8; // fondo del bloque de tierra del mundo
 const CAM_DIST = 200;
+/** Visor (TV): fotogramas por segundo fijos y ancho máximo de la imagen en píxeles reales. */
+const VIEWER_FPS = 30;
+const VIEWER_MAX_W = 1920;
 /** Colores de las casillas estilo carretera. */
 const ROAD = { asphalt: "#4a4d54", edge: "#2c2e33" }; // distancia de la cámara ortográfica al centro (la niebla se mide desde ahí)
 
@@ -112,6 +116,8 @@ export class EditorScene {
    * con la cámara de `tvView` siguiendo el punto que se le pida (`lookAt`) y `onFrame` para animar lo que se añada.
    */
   private viewer: boolean;
+  /** Visor: escala de la resolución interna (1 = completa; baja sola si el aparato no llega). */
+  resScale = 1;
   private look = new THREE.Vector3();
   private lookGoal = new THREE.Vector3();
   /** Se llama en cada fotograma del visor con los segundos desde el anterior (para animar las fichas). */
@@ -126,7 +132,8 @@ export class EditorScene {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: !this.viewer, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // en la TV, sombras más baratas de leer (están congeladas, pero cada píxel las consulta en cada fotograma)
+    this.renderer.shadowMap.type = this.viewer ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.NeutralToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     container.appendChild(this.renderer.domElement);
@@ -134,7 +141,7 @@ export class EditorScene {
 
     this.scene.add(this.hemi, this.sun, this.sun.target, this.objectRoot, this.grid, this.bounds, this.tileRoot, this.mistRoot);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(4096, 4096);
+    this.sun.shadow.mapSize.set(this.viewer ? 2048 : 4096, this.viewer ? 2048 : 4096);
     this.sun.shadow.bias = -0.0004;
     this.sun.shadow.normalBias = 0.02;
 
@@ -204,10 +211,32 @@ export class EditorScene {
       this.resizeObs.observe(container);
       this.resize();
       let last = performance.now();
+      let windowStart = last;
+      let windowFrames = 0;
+      let good = 0;
       const viewLoop = (now: number) => {
         this.frame = requestAnimationFrame(viewLoop);
+        // como en las consolas: 30 fotogramas por segundo fijos (la mitad de trabajo que a 60 y se ve igual de fluido
+        // en un tablero), y deja tiempo libre para el resto de la página (consultar la mesa, el dado, los títulos)
+        if (now - last < 1000 / VIEWER_FPS - 4) return;
         const dt = Math.min(0.1, (now - last) / 1000);
         last = now;
+        // resolución dinámica: si no llega a ~24 fps baja la resolución interna (hasta la mitad); si va sobrado la sube
+        windowFrames++;
+        if (now - windowStart > 1000) {
+          const fps = (windowFrames * 1000) / (now - windowStart);
+          windowStart = now;
+          windowFrames = 0;
+          if (fps < 24 && this.resScale > 0.5) {
+            this.resScale = Math.max(0.5, this.resScale - 0.15);
+            good = 0;
+            this.resize();
+          } else if (fps >= 28 && this.resScale < 1 && ++good >= 5) {
+            this.resScale = Math.min(1, this.resScale + 0.1);
+            good = 0;
+            this.resize();
+          }
+        }
         this.onFrame?.(dt);
         // la cámara sigue el punto pedido con suavidad (como en Mario Party), sin saltos
         this.look.lerp(this.lookGoal, 1 - Math.exp(-dt * 2.6));
@@ -252,6 +281,11 @@ export class EditorScene {
   private resize() {
     const w = this.container.clientWidth || 1;
     const h = this.container.clientHeight || 1;
+    if (this.viewer) {
+      // TV: como mucho 1920 píxeles reales de ancho (una TV 4K escala sola; dibujar 3840 era 4 veces más trabajo), por la
+      // resolución dinámica
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, VIEWER_MAX_W / w) * this.resScale);
+    }
     this.renderer.setSize(w, h);
     if (this.viewer) {
       // visor: caben tvView.tiles casillas a lo ancho de la pantalla, a la resolución real de la pantalla
@@ -322,9 +356,98 @@ export class EditorScene {
     await Promise.all([...this.pendingIcons]);
     await new Promise((ok) => requestAnimationFrame(ok));
     if (this.viewer) {
+      this.mergeStatic();
       this.renderer.shadowMap.autoUpdate = false;
       this.renderer.shadowMap.needsUpdate = true;
+      // compila los shaders sin bloquear la página (si el navegador sabe); si no, se compilan al primer dibujo
+      try {
+        this.placeViewerCamera();
+        await this.renderer.compileAsync(this.scene, this.camera);
+      } catch {}
     }
+  }
+
+  /**
+   * Visor: junta los objetos del escenario (no se mueven) en pocas mallas, una por material y por trozo del mundo, para
+   * que la TV haga unas decenas de dibujos por fotograma en vez de cientos (el procesador de una TV es lento). Por trozos
+   * de 24 celdas para que lo que queda fuera de la pantalla no se dibuje.
+   */
+  private mergeStatic() {
+    const buckets = new Map<string, { material: THREE.Material; cast: boolean; receive: boolean; geos: THREE.BufferGeometry[] }>();
+    const drop: THREE.Mesh[] = [];
+    const center = new THREE.Vector3();
+    // Cada .glb trae su propio material aunque todos los del mismo kit usan la misma hoja de colores: se tratan como uno
+    // solo (mismo kit, mismo nombre, mismas medidas de textura y mismos ajustes) para juntar mucho más.
+    const same = new Map<string, THREE.Material>();
+    const canonical = (material: THREE.Material, kit: string | undefined) => {
+      const m = material as THREE.MeshStandardMaterial & THREE.MeshBasicMaterial;
+      if (m.emissiveMap) return material; // las lámparas encendidas, aparte
+      let key: string;
+      if (m.isMeshBasicMaterial && m.blending === THREE.AdditiveBlending) key = `pool|${m.color.getHex()}`; // charcos de luz
+      else if (!m.isMeshStandardMaterial || (!kit && m.map)) return material; // la cara de cada casilla tiene su dibujo
+      else {
+        const img = m.map?.image as { width?: number; height?: number } | undefined;
+        key = [kit ?? "-", m.name, img?.width, img?.height, m.color.getHex(), m.roughness, m.metalness, m.vertexColors, m.side, m.flatShading, m.transparent, m.opacity].join("|");
+      }
+      const hit = same.get(key);
+      if (hit) return hit;
+      same.set(key, material);
+      return material;
+    };
+    const put = (g: THREE.BufferGeometry, material: THREE.Material, mesh: THREE.Mesh) => {
+      g.applyMatrix4(mesh.matrixWorld);
+      g.computeBoundingBox();
+      g.boundingBox!.getCenter(center);
+      const attrs = Object.keys(g.attributes).sort().join(",");
+      const key = `${material.uuid}|${attrs}|${mesh.castShadow}|${mesh.receiveShadow}|${Math.floor(center.x / 24)},${Math.floor(center.z / 24)}`;
+      let b = buckets.get(key);
+      if (!b) buckets.set(key, (b = { material, cast: mesh.castShadow, receive: mesh.receiveShadow, geos: [] }));
+      b.geos.push(g);
+    };
+    for (const root of [this.objectRoot, this.tileRoot]) {
+      root.updateMatrixWorld(true);
+      root.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh || (o as THREE.SkinnedMesh).isSkinnedMesh || !mesh.visible) return;
+        const geo = mesh.geometry;
+        if (geo.morphAttributes.position) return;
+        let owner: THREE.Object3D | null = o;
+        while (owner && owner.parent !== this.objectRoot) owner = owner.parent;
+        const kit = (owner?.userData.model as string | undefined)?.split("/")[0];
+        if (Array.isArray(mesh.material)) {
+          // casillas: los lados (mismo material en todas las del mismo color) se juntan; la cara de arriba, una por casilla
+          const flat = geo.index ? geo.toNonIndexed() : geo;
+          for (const grp of flat.groups) {
+            const part = new THREE.BufferGeometry();
+            for (const [name, attr] of Object.entries(flat.attributes)) {
+              const a = attr as THREE.BufferAttribute;
+              part.setAttribute(name, new THREE.BufferAttribute(a.array.slice(grp.start * a.itemSize, (grp.start + grp.count) * a.itemSize), a.itemSize, a.normalized));
+            }
+            put(part, canonical(mesh.material[grp.materialIndex ?? 0], kit), mesh);
+          }
+          if (flat !== geo) flat.dispose();
+        } else {
+          const material = canonical(mesh.material as THREE.Material, kit);
+          if (material.transparent && material.blending !== THREE.AdditiveBlending) return; // niebla, agua: aparte
+          if (geo.groups.length > 1) return;
+          put(geo.index ? geo.toNonIndexed() : geo.clone(), material, mesh);
+        }
+        drop.push(mesh);
+      });
+    }
+    const merged = new THREE.Group();
+    for (const b of buckets.values()) {
+      const geo = mergeGeometries(b.geos, false);
+      for (const g of b.geos) g.dispose();
+      if (!geo) continue;
+      const mesh = new THREE.Mesh(geo, b.material);
+      mesh.castShadow = b.cast;
+      mesh.receiveShadow = b.receive;
+      mesh.matrixAutoUpdate = false;
+      merged.add(mesh);
+    }
+    for (const m of drop) m.removeFromParent();
+    this.scene.add(merged);
   }
 
   /** Vista de la TV (`tvView` del diseño), centrada en el mundo: con `close`, acercada como la TV; si no, todo el mundo. */
@@ -709,6 +832,18 @@ export class EditorScene {
         const lampGroup = new THREE.Group();
         lampGroup.position.copy(at);
         lampGroup.add(light, sprite, light.target);
+        if (this.viewer) {
+          // TV: cada foco de verdad encarece cada píxel de toda la escena (con 20 faroles, 20 veces); en su lugar, un
+          // charco de luz pintado en el suelo bajo la lámpara (casi gratis) y el halo
+          light.visible = false;
+          const pool = new THREE.Mesh(
+            new THREE.PlaneGeometry(1, 1),
+            new THREE.MeshBasicMaterial({ map: this.glow(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, polygonOffset: true, polygonOffsetFactor: -2 }),
+          );
+          pool.rotation.x = -Math.PI / 2;
+          pool.position.y = box.min.y - at.y + 0.02;
+          lampGroup.add(pool);
+        }
         rig.add(lampGroup);
       }
       g.add(rig);
@@ -723,6 +858,13 @@ export class EditorScene {
       sprite.material.opacity = Math.min(0.95, 0.45 + lt.intensity / 150);
       const world = Math.min(2.6, 0.9 + lt.distance * 0.06); // tamaño del halo en casillas
       sprite.scale.set(world / g.scale.x, world / g.scale.y, 1);
+      const pool = lampGroup.children[3] as THREE.Mesh | undefined;
+      if (pool) {
+        const m = pool.material as THREE.MeshBasicMaterial;
+        m.color.set(lt.color).multiplyScalar(Math.min(0.8, 0.25 + lt.intensity / 90));
+        const d = Math.min(7, Math.max(2.2, lt.distance * 0.45)); // diámetro del charco en casillas
+        pool.scale.set(d / g.scale.x, d / g.scale.z, 1);
+      }
     }
     this.setGlowParts(g, lamp, lt.intensity);
   }
@@ -730,7 +872,11 @@ export class EditorScene {
   private disposeRig(g: THREE.Group) {
     const rig = g.userData.rig as THREE.Group | undefined;
     if (!rig) return;
-    for (const lampGroup of rig.children as THREE.Group[]) (lampGroup.children[1] as THREE.Sprite).material.dispose();
+    for (const lampGroup of rig.children as THREE.Group[]) {
+      (lampGroup.children[1] as THREE.Sprite).material.dispose();
+      const pool = lampGroup.children[3] as THREE.Mesh | undefined;
+      if (pool) (pool.material as THREE.Material).dispose();
+    }
     g.remove(rig);
     g.userData.rig = undefined;
   }
@@ -743,7 +889,7 @@ export class EditorScene {
       let cloned = 0;
       g.traverse((o) => {
         const mesh = o as THREE.Mesh;
-        if (!mesh.isMesh || Array.isArray(mesh.material)) return;
+        if (!mesh.isMesh || Array.isArray(mesh.material) || !(mesh.material as THREE.MeshStandardMaterial).isMeshStandardMaterial) return; // no el charco de luz
         const m = (mesh.material as THREE.MeshStandardMaterial).clone();
         m.emissiveMap = lamp.emissiveMap;
         m.emissive.set("#ffffff");
@@ -758,7 +904,7 @@ export class EditorScene {
     const k = intensity === null ? 0 : Math.min(3.2, 1.4 + intensity / 25); // las ventanitas se ven encendidas de verdad
     g.traverse((o) => {
       const mesh = o as THREE.Mesh;
-      if (mesh.isMesh && !Array.isArray(mesh.material)) (mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = k;
+      if (mesh.isMesh && !Array.isArray(mesh.material) && (mesh.material as THREE.MeshStandardMaterial).isMeshStandardMaterial) (mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = k;
     });
   }
 

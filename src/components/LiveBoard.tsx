@@ -77,7 +77,7 @@ export default function LiveBoard({ layout, onReady, onFail, ...state }: Props) 
             measure();
           }, WINDOW);
         };
-        watch = window.setTimeout(measure, 3000);
+        watch = window.setTimeout(measure, 6000); // calentamiento: shaders y la resolución dinámica se asientan
       } catch (e) {
         if (alive) onFail(e instanceof Error ? e.message : "error");
       }
