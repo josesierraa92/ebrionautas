@@ -334,7 +334,7 @@ function Token({ t, z, k, sheet, scale, current, winner, flying }: { t: TokenDat
       {/* nombre encima de cada ficha */}
       {!(n > 8 && !isCurrent) && (
         <div
-          className="absolute whitespace-nowrap"
+          className="absolute whitespace-nowrap uppercase tracking-wide"
           style={{
             left: 0,
             top: -top,

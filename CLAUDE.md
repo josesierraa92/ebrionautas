@@ -213,3 +213,6 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 
 - Ley del Más Allá: la ley se dicta **en voz alta** (pedido del usuario); no se escribe ni hay barra «Ley vigente». El
   celular solo toca «YA LA DICTÉ» (`SET_RULE` sin texto, `rule.text` queda vacío) y `rule` solo sirve para mostrar el +1 de penalización.
+- Tipografía (pedido del usuario): todo el juego usa **Lilita One** (`--font-sans` y `--font-display` apuntan a `--font-lilita`; Fredoka ya
+  no es la letra base) con `font-synthesis: none` (solo tiene un peso: sin negrita falsa). Los nombres sobre las fichas (`.live-name`
+  en 3D y el respaldo de `IsoBoard`) van siempre en MAYÚSCULAS. Los títulos grandes siguen en Creepster.
