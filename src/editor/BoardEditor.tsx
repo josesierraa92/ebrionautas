@@ -34,6 +34,8 @@ import {
   type LightId,
   type ObjectLight,
   type PlacedObject,
+  TV_VIEW_LIMITS,
+  type TvView,
 } from "./layout";
 import { EditorScene, type GizmoMode, type Tool } from "./scene";
 
@@ -84,6 +86,17 @@ export default function BoardEditor() {
   const strokeBefore = useRef<BoardLayout | null>(null);
   const flattenLevel = useRef(0);
   const shadowBefore = useRef<BoardLayout | null>(null);
+  // zoom e inclinación de la TV: se ven al momento en «Vista TV»; deshacer guarda el valor de antes de arrastrar
+  const viewBefore = useRef<BoardLayout | null>(null);
+  const setTvView = (v: Partial<TvView>) => {
+    setLayout({ ...layoutRef.current, tvView: { ...layoutRef.current.tvView, ...v } });
+    requestAnimationFrame(() => sceneRef.current?.resetView(true));
+  };
+  const endTvView = () => {
+    if (viewBefore.current && viewBefore.current !== layoutRef.current) history.current.push(viewBefore.current);
+    viewBefore.current = null;
+    setTick((t) => t + 1);
+  };
   const mistBefore = useRef<BoardLayout | null>(null);
   const tileMode = useRef<"add" | "remove">("add");
   const draftLoaded = useRef(false);
@@ -609,6 +622,36 @@ export default function BoardEditor() {
         >
           🎥 Usar esta vista en la TV
         </button>
+        {/* zoom e inclinación de la cámara de la TV, a mano (se ve al momento en «Vista TV») */}
+        <label className="flex items-center gap-1 text-sm" title="Cuánto acerca la TV a la ficha: más zoom = menos casillas a lo ancho">
+          Zoom TV
+          <input
+            type="range"
+            min={TV_VIEW_LIMITS.tiles.min}
+            max={TV_VIEW_LIMITS.tiles.max}
+            step={0.5}
+            className="w-24"
+            value={TV_VIEW_LIMITS.tiles.min + TV_VIEW_LIMITS.tiles.max - layout.tvView.tiles}
+            onPointerDown={() => (viewBefore.current = layoutRef.current)}
+            onChange={(e) => setTvView({ tiles: TV_VIEW_LIMITS.tiles.min + TV_VIEW_LIMITS.tiles.max - Number(e.target.value) })}
+            onPointerUp={endTvView}
+          />
+          <span className="w-16 text-xs opacity-70">{layout.tvView.tiles.toFixed(1)} casillas</span>
+        </label>
+        <label className="flex items-center gap-1 text-sm" title="Inclinación de la cámara de la TV: más grados = más desde arriba">
+          Ángulo
+          <input
+            type="range"
+            min={TV_VIEW_LIMITS.el.min}
+            max={TV_VIEW_LIMITS.el.max}
+            className="w-20"
+            value={layout.tvView.el}
+            onPointerDown={() => (viewBefore.current = layoutRef.current)}
+            onChange={(e) => setTvView({ el: Number(e.target.value) })}
+            onPointerUp={endTvView}
+          />
+          <span className="w-8 text-xs opacity-70">{Math.round(layout.tvView.el)}°</span>
+        </label>
         <label className="flex items-center gap-1 text-sm">
           Luz
           <select

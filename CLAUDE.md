@@ -149,7 +149,7 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   siguen siendo el zombi de serie.
 - **Vista de la TV** (`tvView` del layout: `az`/`el` en grados y `tiles` = casillas a lo ancho al seguir una ficha; de
   serie 45°/45°/6, más cenital y cerca que la isométrica, pedido del usuario). «🎥 Usar esta vista en la TV» copia el
-  ángulo y el acercamiento de la cámara del editor (`currentView`); «📺 Vista TV» la enseña (`resetView(true)`). Las
+  ángulo y el acercamiento de la cámara del editor (`currentView`); «📺 Vista TV» la enseña (`resetView(true)`). También se ajusta a mano con los controles «Zoom TV» (casillas a lo ancho) y «Ángulo» de la barra de arriba. Las
   fichas propias se dibujan con ese mismo ángulo (`renderToken(..., view)`).
 - Calidad en la TV (el usuario la vio "borrosa" frente al editor, que dibuja a la densidad real de la pantalla):
   `renderForTV(true)` encuadra solo las casillas + 5 de margen y saca el tablero en **mosaicos** de 2048 px a la
