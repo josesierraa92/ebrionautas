@@ -154,6 +154,24 @@ body {
   0% { transform: scale(1.4) rotate(-20deg); }
   100% { transform: scale(1) rotate(0deg); }
 }
+/* Título de casilla: entra de golpe, ladeado, con un pequeño temblor al caer */
+.banner-slam { animation: banner-slam 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both; rotate: -3deg; }
+@keyframes banner-slam {
+  0% { transform: scale(1.5, 0.4); opacity: 0; }
+  60% { transform: scale(0.97, 1.04); opacity: 1; }
+  80% { transform: translateX(-0.6%) scale(1); }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+/* Letra de terror (Creepster): blanca con una sombra dura del color del evento y un filete oscuro */
+.banner-title {
+  font-family: var(--font-spooky), var(--font-lilita), sans-serif;
+  color: #fff;
+  letter-spacing: 0.04em;
+  text-shadow:
+    0.35cqw 0.35cqw 0 var(--accent),
+    -0.12cqw 0 0 #0a071a, 0.12cqw 0 0 #0a071a, 0 -0.12cqw 0 #0a071a,
+    0.5cqw 0.5cqw 0 #0a071a;
+}
 .banner-pop { animation: banner-pop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1); rotate: -4deg; }
 @keyframes banner-pop {
   0% { transform: scale(0.2); opacity: 0; }

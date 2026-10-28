@@ -1,9 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Fredoka, Lilita_One } from "next/font/google";
+import { Creepster, Fredoka, Lilita_One } from "next/font/google";
 import "./globals.css";
 
 const display = Lilita_One({
   variable: "--font-lilita",
+  weight: "400",
+  subsets: ["latin"],
+});
+
+// Letra de terror para los títulos grandes de la TV
+const spooky = Creepster({
+  variable: "--font-spooky",
   weight: "400",
   subsets: ["latin"],
 });
@@ -30,7 +37,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${display.variable} ${body.variable} antialiased`}>
+      <body className={`${display.variable} ${body.variable} ${spooky.variable} antialiased`}>
         {children}
       </body>
     </html>

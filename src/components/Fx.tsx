@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { iconMaskUrl } from "@/editor/icons";
 import type { Banner, DiceFx } from "@/lib/useGameFx";
 
 const INK = "#1b1f4b";
@@ -42,25 +43,50 @@ export function DiceOverlay({ dice }: { dice: DiceFx | null }) {
   );
 }
 
-/** Título grande que aparece al caer en una casilla especial. */
+/**
+ * Título grande al caer en una casilla especial: una franja oscura que cruza la pantalla, ladeada, con el icono de la
+ * casilla (vector, nítido, del color del evento con contorno), «CASILLA N» y el título en letra de terror. Sin
+ * resplandor ni discos: solo se atenúa un poco el tablero para que se lea.
+ */
 export function BannerOverlay({ banner }: { banner: Banner | null }) {
   if (!banner) return null;
+  const mask = banner.icon ? iconMaskUrl(banner.icon, 512) : null;
   return (
-    <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center bg-[radial-gradient(circle,rgba(255,255,255,.75)_0%,rgba(255,255,255,.35)_45%,transparent_72%)]">
-      <div key={banner.key} className="banner-pop flex flex-col items-center gap-[2%] px-[4%] text-center">
-        {banner.art ? (
-          <img src={banner.art} alt="" className="h-auto drop-shadow-[0_8px_0_rgba(0,0,0,.3)]" style={{ width: "20cqw" }} />
-        ) : (
-          <span className="leading-none" style={{ fontSize: "16cqw" }}>
-            {banner.emoji}
-          </span>
-        )}
-        <span
-          className="banner-text font-display leading-none"
-          style={{ fontSize: "8.5cqw", color: banner.color }}
+    <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center overflow-hidden bg-black/35">
+      <div key={banner.key} className="banner-slam w-full">
+        <div
+          className="relative flex items-center justify-center gap-[3cqw] py-[2.4cqw]"
+          style={{ background: "linear-gradient(90deg, transparent 0%, rgba(10,7,26,.94) 12%, rgba(10,7,26,.94) 88%, transparent 100%)" }}
         >
-          {banner.title}
-        </span>
+          {/* filetes de color arriba y abajo, que se apagan hacia los lados */}
+          {[0, 1].map((i) => (
+            <span
+              key={i}
+              className="absolute right-[6%] left-[6%] h-[0.3cqw]"
+              style={{ [i ? "bottom" : "top"]: 0, background: `linear-gradient(90deg, transparent, ${banner.color} 25%, ${banner.color} 75%, transparent)` }}
+            />
+          ))}
+          {mask ? (
+            // el contorno oscuro va en el contenedor (un filtro dentro de una máscara se recortaría)
+            <div className="shrink-0" style={{ width: "11cqw", filter: `drop-shadow(0.25cqw 0 0 ${INK}) drop-shadow(-0.25cqw 0 0 ${INK}) drop-shadow(0 0.25cqw 0 ${INK}) drop-shadow(0 -0.25cqw 0 ${INK})` }}>
+              <div className="aspect-square w-full" style={{ background: banner.color, WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" }} />
+            </div>
+          ) : (
+            <span className="leading-none" style={{ fontSize: "9cqw" }}>
+              {banner.emoji}
+            </span>
+          )}
+          <div className="flex min-w-0 flex-col items-start">
+            {banner.n !== undefined && (
+              <span className="font-sans font-bold tracking-[0.5em] uppercase" style={{ fontSize: "1.5cqw", color: banner.color, opacity: 0.9 }}>
+                Casilla {banner.n}
+              </span>
+            )}
+            <span className="banner-title leading-none whitespace-nowrap" style={{ fontSize: `${Math.min(8.6, 125 / banner.title.length)}cqw`, ["--accent" as string]: banner.color }}>
+              {banner.title}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );

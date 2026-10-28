@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { LAST_TILE, type GameState } from "@/game/engine";
 import { getTile, type Tile } from "@/game/board";
 import { duelOutcome, jailOutcome, mazeOutcome } from "@/game/rules";
-import { tileArt } from "@/game/tileStyle";
+import { DEFAULT_ICON, type IconName } from "@/editor/icons";
 import { sfx } from "./sfx";
 
 // Tiempos de las animaciones: tranquilos y fluidos (el usuario los vio "súper rápidos" con 450/140/450/1200 ms).
@@ -14,7 +14,7 @@ export const STEP_MS = 340; // la ficha camina de casilla en casilla
 export const FLY_MS = 750; // vuelo de la Oca, agujero negro, resbalón…
 const BANNER_MS = 1600;
 
-export type Banner = { key: number; title: string; emoji: string; color: string; art?: string };
+export type Banner = { key: number; title: string; emoji: string; color: string; /** Icono de la casilla (vector) y su número; sin ellos, el emoji. */ icon?: IconName; n?: number };
 export type DiceFx = { key: number; value: number; rolling: boolean };
 /**
  * Casilla donde acaba de caer alguien (para la tarjeta que explica la regla). Se queda
@@ -196,7 +196,7 @@ export function useGameFx(game: GameState | null) {
       if (!ev) return sfx.land();
       const key = ++seq.current;
       setDice(null); // que el título no quede encima del dado
-      setBanner({ key, title: ev.title, emoji: ev.emoji, color: ev.color, art: tileArt(tile.type) });
+      setBanner({ key, title: ev.title, emoji: ev.emoji, color: ev.color, icon: DEFAULT_ICON[tile.type], n: tile.n });
       sfx[ev.sound]();
       later(BANNER_MS, () => setBanner((b) => (b?.key === key ? null : b)));
     }

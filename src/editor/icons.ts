@@ -180,19 +180,23 @@ export function drawIcon(ctx: CanvasRenderingContext2D, name: IconName, size: nu
   ctx.restore();
 }
 
-const masks = new Map<IconName, string>();
-/** Imagen blanca del icono (para pintarlo de cualquier color con una máscara CSS en la interfaz). */
-export function iconMaskUrl(name: IconName): string {
-  let url = masks.get(name);
+const masks = new Map<string, string>();
+/**
+ * Imagen blanca del icono (para pintarlo de cualquier color con una máscara CSS en la interfaz). `px` es el lado: 96
+ * para iconos pequeños; los grandes (títulos de la TV) piden más para que no se vean borrosos.
+ */
+export function iconMaskUrl(name: IconName, px = 96): string {
+  const key = `${name}@${px}`;
+  let url = masks.get(key);
   if (!url) {
     const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = 96;
+    canvas.width = canvas.height = px;
     const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = "#fff";
-    ctx.translate(48, 48);
-    drawIcon(ctx, name, 92);
+    ctx.translate(px / 2, px / 2);
+    drawIcon(ctx, name, px - 4);
     url = canvas.toDataURL("image/png");
-    masks.set(name, url);
+    masks.set(key, url);
   }
   return url;
 }

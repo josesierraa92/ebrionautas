@@ -113,6 +113,11 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
   abrir. En las decisiones de retos/exámenes (`decisionRule` en `TvCards`) se usa el texto propio y se le añade lo que
   sale al azar (categoría, trabalenguas). La TV: el chip de turno solo muestra quién juega (sin el dado: el dado
   grande ya se ve) y la tarjeta no repite el nombre; los botones de arriba son iconos discretos (`.icon-btn`).
+- Títulos grandes de la TV (`BannerOverlay` en `Fx.tsx`; rediseñado a petición del usuario: los iconos en imagen
+  se veían borrosos, no quería los discos ni el resplandor blanco, y le faltaba personalidad): una franja oscura
+  ladeada con filetes del color del evento, el icono de la casilla en vector (`iconMaskUrl(name, 512)`, del color del
+  evento y con contorno), «CASILLA N» y el título en Creepster (`--font-spooky`, `.banner-title`) con sombra dura de
+  color; entra con `banner-slam`. El tamaño de letra baja con títulos largos. Sin discos, sin resplandor.
 - Purgatorio (cárcel; regla del usuario): en su turno el preso tira; con 1-3 bebe 2, con 4-6 bebe 4 (`jailBail`), sale
   y vuelve a tirar para avanzar. No hay opción de esperar. La TV muestra la tarjeta "¡Sale del Purgatorio!" (`jailOutcome`).
 - Toda casilla que diga "tira el dado" debe enseñar después una tarjeta con lo que pasó (TV y celular):
