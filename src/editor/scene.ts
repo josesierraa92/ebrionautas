@@ -1231,7 +1231,14 @@ export class EditorScene {
     let maxTop = 0;
     for (const h of l.height) maxTop = Math.max(maxTop, h * LEVEL);
     // (con margen por arriba para las fichas que están de pie en las casillas del fondo)
-    const box = new THREE.Box3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(l.w, maxTop + 2.5, l.h));
+    // solo se encuadra donde hay juego (las casillas y unas 5 casillas de margen): así el mismo número de píxeles se
+    // reparte en menos terreno y la TV se ve mucho más nítida que con el mundo entero
+    const M = 5;
+    const tx = l.tiles.flatMap((t) => [t.x, t.x + TILE_SIZE]);
+    const tz = l.tiles.flatMap((t) => [t.y, t.y + TILE_SIZE]);
+    const [bx0, bx1] = tx.length ? [Math.max(0, Math.min(...tx) - M), Math.min(l.w, Math.max(...tx) + M)] : [0, l.w];
+    const [bz0, bz1] = tz.length ? [Math.max(0, Math.min(...tz) - M), Math.min(l.h, Math.max(...tz) + M)] : [0, l.h];
+    const box = new THREE.Box3(new THREE.Vector3(bx0, 0, bz0), new THREE.Vector3(bx1, maxTop + 2.5, bz1));
     const inv = cam.matrixWorldInverse;
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const x of [box.min.x, box.max.x])

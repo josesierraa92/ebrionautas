@@ -455,7 +455,7 @@ export default function BoardEditor() {
       // alta resolución (el mundo es grande y la TV acerca 1,8×): la imagen sube directo a Vercel Blob; sin Blob
       // (desarrollo) se usa la versión pequeña que cabe en la petición
       const key = adminKey() ?? "";
-      let shot = await scene.renderForTV(4096, true);
+      let shot = await scene.renderForTV(5120, true);
       let imageUrl: string | null = null;
       try {
         setStatus("Subiendo la imagen del tablero…");
