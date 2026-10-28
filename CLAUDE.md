@@ -119,7 +119,17 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   del jugador) por cada color de `PLAYER_COLORS`; al publicar, `modelRender.ts` dibuja cada ficha con la cámara de la
   TV (imagen 252×408, pies abajo) y se suben a Blob (`tokens` y `tokenScale` de `PublishedBoard`). La TV las lee con
   `useTokenArt` (`usePublishedBoard.ts`), que usa `Marciano`; `IsoBoard` aplica `tokenScale`. Las fichas sin cambiar
-  siguen siendo el zombi de serie. El tablero se renderiza a 5120 px, encuadrado solo en las casillas + 5 casillas de margen, y sube directo a Blob desde el navegador (`/api/admin/publish/upload`, sin el límite de 4,5 MB); sin Blob (desarrollo) cae a 2400 px dentro de la petición (≤ ~3,3 MB).
+  siguen siendo el zombi de serie.
+- **Vista de la TV** (`tvView` del layout: `az`/`el` en grados y `tiles` = casillas a lo ancho al seguir una ficha; de
+  serie 45°/45°/6, más cenital y cerca que la isométrica, pedido del usuario). «🎥 Usar esta vista en la TV» copia el
+  ángulo y el acercamiento de la cámara del editor (`currentView`); «📺 Vista TV» la enseña (`resetView(true)`). Las
+  fichas propias se dibujan con ese mismo ángulo (`renderToken(..., view)`).
+- Calidad en la TV: `renderForTV(true)` encuadra solo las casillas + 5 de margen y calcula la resolución para que la
+  TV acercada se vea 1:1 en ~2560 px (máx. 8192 px), pintando por trozos de 2048 con `setViewOffset` (WebGL no deja
+  más de una vez) en un lienzo 2D; la imagen sube directo a Blob desde el navegador (`/api/admin/publish/upload`, sin
+  el límite de 4,5 MB). `PublishedBoard.zoom` le dice a `IsoBoard` cuánto acercar. Sin Blob (desarrollo) cae a
+  2400 px dentro de la petición (≤ ~3,3 MB). En desarrollo el editor deja la escena en `window.__editorScene` para
+  pruebas con Playwright.
 - Hasta **16 jugadores** (`PLAYER_COLORS` en `tileStyle.ts`: cada color tiene su imagen `public/art/alien/<i>.webp` con
   un accesorio distinto, `LOOKS` en `scripts/board3d/scene.ts`; el editor tiene una ficha por color). Para más,
   añadir colores y accesorios y volver a correr `node scripts/board3d/render.mjs` (restaurar con git los archivos que

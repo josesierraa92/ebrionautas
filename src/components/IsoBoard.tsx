@@ -65,6 +65,7 @@ function publishedGeometry(b: PublishedBoard): Geometry {
     bg: b.bg,
     // solo cambia el tamaño de las fichas que el admin personalizó
     tokenScale: (b.tokens ?? []).map((t, i) => (t ? (b.tokenScale?.[i] ?? 1) : null)),
+    zoom: b.zoom, // el acercamiento de la vista elegida en el editor
   };
 }
 
@@ -104,7 +105,7 @@ function useTween(target: View) {
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [target.x, target.y, target.w, target.h]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [target.x, target.y, target.w, target.h]);
   return cur;
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { History } from "./history";
-import { brushCells, expand, flatten, groundAt, lightOf, lookOf, MAX_LEVEL, MAX_SIZE, newLayout, paint, parseLayout, raise, resize, TILE_COUNT, tileAnchor, tileTypeOf, toggleTile } from "./layout";
+import { brushCells, DEFAULT_TV_VIEW, expand, flatten, groundAt, lightOf, lookOf, MAX_LEVEL, MAX_SIZE, newLayout, paint, parseLayout, raise, resize, TILE_COUNT, tileAnchor, tileTypeOf, toggleTile, tvDirection } from "./layout";
 
 describe("diseño del tablero", () => {
   it("el pincel pinta un cuadrado y no se sale del mundo", () => {
@@ -135,6 +135,21 @@ describe("neblina", () => {
     expect(parseLayout({ ...base, mist: 5 })?.mist).toBe(1);
     expect(parseLayout({ ...base, mist: -1 })?.mist).toBe(0);
     expect(resize({ ...base, mist: 0.3 }, 20, 12).mist).toBe(0.3);
+  });
+});
+
+describe("vista de la TV", () => {
+  it("tiene valor de serie (la isométrica), se valida y sobrevive a cambiar el tamaño", () => {
+    const base = newLayout(10, 8);
+    expect(base.tvView).toEqual(DEFAULT_TV_VIEW);
+    expect(parseLayout({ ...base, tvView: undefined })?.tvView).toEqual(DEFAULT_TV_VIEW);
+    expect(parseLayout({ ...base, tvView: { az: -90, el: 99, tiles: 1 } })?.tvView).toEqual({ az: 270, el: 80, tiles: 3 });
+    expect(resize({ ...base, tvView: { az: 10, el: 50, tiles: 5 } }, 20, 12).tvView).toEqual({ az: 10, el: 50, tiles: 5 });
+    // az 45 y el 30 es la dirección isométrica de siempre (1, tan30°·√2, 1)
+    const [x, y, z] = tvDirection({ az: 45, el: 30, tiles: 9 });
+    expect(x).toBeCloseTo(z);
+    expect(y / Math.hypot(x, z)).toBeCloseTo(Math.tan(Math.PI / 6));
+    expect(Math.hypot(...tvDirection(DEFAULT_TV_VIEW))).toBeCloseTo(1);
   });
 });
 

@@ -305,6 +305,7 @@ export default function BoardEditor() {
     scene.modelUrl = (id) => modelsRef.current.get(id)?.file;
     scene.setRotateHandle(handleRef.current);
     sceneRef.current = scene;
+    if (process.env.NODE_ENV !== "production") (window as unknown as { __editorScene?: unknown }).__editorScene = scene; // pruebas
     const draft = readDraft();
     if (draft) setLayout(draft);
     scene.setLayout(draft ?? layoutRef.current);
@@ -452,10 +453,10 @@ export default function BoardEditor() {
     if (!scene) return;
     try {
       setStatus("Renderizando el tablero…");
-      // alta resolución (el mundo es grande y la TV acerca 1,8×): la imagen sube directo a Vercel Blob; sin Blob
-      // (desarrollo) se usa la versión pequeña que cabe en la petición
+      // alta resolución (la TV acerca mucho): la imagen sube directo a Vercel Blob; sin Blob (desarrollo) se usa la
+      // versión pequeña que cabe en la petición
       const key = adminKey() ?? "";
-      let shot = await scene.renderForTV(5120, true);
+      let shot = await scene.renderForTV(true);
       let imageUrl: string | null = null;
       try {
         setStatus("Subiendo la imagen del tablero…");
@@ -469,7 +470,7 @@ export default function BoardEditor() {
       const tokens: (string | null)[] = [];
       for (const [i, t] of l.tokens.entries()) {
         const file = t && modelsRef.current.get(t.model)?.file;
-        tokens.push(t && file ? renderToken(await loadModelScene(file), t, PLAYER_COLORS[i]) : null);
+        tokens.push(t && file ? renderToken(await loadModelScene(file), t, PLAYER_COLORS[i], l.tvView) : null);
       }
       const tokenScale = l.tokens.map((t) => t?.size ?? 1);
       setStatus("Subiendo…");
@@ -561,8 +562,20 @@ export default function BoardEditor() {
           ↷ Rehacer
         </button>
         <span className="mx-1 h-6 w-px bg-white/15" />
-        <button className={`${btn} ${off}`} onClick={() => sceneRef.current?.resetView()}>
+        <button className={`${btn} ${off}`} onClick={() => sceneRef.current?.resetView(true)} title="Ver el tablero con el ángulo y el acercamiento de la TV">
           📺 Vista TV
+        </button>
+        <button
+          className={`${btn} ${off}`}
+          title="La TV usará el ángulo y el acercamiento que tienes ahora en pantalla (luego, Publicar)"
+          onClick={() => {
+            const v = sceneRef.current?.currentView();
+            if (!v) return;
+            commit({ ...layoutRef.current, tvView: v });
+            setStatus(`Vista de la TV fijada: ${Math.round(v.el)}° de altura y unas ${Math.round(v.tiles)} casillas a lo ancho. Publica para verla en la TV.`);
+          }}
+        >
+          🎥 Usar esta vista en la TV
         </button>
         <label className="flex items-center gap-1 text-sm">
           Luz

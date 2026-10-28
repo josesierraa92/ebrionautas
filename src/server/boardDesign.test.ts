@@ -43,6 +43,8 @@ describe("diseño del tablero en el servidor", () => {
     const b = await publishBoard(shot);
     expect(b.image).toMatch(/^\/api\/board\/image\?v=/);
     expect((await loadPublished())?.tiles).toHaveLength(62);
+    expect((await loadPublished())?.zoom).toBeUndefined();
+    expect((await publishBoard({ ...shot, zoom: 3.5, width: 9000, height: 5063 })).zoom).toBe(3.5);
     expect((await loadDevImage())?.toString("ascii", 0, 4)).toBe("RIFF");
     await unpublishBoard();
     expect(await loadPublished()).toBeNull();

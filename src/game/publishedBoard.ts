@@ -19,6 +19,8 @@ export type PublishedBoard = {
   tokens?: (string | null)[];
   /** Tamaño en pantalla de cada ficha propia respecto al zombi de serie (1 = igual). */
   tokenScale?: number[];
+  /** Cuánto acerca la TV al seguir una ficha (la vista elegida en el editor); si falta, unas 9 casillas a lo ancho. */
+  zoom?: number;
 };
 
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -28,7 +30,7 @@ export function parsePublished(raw: unknown): Omit<PublishedBoard, "image" | "ve
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   const { width, height, cell, bg } = r;
-  if (!finite(width) || !finite(height) || width < 100 || height < 100 || width > 8000 || height > 8000) return null;
+  if (!finite(width) || !finite(height) || width < 100 || height < 100 || width > 16384 || height > 16384) return null;
   if (!finite(cell) || cell <= 0 || typeof bg !== "string" || !/^#[0-9a-f]{6}$/i.test(bg)) return null;
   if (!Array.isArray(r.tiles) || r.tiles.length !== BOARD.length) return null;
   const tiles = r.tiles.map((t) => {
@@ -36,5 +38,6 @@ export function parsePublished(raw: unknown): Omit<PublishedBoard, "image" | "ve
     return finite(p?.x) && finite(p?.y) ? { x: p.x, y: p.y } : null;
   });
   if (tiles.some((t) => !t)) return null;
-  return { width, height, cell, bg, tiles: tiles as { x: number; y: number }[] };
+  const zoom = finite(r.zoom) ? Math.min(12, Math.max(1, r.zoom)) : undefined;
+  return { width, height, cell, bg, tiles: tiles as { x: number; y: number }[], ...(zoom && { zoom }) };
 }

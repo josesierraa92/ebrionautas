@@ -2,6 +2,7 @@
 // jugadores. Usa su propio renderer temporal (con fondo transparente), así no toca la escena del editor.
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DEFAULT_TV_VIEW, tvDirection, type TvView } from "./layout";
 
 const loader = new GLTFLoader();
 const cache = new Map<string, Promise<THREE.Object3D>>();
@@ -63,7 +64,7 @@ function lights(scene: THREE.Scene) {
  * Renderiza `scene` con la vista de la TV, encuadrando lo que ocupa `subject`. Con `bottom` el objeto queda pegado
  * abajo (las fichas: así todas se apoyan igual en la casilla); si no, centrado (miniaturas).
  */
-function shoot(scene: THREE.Scene, subject: THREE.Object3D, width: number, height: number, opts: { margin: number; bottom: boolean; quality: number }): string {
+function shoot(scene: THREE.Scene, subject: THREE.Object3D, width: number, height: number, opts: { margin: number; bottom: boolean; quality: number; dir?: THREE.Vector3 }): string {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(1);
   renderer.setSize(width, height, false);
@@ -74,7 +75,7 @@ function shoot(scene: THREE.Scene, subject: THREE.Object3D, width: number, heigh
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 1000);
   const box = new THREE.Box3().setFromObject(subject);
   const center = box.getCenter(new THREE.Vector3());
-  camera.position.copy(center).addScaledVector(ISO_DIR, 100);
+  camera.position.copy(center).addScaledVector(opts.dir ?? ISO_DIR, 100);
   camera.lookAt(center);
   camera.updateMatrixWorld();
   const inv = camera.matrixWorldInverse;
@@ -119,7 +120,7 @@ export const TOKEN_IMAGE = { width: 252, height: 408 };
  * La ficha de un jugador: el modelo mirando a la cámara (más el giro elegido), de pie sobre una peana del color del
  * jugador si `base` está activo. Siempre encuadrada igual, con los pies abajo.
  */
-export function renderToken(root: THREE.Object3D, spec: { turn: number; base: boolean }, color: string): string {
+export function renderToken(root: THREE.Object3D, spec: { turn: number; base: boolean }, color: string, view: TvView = DEFAULT_TV_VIEW): string {
   const scene = new THREE.Scene();
   lights(scene);
   const model = root.clone(true);
@@ -132,7 +133,7 @@ export function renderToken(root: THREE.Object3D, spec: { turn: number; base: bo
   const nb = new THREE.Box3().setFromObject(model);
   model.position.set(-(nb.min.x + nb.max.x) / 2, -nb.min.y, -(nb.min.z + nb.max.z) / 2);
   holder.add(model);
-  holder.rotation.y = Math.PI / 4 + (spec.turn * Math.PI) / 180; // de frente a la cámara
+  holder.rotation.y = ((view.az + spec.turn) * Math.PI) / 180; // de frente a la cámara de la TV
   scene.add(holder);
   if (spec.base) {
     const r = Math.max(0.38, 0.55 * Math.max(nb.max.x - nb.min.x, nb.max.z - nb.min.z));
@@ -140,5 +141,5 @@ export function renderToken(root: THREE.Object3D, spec: { turn: number; base: bo
     disc.position.y = -0.04;
     scene.add(disc);
   }
-  return shoot(scene, scene, TOKEN_IMAGE.width, TOKEN_IMAGE.height, { margin: 0.05, bottom: true, quality: 0.88 });
+  return shoot(scene, scene, TOKEN_IMAGE.width, TOKEN_IMAGE.height, { margin: 0.05, bottom: true, quality: 0.88, dir: new THREE.Vector3(...tvDirection(view)) });
 }

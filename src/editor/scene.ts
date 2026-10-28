@@ -7,7 +7,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { builtinIcon, drawIcon } from "./icons";
 import { findLamp, type Lamp } from "./lamp";
-import { lightOf, NUMBER_FONTS, type NumberFont, type NumberStyle } from "./layout";
+import { lightOf, NUMBER_FONTS, parseTvView, tvDirection, type NumberFont, type NumberStyle, type TvView } from "./layout";
 import { brushCells, GROUNDS, groundAt, LEVEL, LIQUIDS, lookOf, TILE_SIZE, tileAnchor, tileTypeOf, type BoardLayout, type TileKind, type LightId, type PlacedObject } from "./layout";
 
 export type Tool = "select" | "paint" | "raise" | "lower" | "flatten" | "stamp" | "tiles";
@@ -226,16 +226,28 @@ export class EditorScene {
     this.camera.updateProjectionMatrix();
   }
 
-  /** Vista de la TV: isométrica desde +x +z, a 30° de altura, con todo el mundo encuadrado. */
-  resetView() {
+  /** Vista de la TV (`tvView` del diseño), centrada en el mundo: con `close`, acercada como la TV; si no, todo el mundo. */
+  resetView(close = false) {
     if (!this.layout) return;
     const c = new THREE.Vector3(this.layout.w / 2, 0, this.layout.h / 2);
-    const dir = new THREE.Vector3(1, Math.tan(Math.PI / 6) * Math.SQRT2, 1).normalize();
+    const dir = new THREE.Vector3(...tvDirection(this.layout.tvView));
     this.camera.position.copy(c).addScaledVector(dir, CAM_DIST);
-    this.camera.zoom = 1;
     this.orbit.target.copy(c);
     this.resize();
+    // acercamiento: que quepan tvView.tiles casillas a lo ancho, como en la TV cuando sigue a una ficha
+    const visible = this.camera.right - this.camera.left;
+    this.camera.zoom = !close ? 1 : Math.min(this.orbit.maxZoom, Math.max(this.orbit.minZoom, visible / (TILE_SIZE * Math.SQRT2 * this.layout.tvView.tiles)));
+    this.camera.updateProjectionMatrix();
     this.orbit.update();
+  }
+
+  /** La vista actual del editor como vista de la TV: el mismo ángulo y las mismas casillas a lo ancho. */
+  currentView(): TvView {
+    const d = this.camera.position.clone().sub(this.orbit.target).normalize();
+    const az = (Math.atan2(d.x, d.z) * 180) / Math.PI;
+    const el = (Math.asin(Math.min(1, Math.max(-1, d.y))) * 180) / Math.PI;
+    const visible = (this.camera.right - this.camera.left) / this.camera.zoom;
+    return parseTvView({ az, el, tiles: visible / (TILE_SIZE * Math.SQRT2) });
   }
 
   // ------------------------------------------------------------------ herramientas
@@ -1211,7 +1223,13 @@ export class EditorScene {
    * Renderiza el tablero entero con la cámara de la TV (isométrica fija, sin rejilla ni ayudas) y calcula dónde
    * cae cada casilla en la imagen, para poner encima las fichas.
    */
-  async renderForTV(maxWidth = 2400, asBlob = false): Promise<{ image: string; blob?: Blob; width: number; height: number; tiles: { x: number; y: number }[]; cell: number; bg: string }> {
+  /**
+   * Foto del tablero para la TV con la cámara de `tvView`. Con `asBlob`, a la resolución que hace falta para que la
+   * TV (acercada a `tvView.tiles` casillas) se vea 1:1 en una pantalla de ~2560 px, hasta 8192 px; se dibuja por trozos
+   * (el navegador no deja pintar WebGL tan grande de una vez) y se devuelve como archivo para subirlo a Blob. Sin
+   * `asBlob`, 2400 px en data URL (desarrollo, va dentro de la petición).
+   */
+  async renderForTV(asBlob = false): Promise<{ image: string; blob?: Blob; width: number; height: number; tiles: { x: number; y: number }[]; cell: number; bg: string; zoom: number }> {
     const l = this.layout;
     if (!l) throw new Error("No hay diseño");
     await Promise.all([...this.models.values(), this.needFont(l.numbers.font)]);
@@ -1223,7 +1241,7 @@ export class EditorScene {
 
     const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, -500, 1000);
     const center = new THREE.Vector3(l.w / 2, 0, l.h / 2);
-    const dir = new THREE.Vector3(1, Math.tan(Math.PI / 6) * Math.SQRT2, 1).normalize();
+    const dir = new THREE.Vector3(...tvDirection(l.tvView));
     cam.position.copy(center).addScaledVector(dir, CAM_DIST);
     cam.lookAt(center);
     cam.updateMatrixWorld();
@@ -1257,24 +1275,45 @@ export class EditorScene {
     else hw = (hh * 16) / 9;
     Object.assign(cam, { left: cx - hw, right: cx + hw, top: cy + hh, bottom: cy - hh });
     cam.updateProjectionMatrix();
-    const width = maxWidth;
-    const height = Math.round((width * 9) / 16);
+    // píxeles por unidad del mundo: el rombo de una casilla mide TILE_SIZE·√2 unidades de ancho
+    const tileW = TILE_SIZE * Math.SQRT2;
+    const MAX = 8192;
+    let ppu = asBlob ? 2560 / (tileW * l.tvView.tiles) : 2400 / (2 * hw);
+    ppu = Math.min(ppu, MAX / (2 * hw), MAX / (2 * hh));
+    const width = Math.round(2 * hw * ppu);
+    const height = Math.round(2 * hh * ppu);
 
     const hidden = [this.grid, this.bounds, this.brush, this.gizmo.getHelper()].filter((o) => o.visible);
     for (const o of hidden) o.visible = false;
     const ratio = this.renderer.getPixelRatio();
     this.renderer.setPixelRatio(1);
-    this.renderer.setSize(width, height, false);
-    this.renderer.render(this.scene, cam);
+    // por trozos: cada uno con su parte de la cámara (setViewOffset) y pegado en un lienzo grande
+    const out = document.createElement("canvas");
+    out.width = width;
+    out.height = height;
+    const ctx = out.getContext("2d")!;
+    const gl = this.renderer.getContext();
+    const vp = gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array;
+    const chunk = Math.min(2048, vp[0], vp[1]);
+    for (let y = 0; y < height; y += chunk)
+      for (let x = 0; x < width; x += chunk) {
+        const cw = Math.min(chunk, width - x);
+        const ch = Math.min(chunk, height - y);
+        cam.setViewOffset(width, height, x, y, cw, ch);
+        this.renderer.setSize(cw, ch, false);
+        this.renderer.render(this.scene, cam);
+        ctx.drawImage(this.renderer.domElement, x, y);
+      }
+    cam.clearViewOffset();
     let image = "";
     let blob: Blob | undefined;
     if (asBlob) {
-      // imagen grande: va directo a Vercel Blob (sin el límite de ~4,5 MB de las funciones), así que no se baja la calidad
-      blob = await new Promise<Blob>((ok, fail) => this.renderer.domElement.toBlob((b) => (b ? ok(b) : fail(new Error("sin imagen"))), "image/webp", 0.9));
+      // va directo a Vercel Blob (sin el límite de ~4,5 MB de las funciones), así que no se baja la calidad
+      blob = await new Promise<Blob>((ok, fail) => out.toBlob((b) => (b ? ok(b) : fail(new Error("sin imagen"))), "image/webp", 0.92));
     } else {
-      image = this.renderer.domElement.toDataURL("image/webp", 0.85);
+      image = out.toDataURL("image/webp", 0.85);
       // la petición lleva también las fichas y Vercel admite ~4,5 MB: el tablero debe quedar por debajo de ~3,3 MB
-      for (const q of [0.75, 0.62, 0.5, 0.4]) if (image.length > 3_300_000) image = this.renderer.domElement.toDataURL("image/webp", q);
+      for (const q of [0.75, 0.62, 0.5, 0.4]) if (image.length > 3_300_000) image = out.toDataURL("image/webp", q);
     }
     this.renderer.setPixelRatio(ratio);
     for (const o of hidden) o.visible = true;
@@ -1286,8 +1325,10 @@ export class EditorScene {
     };
     const tiles = l.tiles.map((t) => toPx(new THREE.Vector3(t.x + TILE_SIZE / 2, this.tileTop(l, t) + 0.14, t.y + TILE_SIZE / 2)));
     // ancho en pantalla del rombo de una casilla (las fichas se escalan con él)
-    const cell = Math.abs(toPx(new THREE.Vector3(TILE_SIZE, 0, 0)).x - toPx(new THREE.Vector3(0, 0, TILE_SIZE)).x);
+    const cell = tileW * ppu;
     const bg = "#" + (this.scene.background as THREE.Color).getHexString();
-    return { image, blob, width, height, tiles, cell, bg };
+    // cuánto acerca la TV para que quepan tvView.tiles casillas a lo ancho
+    const zoom = Math.max(1, width / (cell * l.tvView.tiles));
+    return { image, blob, width, height, tiles, cell, bg, zoom };
   }
 }

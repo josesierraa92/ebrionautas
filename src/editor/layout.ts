@@ -93,7 +93,37 @@ export type BoardLayout = {
   numbers: NumberStyle;
   /** Modelo de cada ficha, una por color de jugador (null = el zombi de serie). */
   tokens: (TokenSpec | null)[];
+  /** Cómo se ve el tablero en la TV: ángulo de la cámara y cuánto acerca. */
+  tvView: TvView;
 };
+
+/**
+ * Cámara de la TV. `az`: giro alrededor del tablero en grados (45 = desde +x +z, como la isométrica); `el`: altura en
+ * grados (30 = isométrica; más = más desde arriba); `tiles`: casillas que caben a lo ancho de la pantalla cuando la
+ * cámara sigue a una ficha (menos = más cerca). De serie, más desde arriba y más cerca que la isométrica (pedido
+ * del usuario: "para que se note mejor el tablero").
+ */
+export type TvView = { az: number; el: number; tiles: number };
+export const DEFAULT_TV_VIEW: TvView = { az: 45, el: 45, tiles: 6 };
+export const TV_VIEW_LIMITS = { el: { min: 20, max: 80 }, tiles: { min: 3, max: 20 } };
+
+/** Valida una vista de la TV (lo que falte o no valga, el de serie). */
+export function parseTvView(raw: unknown): TvView {
+  const v = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const n = (x: unknown, d: number) => (typeof x === "number" && Number.isFinite(x) ? x : d);
+  const az = ((n(v.az, DEFAULT_TV_VIEW.az) % 360) + 360) % 360;
+  const el = Math.max(TV_VIEW_LIMITS.el.min, Math.min(TV_VIEW_LIMITS.el.max, n(v.el, DEFAULT_TV_VIEW.el)));
+  const tiles = Math.max(TV_VIEW_LIMITS.tiles.min, Math.min(TV_VIEW_LIMITS.tiles.max, n(v.tiles, DEFAULT_TV_VIEW.tiles)));
+  const r = (x: number) => Math.round(x * 100) / 100;
+  return { az: r(az), el: r(el), tiles: r(tiles) };
+}
+
+/** Dirección desde el centro del tablero hacia la cámara de la TV (vector unitario). */
+export function tvDirection(v: TvView): [number, number, number] {
+  const az = (v.az * Math.PI) / 180;
+  const el = (v.el * Math.PI) / 180;
+  return [Math.cos(el) * Math.sin(az), Math.sin(el), Math.cos(el) * Math.cos(az)];
+}
 
 export type Cell = { x: number; y: number };
 
@@ -177,6 +207,7 @@ export function newLayout(w = 32, h = 24): BoardLayout {
     tileStyles: {},
     numbers: DEFAULT_NUMBERS,
     tokens: Array<TokenSpec | null>(TOKEN_COUNT).fill(null),
+    tvView: DEFAULT_TV_VIEW,
   };
 }
 
@@ -268,7 +299,7 @@ export function resize(l: BoardLayout, w: number, h: number): BoardLayout {
       out.ground[y * w + x] = l.ground[cellIndex(l, x, y)];
       out.height[y * w + x] = l.height[cellIndex(l, x, y)];
     }
-  return { ...out, light: l.light, shadow: l.shadow, mist: l.mist, tileStyles: l.tileStyles, numbers: l.numbers, tokens: l.tokens, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
+  return { ...out, light: l.light, shadow: l.shadow, mist: l.mist, tileStyles: l.tileStyles, numbers: l.numbers, tokens: l.tokens, tvView: l.tvView, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
 }
 
 /** Altura (en unidades del mundo) de la superficie de una celda. Los líquidos quedan un poco hundidos. */
@@ -371,7 +402,7 @@ export function parseLayout(raw: unknown): BoardLayout | null {
       base: typeof t.base === "boolean" ? t.base : DEFAULT_TOKEN.base,
     };
   });
-  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers, tokens };
+  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers, tokens, tvView: parseTvView(r.tvView) };
 }
 
 /** Un emoji/texto corto o una imagen pequeña subida desde el editor. */
