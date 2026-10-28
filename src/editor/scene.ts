@@ -428,10 +428,10 @@ export class EditorScene {
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     // se recorta el mundo (apenas ensanchado y poco difuminado): en la línea amarilla la neblina ya es notoria y
-    // a unas 2 casillas es opaca (el usuario no quiere ver nada de lo de fuera)
+    // a unas 3 casillas es opaca, con un degradado suave en el borde (el usuario no quiere ver nada de lo de fuera)
     ctx.globalCompositeOperation = "destination-out";
-    ctx.filter = `blur(${Math.round(0.9 * k)}px)`;
-    const grow = 0.2 * k;
+    ctx.filter = `blur(${Math.round(1.4 * k)}px)`;
+    const grow = 0.4 * k;
     ctx.fillRect(E * k - grow, E * k - grow, l.w * k + 2 * grow, l.h * k + 2 * grow);
     ctx.filter = "none";
     const tex = new THREE.CanvasTexture(canvas);
