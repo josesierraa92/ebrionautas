@@ -130,7 +130,20 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
   if (game.phase === "ROLL" && card && dismissed !== card.key) {
     return (
       <div className="flex flex-1 flex-col justify-between gap-4">
-        <div className="flex flex-1 flex-col justify-center">
+        <div className="flex flex-1 flex-col justify-center gap-4">
+          {/* de quién es la tarjeta (quien tiró) */}
+          {(() => {
+            const owner = game.players.find((p) => p.id === card.playerId) ?? me;
+            return (
+              <div className="flex items-center justify-center gap-3">
+                <Marciano avatar={avatarOf(owner)} expression={expressionFor(owner, { isTurn: true })} size={64} animated character={characterOf(game.players, owner.id)} />
+                <div className="min-w-0 text-left">
+                  <p className="font-display text-base leading-none text-btn-special">Turno de</p>
+                  <h2 className="title-game mt-1 max-w-full truncate text-4xl leading-none">{owner.name.toUpperCase()}</h2>
+                </div>
+              </div>
+            );
+          })()}
           <PhoneRuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={card.result} unit="19px" />
         </div>
         <button onClick={() => setDismissed(card.key)} className="btn-game bg-btn-green py-4 text-2xl text-white">

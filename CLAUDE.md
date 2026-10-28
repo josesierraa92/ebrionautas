@@ -241,3 +241,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   va encima de las opciones, como antes.
 - Nombres sobre las fichas (`.live-name`, en 3D y en el respaldo de `IsoBoard`): en el **color del jugador** (el mismo del marco del
   `TurnChip`), con contorno azul muy oscuro (`#090b2a`, 0,34em). El contorno blanco se quitó a petición del usuario.
+  La pantalla de la tarjeta lleva arriba «Turno de NOMBRE» con su avatar (de quién es la tarjeta).
