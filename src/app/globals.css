@@ -123,17 +123,6 @@ body {
   paint-order: stroke fill;
   will-change: transform;
 }
-/* …y por fuera otro contorno blanco (la misma palabra detrás, con el trazo más ancho) */
-.live-name::before {
-  content: attr(data-name);
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: -1;
-  -webkit-text-stroke: 0.7em #fff;
-  paint-order: stroke fill;
-  color: #fff;
-}
 /* Personajes zombi del tablero: respiran (el pecho sube y baja: se estiran un poco desde los pies). Con `transform`
    (no la propiedad `scale`, que los navegadores de TV antiguos no conocen); el espejo va en otra capa por dentro. */
 .zb-breathe { animation: zb-breathe 2.8s ease-in-out infinite; animation-delay: var(--zb-delay, 0s); }
