@@ -427,11 +427,11 @@ export class EditorScene {
     const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // se recorta el mundo (ensanchado unas casillas y difuminado): en la línea amarilla la neblina apenas empieza y
-    // unas 8 casillas más allá ya es opaca
+    // se recorta el mundo (ensanchado una casilla y poco difuminado): en la línea amarilla la neblina ya es notoria y
+    // unas 4 casillas más allá es casi opaca (el usuario no quiere ver apenas nada de lo de fuera)
     ctx.globalCompositeOperation = "destination-out";
-    ctx.filter = `blur(${Math.round(4 * k)}px)`;
-    const grow = 3 * k;
+    ctx.filter = `blur(${Math.round(2.2 * k)}px)`;
+    const grow = 1.6 * k;
     ctx.fillRect(E * k - grow, E * k - grow, l.w * k + 2 * grow, l.h * k + 2 * grow);
     ctx.filter = "none";
     const tex = new THREE.CanvasTexture(canvas);
@@ -439,8 +439,9 @@ export class EditorScene {
     const color = new THREE.Color(LIGHT_PRESETS[l.light].bg);
     let top = 0;
     for (const h of l.height) top = Math.max(top, h * LEVEL);
-    for (const [dy, opacity] of [[0.3, 1], [1.5, 0.7]] as const) {
-      const mat = new THREE.MeshBasicMaterial({ map: tex, color, transparent: true, opacity: opacity * (0.35 + 0.65 * l.mist), depthWrite: false, toneMapped: false, fog: false });
+    // tres láminas a distinta altura: juntas tapan casi del todo (la última también esconde lo bajito de fuera)
+    for (const [dy, opacity] of [[0.3, 1], [1.2, 0.95], [2.6, 0.9]] as const) {
+      const mat = new THREE.MeshBasicMaterial({ map: tex, color, transparent: true, opacity: opacity * (0.55 + 0.45 * l.mist), depthWrite: false, toneMapped: false, fog: false });
       const mesh = new THREE.Mesh(new THREE.PlaneGeometry(size.w, size.h), mat);
       mesh.rotation.x = -Math.PI / 2;
       mesh.position.set(l.w / 2, top + dy, l.h / 2);

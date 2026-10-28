@@ -138,7 +138,7 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   (`isEmitter`, `lightOf`); `light: {on:false}` los apaga. Sin luz propia la noche queda muy oscura (pedido del usuario).
   La luz sale de los cuadritos amarillos del modelo (`src/editor/lamp.ts` los detecta por el color de la textura,
   255,192,68 en Kenney) y esas partes brillan con un mapa emisivo; es un foco hacia abajo, no un punto, para no
-  encender el poste del farol. Neblina (`mist` del layout): dos láminas bajas que tapan el terreno de relleno de fuera
+  encender el poste del farol. Neblina (`mist` del layout, 1 por defecto = muy densa): tres láminas bajas que tapan el terreno de relleno de fuera
   de la línea amarilla (pedido del usuario: esa zona "despoblada" se veía mal).
 - Catálogo: kits CC0 de Kenney en `public/models/<kit>/` (cementerio, naturaleza, supervivencia, ciudad) y el kit
   **Halloween Bits de KayKit** (CC0, `halloween`, escala 0.5: viene ~4 veces más grande). Poly Pizza bloquea las

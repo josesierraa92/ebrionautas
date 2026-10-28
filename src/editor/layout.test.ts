@@ -130,8 +130,8 @@ describe("luces de los objetos", () => {
 describe("neblina", () => {
   it("tiene valor de serie, se limita a 0..1 y sobrevive a cambiar el tamaño", () => {
     const base = newLayout(10, 8);
-    expect(base.mist).toBe(0.8);
-    expect(parseLayout({ ...base, mist: undefined })?.mist).toBe(0.8);
+    expect(base.mist).toBe(1);
+    expect(parseLayout({ ...base, mist: undefined })?.mist).toBe(1);
     expect(parseLayout({ ...base, mist: 5 })?.mist).toBe(1);
     expect(parseLayout({ ...base, mist: -1 })?.mist).toBe(0);
     expect(resize({ ...base, mist: 0.3 }, 20, 12).mist).toBe(0.3);

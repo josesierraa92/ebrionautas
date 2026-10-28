@@ -160,7 +160,7 @@ export const TILE_TYPES = Object.keys(TILE_NAMES) as TileType[];
 /** Tipo de juego de la casilla n (las reglas no cambian: solo dónde y cómo se ve). */
 export const tileTypeOf = (n: number): TileType => BOARD[n - 1].type;
 
-export const DEFAULT_MIST = 0.8;
+export const DEFAULT_MIST = 1;
 
 export function newLayout(w = 32, h = 24): BoardLayout {
   return {
