@@ -218,7 +218,7 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   en 3D y el respaldo de `IsoBoard`) van siempre en MAYÚSCULAS. Los títulos grandes siguen en Creepster.
 - Espaciado entre letras: `-0.01em` en todo el juego (`body` en `globals.css`, nombres de fichas y `.banner-title`); solo se dejan anchos a propósito los rótulos pequeños («CASILLA N», el código de mesa).
 - `TurnChip` (esquina de la TV, rediseño a petición del usuario: "no parece de videojuego pro"): placa de HUD hecha en CSS, sin imágenes
-  de IA (ya se rechazaron por incoherentes): retrato enmarcado con el color del jugador, placa oscura ladeada, «Turno de» en texto morado,
+  de IA (ya se rechazaron por incoherentes): retrato enmarcado con el color del jugador, placa morado oscuro (`#2d1460`, borde `#1a0b38`) ladeada, «Turno de» en texto morado,
   nombre en mayúsculas con sombra dura azul muy oscuro (sin filete de color abajo).
 - **Modo TV ligero** (el 3D en vivo iba injugable en la TV real: dado y fichas bloqueados). En el visor (`EditorScene` con `viewer`):
   30 fps fijos (`VIEWER_FPS`), ancho interno máximo de 1920 px (`VIEWER_MAX_W`: una TV 4K lo escala sola) con **resolución dinámica**
