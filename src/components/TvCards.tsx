@@ -96,7 +96,7 @@ export function cardContent(game: GameState, n: number, playerId: string, result
 
 export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
   useCardTexts();
-  const { player, style, decision, rule, drinks, light } = cardContent(game, n, playerId, result);
+  const { player, style, decision, rule, light } = cardContent(game, n, playerId, result);
   return (
     // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.
     <div className="pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]">
@@ -116,13 +116,6 @@ export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
           <p className="font-display leading-snug whitespace-pre-line" style={{ fontSize: "1.25cqw" }}>
             {rule.text}
           </p>
-          {drinks !== null && (
-            <div style={{ fontSize: "1.1cqw" }}>
-              <span className="rounded-full border-[3px] border-ink bg-btn-red px-[1cqw] py-[0.2cqw] font-display text-white">
-                🍷 {drinks} {drinks === 1 ? "vaso" : "vasos"}
-              </span>
-            </div>
-          )}
           {decision && (
             <p className="rounded-2xl bg-btn-yellow/30 px-[0.8cqw] py-[0.4cqw] text-center font-display" style={{ fontSize: "1.1cqw" }}>
               📱 {decisionPrompt(decision, player.name)}
