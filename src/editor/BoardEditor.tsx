@@ -608,13 +608,82 @@ export default function BoardEditor() {
         <button className={`${btn} ${off}`} onClick={redo} disabled={!history.current.canRedo} title="Ctrl+Y">
           ↷ Rehacer
         </button>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <button className={`${btn} ${off}`} onClick={() => setCardsOpen(true)} title="Ver y cambiar el texto de todas las tarjetas del juego">
-          📝 Tarjetas
+        <span className="mx-1 h-6 w-px bg-white/15" />
+        <label className="flex items-center gap-2 text-sm">
+          Luz
+          <select
+            className="rounded-md bg-white/10 px-2 py-1"
+            value={layout.light}
+            onChange={(e) => commit({ ...layoutRef.current, light: e.target.value as LightId })}
+          >
+            {Object.entries(LIGHTS).map(([id, label]) => (
+              <option key={id} value={id} className="bg-[#1c1f27]">
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="flex items-center gap-2">
+        <button className={`${btn} ${grid ? on : off}`} onClick={() => setGrid(!grid)}>
+          # Rejilla
         </button>
-        <button className={`${btn} ${layout.tokens.some(Boolean) ? on : off}`} onClick={() => setTokensOpen(true)} title="Elegir el modelo de cada ficha de jugador">
-            🧟 Fichas
-          </button>
+        <button className={`${btn} ${snap ? on : off}`} onClick={() => setSnap(!snap)} title="Encajar los modelos en la rejilla: casillas enteras y giros de 90°">
+          🧲 Ajustar
+        </button>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          Mundo
+          <input
+            type="number"
+            min={MIN_SIZE}
+            max={MAX_SIZE}
+            className="w-14 rounded-md bg-white/10 px-1 py-1"
+            value={size.w}
+            onChange={(e) => setSize({ ...size, w: Number(e.target.value) })}
+          />
+          ×
+          <input
+            type="number"
+            min={MIN_SIZE}
+            max={MAX_SIZE}
+            className="w-14 rounded-md bg-white/10 px-1 py-1"
+            value={size.h}
+            onChange={(e) => setSize({ ...size, h: Number(e.target.value) })}
+          />
+          {(size.w !== layout.w || size.h !== layout.h) && (
+            <button className={`${btn} ${on}`} onClick={() => commit(resize(layoutRef.current, size.w, size.h))}>
+              Aplicar
+            </button>
+          )}
+        </label>
+        {/* ampliar el mundo por el lado que haga falta, sin mover lo construido */}
+        <div className="flex items-center gap-2 text-sm" title="Agrandar el mundo 8 casillas por ese lado (lo construido no se mueve)">
+          Ampliar
+          {(
+            [
+              ["x-", "↖", "arriba a la izquierda"],
+              ["z-", "↗", "arriba a la derecha"],
+              ["z+", "↙", "abajo a la izquierda"],
+              ["x+", "↘", "abajo a la derecha"],
+            ] as const
+          ).map(([side, arrow, where]) => (
+            <button
+              key={side}
+              className={`${btn} ${off} px-2`}
+              title={`Agrandar 8 casillas hacia ${where}`}
+              onClick={() => {
+                const l = layoutRef.current;
+                const next = expand(l, side, 8);
+                if (next === l) return setStatus(`El mundo ya tiene el tamaño máximo (${MAX_SIZE} casillas).`);
+                commit(next);
+                setStatus(`Mundo de ${next.w}×${next.h}. Lo que construiste no se movió.`);
+              }}
+            >
+              {arrow}
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           <button
             className={`${btn} ${off}`}
             onClick={() => window.confirm("¿Empezar un tablero vacío? Se puede deshacer.") && commit({ ...newLayout(layout.w, layout.h), light: layout.light })}
@@ -816,6 +885,15 @@ export default function BoardEditor() {
             </div>
           )}
 
+          <div className="grid grid-cols-2 gap-1">
+            <button className={`${btn} ${off}`} onClick={() => setCardsOpen(true)} title="Ver y cambiar el texto de todas las tarjetas del juego">
+              📝 Tarjetas
+            </button>
+            <button className={`${btn} ${layout.tokens.some(Boolean) ? on : off}`} onClick={() => setTokensOpen(true)} title="Elegir el modelo de cada ficha de jugador y su tamaño">
+              🧟 Fichas
+            </button>
+          </div>
+
           {/* ------------------------------------------------ ajustes (antes en la barra de arriba) */}
           <section className="grid gap-2 rounded-xl bg-white/5 p-2.5">
             <h3 className="font-display text-sm text-amber-400">📺 Cámara de la TV</h3>
@@ -868,21 +946,7 @@ export default function BoardEditor() {
         </label>
           </section>
           <section className="grid gap-2 rounded-xl bg-white/5 p-2.5">
-            <h3 className="font-display text-sm text-amber-400">🌙 Ambiente</h3>
-        <label className="flex items-center gap-2 text-sm">
-          Luz
-          <select
-            className="rounded-md bg-white/10 px-2 py-1"
-            value={layout.light}
-            onChange={(e) => commit({ ...layoutRef.current, light: e.target.value as LightId })}
-          >
-            {Object.entries(LIGHTS).map(([id, label]) => (
-              <option key={id} value={id} className="bg-[#1c1f27]">
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
+            <h3 className="font-display text-sm text-amber-400">🌙 Sombras y neblina</h3>
         <label className="flex items-center gap-2 text-sm" title="Qué tan oscuras son las sombras">
           Sombras
           <input
@@ -917,69 +981,6 @@ export default function BoardEditor() {
             }}
           />
         </label>
-          </section>
-          <section className="grid gap-2 rounded-xl bg-white/5 p-2.5">
-            <h3 className="font-display text-sm text-amber-400">🧱 Edición y mundo</h3>
-        <div className="flex gap-1">
-        <button className={`${btn} ${grid ? on : off} flex-1`} onClick={() => setGrid(!grid)}>
-          # Rejilla
-        </button>
-        <button className={`${btn} ${snap ? on : off} flex-1`} onClick={() => setSnap(!snap)} title="Encajar los modelos en la rejilla: casillas enteras y giros de 90°">
-          🧲 Ajustar
-        </button>
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          Mundo
-          <input
-            type="number"
-            min={MIN_SIZE}
-            max={MAX_SIZE}
-            className="w-14 rounded-md bg-white/10 px-1 py-1"
-            value={size.w}
-            onChange={(e) => setSize({ ...size, w: Number(e.target.value) })}
-          />
-          ×
-          <input
-            type="number"
-            min={MIN_SIZE}
-            max={MAX_SIZE}
-            className="w-14 rounded-md bg-white/10 px-1 py-1"
-            value={size.h}
-            onChange={(e) => setSize({ ...size, h: Number(e.target.value) })}
-          />
-          {(size.w !== layout.w || size.h !== layout.h) && (
-            <button className={`${btn} ${on}`} onClick={() => commit(resize(layoutRef.current, size.w, size.h))}>
-              Aplicar
-            </button>
-          )}
-        </label>
-        {/* ampliar el mundo por el lado que haga falta, sin mover lo construido */}
-        <div className="flex items-center gap-2 text-sm" title="Agrandar el mundo 8 casillas por ese lado (lo construido no se mueve)">
-          Ampliar
-          {(
-            [
-              ["x-", "↖", "arriba a la izquierda"],
-              ["z-", "↗", "arriba a la derecha"],
-              ["z+", "↙", "abajo a la izquierda"],
-              ["x+", "↘", "abajo a la derecha"],
-            ] as const
-          ).map(([side, arrow, where]) => (
-            <button
-              key={side}
-              className={`${btn} ${off} px-2`}
-              title={`Agrandar 8 casillas hacia ${where}`}
-              onClick={() => {
-                const l = layoutRef.current;
-                const next = expand(l, side, 8);
-                if (next === l) return setStatus(`El mundo ya tiene el tamaño máximo (${MAX_SIZE} casillas).`);
-                commit(next);
-                setStatus(`Mundo de ${next.w}×${next.h}. Lo que construiste no se movió.`);
-              }}
-            >
-              {arrow}
-            </button>
-          ))}
-        </div>
           </section>
 
           <div className="mt-auto text-xs leading-relaxed opacity-60">
