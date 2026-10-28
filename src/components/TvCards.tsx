@@ -6,7 +6,9 @@ import { currentPlayer, type Decision, type GameState } from "@/game/engine";
 import { cardKeyOf, hasCardOverride } from "@/game/cards";
 import { tileRule } from "@/game/rules";
 import { useCardTexts } from "@/lib/useCardTexts";
-import { TILE_STYLE, tileArt } from "@/game/tileStyle";
+import GameCard from "@/components/GameCard";
+import { DEFAULT_ICON } from "@/editor/icons";
+import { TILE_ACCENT, TILE_STYLE } from "@/game/tileStyle";
 import type { Landed } from "@/lib/useGameFx";
 
 /** Título y texto de lo que se está decidiendo, para leerlo en la TV. */
@@ -91,65 +93,26 @@ export function cardContent(game: GameState, n: number, playerId: string, result
                 : null;
   // Encabezado claro (dado, gasolinera…): el texto pequeño va oscuro para que se lea.
   const light = !result && !TILE_STYLE[tile.type].dark;
-  return { player, style, decision, rule, drinks, light };
+  const accent = result ? (result.good ? "#5cd23c" : "#ffc61a") : TILE_ACCENT[tile.type];
+  const icon = result ? null : DEFAULT_ICON[tile.type];
+  return { player, style, decision, rule, drinks, light, accent, icon, emoji: style.icon };
 }
 
 export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
   useCardTexts();
-  const { player, style, decision, rule, light } = cardContent(game, n, playerId, result);
+  const { player, decision, rule, accent, icon, emoji } = cardContent(game, n, playerId, result);
   return (
     // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.
     <div className="pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]">
-      <div key={cardKey} className="card-pop w-full overflow-hidden rounded-[1.2rem] border-[3px] border-ink bg-[#fbf3e4] shadow-[0_6px_0_#1b1f4b]">
-        <div className="flex items-center gap-[1cqw] px-[1.3cqw] py-[0.7cqw]" style={{ background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}>
-          <img src={tileArt(getTile(n).type)} alt="" className="h-auto shrink-0 drop-shadow-[0_3px_0_rgba(0,0,0,.3)]" style={{ width: "4.5cqw" }} />
-          <div className="min-w-0">
-            <p className={`font-display ${light ? "text-ink/70" : "text-white/90 drop-shadow-[0_2px_0_rgba(0,0,0,.35)]"}`} style={{ fontSize: "0.95cqw" }}>
-              Casilla {n}
-            </p>
-            <h2 className="banner-text-sm font-display leading-tight text-white" style={{ fontSize: "1.8cqw" }}>
-              {rule.title}
-            </h2>
-          </div>
-        </div>
-        <div className="flex flex-col gap-[0.7cqw] px-[1.3cqw] py-[1cqw] text-ink">
-          <p className="font-display leading-snug whitespace-pre-line" style={{ fontSize: "1.25cqw" }}>
-            {rule.text}
-          </p>
-          {decision && (
-            <p className="rounded-2xl bg-btn-yellow/30 px-[0.8cqw] py-[0.4cqw] text-center font-display" style={{ fontSize: "1.1cqw" }}>
-              📱 {decisionPrompt(decision, player.name)}
-            </p>
-          )}
-        </div>
-      </div>
+      <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n}`} title={rule.title} text={rule.text} prompt={decision ? decisionPrompt(decision, player.name) : null} unit="1cqw" cardKey={cardKey} />
     </div>
   );
 }
 
-/** La misma tarjeta, en grande para leerla en el celular. */
 export function PhoneRuleCard({ game, n, playerId, cardKey, result }: Props) {
   useCardTexts();
-  const { player, style, rule, drinks, light } = cardContent(game, n, playerId, result);
-  return (
-    <div key={cardKey} className="card-pop w-full overflow-hidden rounded-2xl border-[3px] border-ink bg-[#fbf3e4] text-left shadow-[0_5px_0_#1b1f4b]">
-      <div className="flex items-center gap-3 px-3 py-2" style={{ background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}>
-        <img src={tileArt(getTile(n).type)} alt="" className="h-14 w-14 shrink-0 drop-shadow-[0_2px_0_rgba(0,0,0,.3)]" />
-        <div className="min-w-0">
-          <p className={`font-display text-xs ${light ? "text-ink/70" : "text-white/90 drop-shadow-[0_1px_0_rgba(0,0,0,.35)]"}`}>
-            Casilla {n} · {player.name}
-          </p>
-          <h3 className="banner-text-sm font-display text-2xl leading-tight text-white">{rule.title}</h3>
-        </div>
-        {drinks !== null && (
-          <span className="ml-auto shrink-0 rounded-full border-2 border-ink bg-btn-red px-2 py-0.5 font-display text-sm text-white">
-            🍷 {drinks}
-          </span>
-        )}
-      </div>
-      <p className="px-3 py-2 font-display text-lg leading-snug whitespace-pre-line text-ink">{rule.text}</p>
-    </div>
-  );
+  const { player, rule, accent, icon, emoji } = cardContent(game, n, playerId, result);
+  return <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n} · ${player.name}`} title={rule.title} text={rule.text} unit="14px" cardKey={cardKey} />;
 }
 
 /**

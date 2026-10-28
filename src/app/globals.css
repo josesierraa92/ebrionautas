@@ -168,9 +168,9 @@ body {
   color: #fff;
   letter-spacing: 0.04em;
   text-shadow:
-    0.35cqw 0.35cqw 0 var(--accent),
-    -0.12cqw 0 0 #0a071a, 0.12cqw 0 0 #0a071a, 0 -0.12cqw 0 #0a071a,
-    0.5cqw 0.5cqw 0 #0a071a;
+    0.045em 0.045em 0 var(--accent),
+    -0.015em 0 0 #0a071a, 0.015em 0 0 #0a071a, 0 -0.015em 0 #0a071a,
+    0.06em 0.06em 0 #0a071a;
 }
 .banner-pop { animation: banner-pop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1); rotate: -4deg; }
 @keyframes banner-pop {

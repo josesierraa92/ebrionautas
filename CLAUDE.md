@@ -118,6 +118,10 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
   ladeada con filetes del color del evento, el icono de la casilla en vector (`iconMaskUrl(name, 512)`, del color del
   evento y con contorno), «CASILLA N» y el título en Creepster (`--font-spooky`, `.banner-title`) con sombra dura de
   color; entra con `banner-slam`. El tamaño de letra baja con títulos largos. Sin discos, sin resplandor.
+- Tarjetas de regla (TV y celular, `GameCard.tsx`; rediseño a petición del usuario para que combinen con el juego y
+  tengan personalidad): panel oscuro con el color de la casilla como acento (`TILE_ACCENT`), icono de la casilla en
+  vector, «CASILLA N», título en Creepster (`.banner-title`), texto en la letra del juego y pastilla del color con lo
+  que toca hacer en el celular. Se mide en `--u` (1cqw en la TV, 14px en el celular).
 - Purgatorio (cárcel; regla del usuario): en su turno el preso tira; con 1-3 bebe 2, con 4-6 bebe 4 (`jailBail`), sale
   y vuelve a tirar para avanzar. No hay opción de esperar. La TV muestra la tarjeta "¡Sale del Purgatorio!" (`jailOutcome`).
 - Toda casilla que diga "tira el dado" debe enseñar después una tarjeta con lo que pasó (TV y celular):

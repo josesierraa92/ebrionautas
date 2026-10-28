@@ -22,6 +22,27 @@ export const TILE_STYLE: Record<Tile["type"], { icon: string; bg: [string, strin
   RETO: { icon: "🎤", bg: ["#6fdcff", "#0094d4"], dark: false, label: "" },
 };
 
+/** Color de acento de cada tipo de casilla en las tarjetas y títulos (vivo, para leerse sobre fondo oscuro). */
+export const TILE_ACCENT: Record<Tile["type"], string> = {
+  SALIDA: "#b98bf0",
+  META: "#ffb627",
+  POSADA: "#ffd166",
+  A_BEBER: "#ffc61a",
+  DUELO: "#f3e9ff",
+  OCA: "#ff9f1c",
+  LABERINTO: "#c9b8ff",
+  REGLA: "#b98bf0",
+  CULTURAL: "#ff6b7d",
+  HIPNOSIS: "#5be8d4",
+  CARCEL: "#ff6b3d",
+  MUERTE: "#b07cff",
+  PATINAZO: "#ff8a1f",
+  POSICION: "#ff9fd0",
+  RASGO: "#ff9fd0",
+  ESCLAVO: "#ff4f6b",
+  RETO: "#6fdcff",
+};
+
 /** Ilustración de cada tipo de casilla (generada con IA: `scripts/gen-art.py`, en `public/art/`). */
 export function tileArt(type: Tile["type"]): string {
   return `/art/${type.toLowerCase()}.webp`;
