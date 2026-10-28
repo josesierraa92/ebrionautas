@@ -40,7 +40,7 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
 
 - La TV y `/jugar` usan el **tablero isométrico** (`src/components/IsoBoard.tsx`): una imagen 3D pre-renderizada
   (ver abajo) con las fichas en SVG encima. Nada de WebGL en el navegador: el 3D en vivo rompía en la TV del usuario.
-- Cámara: el tablero está siempre con zoom (`ZOOM` en `IsoBoard`) y sigue a la última ficha que tiró (`focus` de
+- Cámara (se anima cambiando el `viewBox` del SVG, no con transform CSS: así la imagen se repinta nítida): el tablero está siempre con zoom (`ZOOM` en `IsoBoard`) y sigue a la última ficha que tiró (`focus` de
   `useGameFx`; antes de la primera tirada, al jugador de turno). El usuario no quiere que se aleje. Animaciones rápidas. Cada losa lleva su número de pie en el borde delantero.
 - `src/game/isoPath.ts`: recorrido de las 62 casillas (camino serpenteante estilo Mario Party, `ROUTE`) y la proyección. `src/components/BoardStage.tsx`
   pinta encima el dado y los títulos (`src/components/Fx.tsx`).

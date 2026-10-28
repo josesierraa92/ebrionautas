@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { BOARD, type Tile } from "@/game/board";
@@ -70,15 +71,41 @@ function publishedGeometry(b: PublishedBoard): Geometry {
 /** Con zoom se ven unas 9 casillas a lo ancho, más o menos como el tablero de serie. */
 const VISIBLE_CELLS = 9;
 
-/** Transformación de cámara: acerca el tablero centrado en (x, y), sin salirse de la vista. */
-function camera(view: View, zoom: number, x: number, y: number) {
-  const halfW = view.w / (2 * zoom);
-  const halfH = view.h / (2 * zoom);
-  const fx = Math.min(Math.max(x, view.x + halfW), view.x + view.w - halfW);
-  const fy = Math.min(Math.max(y, view.y + halfH), view.y + view.h - halfH);
-  const tx = view.x + view.w / 2 - zoom * fx;
-  const ty = view.y + view.h / 2 - zoom * fy;
-  return `translate(${tx}px, ${ty}px) scale(${zoom})`;
+/** Encuadre de la cámara: acerca el tablero centrado en (x, y), sin salirse de la vista. */
+function frame(view: View, zoom: number, x: number, y: number): View {
+  const w = view.w / zoom;
+  const h = view.h / zoom;
+  return {
+    x: Math.min(Math.max(x - w / 2, view.x), view.x + view.w - w),
+    y: Math.min(Math.max(y - h / 2, view.y), view.y + view.h - h),
+    w,
+    h,
+  };
+}
+
+/**
+ * Anima el encuadre cambiando el viewBox (no con una transformación CSS): así el navegador vuelve a pintar la
+ * imagen del tablero a la resolución final en cada paso y no se ve borrosa al acercar.
+ */
+function useTween(target: View) {
+  const [cur, setCur] = useState(target);
+  const curRef = useRef(target);
+  useEffect(() => {
+    const from = curRef.current;
+    const t0 = performance.now();
+    let raf = 0;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - t0) / 500);
+      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      const v = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, w: from.w + (target.w - from.w) * e, h: from.h + (target.h - from.h) * e };
+      curRef.current = v;
+      setCur(v);
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target.x, target.y, target.w, target.h]); // eslint-disable-line react-hooks/exhaustive-deps
+  return cur;
 }
 
 export default function IsoBoard(props: Props) {
@@ -166,10 +193,12 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
   const focused = players.find((p) => p.id === focus);
   const cam = focused ? geo.at(at(focused)) : null;
   const zoom = geo.zoom ?? Math.max(1, view.w / (geo.cell * VISIBLE_CELLS));
+  const target = cam ? frame(view, zoom, cam.x, cam.y - 40 * k) : view;
+  const vb = useTween(target);
 
   return (
     <svg
-      viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
+      viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
       // el tablero publicado llena la pantalla (recortando un poco si hace falta); el de serie se ve entero
       preserveAspectRatio={geo.numbers ? undefined : "xMidYMid slice"}
       className="h-full w-full"
@@ -177,14 +206,7 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
       aria-label="Tablero"
       style={geo.bg ? { background: geo.bg } : undefined}
     >
-      <g
-        style={{
-          transformBox: "view-box",
-          transformOrigin: "0 0",
-          transform: cam ? camera(view, zoom, cam.x, cam.y - 40 * k) : "none",
-          transition: "transform .5s ease-in-out",
-        }}
-      >
+      <g>
         {/* terreno, casillas y decoración: render 3D hecho de antemano */}
         <image href={geo.image} x={view.x} y={view.y} width={view.w} height={view.h} />
         {standing.map((s) => (
