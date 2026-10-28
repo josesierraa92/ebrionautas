@@ -26,9 +26,12 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
   "quién bebe" las marca el control.
 - Fichas: **personajes zombi** del kit **Mini Characters de Kenney** (CC0; `public/personajes/`, copiados con
   `node scripts/characters/zombify.mjs <carpeta GLB del kit>`). 6 hombres para los hombres y 6 mujeres para las
-  mujeres, por orden de entrada (`characterOf` en `src/game/characters.ts`); con más de 6 de un género se repiten y los
-  distingue el aro de su color bajo los pies. La piel verde se pinta al dibujarlos (`SKIN` en
-  `src/editor/characterSheet.ts`: solo la franja de piel de cada uno, porque en otros es pelo o ropa). En la TV son
+  mujeres, por orden de entrada (`characterOf` en `src/game/characters.ts`); con más de 6 de un género se repiten (se
+  distinguen por el nombre; el aro de color se quitó a petición del usuario). Del tamaño de un zombi de la decoración
+  (`charH` en `IsoBoard`), respiran (`.zb-breathe`) y la casilla donde están alumbra un poco (`.zb-glow`, más y
+  latiendo la del turno). La piel verde se pinta al dibujarlos (`SKIN` en `src/editor/characterSheet.ts`: solo la
+  franja de piel de cada uno, porque en otros es pelo o ropa) y los ojos son amarillos (`yellowEyes`: piezas oscuras y
+  planas de la cara, que comparten color con el pelo negro y por eso se cambian en la geometría). En la TV son
   sprites de una hoja (`renderCharacterSheet`: cada personaje de frente y de espaldas, quieto y en dos pasos de
   "walk"; las otras dos direcciones, en espejo) y miran hacia donde van (`spriteOf`: hacia abajo de la pantalla = de
   frente, hacia arriba = de espaldas). La hoja de serie (`public/art/zombis.webp`, `STOCK_SHEET`) se hace con

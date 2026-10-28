@@ -55,6 +55,8 @@ function zombieMap(original: THREE.Texture, id: string): THREE.Texture {
     [d[i], d[i + 1], d[i + 2]] = rgb;
   }
   ctx.putImageData(px, x0, y0);
+  ctx.fillStyle = EYE.color; // los ojos (yellowEyes)
+  ctx.fillRect(EYE.x * k, EYE.y * k, EYE.size * k, EYE.size * k);
   const tex = new THREE.CanvasTexture(c);
   tex.flipY = original.flipY;
   tex.colorSpace = original.colorSpace;
@@ -63,6 +65,73 @@ function zombieMap(original: THREE.Texture, id: string): THREE.Texture {
   tex.wrapS = original.wrapS;
   tex.wrapT = original.wrapT;
   return tex;
+}
+
+/** Píxeles de una textura (para saber de qué color es cada parte del modelo). */
+function pixels(tex: THREE.Texture) {
+  const img = tex.image as CanvasImageSource & { width: number; height: number };
+  const c = document.createElement("canvas");
+  c.width = img.width;
+  c.height = img.height;
+  const ctx = c.getContext("2d")!;
+  ctx.drawImage(img, 0, 0);
+  return ctx.getImageData(0, 0, img.width, img.height);
+}
+
+/** Cuadrito amarillo vivo que se pinta en una zona vacía (negra) de la paleta: los ojos de zombi. */
+const EYE = { x: 8, y: 8, size: 16, color: "#fff04a" };
+const YELLOW_UV = [(EYE.x + EYE.size / 2) / 512, (EYE.y + EYE.size / 2) / 512];
+
+/**
+ * Ojos amarillos: son piezas pequeñas y planas pegadas al frente de la cabeza, del mismo color oscuro que el pelo
+ * negro (por eso no se puede cambiar en la paleta). Se buscan en la geometría de la cabeza (piezas sueltas, oscuras,
+ * planas en la cara y a la altura de los ojos, no de la boca) y se apuntan al amarillo de la paleta.
+ */
+function yellowEyes(mesh: THREE.Mesh, map: THREE.Texture) {
+  const geo = mesh.geometry;
+  const pos = geo.attributes.position;
+  const uv = geo.attributes.uv;
+  if (!pos || !uv) return;
+  const index = geo.index ? Array.from(geo.index.array) : Array.from({ length: pos.count }, (_, i) => i);
+  // piezas sueltas: vértices unidos por triángulos
+  const parent = Array.from({ length: pos.count }, (_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  for (let t = 0; t < index.length; t += 3) {
+    const a = find(index[t]);
+    parent[find(index[t + 1])] = a;
+    parent[find(index[t + 2])] = a;
+  }
+  const parts = new Map<number, number[]>();
+  for (let i = 0; i < pos.count; i++) {
+    const r = find(i);
+    if (!parts.has(r)) parts.set(r, []);
+    parts.get(r)!.push(i);
+  }
+  const img = pixels(map);
+  const lumAt = (i: number) => {
+    const x = Math.min(img.width - 1, Math.max(0, Math.floor(uv.getX(i) * img.width)));
+    const y = Math.min(img.height - 1, Math.max(0, Math.floor(uv.getY(i) * img.height)));
+    const k = (y * img.width + x) * 4;
+    return (0.299 * img.data[k] + 0.587 * img.data[k + 1] + 0.114 * img.data[k + 2]) / 255;
+  };
+  for (const vs of parts.values()) {
+    const xs = vs.map((i) => pos.getX(i));
+    const ys = vs.map((i) => pos.getY(i));
+    const zs = vs.map((i) => pos.getZ(i));
+    const [w, h] = [Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
+    const yc = (Math.max(...ys) + Math.min(...ys)) / 2;
+    const flat = Math.max(...zs) - Math.min(...zs) < 0.012 && Math.min(...zs) > 0.14;
+    const dark = vs.reduce((a, i) => a + lumAt(i), 0) / vs.length < 0.35;
+    if (!(flat && dark && w < 0.27 && h < 0.06 && yc > 0.47 && yc < 0.545)) continue;
+    // amarillos y un poco más grandes, para que se vean desde lejos
+    const xc = (Math.max(...xs) + Math.min(...xs)) / 2;
+    for (const i of vs) {
+      uv.setXY(i, YELLOW_UV[0], YELLOW_UV[1]);
+      pos.setXY(i, xc + (pos.getX(i) - xc) * (w > 0.15 ? 1.15 : 1.3), yc + (pos.getY(i) - yc) * 1.3);
+    }
+  }
+  uv.needsUpdate = true;
+  pos.needsUpdate = true;
 }
 
 type Loaded = { root: THREE.Object3D; clips: THREE.AnimationClip[] };
@@ -81,6 +150,8 @@ function loadAll(): Promise<Loaded[]> {
                 const mesh = o as THREE.Mesh;
                 if (!mesh.isMesh) return;
                 mesh.frustumCulled = false; // con la animación la caja de la malla no es la de reposo
+                const orig = [mesh.material].flat()[0] as THREE.MeshStandardMaterial;
+                if (/head/i.test(mesh.name) && orig.map) yellowEyes(mesh, orig.map);
                 mesh.material = ([mesh.material].flat() as THREE.MeshStandardMaterial[]).map((orig) => {
                   const m = orig.clone();
                   if ("metalness" in m) m.metalness = 0;

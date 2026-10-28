@@ -1229,7 +1229,7 @@ export class EditorScene {
    * (el navegador no deja pintar WebGL tan grande de una vez) y se devuelve como archivo para subirlo a Blob. Sin
    * `asBlob`, 2400 px en data URL (desarrollo, va dentro de la petición).
    */
-  async renderForTV(asBlob = false): Promise<{ image: string; blob?: Blob; width: number; height: number; tiles: { x: number; y: number }[]; cell: number; bg: string; zoom: number }> {
+  async renderForTV(asBlob = false): Promise<{ image: string; blob?: Blob; width: number; height: number; tiles: { x: number; y: number }[]; cell: number; bg: string; zoom: number; tilt: number }> {
     const l = this.layout;
     if (!l) throw new Error("No hay diseño");
     await Promise.all([...this.models.values(), this.needFont(l.numbers.font)]);
@@ -1329,6 +1329,7 @@ export class EditorScene {
     const bg = "#" + (this.scene.background as THREE.Color).getHexString();
     // cuánto acerca la TV para que quepan tvView.tiles casillas a lo ancho
     const zoom = Math.max(1, width / (cell * l.tvView.tiles));
-    return { image, blob, width, height, tiles, cell, bg, zoom };
+    const tilt = Math.round(Math.sin((l.tvView.el * Math.PI) / 180) * 1000) / 1000; // forma de una casilla en pantalla
+    return { image, blob, width, height, tiles, cell, bg, zoom, tilt };
   }
 }
