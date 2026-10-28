@@ -125,27 +125,43 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
   const winner = game.players.find((p) => p.id === game.winner);
   const who = winner ?? (moving && roller ? roller : currentPlayer(game));
   const color = who.color;
-  // Placa de HUD de videojuego: retrato enmarcado con el color del jugador que sobresale de una placa oscura ladeada,
-  // pestaña morada con «Turno de», nombre con sombra dura del color y filete de color abajo (todo en CSS, mismo estilo
-  // grueso y plano que las tarjetas).
+  // Placa de HUD en estilo píxel: marco de tres capas (tinta, color del jugador, fondo) con las esquinas escalonadas
+  // como un sprite de 8 bits y sombra dura debajo; el retrato va en su propio marco. Todo en CSS (sin imágenes).
   return (
-    <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center max-md:top-16 max-md:scale-90 max-md:origin-top-left">
-      <div
-        className="relative z-10 -mr-5 grid shrink-0 place-items-center overflow-hidden rounded-2xl border-[4px] border-ink"
-        style={{ width: 84, height: 84, background: `radial-gradient(circle at 50% 35%, ${color}88, ${color}22 70%), #14173d`, boxShadow: `0 0 0 3px ${color}, 0 5px 0 3px ${color}, 0 8px 14px rgba(0,0,0,.45)` }}
-      >
-        <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={66} character={characterOf(game.players, who.id)} />
-      </div>
-      <div className="relative -skew-x-6 overflow-hidden rounded-xl border-[4px] border-ink bg-[#14173d]/95 py-2 pr-7 pl-9 shadow-[0_6px_0_var(--color-ink),0_10px_16px_rgba(0,0,0,.45)]">
-        <div className="skew-x-6">
-          <p className="inline-block rounded-md bg-btn-special px-2 py-0.5 font-display text-xs leading-none tracking-wider text-white uppercase shadow-[0_2px_0_var(--color-ink)]">
-            {winner ? "¡Ganador!" : "Turno de"}
-          </p>
-          <p className="mt-1 font-display text-4xl leading-none text-white uppercase" style={{ textShadow: `0 3px 0 ${color}, 0 5px 0 var(--color-ink)` }}>
-            {who.name}
-          </p>
+    <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 max-md:top-16 max-md:scale-90 max-md:origin-top-left">
+      <PixelFrame color={color} notch={6}>
+        <div className="flex items-center gap-3 py-2 pr-6 pl-2">
+          <PixelFrame color={color} notch={4} inner="radial-gradient(circle at 50% 35%, #3a3f8f, #14173d 75%)">
+            <div className="grid h-[76px] w-[76px] place-items-center">
+              <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={62} character={characterOf(game.players, who.id)} />
+            </div>
+          </PixelFrame>
+          <div>
+            <p className="font-display text-sm leading-none tracking-wider text-[#c9a8ff] uppercase">{winner ? "¡Ganador!" : "Turno de"}</p>
+            <p className="mt-1.5 font-display text-4xl leading-none text-white uppercase" style={{ textShadow: `3px 3px 0 ${color}, 5px 5px 0 var(--color-ink)` }}>
+              {who.name}
+            </p>
+          </div>
         </div>
-        <div className="absolute inset-x-0 bottom-0 h-1.5" style={{ background: color }} />
+      </PixelFrame>
+    </div>
+  );
+}
+
+/** Marco estilo píxel: tinta por fuera, color del jugador en medio, fondo por dentro; esquinas escalonadas y sombra dura. */
+function PixelFrame({ color, notch, inner = "#14173d", children }: { color: string; notch: number; inner?: string; children: React.ReactNode }) {
+  const n = notch;
+  const clip = (k: number) => {
+    const a = `${k}px`;
+    const b = `calc(100% - ${k}px)`;
+    return `polygon(0 ${a},${a} ${a},${a} 0,${b} 0,${b} ${a},100% ${a},100% ${b},${b} ${b},${b} 100%,${a} 100%,${a} ${b},0 ${b})`;
+  };
+  return (
+    <div style={{ filter: "drop-shadow(0 6px 0 var(--color-ink)) drop-shadow(0 10px 10px rgba(0,0,0,.4))" }}>
+      <div style={{ clipPath: clip(n), background: "var(--color-ink)", padding: 3 }}>
+        <div style={{ clipPath: clip(n - 1), background: color, padding: 3 }}>
+          <div style={{ clipPath: clip(Math.max(2, n - 2)), background: inner }}>{children}</div>
+        </div>
       </div>
     </div>
   );

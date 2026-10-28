@@ -217,6 +217,7 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   no es la letra base) con `font-synthesis: none` (solo tiene un peso: sin negrita falsa). Los nombres sobre las fichas (`.live-name`
   en 3D y el respaldo de `IsoBoard`) van siempre en MAYÚSCULAS. Los títulos grandes siguen en Creepster.
 - Espaciado entre letras: `-0.01em` en todo el juego (`body` en `globals.css`, nombres de fichas y `.banner-title`); solo se dejan anchos a propósito los rótulos pequeños («CASILLA N», el código de mesa).
-- `TurnChip` (esquina de la TV, rediseño a petición del usuario: "no parece de videojuego pro"): placa de HUD hecha en CSS, sin imágenes
-  de IA (ya se rechazaron por incoherentes): retrato enmarcado con el color del jugador, placa oscura ladeada, pestaña morada «Turno de»,
-  nombre en mayúsculas con sombra dura del color del jugador y filete de color abajo.
+- `TurnChip` (esquina de la TV, rediseño a petición del usuario: "no parece de videojuego pro"): placa de HUD en **estilo píxel** hecha en
+  CSS (`PixelFrame` en `TvCards.tsx`: marco de tres capas —tinta, color del jugador, fondo— con esquinas escalonadas por `clip-path` y sombra
+  dura), sin imágenes de IA (ya se rechazaron por incoherentes). Retrato en su propio marco, «TURNO DE» en morado claro y el nombre en
+  mayúsculas con sombra dura del color del jugador.
