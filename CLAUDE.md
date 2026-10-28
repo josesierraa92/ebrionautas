@@ -24,11 +24,19 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
 - `/jugar`: sin TV, todo en una misma pantalla (partida guardada en localStorage).
 - El género resuelve solas las casillas Machos (2) y Hembras (11); el resto de casillas de
   "quién bebe" las marca el control.
-- Las fichas son 8 zombis fijos (uno por color de jugador) con la misma silueta: el zombi del kit de Kenney
-  con la camisa del color del jugador, brazos hacia delante, botella en la mano y un accesorio en la cabeza
-  (`alien()`/`headgear()`/`LOOKS` en `scripts/board3d/scene.ts`; en el código el componente sigue llamándose
-  `Marciano` y las imágenes `public/art/alien/`). No hay pantalla para personalizarlos: perfiles,
-  accesorios a elegir y votación por celular se quitaron a propósito; no reintroducirlos sin que lo pida.
+- Fichas: **personajes zombi** del kit **Mini Characters de Kenney** (CC0; `public/personajes/`, copiados con
+  `node scripts/characters/zombify.mjs <carpeta GLB del kit>`). 6 hombres para los hombres y 6 mujeres para las
+  mujeres, por orden de entrada (`characterOf` en `src/game/characters.ts`); con más de 6 de un género se repiten y los
+  distingue el aro de su color bajo los pies. La piel verde se pinta al dibujarlos (`SKIN` en
+  `src/editor/characterSheet.ts`: solo la franja de piel de cada uno, porque en otros es pelo o ropa). En la TV son
+  sprites de una hoja (`renderCharacterSheet`: cada personaje de frente y de espaldas, quieto y en dos pasos de
+  "walk"; las otras dos direcciones, en espejo) y miran hacia donde van (`spriteOf`: hacia abajo de la pantalla = de
+  frente, hacia arriba = de espaldas). La hoja de serie (`public/art/zombis.webp`, `STOCK_SHEET`) se hace con
+  `node scripts/characters/sheet.mjs` (dev en marcha); al publicar, el editor dibuja otra con el ángulo de
+  `tvView` y la sube a Blob (`PublishedBoard.characters`). Los retratos del marcador, tarjetas, celular y ganador
+  usan la misma hoja (`Marciano` con `character`). Las fichas propias del editor («🧟 Fichas») siguen mandando.
+  No hay pantalla para personalizarlos: perfiles, accesorios a elegir y votación por celular se quitaron a
+  propósito; no reintroducirlos sin que lo pida.
 - El servidor es la autoridad: `src/server/rooms.ts` guarda la mesa, ejecuta el motor
   (dados incluidos) y solo acepta jugadas con la clave del control. API en `src/app/api/rooms/`.
   Los clientes consultan la mesa cada 1 s (`src/lib/room-client.ts`) y solo aceptan versiones nuevas.

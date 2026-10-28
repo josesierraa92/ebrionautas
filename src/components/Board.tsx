@@ -1,3 +1,4 @@
+import { characterOf } from "@/game/characters";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { BOARD, type Tile } from "@/game/board";
@@ -72,6 +73,7 @@ export default function Board({ players, current, winner, shown, flying, childre
                 title={p.name}
                 size={64}
                 animated
+                character={characterOf(players, p.id)}
                 className={`h-auto w-full drop-shadow-[0_3px_0_rgba(0,0,0,.45)] ${isCurrent ? "mc-hop" : "mc-bob"}`}
               />
             </div>

@@ -86,7 +86,7 @@ export default function JugarPage() {
       <aside className="flex flex-col gap-4 lg:w-96">
         <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
           {winner ? (
-            <Winner winner={winner}>
+            <Winner winner={winner} players={game.players}>
               <button onClick={() => setGame(null)} className="btn-game bg-btn-green py-3 text-xl text-white">
                 OTRA PARTIDA
               </button>

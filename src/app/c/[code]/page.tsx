@@ -122,7 +122,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
 
       {winner ? (
         <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
-          <Winner winner={winner}>
+          <Winner winner={winner} players={game.players}>
             <button
               disabled={busy}
               onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret }))}

@@ -1,5 +1,6 @@
 "use client";
 
+import { characterOf } from "@/game/characters";
 import { useState } from "react";
 import Marciano from "@/components/Marciano";
 import { defaultAvatar } from "@/game/avatar";
@@ -36,7 +37,7 @@ export default function Setup({ onStart, busy = false, hint }: Props) {
       <ol className="flex flex-col gap-3">
         {players.map((p, i) => (
           <li key={i} className="flex items-center gap-2 rounded-2xl border-[3px] border-ink bg-ink/70 p-2">
-            <Marciano avatar={defaultAvatar(i, PLAYER_COLORS[i])} size={42} className="shrink-0" />
+            <Marciano avatar={defaultAvatar(i, PLAYER_COLORS[i])} size={42} className="shrink-0" character={characterOf(players.map((q, j) => ({ id: String(j), gender: q.gender })), String(i))} />
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <input
                 value={p.name}

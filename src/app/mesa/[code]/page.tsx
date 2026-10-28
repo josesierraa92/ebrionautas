@@ -167,7 +167,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
       <aside className="flex flex-col gap-4 lg:w-[28rem]">
         <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
           {winner ? (
-            <Winner winner={winner} />
+            <Winner winner={winner} players={game.players} />
           ) : (
             <div className="flex flex-col gap-3">
               <TurnHeader game={game} />

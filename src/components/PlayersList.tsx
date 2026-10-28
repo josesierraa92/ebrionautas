@@ -1,3 +1,4 @@
+import { characterOf } from "@/game/characters";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { LAST_TILE, type GameState } from "@/game/engine";
@@ -26,6 +27,7 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
               expression={expressionFor(p, { winner: game.winner, isTurn: p.id === current })}
               size={big ? 48 : 34}
               className="shrink-0"
+              character={characterOf(game.players, p.id)}
             />
             <div className="min-w-0 flex-1">
               <p className={`truncate ${big ? "text-xl" : ""}`}>

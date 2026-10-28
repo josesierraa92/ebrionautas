@@ -1,0 +1,181 @@
+// Dibuja la hoja de personajes zombi (src/game/characters.ts) con la cámara de la TV: cada personaje de frente y de
+// espaldas (mirando a la derecha de la pantalla), quieto y en dos momentos del paso. Se hace al publicar (con la vista
+// elegida en el editor) y para la hoja de serie (scripts/characters/sheet.mjs).
+import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { CHARACTERS, SHEET_COLS, type Pose } from "@/game/characters";
+import { tvDirection, type TvView } from "./layout";
+
+const DIR = "/personajes/";
+/** Momento de cada pose: animación y fracción de su duración. */
+const POSE_AT: Record<Pose, [string, number]> = { idle: ["idle", 0], walkA: ["walk", 0.25], walkB: ["walk", 0.75] };
+
+/**
+ * Franja de la paleta (Textures/colormap.png, 512×512, compartida por todos) que es la piel de cada personaje (la que
+ * usa toda la cara; sacada de las UV de "head-mesh") y su tono de verde. Solo se pinta la de ese personaje: en otros
+ * la misma franja es pelo o ropa.
+ */
+const SWATCH = { medio: 320, oscuro: 384, claro: 448 } as const;
+const SKIN: Record<string, [keyof typeof SWATCH, number]> = {
+  "character-male-a": ["oscuro", 100],
+  "character-male-b": ["claro", 84],
+  "character-male-c": ["claro", 92],
+  "character-male-d": ["claro", 78],
+  "character-male-e": ["claro", 96],
+  "character-male-f": ["medio", 88],
+  "character-female-a": ["oscuro", 104],
+  "character-female-b": ["claro", 86],
+  "character-female-c": ["medio", 94],
+  "character-female-d": ["claro", 80],
+  "character-female-e": ["claro", 98],
+  "character-female-f": ["claro", 90],
+};
+
+/** Copia de la paleta con la piel de este personaje en verde zombi (conserva el sombreado de la paleta). */
+function zombieMap(original: THREE.Texture, id: string): THREE.Texture {
+  const img = original.image as CanvasImageSource & { width: number; height: number };
+  const c = document.createElement("canvas");
+  c.width = img.width;
+  c.height = img.height;
+  const ctx = c.getContext("2d")!;
+  ctx.drawImage(img, 0, 0);
+  const [swatch, hue] = SKIN[id] ?? ["claro", 90];
+  const k = img.width / 512;
+  const x0 = Math.round(SWATCH[swatch] * k);
+  const y0 = Math.round(384 * k);
+  const w = Math.round(64 * k);
+  const h = img.height - y0;
+  const px = ctx.getImageData(x0, y0, w, h);
+  const d = px.data;
+  const color = new THREE.Color();
+  for (let i = 0; i < d.length; i += 4) {
+    const lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
+    color.setHSL(hue / 360, 0.38, 0.22 + lum * 0.42, THREE.SRGBColorSpace);
+    const rgb = color.getStyle(THREE.SRGBColorSpace).match(/\d+/g)!.map(Number);
+    [d[i], d[i + 1], d[i + 2]] = rgb;
+  }
+  ctx.putImageData(px, x0, y0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.flipY = original.flipY;
+  tex.colorSpace = original.colorSpace;
+  tex.magFilter = original.magFilter;
+  tex.minFilter = original.minFilter;
+  tex.wrapS = original.wrapS;
+  tex.wrapT = original.wrapT;
+  return tex;
+}
+
+type Loaded = { root: THREE.Object3D; clips: THREE.AnimationClip[] };
+let loading: Promise<Loaded[]> | null = null;
+
+function loadAll(): Promise<Loaded[]> {
+  loading ??= Promise.all(
+    CHARACTERS.map(
+      (id) =>
+        new Promise<Loaded>((ok, fail) =>
+          new GLTFLoader().load(
+            DIR + id + ".glb",
+            (g) => {
+              const maps = new Map<THREE.Texture, THREE.Texture>();
+              g.scene.traverse((o) => {
+                const mesh = o as THREE.Mesh;
+                if (!mesh.isMesh) return;
+                mesh.frustumCulled = false; // con la animación la caja de la malla no es la de reposo
+                mesh.material = ([mesh.material].flat() as THREE.MeshStandardMaterial[]).map((orig) => {
+                  const m = orig.clone();
+                  if ("metalness" in m) m.metalness = 0;
+                  if (m.map) {
+                    if (!maps.has(m.map)) maps.set(m.map, zombieMap(m.map, id));
+                    m.map = maps.get(m.map)!;
+                  }
+                  return m;
+                }) as unknown as THREE.Material;
+                if (Array.isArray(mesh.material) && mesh.material.length === 1) mesh.material = mesh.material[0];
+              });
+              ok({ root: g.scene, clips: g.animations });
+            },
+            undefined,
+            fail,
+          ),
+        ),
+    ),
+  );
+  return loading;
+}
+
+/**
+ * La hoja: una fila por personaje (orden de CHARACTERS) y SHEET_COLS columnas (frente: quieto, paso A, paso B;
+ * espaldas: lo mismo). Devuelve el lienzo y la altura de los pies en cada dibujo (fracción desde arriba).
+ */
+export async function renderCharacterSheet(view: TvView, cw = 192, ch = 288): Promise<{ canvas: HTMLCanvasElement; feet: number; span: number }> {
+  const chars = await loadAll();
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(1);
+  renderer.setSize(cw, ch, false);
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.NeutralToneMapping;
+
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight("#ffffff", "#6d6d78", 2.1));
+  const sun = new THREE.DirectionalLight("#ffffff", 1.5);
+  const dir = new THREE.Vector3(...tvDirection(view));
+  // luz de la misma esquina que la del tablero, algo por encima de la cámara
+  sun.position.copy(dir).multiplyScalar(10).add(new THREE.Vector3(2, 6, -1));
+  scene.add(sun);
+  const holder = new THREE.Group();
+  scene.add(holder);
+
+  // todos con la misma altura (1) y el mismo encuadre: los pies siempre en el mismo sitio del dibujo
+  const sizes = chars.map((c) => new THREE.Box3().setFromObject(c.root).getSize(new THREE.Vector3()));
+  const W = Math.max(...sizes.map((s, i) => Math.max(s.x, s.z) / sizes[i].y));
+  const el = (view.el * Math.PI) / 180;
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -50, 50);
+  camera.position.copy(dir);
+  camera.lookAt(0, 0, 0);
+  // en la cámara, los pies (0,0,0) quedan en y = 0; lo más alto (la cabeza) en ~cos(el), y el ancho del paso
+  // hacia delante y atrás en ±W/2·sin(el)
+  const below = (W / 2) * Math.sin(el) + 0.06;
+  const above = Math.cos(el) + (W / 2) * Math.sin(el) + 0.08;
+  let span = above + below;
+  const half = Math.max((W * 0.75) / 2, ((span * cw) / ch) / 2);
+  span = Math.max(span, (2 * half * ch) / cw);
+  Object.assign(camera, { left: -half, right: half, bottom: -below - (span - above - below), top: above });
+  camera.updateProjectionMatrix();
+  const feet = above / (above - camera.bottom);
+
+  const sheet = document.createElement("canvas");
+  sheet.width = cw * SHEET_COLS;
+  sheet.height = ch * chars.length;
+  const ctx = sheet.getContext("2d")!;
+  const az = (view.az * Math.PI) / 180;
+  for (const [row, c] of chars.entries()) {
+    const size = sizes[row];
+    const model = c.root;
+    model.scale.setScalar(1 / size.y);
+    model.position.set(0, 0, 0);
+    holder.add(model);
+    const mixer = new THREE.AnimationMixer(model);
+    for (const [k, pose] of (["idle", "walkA", "walkB"] as Pose[]).entries()) {
+      const [name, at] = POSE_AT[pose];
+      const clip = c.clips.find((a) => a.name === name);
+      mixer.stopAllAction();
+      if (clip) {
+        mixer.clipAction(clip).play();
+        mixer.setTime(clip.duration * at);
+      }
+      // de frente (hacia abajo-derecha de la pantalla) y de espaldas (hacia arriba-derecha)
+      for (const [j, turn] of [Math.PI / 4, (3 * Math.PI) / 4].entries()) {
+        holder.rotation.y = az + turn;
+        renderer.render(scene, camera);
+        ctx.drawImage(renderer.domElement, (j * 3 + k) * cw, row * ch);
+      }
+    }
+    mixer.stopAllAction();
+    holder.remove(model);
+  }
+  renderer.dispose();
+  renderer.forceContextLoss();
+  const r3 = (v: number) => Math.round(v * 1000) / 1000;
+  return { canvas: sheet, feet: r3(feet), span: r3(camera.top - camera.bottom) };
+}

@@ -1,13 +1,14 @@
 import Marciano from "@/components/Marciano";
 import { avatarOf } from "@/game/avatar";
+import { characterOf } from "@/game/characters";
 import type { Player } from "@/game/engine";
 
-export default function Winner({ winner, children }: { winner: Player; children?: React.ReactNode }) {
+export default function Winner({ winner, players, children }: { winner: Player; players?: Player[]; children?: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-3 text-center">
       <div className="flex items-end justify-center gap-2">
         <span className="text-5xl">🏆</span>
-        <Marciano avatar={avatarOf(winner)} expression="euforico" size={110} />
+        <Marciano avatar={avatarOf(winner)} expression="euforico" size={110} character={players ? characterOf(players, winner.id) : undefined} />
         <span className="text-5xl">🪦</span>
       </div>
       <h2 className="title-game text-4xl">¡{winner.name.toUpperCase()} GANA!</h2>

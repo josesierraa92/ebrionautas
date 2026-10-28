@@ -1,6 +1,7 @@
 // Tablero publicado desde el editor (/admin/editor): una imagen renderizada con la cámara de la TV y dónde cae
 // cada casilla en ella. La TV pone la imagen de fondo y encima las fichas (IsoBoard).
 import { BOARD } from "./board";
+import { parseSheet, type CharacterSheet } from "./characters";
 
 export type PublishedBoard = {
   /** Momento de la publicación (sirve de versión). */
@@ -21,6 +22,8 @@ export type PublishedBoard = {
   tokenScale?: number[];
   /** Cuánto acerca la TV al seguir una ficha (la vista elegida en el editor); si falta, unas 9 casillas a lo ancho. */
   zoom?: number;
+  /** Hoja de los personajes zombi dibujada con el ángulo de este tablero (si falta, la de serie). */
+  characters?: CharacterSheet;
 };
 
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -39,5 +42,6 @@ export function parsePublished(raw: unknown): Omit<PublishedBoard, "image" | "ve
   });
   if (tiles.some((t) => !t)) return null;
   const zoom = finite(r.zoom) ? Math.min(12, Math.max(1, r.zoom)) : undefined;
-  return { width, height, cell, bg, tiles: tiles as { x: number; y: number }[], ...(zoom && { zoom }) };
+  const characters = parseSheet(r.characters);
+  return { width, height, cell, bg, tiles: tiles as { x: number; y: number }[], ...(zoom && { zoom }), ...(characters && { characters }) };
 }

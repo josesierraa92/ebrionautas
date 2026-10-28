@@ -1,3 +1,4 @@
+import { characterOf } from "@/game/characters";
 import { Die } from "@/components/Fx";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
@@ -102,7 +103,7 @@ export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
           </p>
           <div className="flex items-center justify-between gap-4" style={{ fontSize: "1.1cqw" }}>
             <span className="flex items-center gap-[1cqw] font-display">
-              <Marciano avatar={avatarOf(player)} expression="feliz" size={40} className="h-auto w-[2.3cqw]" />
+              <Marciano avatar={avatarOf(player)} expression="feliz" size={40} className="h-auto w-[2.3cqw]" character={characterOf(game.players, player.id)} />
               {player.name}
             </span>
             {drinks !== null && (
@@ -156,7 +157,7 @@ export function TurnChip({ game, moving = false, rolling = false }: { game: Game
   const who = winner ?? (moving && roller ? roller : currentPlayer(game));
   return (
     <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center gap-3 rounded-2xl border-[3px] border-ink bg-ink/85 py-2 pr-5 pl-2 text-white">
-      <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={60} />
+      <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={60} character={characterOf(game.players, who.id)} />
       <div className="leading-tight">
         <p className="text-sm text-white/70">{winner ? "¡Ganador!" : "Turno de"}</p>
         <p className="font-display text-3xl">{who.name}</p>

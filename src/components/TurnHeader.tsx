@@ -1,3 +1,4 @@
+import { characterOf } from "@/game/characters";
 import { TILE_NAMES, getTile } from "@/game/board";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
@@ -12,7 +13,7 @@ export default function TurnHeader({ game, you }: { game: GameState; you?: strin
   return (
     <>
       <div className="flex items-center gap-3">
-        <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={56} className="shrink-0" />
+        <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={56} className="shrink-0" character={characterOf(game.players, me.id)} />
         <div className="min-w-0">
           <p className="text-sm text-white/70">{me.id === you ? "¡Te toca!" : "Turno de"}</p>
           <h2 className="truncate font-display text-2xl">{me.name}</h2>

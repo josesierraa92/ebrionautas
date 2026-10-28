@@ -5,6 +5,7 @@ import { BOARD, type Tile } from "@/game/board";
 import type { Player } from "@/game/engine";
 import { ISO_VIEW, isoPos, isoSx as sx, isoSy as sy } from "@/game/isoPath";
 import type { PublishedBoard } from "@/game/publishedBoard";
+import { characterOf, SHEET_COLS, CHARACTERS, spriteOf, STOCK_SHEET, type CharacterSheet } from "@/game/characters";
 import { PLAYER_COLORS } from "@/game/tileStyle";
 import { usePublishedBoard } from "@/lib/usePublishedBoard";
 
@@ -39,6 +40,8 @@ type Geometry = {
   bg?: string;
   /** Tamaño de cada ficha propia respecto al zombi de serie, por color de jugador (PLAYER_COLORS). */
   tokenScale?: (number | null)[];
+  /** Hoja de los personajes zombi (los que no tienen ficha propia). */
+  sheet: CharacterSheet;
   /** Zoom de la cámara al seguir una ficha (si falta, el que deja ver unas VISIBLE_CELLS casillas). */
   zoom?: number;
 };
@@ -53,6 +56,7 @@ const DEFAULT_GEOMETRY: Geometry = {
   cell: 100,
   numbers: true,
   zoom: 1.8, // el usuario lo quiere siempre así de cerca
+  sheet: STOCK_SHEET,
 };
 
 function publishedGeometry(b: PublishedBoard): Geometry {
@@ -66,6 +70,7 @@ function publishedGeometry(b: PublishedBoard): Geometry {
     // solo cambia el tamaño de las fichas que el admin personalizó
     tokenScale: (b.tokens ?? []).map((t, i) => (t ? (b.tokenScale?.[i] ?? 1) : null)),
     zoom: b.zoom, // el acercamiento de la vista elegida en el editor
+    sheet: b.characters ?? STOCK_SHEET, // dibujados con el mismo ángulo que el tablero
   };
 }
 
@@ -121,6 +126,24 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
   const ty = Math.round(pan(box.h, ch, (fy - view.y) * s));
   const px = (x: number, y: number) => ({ x: (x - view.x) * s, y: (y - view.y) * s });
 
+  // Hacia dónde va cada ficha (adelante o atrás en el recorrido), para dibujar el personaje mirando hacia allí.
+  const moves = useRef(new Map<string, { pos: number; dir: number }>());
+  const last = BOARD.length;
+  const facing = (p: Player) => {
+    const pos = at(p);
+    const prev = moves.current.get(p.id);
+    const dir = !prev || prev.pos === pos ? (prev?.dir ?? 1) : pos > prev.pos ? 1 : -1;
+    moves.current.set(p.id, { pos, dir });
+    const moving = pos !== p.pos;
+    const a = geo.at(pos);
+    // caminando: en el sentido del paso que acaba de dar; quieto: mirando a la casilla siguiente
+    const from = moving ? geo.at(Math.min(last, Math.max(1, pos - dir))) : a;
+    const to = moving ? a : geo.at(Math.min(last, pos + 1));
+    let [dx, dy] = [to.x - from.x, to.y - from.y];
+    if (!moving && pos === last) [dx, dy] = [a.x - geo.at(last - 1).x, a.y - geo.at(last - 1).y];
+    return { dx, dy, pose: moving ? (pos % 2 ? "walkA" : "walkB") : "idle" } as const;
+  };
+
   // Fichas (y números del tablero de serie) ordenadas por profundidad: más abajo en pantalla = más cerca.
   const groups = new Map<number, Player[]>();
   for (const p of players) groups.set(at(p), [...(groups.get(at(p)) ?? []), p]);
@@ -136,13 +159,19 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
       const rows = Math.ceil(n / cols);
       const hOff = ((i % cols) - (cols - 1) / 2) * (n > 4 ? 0.2 : n > 2 ? 0.24 : 0.32);
       const dOff = n > 4 ? (Math.floor(i / cols) - (rows - 1) / 2) * 0.17 : 0; // hacia delante o hacia atrás en la losa
-      const mul = geo.tokenScale?.[PLAYER_COLORS.indexOf(avatarOf(p).skin.toLowerCase())] ?? 1;
+      const custom = geo.tokenScale?.[PLAYER_COLORS.indexOf(avatarOf(p).skin.toLowerCase())];
+      const size = (n > 8 ? 46 : n > 3 ? 62 : 86) * k * (custom ?? 1) * s;
+      // sin ficha propia del editor: el personaje zombi (hombre o mujer) mirando hacia donde va
+      const f = facing(p);
+      const sprite = custom == null ? spriteOf(characterOf(players, p.id), f.dx, f.dy, f.pose) : null;
       return {
         p,
         n,
         at: px(base.x + hOff * geo.cell, base.y + 4 * k + dOff * geo.cell * 0.5),
         d: base.y + 0.6 * k + dOff * geo.cell * 0.5 + i * 0.01,
-        size: (n > 8 ? 46 : n > 3 ? 62 : 86) * k * mul * s,
+        size,
+        sprite,
+        moving: f.pose !== "idle",
       };
     })
     .sort((a, b) => a.d - b.d);
@@ -164,7 +193,7 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
             </svg>
           )}
           {tokens.map((t, z) => (
-            <Token key={t.p.id} t={t} z={z + 1} k={k * s} current={current} winner={winner} flying={flying} />
+            <Token key={t.p.id} t={t} z={z + 1} k={k * s} sheet={geo.sheet} current={current} winner={winner} flying={flying} />
           ))}
         </div>
       )}
@@ -172,11 +201,19 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
   );
 }
 
+type TokenData = { p: Player; n: number; at: { x: number; y: number }; size: number; sprite: ReturnType<typeof spriteOf> | null; moving: boolean };
+
 /** Una ficha: capa HTML propia que se mueve con transform (la tarjeta gráfica, sin repintar el tablero). */
-function Token({ t, z, k, current, winner, flying }: { t: { p: Player; n: number; at: { x: number; y: number }; size: number }; z: number; k: number; current: string; winner?: string | null; flying?: string | null }) {
-  const { p, n, size } = t;
+function Token({ t, z, k, sheet, current, winner, flying }: { t: TokenData; z: number; k: number; sheet: CharacterSheet; current: string; winner?: string | null; flying?: string | null }) {
+  const { p, n, size, sprite } = t;
   const isCurrent = p.id === current && !winner;
   const isFlying = p.id === flying;
+  const color = avatarOf(p).skin;
+  // personaje: alto ~0,8 del tamaño de la ficha; el dibujo es `span` veces más alto, con los pies en `feet`
+  const charH = size * 0.8;
+  const h = charH * sheet.span;
+  const w = (h * sheet.cw) / sheet.ch;
+  const top = sprite ? charH * 1.12 : size * 1.08; // dónde va el nombre, por encima de la cabeza
   return (
     <div
       className="pointer-events-none absolute top-0 left-0"
@@ -187,17 +224,45 @@ function Token({ t, z, k, current, winner, flying }: { t: { p: Player; n: number
         willChange: "transform",
       }}
     >
-      <div className="absolute rounded-[50%]" style={{ left: -size * 0.3, top: -size * 0.12, width: size * 0.6, height: size * 0.24, background: "#1d3b12", opacity: 0.3 }} />
-      <div className={`absolute ${isFlying ? "token-fly" : ""}`} style={{ left: -size / 2, top: -size * 1.02, width: size, height: size * 1.2 }}>
-        <Marciano avatar={avatarOf(p)} expression={expressionFor(p, { winner, isTurn: isCurrent })} title={p.name} size={size} animated className={isCurrent ? "mc-hop" : "mc-bob"} />
-      </div>
+      {sprite ? (
+        <>
+          {/* aro del color del jugador bajo los pies: así se distinguen aunque se repita el personaje */}
+          <div
+            className="absolute rounded-[50%]"
+            style={{ left: -size * 0.3, top: -size * 0.12, width: size * 0.6, height: size * 0.24, background: `${color}55`, border: `${Math.max(2, size * 0.035)}px solid ${color}`, boxShadow: "0 0 0 1px #0006" }}
+          />
+          <div className={`absolute ${isFlying ? "token-fly" : ""}`} style={{ left: -w / 2, top: -h * sheet.feet, width: w, height: h }}>
+            <div
+              role="img"
+              aria-label={p.name}
+              className={t.moving ? "" : isCurrent ? "mc-hop" : "mc-bob"}
+              style={{
+                width: "100%",
+                height: "100%",
+                backgroundImage: `url(${sheet.image})`,
+                backgroundSize: `${w * SHEET_COLS}px ${h * CHARACTERS.length}px`,
+                backgroundPosition: `${-sprite.col * w}px ${-sprite.row * h}px`,
+                transform: sprite.mirror ? "scaleX(-1)" : undefined,
+                transformOrigin: `50% ${sheet.feet * 100}%`,
+              }}
+            />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="absolute rounded-[50%]" style={{ left: -size * 0.3, top: -size * 0.12, width: size * 0.6, height: size * 0.24, background: "#1d3b12", opacity: 0.3 }} />
+          <div className={`absolute ${isFlying ? "token-fly" : ""}`} style={{ left: -size / 2, top: -size * 1.02, width: size, height: size * 1.2 }}>
+            <Marciano avatar={avatarOf(p)} expression={expressionFor(p, { winner, isTurn: isCurrent })} title={p.name} size={size} animated className={isCurrent ? "mc-hop" : "mc-bob"} />
+          </div>
+        </>
+      )}
       {/* nombre encima de cada ficha */}
       {!(n > 8 && !isCurrent) && (
         <div
           className="absolute whitespace-nowrap"
           style={{
             left: 0,
-            top: -size * 1.08,
+            top: -top,
             transform: "translate(-50%, -100%)",
             fontFamily: "var(--font-lilita), sans-serif",
             fontSize: (n > 8 ? 11 : n > 3 ? 13 : 16) * k,

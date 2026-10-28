@@ -4,6 +4,8 @@
 // El diseño es un BoardLayout inmutable: cada cambio crea uno nuevo (así funciona deshacer).
 
 import { upload } from "@vercel/blob/client";
+import { CHARACTERS, SHEET_COLS, type CharacterSheet } from "@/game/characters";
+import { renderCharacterSheet } from "./characterSheet";
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { History } from "./history";
 import ObjectLightPanel from "./ObjectLightPanel";
@@ -305,7 +307,7 @@ export default function BoardEditor() {
     scene.modelUrl = (id) => modelsRef.current.get(id)?.file;
     scene.setRotateHandle(handleRef.current);
     sceneRef.current = scene;
-    if (process.env.NODE_ENV !== "production") (window as unknown as { __editorScene?: unknown }).__editorScene = scene; // pruebas
+    if (process.env.NODE_ENV !== "production") Object.assign(window, { __editorScene: scene, __renderCharacterSheet: renderCharacterSheet }); // pruebas y hoja de serie
     const draft = readDraft();
     if (draft) setLayout(draft);
     scene.setLayout(draft ?? layoutRef.current);
@@ -466,6 +468,18 @@ export default function BoardEditor() {
         shot = await scene.renderForTV();
       }
       delete shot.blob;
+      // personajes zombi dibujados con el mismo ángulo que el tablero (sin Blob, la TV usa la hoja de serie)
+      let characters: CharacterSheet | null = null;
+      if (imageUrl)
+        try {
+          setStatus("Dibujando a los zombis…");
+          const { canvas, feet, span } = await renderCharacterSheet(l.tvView);
+          const file = await new Promise<Blob>((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error("sin imagen"))), "image/webp", 0.9));
+          const blob = await upload(`tablero/personajes-${Date.now()}.webp`, file, { access: "public", contentType: "image/webp", handleUploadUrl: "/api/admin/publish/upload", clientPayload: key });
+          characters = { image: blob.url, cw: canvas.width / SHEET_COLS, ch: canvas.height / CHARACTERS.length, feet, span };
+        } catch {
+          characters = null;
+        }
       // fichas propias: cada una se dibuja con la cámara de la TV (las que no se cambiaron van null: zombi de serie)
       const tokens: (string | null)[] = [];
       for (const [i, t] of l.tokens.entries()) {
@@ -477,7 +491,7 @@ export default function BoardEditor() {
       const res = await fetch("/api/admin/publish", {
         method: "POST",
         headers: { "content-type": "application/json", "x-admin-key": key },
-        body: JSON.stringify({ ...shot, ...(imageUrl && { image: imageUrl }), tokens, tokenScale }),
+        body: JSON.stringify({ ...shot, ...(imageUrl && { image: imageUrl }), ...(characters && { characters }), tokens, tokenScale }),
       });
       const body = await res.json().catch(() => ({}));
       if (res.status === 401) localStorage.removeItem(ADMIN_KEY);

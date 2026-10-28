@@ -1,5 +1,7 @@
 import { useId } from "react";
 import type { AvatarConfig, Expression } from "@/game/avatar";
+import { CHARACTERS, SHEET_COLS, STOCK_SHEET } from "@/game/characters";
+import { alienArt } from "@/game/tileStyle";
 import { useTokenArt } from "@/lib/usePublishedBoard";
 
 const INK = "#1b1f4b";
@@ -13,17 +15,37 @@ type Props = {
   title?: string;
   /** Parpadea (y respira, según la clase que se le pase). */
   animated?: boolean;
+  /** Personaje zombi del jugador (characterOf): se dibuja él en vez del zombi de serie, salvo ficha propia del editor. */
+  character?: number;
 };
 
 /**
  * El Marciano en SVG por capas (de atrás hacia delante): sombra, aura, patas y
  * brazos, cuerpo + patrón, disfraz (parte trasera), cara, disfraz (parte delantera).
  */
-export default function Marciano({ avatar, expression = "normal", size = 64, className, title, animated = false }: Props) {
+export default function Marciano({ avatar, expression = "normal", size = 64, className, title, animated = false, character }: Props) {
   const clip = `body-${useId().replace(/:/g, "")}`;
   const dark = shade(avatar.skin, -0.25);
   const { costume } = avatar;
   const art = useTokenArt(avatar.skin);
+
+  // Personaje zombi (hombre o mujer) de la hoja de serie, de frente y quieto; recortado a su altura
+  if (character != null && art === alienArt(avatar.skin)) {
+    const { cw, ch, feet, span, image } = STOCK_SHEET;
+    const y1 = Math.min(ch, (feet + 0.05) * ch);
+    const y0 = Math.max(0, y1 - (1.05 / span) * ch);
+    const vw = Math.min(cw, ((y1 - y0) * 108) / 124); // mismo encuadre que el retrato (108×124)
+    return (
+      <svg viewBox="-4 -14 108 128" width={size} height={size * (128 / 108)} className={className} role="img" aria-label={title ?? "Zombi"}>
+        {title && <title>{title}</title>}
+        <ellipse cx="50" cy="108" rx="30" ry="5" fill="#000" opacity=".25" />
+        {expression === "euforico" && <circle cx="50" cy="58" r="52" fill="#ffe066" opacity=".45" />}
+        <svg x={-4} y={-14} width={108} height={124} viewBox={`${(cw - vw) / 2} ${character * ch + y0} ${vw} ${y1 - y0}`} preserveAspectRatio="xMidYMax meet" opacity={expression === "triste" ? 0.75 : 1}>
+          <image href={image} width={cw * SHEET_COLS} height={ch * CHARACTERS.length} />
+        </svg>
+      </svg>
+    );
+  }
 
   // Los colores de jugador tienen su marciano 3D; el dibujo en SVG queda para cualquier otro color.
   if (art) {

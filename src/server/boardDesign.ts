@@ -15,6 +15,8 @@ const TOKEN_KEY = (i: number) => `board:token:${i}`;
 const MAX_TOKEN_BYTES = 450_000;
 const TEN_YEARS = 10 * 365 * 24 * 3600;
 const MAX_BYTES = 900_000; // Upstash acepta peticiones de hasta 1 MB
+/** Imagen subida por el navegador del admin a Vercel Blob (tablero o personajes). */
+const BLOB_IMAGE = /^https:\/\/[\w-]+\.public\.blob\.vercel-storage\.com\/tablero\/[\w.-]+\.webp$/;
 
 /** Comprueba la clave del admin (variable ADMIN_PASSWORD). En desarrollo, sin la variable, no se pide. */
 export function checkAdmin(key: string | null) {
@@ -79,7 +81,7 @@ export async function publishBoard(raw: Record<string, unknown>): Promise<Publis
   const data = parsePublished(raw);
   if (!data) throw new RoomError("Faltan casillas: para publicar hacen falta las 62.");
   // la imagen grande ya la subió el navegador directo a Vercel Blob: llega su dirección
-  const direct = typeof raw.image === "string" && /^https:\/\/[\w-]+\.public\.blob\.vercel-storage\.com\/tablero\/[\w.-]+\.webp$/.test(raw.image) ? raw.image : null;
+  const direct = typeof raw.image === "string" && BLOB_IMAGE.test(raw.image) ? raw.image : null;
   const m = typeof raw.image === "string" ? /^data:image\/webp;base64,([A-Za-z0-9+/=]+)$/.exec(raw.image) : null;
   if (!m && !direct) throw new RoomError("La imagen del tablero no es válida.");
   const bytes = m ? Buffer.from(m[1], "base64") : Buffer.alloc(0);
@@ -119,7 +121,10 @@ export async function publishBoard(raw: Record<string, unknown>): Promise<Publis
     const v = Array.isArray(raw.tokenScale) ? raw.tokenScale[i] : 1;
     return typeof v === "number" && Number.isFinite(v) ? Math.min(2.5, Math.max(0.4, v)) : 1;
   });
-  const board: PublishedBoard = { ...data, version, image, ...(tokens.some(Boolean) && { tokens, tokenScale }) };
+  // la hoja de personajes la sube el navegador a Blob como la imagen grande: solo se aceptan esas direcciones
+  const { characters, ...rest } = data;
+  const okSheet = characters && BLOB_IMAGE.test(characters.image);
+  const board: PublishedBoard = { ...rest, version, image, ...(okSheet && { characters }), ...(tokens.some(Boolean) && { tokens, tokenScale }) };
   await getStore().set(PUBLISHED_KEY, JSON.stringify(board), TEN_YEARS);
   return board;
 }

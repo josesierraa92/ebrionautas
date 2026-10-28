@@ -1,5 +1,6 @@
 "use client";
 
+import { characterOf } from "@/game/characters";
 import { useEffect, useRef, useState } from "react";
 import { Die } from "@/components/Fx";
 import Marciano from "@/components/Marciano";
@@ -134,7 +135,7 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
   return (
     <div className="flex flex-1 flex-col items-center justify-between gap-4 text-center">
       <div className="flex items-center gap-3">
-        <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={84} animated />
+        <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={84} animated character={characterOf(game.players, me.id)} />
         <div className="min-w-0 text-left">
           <p className="font-display text-lg text-white/70">Le toca a</p>
           <h2 className="title-game max-w-full truncate text-5xl">{me.name.toUpperCase()}</h2>

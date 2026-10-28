@@ -45,6 +45,11 @@ describe("diseño del tablero en el servidor", () => {
     expect((await loadPublished())?.tiles).toHaveLength(62);
     expect((await loadPublished())?.zoom).toBeUndefined();
     expect((await publishBoard({ ...shot, zoom: 3.5, width: 9000, height: 5063 })).zoom).toBe(3.5);
+    // la hoja de personajes solo si viene de Vercel Blob
+    const sheet = { cw: 192, ch: 288, feet: 0.8, span: 1.7 };
+    const blobUrl = "https://abc123.public.blob.vercel-storage.com/tablero/personajes-1-xyz.webp";
+    expect((await publishBoard({ ...shot, characters: { ...sheet, image: blobUrl } })).characters).toEqual({ ...sheet, image: blobUrl });
+    expect((await publishBoard({ ...shot, characters: { ...sheet, image: "javascript:alert(1)" } })).characters).toBeUndefined();
     expect((await loadDevImage())?.toString("ascii", 0, 4)).toBe("RIFF");
     await unpublishBoard();
     expect(await loadPublished()).toBeNull();
