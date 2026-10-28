@@ -18,6 +18,7 @@ body {
   background: radial-gradient(circle at 50% 0%, #2a1f6b 0%, var(--color-space) 60%);
   color: #fff;
   font-family: var(--font-sans);
+  letter-spacing: -0.01em; /* un poco más juntas, mejor diagramada (pedido del usuario) */
   font-synthesis: none; /* Lilita One solo tiene un peso: sin negrita falsa */
   min-height: 100dvh;
 }
@@ -117,7 +118,7 @@ body {
   line-height: 1;
   font-family: var(--font-lilita), sans-serif;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.01em;
   -webkit-text-stroke: 0.3em #1b1f4b;
   paint-order: stroke fill;
   will-change: transform;
@@ -169,7 +170,7 @@ body {
 .banner-title {
   font-family: var(--font-spooky), var(--font-lilita), sans-serif;
   color: #fff;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.01em;
   text-shadow:
     0.045em 0.045em 0 var(--accent),
     -0.015em 0 0 #0a071a, 0.015em 0 0 #0a071a, 0 -0.015em 0 #0a071a,
