@@ -124,12 +124,28 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
   const roller = game.players.find((p) => p.id === game.lastRoller);
   const winner = game.players.find((p) => p.id === game.winner);
   const who = winner ?? (moving && roller ? roller : currentPlayer(game));
+  const color = who.color;
+  // Placa de HUD de videojuego: retrato enmarcado con el color del jugador que sobresale de una placa oscura ladeada,
+  // pestaña morada con «Turno de», nombre con sombra dura del color y filete de color abajo (todo en CSS, mismo estilo
+  // grueso y plano que las tarjetas).
   return (
-    <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center gap-3 rounded-2xl border-[3px] border-ink bg-ink/85 py-2 pr-5 pl-2 text-white max-md:top-16 max-md:scale-90 max-md:origin-top-left">
-      <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={60} character={characterOf(game.players, who.id)} />
-      <div className="leading-tight">
-        <p className="font-display text-base leading-none text-[#c9a8ff]">{winner ? "¡Ganador!" : "Turno de"}</p>
-        <p className="font-display mt-px text-3xl leading-none uppercase">{who.name}</p>
+    <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center max-md:top-16 max-md:scale-90 max-md:origin-top-left">
+      <div
+        className="relative z-10 -mr-5 grid shrink-0 place-items-center overflow-hidden rounded-2xl border-[4px] border-ink"
+        style={{ width: 84, height: 84, background: `radial-gradient(circle at 50% 35%, ${color}88, ${color}22 70%), #14173d`, boxShadow: `0 0 0 3px ${color}, 0 5px 0 3px ${color}, 0 8px 14px rgba(0,0,0,.45)` }}
+      >
+        <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={66} character={characterOf(game.players, who.id)} />
+      </div>
+      <div className="relative -skew-x-6 overflow-hidden rounded-xl border-[4px] border-ink bg-[#14173d]/95 py-2 pr-7 pl-9 shadow-[0_6px_0_var(--color-ink),0_10px_16px_rgba(0,0,0,.45)]">
+        <div className="skew-x-6">
+          <p className="inline-block rounded-md bg-btn-special px-2 py-0.5 font-display text-xs leading-none tracking-wider text-white uppercase shadow-[0_2px_0_var(--color-ink)]">
+            {winner ? "¡Ganador!" : "Turno de"}
+          </p>
+          <p className="mt-1 font-display text-4xl leading-none text-white uppercase" style={{ textShadow: `0 3px 0 ${color}, 0 5px 0 var(--color-ink)` }}>
+            {who.name}
+          </p>
+        </div>
+        <div className="absolute inset-x-0 bottom-0 h-1.5" style={{ background: color }} />
       </div>
     </div>
   );
