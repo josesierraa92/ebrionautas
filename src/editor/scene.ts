@@ -488,11 +488,7 @@ export class EditorScene {
     const lt = lightOf(o);
     let rig = g.userData.rig as THREE.Group | undefined;
     if (!lt?.on) {
-      if (rig) {
-        g.remove(rig);
-        (rig.children[1] as THREE.Sprite).material.dispose();
-        g.userData.rig = undefined;
-      }
+      if (rig) this.disposeRig(g);
       const lamp = this.lamps.get(o.model);
       if (lamp && g.userData.glowReady) this.setGlowParts(g, lamp, null);
       return;
@@ -505,32 +501,52 @@ export class EditorScene {
       lamp = findLamp(base);
       this.lamps.set(o.model, lamp);
     }
+    // una luz por lámpara (las ventanitas amarillas de cada farol); si el modelo no las tiene, una en lo alto
+    const spots: THREE.Vector3[] = lamp.anchors.length
+      ? lamp.anchors
+      : [new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y + (box.max.y - box.min.y) * 0.72, (box.min.z + box.max.z) / 2)];
+    if (rig && rig.children.length !== spots.length) {
+      this.disposeRig(g);
+      rig = undefined;
+    }
     if (!rig) {
-      // un foco hacia abajo y muy abierto (no un punto): alumbra el suelo y lo de alrededor, pero no el poste del
-      // propio farol, que está pegado a la luz y se vería como un tubo brillante
-      const light = new THREE.SpotLight();
-      light.angle = Math.PI * 0.46;
-      light.penumbra = 0.95;
-      light.decay = 1.5;
-      light.target.position.set(0, -1, 0);
-      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glow(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
       rig = new THREE.Group();
-      rig.add(light, sprite, light.target);
+      for (const at of spots) {
+        // foco hacia abajo (no un punto): alumbra el suelo y lo de alrededor, pero no el poste, que está pegado a la
+        // luz y se vería como un tubo brillante
+        const light = new THREE.SpotLight();
+        light.angle = Math.PI * 0.32;
+        light.penumbra = 0.7;
+        light.decay = 1.5;
+        light.target.position.set(0, -1, 0);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glow(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+        const lampGroup = new THREE.Group();
+        lampGroup.position.copy(at);
+        lampGroup.add(light, sprite, light.target);
+        rig.add(lampGroup);
+      }
       g.add(rig);
       g.userData.rig = rig;
     }
-    const [light, sprite] = rig.children as [THREE.SpotLight, THREE.Sprite];
-    // la luz sale de las partes amarillas del modelo (las ventanitas del farol, la llama); si no tiene, de lo alto
-    if (lamp.anchor) rig.position.copy(lamp.anchor);
-    else rig.position.set((box.min.x + box.max.x) / 2, box.min.y + (box.max.y - box.min.y) * 0.72, (box.min.z + box.max.z) / 2);
-    light.color.set(lt.color);
-    light.intensity = lt.intensity;
-    light.distance = lt.distance;
-    sprite.material.color.set(lt.color);
-    sprite.material.opacity = Math.min(0.85, 0.3 + lt.intensity / 250);
-    const world = Math.min(3, 0.8 + lt.distance * 0.08); // tamaño del halo en casillas
-    sprite.scale.set(world / g.scale.x, world / g.scale.y, 1);
+    for (const lampGroup of rig.children as THREE.Group[]) {
+      const [light, sprite] = lampGroup.children as [THREE.SpotLight, THREE.Sprite];
+      light.color.set(lt.color);
+      light.intensity = lt.intensity;
+      light.distance = lt.distance;
+      sprite.material.color.set(lt.color);
+      sprite.material.opacity = Math.min(0.95, 0.45 + lt.intensity / 150);
+      const world = Math.min(2.6, 0.9 + lt.distance * 0.06); // tamaño del halo en casillas
+      sprite.scale.set(world / g.scale.x, world / g.scale.y, 1);
+    }
     this.setGlowParts(g, lamp, lt.intensity);
+  }
+
+  private disposeRig(g: THREE.Group) {
+    const rig = g.userData.rig as THREE.Group | undefined;
+    if (!rig) return;
+    for (const lampGroup of rig.children as THREE.Group[]) (lampGroup.children[1] as THREE.Sprite).material.dispose();
+    g.remove(rig);
+    g.userData.rig = undefined;
   }
 
   /** Hace brillar las partes amarillas del objeto (cada objeto lleva sus propios materiales para poder apagarlas). */
@@ -548,7 +564,7 @@ export class EditorScene {
       });
       g.userData.glowReady = true;
     }
-    const k = intensity === null ? 0 : Math.min(2.5, 0.8 + intensity / 50);
+    const k = intensity === null ? 0 : Math.min(3.2, 1.4 + intensity / 25); // las ventanitas se ven encendidas de verdad
     g.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh && !Array.isArray(mesh.material)) (mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = k;

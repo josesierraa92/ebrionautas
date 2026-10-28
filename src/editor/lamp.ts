@@ -4,8 +4,11 @@
 import * as THREE from "three";
 
 export type Lamp = {
-  /** Centro de las partes luminosas, en coordenadas del modelo sin escalar; null si no tiene. */
-  anchor: THREE.Vector3 | null;
+  /**
+   * Centro de cada lámpara del modelo (un farol doble tiene dos), en coordenadas del modelo sin escalar. Vacío si el
+   * modelo no tiene partes luminosas.
+   */
+  anchors: THREE.Vector3[];
   /** Mapa emisivo: la textura original dejando solo los colores de luz y el resto en negro. */
   emissiveMap: THREE.CanvasTexture | null;
 };
@@ -56,8 +59,7 @@ function readPixels(image: CanvasImageSource & { width: number; height: number }
 /** Analiza un modelo ya cargado. */
 export function findLamp(root: THREE.Object3D): Lamp {
   root.updateMatrixWorld(true);
-  const sum = new THREE.Vector3();
-  let count = 0;
+  const glowPoints: THREE.Vector3[] = [];
   let emissiveMap: THREE.CanvasTexture | null = null;
   const cache = new Map<unknown, Pixels>();
   const v = new THREE.Vector3();
@@ -84,8 +86,7 @@ export function findLamp(root: THREE.Object3D): Lamp {
       const y = Math.min(px.h - 1, Math.max(0, Math.floor(t * px.h)));
       const k = (y * px.w + x) * 4;
       if (isGlowColor(px.data[k], px.data[k + 1], px.data[k + 2])) {
-        sum.add(v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld));
-        count++;
+        glowPoints.push(v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld).clone());
         found++;
       }
     }
@@ -98,5 +99,32 @@ export function findLamp(root: THREE.Object3D): Lamp {
       emissiveMap.wrapT = tex.wrapT;
     }
   });
-  return { anchor: count ? sum.multiplyScalar(1 / count) : null, emissiveMap };
+  return { anchors: clusterLamps(glowPoints), emissiveMap };
+}
+
+/**
+ * Agrupa los puntos luminosos en lámparas: los que están cerca uno de otro son la misma (las dos ventanitas de un
+ * farol), los lejanos son otra (el segundo farol de un poste doble). Como mucho 4.
+ */
+function clusterLamps(points: THREE.Vector3[]): THREE.Vector3[] {
+  if (!points.length) return [];
+  const box = new THREE.Box3().setFromPoints(points);
+  const reach = Math.max(0.25, Math.max(...box.getSize(new THREE.Vector3()).toArray()) * 0.18);
+  const groups: { sum: THREE.Vector3; n: number }[] = [];
+  for (const p of points) {
+    let best: { sum: THREE.Vector3; n: number } | null = null;
+    let bestD = reach;
+    for (const g of groups) {
+      const d = p.distanceTo(g.sum.clone().multiplyScalar(1 / g.n));
+      if (d < bestD) [best, bestD] = [g, d];
+    }
+    if (best) {
+      best.sum.add(p);
+      best.n++;
+    } else groups.push({ sum: p.clone(), n: 1 });
+  }
+  return groups
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 4)
+    .map((g) => g.sum.multiplyScalar(1 / g.n));
 }

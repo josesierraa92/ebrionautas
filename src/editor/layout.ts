@@ -60,7 +60,7 @@ export type PlacedObject = {
 };
 
 export type ObjectLight = { on: boolean; color: string; intensity: number; distance: number };
-export const DEFAULT_LIGHT: ObjectLight = { on: true, color: "#ffb347", intensity: 25, distance: 12 };
+export const DEFAULT_LIGHT: ObjectLight = { on: true, color: "#ffb347", intensity: 35, distance: 9 };
 export const LIGHT_LIMITS = { intensity: { min: 5, max: 200 }, distance: { min: 2, max: 30 } };
 const EMITTERS = /(lantern|candle|jackolantern|lightpost|fire|torch|campfire|brazier)/i;
 /** Los faroles, velas, hogueras y calabazas con vela brillan solos (hace falta luz de noche). */

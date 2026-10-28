@@ -117,8 +117,8 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - Se guarda en Redis (`src/server/boardDesign.ts`, API `src/app/api/admin/board`). Guardar pide la clave
   `ADMIN_PASSWORD` (variable de entorno de Vercel); en desarrollo, sin ella, no se pide. El borrador se guarda
   también en el navegador.
-- Luces de los objetos (`light` en `PlacedObject`, panel `ObjectLightPanel`): un `PointLight` más un halo en lo alto
-  del modelo. Los que se llaman lantern/candle/jackolantern/lightpost/fire/torch/campfire/brazier brillan solos
+- Luces de los objetos (`light` en `PlacedObject`, panel `ObjectLightPanel`): un foco (`SpotLight`) más un halo por
+  cada lámpara del modelo (un farol doble tiene dos; `findLamp` las agrupa en `anchors`). Los que se llaman lantern/candle/jackolantern/lightpost/fire/torch/campfire/brazier brillan solos
   (`isEmitter`, `lightOf`); `light: {on:false}` los apaga. Sin luz propia la noche queda muy oscura (pedido del usuario).
   La luz sale de los cuadritos amarillos del modelo (`src/editor/lamp.ts` los detecta por el color de la textura,
   255,192,68 en Kenney) y esas partes brillan con un mapa emisivo; es un foco hacia abajo, no un punto, para no
