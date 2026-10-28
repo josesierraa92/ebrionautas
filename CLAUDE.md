@@ -247,3 +247,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - **Trago de regalo** (casillas A_BEBER, antes «Ronda de mezcal»): reparte de **1 a 3 vasos al azar** (`giftAmount` en el estado; el número de
   la casilla ya no cuenta). Todos los títulos de la pantalla (banner de la casilla, panel de la TV y del celular) salen de la tarjeta
   (`cardTitle(key)` / `tileRule`), y `useGameFx` carga los textos propios al arrancar para que el primer título grande ya sea el editado.
+- Celular, decisiones: la tarjeta y las opciones van en **una sola pantalla** (tarjeta arriba, cómo repartir/elegir abajo); al terminar la decisión no se vuelve a enseñar la tarjeta (`dismissed`), pasa directo al siguiente turno.

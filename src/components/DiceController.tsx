@@ -43,6 +43,10 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
 
   // tarjeta ya cerrada con «Siguiente turno» (por su clave): hasta que salga otra, se ve el dado
   const [dismissed, setDismissed] = useState<number | null>(null);
+  // Si hay que decidir algo, la tarjeta ya se ve en la misma pantalla que las opciones: al terminar no se repite.
+  useEffect(() => {
+    if (game.phase === "DECISION" && card) setDismissed(card.key);
+  }, [game.phase, card]);
   const canRoll = game.phase === "ROLL" && !busy && !result && (!card || dismissed === card.key);
   const roll = () => {
     if (!canRoll) return;
@@ -164,6 +168,7 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
           playerId={tilePlayerId}
           cardKey={card?.key ?? (game.decisionSeq ?? tileNumber)}
           result={card?.result}
+          unit="16px"
         />
         {decision}
       </div>
