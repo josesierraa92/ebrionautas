@@ -3,6 +3,7 @@
 // Editor del tablero para el admin: pintar el terreno, subir/bajar el suelo y arrastrar modelos 3D.
 // El diseño es un BoardLayout inmutable: cada cambio crea uno nuevo (así funciona deshacer).
 
+import { upload } from "@vercel/blob/client";
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { History } from "./history";
 import ObjectLightPanel from "./ObjectLightPanel";
@@ -451,7 +452,19 @@ export default function BoardEditor() {
     if (!scene) return;
     try {
       setStatus("Renderizando el tablero…");
-      const shot = await scene.renderForTV();
+      // alta resolución (el mundo es grande y la TV acerca 1,8×): la imagen sube directo a Vercel Blob; sin Blob
+      // (desarrollo) se usa la versión pequeña que cabe en la petición
+      const key = adminKey() ?? "";
+      let shot = await scene.renderForTV(4096, true);
+      let imageUrl: string | null = null;
+      try {
+        setStatus("Subiendo la imagen del tablero…");
+        const blob = await upload(`tablero/tablero-${Date.now()}.webp`, shot.blob!, { access: "public", contentType: "image/webp", handleUploadUrl: "/api/admin/publish/upload", clientPayload: key });
+        imageUrl = blob.url;
+      } catch {
+        shot = await scene.renderForTV();
+      }
+      delete shot.blob;
       // fichas propias: cada una se dibuja con la cámara de la TV (las que no se cambiaron van null: zombi de serie)
       const tokens: (string | null)[] = [];
       for (const [i, t] of l.tokens.entries()) {
@@ -460,11 +473,10 @@ export default function BoardEditor() {
       }
       const tokenScale = l.tokens.map((t) => t?.size ?? 1);
       setStatus("Subiendo…");
-      const key = adminKey() ?? "";
       const res = await fetch("/api/admin/publish", {
         method: "POST",
         headers: { "content-type": "application/json", "x-admin-key": key },
-        body: JSON.stringify({ ...shot, tokens, tokenScale }),
+        body: JSON.stringify({ ...shot, ...(imageUrl && { image: imageUrl }), tokens, tokenScale }),
       });
       const body = await res.json().catch(() => ({}));
       if (res.status === 401) localStorage.removeItem(ADMIN_KEY);

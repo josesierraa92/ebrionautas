@@ -1211,7 +1211,7 @@ export class EditorScene {
    * Renderiza el tablero entero con la cámara de la TV (isométrica fija, sin rejilla ni ayudas) y calcula dónde
    * cae cada casilla en la imagen, para poner encima las fichas.
    */
-  async renderForTV(maxWidth = 2400): Promise<{ image: string; width: number; height: number; tiles: { x: number; y: number }[]; cell: number; bg: string }> {
+  async renderForTV(maxWidth = 2400, asBlob = false): Promise<{ image: string; blob?: Blob; width: number; height: number; tiles: { x: number; y: number }[]; cell: number; bg: string }> {
     const l = this.layout;
     if (!l) throw new Error("No hay diseño");
     await Promise.all([...this.models.values(), this.needFont(l.numbers.font)]);
@@ -1259,10 +1259,16 @@ export class EditorScene {
     this.renderer.setPixelRatio(1);
     this.renderer.setSize(width, height, false);
     this.renderer.render(this.scene, cam);
-    let image = this.renderer.domElement.toDataURL("image/webp", 0.85);
-    // el servidor acepta hasta ~4 MB: si pesa más, se baja la calidad
-    // la petición lleva también las fichas y Vercel admite ~4,5 MB: el tablero debe quedar por debajo de ~3,3 MB
-    for (const q of [0.75, 0.62, 0.5, 0.4]) if (image.length > 3_300_000) image = this.renderer.domElement.toDataURL("image/webp", q);
+    let image = "";
+    let blob: Blob | undefined;
+    if (asBlob) {
+      // imagen grande: va directo a Vercel Blob (sin el límite de ~4,5 MB de las funciones), así que no se baja la calidad
+      blob = await new Promise<Blob>((ok, fail) => this.renderer.domElement.toBlob((b) => (b ? ok(b) : fail(new Error("sin imagen"))), "image/webp", 0.9));
+    } else {
+      image = this.renderer.domElement.toDataURL("image/webp", 0.85);
+      // la petición lleva también las fichas y Vercel admite ~4,5 MB: el tablero debe quedar por debajo de ~3,3 MB
+      for (const q of [0.75, 0.62, 0.5, 0.4]) if (image.length > 3_300_000) image = this.renderer.domElement.toDataURL("image/webp", q);
+    }
     this.renderer.setPixelRatio(ratio);
     for (const o of hidden) o.visible = true;
     this.resize();
@@ -1275,6 +1281,6 @@ export class EditorScene {
     // ancho en pantalla del rombo de una casilla (las fichas se escalan con él)
     const cell = Math.abs(toPx(new THREE.Vector3(TILE_SIZE, 0, 0)).x - toPx(new THREE.Vector3(0, 0, TILE_SIZE)).x);
     const bg = "#" + (this.scene.background as THREE.Color).getHexString();
-    return { image, width, height, tiles, cell, bg };
+    return { image, blob, width, height, tiles, cell, bg };
   }
 }

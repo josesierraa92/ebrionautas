@@ -78,16 +78,20 @@ export async function loadDevImage(): Promise<Buffer | null> {
 export async function publishBoard(raw: Record<string, unknown>): Promise<PublishedBoard> {
   const data = parsePublished(raw);
   if (!data) throw new RoomError("Faltan casillas: para publicar hacen falta las 62.");
+  // la imagen grande ya la subió el navegador directo a Vercel Blob: llega su dirección
+  const direct = typeof raw.image === "string" && /^https:\/\/[\w-]+\.public\.blob\.vercel-storage\.com\/tablero\/[\w.-]+\.webp$/.test(raw.image) ? raw.image : null;
   const m = typeof raw.image === "string" ? /^data:image\/webp;base64,([A-Za-z0-9+/=]+)$/.exec(raw.image) : null;
-  if (!m) throw new RoomError("La imagen del tablero no es válida.");
-  const bytes = Buffer.from(m[1], "base64");
+  if (!m && !direct) throw new RoomError("La imagen del tablero no es válida.");
+  const bytes = m ? Buffer.from(m[1], "base64") : Buffer.alloc(0);
   if (bytes.length > 4_000_000) throw new RoomError("La imagen del tablero es demasiado grande.", 413);
   const version = Date.now();
   let image: string;
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
+  if (direct) {
+    image = direct;
+  } else if (m && process.env.BLOB_READ_WRITE_TOKEN) {
     const blob = await put(`tablero/tablero-${version}.webp`, bytes, { access: "public", contentType: "image/webp" });
     image = blob.url;
-  } else if (process.env.NODE_ENV !== "production") {
+  } else if (m && process.env.NODE_ENV !== "production") {
     await getStore().set(IMAGE_KEY, m[1], TEN_YEARS);
     image = `/api/board/image?v=${version}`;
   } else {
