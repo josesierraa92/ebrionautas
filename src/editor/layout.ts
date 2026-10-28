@@ -11,7 +11,7 @@ export const GROUNDS = {
   darkGrass: { label: "Pasto oscuro", top: "#3f5a35", side: "#3d2e25" },
   dryGrass: { label: "Pasto seco", top: "#a39a52", side: "#6e5236" },
   dirt: { label: "Tierra", top: "#8a6440", side: "#6b4a2e" },
-  mud: { label: "Barro", top: "#4a3a2c", side: "#382b20" },
+  mud: { label: "Barro", top: "#7a5c40", side: "#5c4430" },
   sand: { label: "Arena", top: "#d9c38a", side: "#b39a62" },
   stone: { label: "Piedra", top: "#8d8f8c", side: "#6b6d6b" },
   path: { label: "Adoquín", top: "#a59b8a", side: "#7c7366" },

@@ -427,11 +427,11 @@ export class EditorScene {
     const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // se recorta el mundo (ensanchado una casilla y poco difuminado): en la línea amarilla la neblina ya es notoria y
-    // unas 4 casillas más allá es casi opaca (el usuario no quiere ver apenas nada de lo de fuera)
+    // se recorta el mundo (apenas ensanchado y poco difuminado): en la línea amarilla la neblina ya es notoria y
+    // a unas 2 casillas es opaca (el usuario no quiere ver nada de lo de fuera)
     ctx.globalCompositeOperation = "destination-out";
-    ctx.filter = `blur(${Math.round(2.2 * k)}px)`;
-    const grow = 1.6 * k;
+    ctx.filter = `blur(${Math.round(0.9 * k)}px)`;
+    const grow = 0.2 * k;
     ctx.fillRect(E * k - grow, E * k - grow, l.w * k + 2 * grow, l.h * k + 2 * grow);
     ctx.filter = "none";
     const tex = new THREE.CanvasTexture(canvas);
@@ -626,14 +626,19 @@ export class EditorScene {
     if (!lamp.emissiveMap) return;
     if (!g.userData.glowReady) {
       if (intensity === null) return;
+      let cloned = 0;
       g.traverse((o) => {
         const mesh = o as THREE.Mesh;
-        if (!mesh.isMesh || Array.isArray(mesh.material) || o.parent === g.userData.rig) return;
+        if (!mesh.isMesh || Array.isArray(mesh.material)) return;
         const m = (mesh.material as THREE.MeshStandardMaterial).clone();
         m.emissiveMap = lamp.emissiveMap;
         m.emissive.set("#ffffff");
         mesh.material = m;
+        cloned++;
       });
+      // si el modelo aún no se añadió al grupo (ya estaba en caché y se carga en el siguiente tick) no hay nada
+      // que encender: se vuelve a intentar cuando llegue
+      if (!cloned) return;
       g.userData.glowReady = true;
     }
     const k = intensity === null ? 0 : Math.min(3.2, 1.4 + intensity / 25); // las ventanitas se ven encendidas de verdad
