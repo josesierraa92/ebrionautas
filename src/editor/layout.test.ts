@@ -153,6 +153,17 @@ describe("vista de la TV", () => {
   });
 });
 
+describe("tamaño de los personajes", () => {
+  it("vale 1 de serie, se limita y sobrevive a cambiar el tamaño del mundo", () => {
+    const base = newLayout(10, 8);
+    expect(base.characterSize).toBe(1);
+    expect(parseLayout({ ...base, characterSize: undefined })?.characterSize).toBe(1);
+    expect(parseLayout({ ...base, characterSize: 9 })?.characterSize).toBe(2);
+    expect(parseLayout({ ...base, characterSize: 0.1 })?.characterSize).toBe(0.5);
+    expect(resize({ ...base, characterSize: 1.4 }, 20, 12).characterSize).toBe(1.4);
+  });
+});
+
 describe("fichas de los jugadores", () => {
   it("hay una por color de jugador, vacías por defecto, y se validan", () => {
     const base = newLayout(10, 8);

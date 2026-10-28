@@ -27,9 +27,10 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
 - Fichas: **personajes zombi** del kit **Mini Characters de Kenney** (CC0; `public/personajes/`, copiados con
   `node scripts/characters/zombify.mjs <carpeta GLB del kit>`). 6 hombres para los hombres y 6 mujeres para las
   mujeres, por orden de entrada (`characterOf` en `src/game/characters.ts`); con más de 6 de un género se repiten (se
-  distinguen por el nombre; el aro de color se quitó a petición del usuario). Del tamaño de un zombi de la decoración
-  (`charH` en `IsoBoard`), respiran (`.zb-breathe`) y la casilla donde están alumbra un poco (`.zb-glow`, más y
-  latiendo la del turno). La piel verde se pinta al dibujarlos (`SKIN` en `src/editor/characterSheet.ts`: solo la
+  distinguen por el nombre; el aro de color y el brillo de la casilla se quitaron a petición del usuario). Del tamaño
+  de un zombi de la decoración (`CHARACTER_HEIGHT`) por el tamaño elegido en el editor (`characterSize` del layout,
+  «🧟 Fichas», con vista previa sobre una casilla; se publica como `characterScale`). Respiran (`.zb-breathe`, con
+  `transform` en una capa y el espejo en otra: la propiedad `scale` no existe en navegadores de TV antiguos). La piel verde se pinta al dibujarlos (`SKIN` en `src/editor/characterSheet.ts`: solo la
   franja de piel de cada uno, porque en otros es pelo o ropa) y los ojos son amarillos (`yellowEyes`: piezas oscuras y
   planas de la cara, que comparten color con el pelo negro y por eso se cambian en la geometría). En la TV son
   sprites de una hoja (`renderCharacterSheet`: cada personaje de frente y de espaldas, quieto y en dos pasos de
@@ -55,7 +56,9 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
   `translate3d` (la tarjeta gráfica, sin repintar); las fichas son capas HTML aparte que también se mueven con
   transform. No animar el `viewBox` (repintaba la imagen enorme en cada fotograma: todo iba lento) ni escalar con CSS
   (borroso). El tablero está siempre con zoom (`ZOOM` en `IsoBoard`) y sigue a la última ficha que tiró (`focus` de
-  `useGameFx`; antes de la primera tirada, al jugador de turno). El usuario no quiere que se aleje. Animaciones rápidas. Cada losa lleva su número de pie en el borde delantero.
+  `useGameFx`; antes de la primera tirada, al jugador de turno). El usuario no quiere que se aleje. Animaciones
+  tranquilas y fluidas (antes eran "súper rápidas"): `STEP_MS` 340 ms por casilla, `FLY_MS` 750, dado 700 y títulos
+  1600 ms en `useGameFx`; `IsoBoard` usa los mismos tiempos en sus transiciones y la cámara tarda 1,1 s. Cada losa lleva su número de pie en el borde delantero.
 - `src/game/isoPath.ts`: recorrido de las 62 casillas (camino serpenteante estilo Mario Party, `ROUTE`) y la proyección. `src/components/BoardStage.tsx`
   pinta encima el dado y los títulos (`src/components/Fx.tsx`).
 - **Estética única** (pedido del usuario: "que todo tenga la misma estética", nada de "pedazos de muchos juegos"):

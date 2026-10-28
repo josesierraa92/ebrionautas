@@ -107,26 +107,19 @@ body {
   50% { transform: translateY(-5%); }
 }
 .mc-hop { animation: mc-hop 0.7s ease-in-out infinite; }
-/* Personajes zombi del tablero: respiran (se estiran un poco desde los pies; `scale` no pisa el espejo del transform) */
-.zb-breathe { animation: zb-breathe 3.2s ease-in-out infinite; animation-delay: var(--zb-delay, 0s); }
+/* Personajes zombi del tablero: respiran (el pecho sube y baja: se estiran un poco desde los pies). Con `transform`
+   (no la propiedad `scale`, que los navegadores de TV antiguos no conocen); el espejo va en otra capa por dentro. */
+.zb-breathe { animation: zb-breathe 2.8s ease-in-out infinite; animation-delay: var(--zb-delay, 0s); }
 @keyframes zb-breathe {
-  0%, 100% { scale: 1 1; }
-  50% { scale: 1.02 1.045; }
-}
-/* La casilla donde está cada zombi alumbra un poco; la del que tiene el turno, algo más y latiendo */
-.zb-glow { animation: zb-glow-in 0.25s ease-out; }
-.zb-glow-turn { animation: zb-glow-in 0.25s ease-out, zb-glow-pulse 2.4s ease-in-out 0.25s infinite; }
-@keyframes zb-glow-in { from { opacity: 0; } }
-@keyframes zb-glow-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.65; }
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.04, 1.08); }
 }
 @keyframes mc-hop {
   0%, 100% { transform: translateY(0) scale(1, 1); }
   15% { transform: translateY(0) scale(1.1, 0.9); }
   50% { transform: translateY(-28%) scale(0.95, 1.05); }
 }
-.token-fly { animation: token-fly 0.45s ease-in-out; }
+.token-fly { animation: token-fly 0.75s ease-in-out; }
 @keyframes token-fly {
   0%, 100% { scale: 1; rotate: 0deg; }
   50% { scale: 1.9; rotate: 25deg; }
@@ -179,7 +172,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mc-bob, .mc-hop, .zb-breathe, .zb-glow-turn, .earth-glow, .ship-hover, .beam-pulse, .ship-light, .dice-idle, .mc-anim .mc-eyes, .confetti { animation: none; }
+  .mc-bob, .mc-hop, .zb-breathe, .earth-glow, .ship-hover, .beam-pulse, .ship-light, .dice-idle, .mc-anim .mc-eyes, .confetti { animation: none; }
 }
 
 /* Íconos con sombra sólida, como en la referencia de UI */

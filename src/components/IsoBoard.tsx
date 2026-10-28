@@ -5,8 +5,9 @@ import { BOARD, type Tile } from "@/game/board";
 import type { Player } from "@/game/engine";
 import { ISO_VIEW, isoPos, isoSx as sx, isoSy as sy } from "@/game/isoPath";
 import type { PublishedBoard } from "@/game/publishedBoard";
-import { characterOf, SHEET_COLS, CHARACTERS, spriteOf, STOCK_SHEET, type CharacterSheet } from "@/game/characters";
+import { CHARACTER_HEIGHT, characterOf, SHEET_COLS, CHARACTERS, spriteOf, STOCK_SHEET, type CharacterSheet } from "@/game/characters";
 import { PLAYER_COLORS } from "@/game/tileStyle";
+import { FLY_MS, STEP_MS } from "@/lib/useGameFx";
 import { usePublishedBoard } from "@/lib/usePublishedBoard";
 
 // Tablero isométrico de la TV. El tablero (terreno, casillas, decoración) es una imagen renderizada en 3D de
@@ -42,8 +43,8 @@ type Geometry = {
   tokenScale?: (number | null)[];
   /** Hoja de los personajes zombi (los que no tienen ficha propia). */
   sheet: CharacterSheet;
-  /** Alto/ancho de una casilla vista en pantalla (sen de la altura de la cámara): forma del brillo bajo los pies. */
-  tilt: number;
+  /** Tamaño de los personajes zombi (el elegido en el editor; 1 = el de serie). */
+  characterScale: number;
   /** Zoom de la cámara al seguir una ficha (si falta, el que deja ver unas VISIBLE_CELLS casillas). */
   zoom?: number;
 };
@@ -59,7 +60,7 @@ const DEFAULT_GEOMETRY: Geometry = {
   numbers: true,
   zoom: 1.8, // el usuario lo quiere siempre así de cerca
   sheet: STOCK_SHEET,
-  tilt: 0.5,
+  characterScale: 1,
 };
 
 function publishedGeometry(b: PublishedBoard): Geometry {
@@ -74,7 +75,7 @@ function publishedGeometry(b: PublishedBoard): Geometry {
     tokenScale: (b.tokens ?? []).map((t, i) => (t ? (b.tokenScale?.[i] ?? 1) : null)),
     zoom: b.zoom, // el acercamiento de la vista elegida en el editor
     sheet: b.characters ?? STOCK_SHEET, // dibujados con el mismo ángulo que el tablero
-    tilt: b.tilt ?? 0.5,
+    characterScale: b.characterScale ?? 1,
   };
 }
 
@@ -164,7 +165,7 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
       const hOff = ((i % cols) - (cols - 1) / 2) * (n > 4 ? 0.2 : n > 2 ? 0.24 : 0.32);
       const dOff = n > 4 ? (Math.floor(i / cols) - (rows - 1) / 2) * 0.17 : 0; // hacia delante o hacia atrás en la losa
       const custom = geo.tokenScale?.[PLAYER_COLORS.indexOf(avatarOf(p).skin.toLowerCase())];
-      const size = (n > 8 ? 46 : n > 3 ? 62 : 86) * k * (custom ?? 1) * s;
+      const size = (n > 8 ? 46 : n > 3 ? 62 : 86) * k * (custom ?? 1) * s; // 86 = TOKEN_TO_TILE de una casilla
       // sin ficha propia del editor: el personaje zombi (hombre o mujer) mirando hacia donde va
       const f = facing(p);
       const sprite = custom == null ? spriteOf(characterOf(players, p.id), f.dx, f.dy, f.pose) : null;
@@ -185,7 +186,7 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
       {s > 0 && (
         <div
           className="absolute top-0 left-0"
-          style={{ width: cw, height: ch, transform: `translate3d(${tx}px, ${ty}px, 0)`, transition: "transform .5s ease-in-out", willChange: "transform" }}
+          style={{ width: cw, height: ch, transform: `translate3d(${tx}px, ${ty}px, 0)`, transition: "transform 1.1s cubic-bezier(.45,0,.3,1)", willChange: "transform" }}
         >
           {/* terreno, casillas y decoración: render 3D hecho de antemano */}
           <img src={geo.image} alt="" draggable={false} decoding="async" className="absolute inset-0 h-full w-full max-w-none select-none" />
@@ -196,27 +197,8 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
               ))}
             </svg>
           )}
-          {/* la casilla de cada zombi alumbra un poco (debajo de las fichas) */}
-          {[...new Set(tokens.map((t) => at(t.p)))].map((n) => {
-            const c = px(geo.at(n).x, geo.at(n).y);
-            const turn = !winner && tokens.some((t) => at(t.p) === n && t.p.id === current);
-            const w = geo.cell * s * 0.95;
-            return (
-              <div
-                key={`glow${n}-${turn}`}
-                className={`pointer-events-none absolute top-0 left-0 rounded-[50%] ${turn ? "zb-glow-turn" : "zb-glow"}`}
-                style={{
-                  width: w,
-                  height: w * geo.tilt,
-                  transform: `translate3d(${c.x - w / 2}px, ${c.y - (w * geo.tilt) / 2}px, 0)`,
-                  background: `radial-gradient(closest-side, rgba(255,236,170,${turn ? 0.6 : 0.42}), rgba(255,210,110,${turn ? 0.28 : 0.18}) 60%, rgba(255,200,90,0) 100%)`,
-                  mixBlendMode: "screen",
-                }}
-              />
-            );
-          })}
           {tokens.map((t, z) => (
-            <Token key={t.p.id} t={t} z={z + 1} k={k * s} sheet={geo.sheet} current={current} winner={winner} flying={flying} />
+            <Token key={t.p.id} t={t} z={z + 1} k={k * s} sheet={geo.sheet} scale={geo.characterScale} current={current} winner={winner} flying={flying} />
           ))}
         </div>
       )}
@@ -227,13 +209,13 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
 type TokenData = { p: Player; n: number; at: { x: number; y: number }; size: number; sprite: ReturnType<typeof spriteOf> | null; moving: boolean };
 
 /** Una ficha: capa HTML propia que se mueve con transform (la tarjeta gráfica, sin repintar el tablero). */
-function Token({ t, z, k, sheet, current, winner, flying }: { t: TokenData; z: number; k: number; sheet: CharacterSheet; current: string; winner?: string | null; flying?: string | null }) {
+function Token({ t, z, k, sheet, scale, current, winner, flying }: { t: TokenData; z: number; k: number; sheet: CharacterSheet; scale: number; current: string; winner?: string | null; flying?: string | null }) {
   const { p, n, size, sprite } = t;
   const isCurrent = p.id === current && !winner;
   const isFlying = p.id === flying;
   // personaje: más o menos del tamaño de un zombi de la decoración (~0,4 de la ficha); el dibujo es `span` veces
   // más alto, con los pies en `feet`
-  const charH = size * 0.42;
+  const charH = size * CHARACTER_HEIGHT * scale;
   const h = charH * sheet.span;
   const w = (h * sheet.cw) / sheet.ch;
   const top = sprite ? charH * 1.12 : size * 1.08; // dónde va el nombre, por encima de la cabeza
@@ -243,7 +225,8 @@ function Token({ t, z, k, sheet, current, winner, flying }: { t: TokenData; z: n
       style={{
         zIndex: z,
         transform: `translate3d(${t.at.x}px, ${t.at.y}px, 0)`,
-        transition: isFlying ? "transform .45s cubic-bezier(.4,-.4,.5,1.4)" : "transform .12s ease-out",
+        // un paso por casilla, sin pausas entre uno y otro; el vuelo, con un poco de rebote
+        transition: isFlying ? `transform ${FLY_MS}ms cubic-bezier(.4,-.4,.5,1.4)` : `transform ${STEP_MS}ms cubic-bezier(.45,0,.55,1)`,
         willChange: "transform",
       }}
     >
@@ -252,21 +235,23 @@ function Token({ t, z, k, sheet, current, winner, flying }: { t: TokenData; z: n
           {/* sombra suave bajo los pies */}
           <div className="absolute rounded-[50%]" style={{ left: -charH * 0.32, top: -charH * 0.1, width: charH * 0.64, height: charH * 0.2, background: "radial-gradient(closest-side, #000a, #0000)" }} />
           <div className={`absolute ${isFlying ? "token-fly" : ""}`} style={{ left: -w / 2, top: -h * sheet.feet, width: w, height: h }}>
+            {/* respira (capa de fuera) y mira a la izquierda en espejo (capa de dentro): dos transform distintos */}
             <div
-              role="img"
-              aria-label={p.name}
-              className="zb-breathe"
-              style={{
-                ["--zb-delay" as string]: `${-((p.id.charCodeAt(p.id.length - 1) % 7) * 0.45)}s`,
-                width: "100%",
-                height: "100%",
-                backgroundImage: `url(${sheet.image})`,
-                backgroundSize: `${w * SHEET_COLS}px ${h * CHARACTERS.length}px`,
-                backgroundPosition: `${-sprite.col * w}px ${-sprite.row * h}px`,
-                transform: sprite.mirror ? "scaleX(-1)" : undefined,
-                transformOrigin: `50% ${sheet.feet * 100}%`,
-              }}
-            />
+              className="zb-breathe h-full w-full"
+              style={{ ["--zb-delay" as string]: `${-((p.id.charCodeAt(p.id.length - 1) % 7) * 0.4)}s`, transformOrigin: `50% ${sheet.feet * 100}%` }}
+            >
+              <div
+                role="img"
+                aria-label={p.name}
+                className="h-full w-full"
+                style={{
+                  backgroundImage: `url(${sheet.image})`,
+                  backgroundSize: `${w * SHEET_COLS}px ${h * CHARACTERS.length}px`,
+                  backgroundPosition: `${-sprite.col * w}px ${-sprite.row * h}px`,
+                  transform: sprite.mirror ? "scaleX(-1)" : undefined,
+                }}
+              />
+            </div>
           </div>
         </>
       ) : (

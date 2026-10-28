@@ -95,7 +95,11 @@ export type BoardLayout = {
   tokens: (TokenSpec | null)[];
   /** Cómo se ve el tablero en la TV: ángulo de la cámara y cuánto acerca. */
   tvView: TvView;
+  /** Tamaño de los personajes zombi en el tablero (1 = el de un zombi de la decoración). */
+  characterSize: number;
 };
+
+export const CHARACTER_SIZE = { min: 0.5, max: 2, default: 1 };
 
 /**
  * Cámara de la TV. `az`: giro alrededor del tablero en grados (45 = desde +x +z, como la isométrica); `el`: altura en
@@ -208,6 +212,7 @@ export function newLayout(w = 32, h = 24): BoardLayout {
     numbers: DEFAULT_NUMBERS,
     tokens: Array<TokenSpec | null>(TOKEN_COUNT).fill(null),
     tvView: DEFAULT_TV_VIEW,
+    characterSize: CHARACTER_SIZE.default,
   };
 }
 
@@ -299,7 +304,7 @@ export function resize(l: BoardLayout, w: number, h: number): BoardLayout {
       out.ground[y * w + x] = l.ground[cellIndex(l, x, y)];
       out.height[y * w + x] = l.height[cellIndex(l, x, y)];
     }
-  return { ...out, light: l.light, shadow: l.shadow, mist: l.mist, tileStyles: l.tileStyles, numbers: l.numbers, tokens: l.tokens, tvView: l.tvView, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
+  return { ...out, light: l.light, shadow: l.shadow, mist: l.mist, tileStyles: l.tileStyles, numbers: l.numbers, tokens: l.tokens, tvView: l.tvView, characterSize: l.characterSize, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
 }
 
 /** Altura (en unidades del mundo) de la superficie de una celda. Los líquidos quedan un poco hundidos. */
@@ -392,6 +397,7 @@ export function parseLayout(raw: unknown): BoardLayout | null {
     font: typeof n.font === "string" && n.font in NUMBER_FONTS ? (n.font as NumberFont) : DEFAULT_NUMBERS.font,
     pos: typeof n.pos === "string" && n.pos in NUMBER_POSITIONS ? (n.pos as NumberPosition) : DEFAULT_NUMBERS.pos,
   };
+  const characterSize = Math.round(Math.max(CHARACTER_SIZE.min, Math.min(CHARACTER_SIZE.max, num(r.characterSize, CHARACTER_SIZE.default))) * 100) / 100;
   const tokens: (TokenSpec | null)[] = Array.from({ length: TOKEN_COUNT }, (_, i) => {
     const t = (Array.isArray(r.tokens) ? r.tokens[i] : null) as Record<string, unknown> | null;
     if (!t || typeof t !== "object" || typeof t.model !== "string" || !/^[\w-]+\/[\w.-]+$/.test(t.model)) return null;
@@ -402,7 +408,7 @@ export function parseLayout(raw: unknown): BoardLayout | null {
       base: typeof t.base === "boolean" ? t.base : DEFAULT_TOKEN.base,
     };
   });
-  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers, tokens, tvView: parseTvView(r.tvView) };
+  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers, tokens, tvView: parseTvView(r.tvView), characterSize };
 }
 
 /** Un emoji/texto corto o una imagen pequeña subida desde el editor. */

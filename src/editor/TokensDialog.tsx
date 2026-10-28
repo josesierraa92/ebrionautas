@@ -1,12 +1,79 @@
 "use client";
 
-// Ventana para elegir el modelo de cada una de las 8 fichas de los jugadores (una por color). La que no se cambia
-// sigue siendo el zombi de serie. Al publicar, cada ficha propia se dibuja con la cámara de la TV (modelRender.ts).
+// Ventana de las fichas: arriba, los personajes zombi que usa el juego (hombres para los hombres, mujeres para las
+// mujeres) dibujados con el ángulo de la TV y su tamaño en el tablero; abajo, el modelo propio de cada color de
+// jugador (la que no se cambia sigue siendo el personaje zombi). Al publicar, todo se dibuja con la cámara de la TV.
 import { useEffect, useMemo, useState } from "react";
-import { PLAYER_COLORS, alienArt } from "@/game/tileStyle";
+import { CHARACTER_HEIGHT, CHARACTERS, FEMALE, MALE, SHEET_COLS, TOKEN_TO_TILE } from "@/game/characters";
+import { PLAYER_COLORS } from "@/game/tileStyle";
 import type { Catalog } from "./catalogTypes";
+import { renderCharacterSheet } from "./characterSheet";
 import { loadModelScene, renderToken } from "./modelRender";
-import { DEFAULT_TOKEN, TOKEN_SIZE, type BoardLayout, type TokenSpec } from "./layout";
+import { CHARACTER_SIZE, DEFAULT_TOKEN, TOKEN_SIZE, type BoardLayout, type TokenSpec, type TvView } from "./layout";
+
+type Sheet = { url: string; cw: number; ch: number; feet: number; span: number; portraits: string[] };
+
+/** Hoja de personajes con el ángulo de la TV (se dibuja al abrir la ventana y cuando cambia la vista). */
+function useSheet(view: TvView): Sheet | null {
+  const [sheet, setSheet] = useState<Sheet | null>(null);
+  const key = `${view.az}|${view.el}`;
+  useEffect(() => {
+    let alive = true;
+    setSheet(null);
+    renderCharacterSheet(view)
+      .then(({ canvas, feet, span }) => {
+        if (!alive) return;
+        const cw = canvas.width / SHEET_COLS;
+        const ch = canvas.height / CHARACTERS.length;
+        // retrato de cada uno: de frente, quieto, recortado a su altura
+        const top = Math.max(0, (feet - 1.05 / span) * ch);
+        const bottom = Math.min(ch, (feet + 0.05) * ch);
+        const portraits = CHARACTERS.map((_, row) => {
+          const c = document.createElement("canvas");
+          c.width = cw;
+          c.height = bottom - top;
+          c.getContext("2d")!.drawImage(canvas, 0, row * ch + top, cw, bottom - top, 0, 0, cw, bottom - top);
+          return c.toDataURL("image/png");
+        });
+        setSheet({ url: canvas.toDataURL("image/png"), cw, ch, feet, span, portraits });
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  return sheet;
+}
+
+/** Una casilla vista con el ángulo de la TV y un personaje encima, del tamaño que tendrá en el tablero. */
+function SizePreview({ sheet, view, size, row }: { sheet: Sheet; view: TvView; size: number; row: number }) {
+  const W = 210; // ancho de la casilla en la vista previa
+  const H = W * Math.sin((view.el * Math.PI) / 180);
+  const charH = W * TOKEN_TO_TILE * CHARACTER_HEIGHT * size;
+  const h = charH * sheet.span;
+  const w = (h * sheet.cw) / sheet.ch;
+  const cy = 150;
+  return (
+    <div className="relative h-48 w-64 shrink-0 overflow-hidden rounded-xl bg-[#11141b]">
+      <div
+        className="absolute"
+        style={{ left: 128 - W / 2, top: cy - H / 2, width: W, height: H, clipPath: "polygon(50% 0, 100% 50%, 50% 100%, 0 50%)", background: "linear-gradient(#3a3f4f, #2a2e3a)" }}
+      />
+      <div
+        className="absolute"
+        style={{
+          left: 128 - w / 2,
+          top: cy - h * sheet.feet,
+          width: w,
+          height: h,
+          backgroundImage: `url(${sheet.url})`,
+          backgroundSize: `${w * SHEET_COLS}px ${h * CHARACTERS.length}px`,
+          backgroundPosition: `0 ${-row * h}px`,
+        }}
+      />
+    </div>
+  );
+}
 
 export default function TokensDialog({
   layout,
@@ -23,6 +90,8 @@ export default function TokensDialog({
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [kit, setKit] = useState("todos");
   const [search, setSearch] = useState("");
+  const sheet = useSheet(layout.tvView);
+  const [pick, setPick] = useState(0); // personaje de la vista previa de tamaño
   const models = useMemo(() => new Map(catalog.models.map((m) => [m.id, m])), [catalog]);
   const spec = layout.tokens[slot];
 
@@ -60,7 +129,7 @@ export default function TokensDialog({
 
   const imageOf = (i: number) => {
     const t = layout.tokens[i];
-    return (t && previews[keyOf(i, t)]) || (t ? "" : (alienArt(PLAYER_COLORS[i]) ?? ""));
+    return (t && previews[keyOf(i, t)]) || (t ? "" : (sheet?.portraits[i % CHARACTERS.length] ?? ""));
   };
   const btn = "rounded-lg px-2.5 py-1.5 text-sm font-semibold transition-colors";
   const on = "bg-amber-400 text-black";
@@ -75,9 +144,52 @@ export default function TokensDialog({
             Cerrar
           </button>
         </div>
+        {/* personajes zombi del juego y su tamaño en el tablero */}
+        <section className="flex gap-4 rounded-xl bg-white/5 p-3">
+          {sheet ? (
+            <SizePreview sheet={sheet} view={layout.tvView} size={layout.characterSize} row={pick} />
+          ) : (
+            <div className="grid h-48 w-64 shrink-0 place-items-center rounded-xl bg-[#11141b] text-xs opacity-60">dibujando a los zombis…</div>
+          )}
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <p className="text-sm">
+              <b>Personajes zombi</b> · los hombres juegan con uno de hombre y las mujeres con uno de mujer, en orden de entrada.
+              Se ven con el ángulo de tu vista de la TV y miran hacia donde caminan.
+            </p>
+            <div className="grid grid-cols-12 gap-1">
+              {CHARACTERS.map((id, i) => (
+                <button
+                  key={id}
+                  title={`${i < MALE.length ? "Hombre" : "Mujer"} ${(i % 6) + 1}`}
+                  onClick={() => setPick(i)}
+                  className={`grid h-16 place-items-end rounded-lg p-0.5 ${pick === i ? "bg-amber-400/20 ring-2 ring-amber-400" : "bg-white/5 hover:bg-white/10"}`}
+                >
+                  {sheet && <img src={sheet.portraits[i]} alt="" className="max-h-full object-contain" />}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] opacity-60">
+              {MALE.length} hombres · {FEMALE.length} mujeres (con más de {MALE.length} de un mismo género se repiten).
+            </p>
+            <label className="grid gap-0.5 text-sm">
+              <span className="flex justify-between">
+                Tamaño en el tablero <b>{layout.characterSize.toFixed(2)}×</b>
+              </span>
+              <input
+                type="range"
+                min={CHARACTER_SIZE.min * 100}
+                max={CHARACTER_SIZE.max * 100}
+                step={5}
+                value={layout.characterSize * 100}
+                onChange={(e) => onChange({ ...layout, characterSize: Number(e.target.value) / 100 })}
+              />
+            </label>
+          </div>
+        </section>
+
         <p className="text-sm opacity-70">
-          Cada color de jugador tiene su ficha. Elige un modelo del catálogo (o uno tuyo) para cambiarla; las que no cambies
-          siguen siendo el zombi de serie. Se publican junto con el tablero.
+          Fichas propias (opcional): elige un modelo del catálogo (o uno tuyo) para el color de un jugador; las que no
+          cambies siguen siendo el personaje zombi. Se publican junto con el tablero.
         </p>
 
         <div className="flex min-h-0 flex-1 gap-4">
@@ -109,7 +221,7 @@ export default function TokensDialog({
               </div>
               <div className="grid flex-1 content-start gap-2 text-sm">
                 <p className="font-semibold">
-                  Ficha {slot + 1} · {spec ? (models.get(spec.model)?.name ?? spec.model) : "zombi de serie"}
+                  Ficha {slot + 1} · {spec ? (models.get(spec.model)?.name ?? spec.model) : "personaje zombi"}
                 </p>
                 {spec ? (
                   <>
@@ -136,7 +248,7 @@ export default function TokensDialog({
                       Peana del color del jugador (así se distingue de las demás)
                     </label>
                     <button className={`${btn} ${off} justify-self-start`} onClick={() => setSpec(slot, null)}>
-                      Volver al zombi de serie
+                      Volver al personaje zombi
                     </button>
                   </>
                 ) : (

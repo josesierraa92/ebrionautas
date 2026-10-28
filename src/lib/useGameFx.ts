@@ -7,10 +7,12 @@ import { duelOutcome, jailOutcome, mazeOutcome } from "@/game/rules";
 import { tileArt } from "@/game/tileStyle";
 import { sfx } from "./sfx";
 
-const DICE_MS = 450; // el dado rueda
-const STEP_MS = 140; // la ficha salta de casilla en casilla
-const FLY_MS = 450; // vuelo de la Oca, agujero negro, resbalón…
-const BANNER_MS = 1200;
+// Tiempos de las animaciones: tranquilos y fluidos (el usuario los vio "súper rápidos" con 450/140/450/1200 ms).
+// IsoBoard usa los mismos para que la ficha llegue a cada casilla justo cuando empieza el siguiente paso.
+const DICE_MS = 700; // el dado rueda
+export const STEP_MS = 340; // la ficha camina de casilla en casilla
+export const FLY_MS = 750; // vuelo de la Oca, agujero negro, resbalón…
+const BANNER_MS = 1600;
 
 export type Banner = { key: number; title: string; emoji: string; color: string; art?: string };
 export type DiceFx = { key: number; value: number; rolling: boolean };

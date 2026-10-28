@@ -8,6 +8,13 @@ export const FEMALE = ["a", "b", "c", "d", "e", "f"].map((l) => `character-femal
 /** Una fila de la hoja por personaje, en este orden. */
 export const CHARACTERS = [...MALE, ...FEMALE];
 
+/**
+ * Alto del personaje en la TV respecto al tamaño de la ficha (que es 0,86 del ancho de una casilla con hasta 3
+ * fichas en ella): más o menos un zombi de la decoración. Se multiplica por el tamaño elegido en el editor.
+ */
+export const CHARACTER_HEIGHT = 0.42;
+export const TOKEN_TO_TILE = 0.86;
+
 /** Columnas de la hoja: de frente (quieto, paso A, paso B) y de espaldas (quieto, paso A, paso B). */
 export const SHEET_COLS = 6;
 export type Pose = "idle" | "walkA" | "walkB";
@@ -34,7 +41,7 @@ export function parseSheet(raw: unknown): CharacterSheet | undefined {
 
 /**
  * Personaje de cada jugador: los hombres van tomando los personajes hombre en orden y las mujeres los de mujer
- * (sin género, como hombre). Con más de 6 de un género se repiten; los distingue el aro de su color.
+ * (sin género, como hombre). Con más de 6 de un género se repiten (se distinguen por el nombre).
  */
 export function characterOf(players: { id: string; gender?: Gender | null }[], id: string): number {
   const me = players.find((p) => p.id === id);
