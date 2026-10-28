@@ -152,7 +152,8 @@ export class LiveBoard {
       }
       t.settled = pos === p.pos;
       t.label.textContent = p.name;
-      t.label.style.color = p.id === s.current && !s.winner ? "#ffe066" : "#ffffff";
+      t.label.dataset.name = p.name;
+      t.label.style.color = p.color; // el mismo color que el jugador tiene en el cuadro de turno
     }
     // la cámara sigue a la ficha que toca (o al jugador de turno)
     const f = this.tokens.get(s.focus ?? s.current);

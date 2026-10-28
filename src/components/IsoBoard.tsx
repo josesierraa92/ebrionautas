@@ -334,7 +334,8 @@ function Token({ t, z, k, sheet, scale, current, winner, flying }: { t: TokenDat
       {/* nombre encima de cada ficha */}
       {!(n > 8 && !isCurrent) && (
         <div
-          className="absolute whitespace-nowrap uppercase"
+          className="live-name"
+          data-name={p.name}
           style={{
             left: 0,
             top: -top,
@@ -343,9 +344,7 @@ function Token({ t, z, k, sheet, scale, current, winner, flying }: { t: TokenDat
             fontSize: (n > 8 ? 11 : n > 3 ? 13 : 16) * k,
             lineHeight: 1,
             letterSpacing: "-0.01em",
-            color: isCurrent ? "#ffe066" : "#ffffff",
-            WebkitTextStroke: `${5 * k}px #1b1f4b`,
-            paintOrder: "stroke fill",
+            color: p.color, // el color del jugador, con contorno azul oscuro y blanco (clase live-name)
           }}
         >
           {p.name}
