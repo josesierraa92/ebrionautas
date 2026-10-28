@@ -6,6 +6,7 @@ const ACTION_TYPES = new Set<Action["type"]>([
   "ROLL",
   "DISTRIBUTE",
   "DUEL",
+  "DUEL_ROLL",
   "PATINAZO",
   "SET_RULE",
   "SELECT_DRINKERS",

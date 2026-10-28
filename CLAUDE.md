@@ -228,3 +228,10 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   cambian (siguen con focos y 4096). Medido en Chromium por software con el tablero real: 0,4 fps → 5 fps (≈10× más rápido). La
   comprobación de velocidad de `LiveBoard` empieza a los 6 s.
   `?debug` en la dirección de la TV enseña fps, resolución y dibujos.
+- **Títulos grandes = título de la tarjeta**: el banner de cada casilla (`showEvent` en `useGameFx`) usa `tileRule(...).title`, así que si el admin
+  cambia el título en «📝 Tarjetas» cambia también el del centro de la pantalla (los de niebla/purgatorio usan el título de su tarjeta de
+  resultado). `EVENTS` solo aporta icono, color y sonido (y el título de respaldo).
+- **Duelo manual** (pedido del usuario): al elegir rivales (`DUEL`) pasa a la decisión `DUEL_ROLL`; el celular tira cada dado a mano, primero
+  quien reta y luego su rival (`DUEL_ROLL` en el motor; `DuelRoll` en `DecisionPanel`), con empate se repite y con varios rivales se juega una
+  ronda por rival. Cada tirada sube `rollSeq` y `lastRoller` (la TV anima el dado con el nombre de quien tira: `DiceFx.by`). La tarjeta del
+  duelo se queda en la TV y el celular explicando qué hacer; al final sale la de resultados (`lastDuel`).

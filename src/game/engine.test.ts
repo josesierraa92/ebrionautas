@@ -83,12 +83,34 @@ describe("casillas", () => {
     expect(s.turn).toBe(1);
   });
 
-  it("Duelo: el que saca menos bebe y los empates se repiten", () => {
+  it("Duelo: cada dado se tira a mano, el que saca menos bebe y los empates se repiten", () => {
     let s = rollFrom(game(), 5, 2); // 7, x1
-    s = act(s, { type: "DUEL", opponents: ["p2"] }, 3, 3, 2, 5);
+    s = act(s, { type: "DUEL", opponents: ["p2"] });
+    expect(s.decision).toMatchObject({ kind: "DUEL_ROLL", i: 0, a: null, b: null });
+    expect(s.turn).toBe(0); // no se resuelve solo
+    s = act(s, { type: "DUEL_ROLL" }, 3); // tira quien reta
+    expect(s.decision).toMatchObject({ a: 3, b: null });
+    expect(s.lastRoller).toBe("p1");
+    s = act(s, { type: "DUEL_ROLL" }, 3); // tira el rival: empate
+    expect(s.decision).toMatchObject({ a: 3, b: 3, tie: true });
+    expect(s.lastRoller).toBe("p2");
+    s = act(s, { type: "DUEL_ROLL" }, 2); // otra ronda
+    s = act(s, { type: "DUEL_ROLL" }, 5);
     expect(s.players[0].drunk).toBe(1);
-    expect(s.players[1].drunk).toBe(0);    // El resultado queda guardado para enseñarlo en la TV y el celular.
+    expect(s.players[1].drunk).toBe(0);
+    expect(s.turn).toBe(1);
+    // El resultado queda guardado para enseñarlo en la TV y el celular.
     expect(s.lastDuel).toEqual({ seq: 1, by: "p1", rounds: [{ rival: "p2", a: 2, b: 5, loser: "p1" }] });
+  });
+
+  it("Duelo con dos rivales: se juega una ronda por rival", () => {
+    let s = rollFrom(game(), 17, 2); // 19: duelo de hasta 2 rivales
+    s = act(s, { type: "DUEL", opponents: ["p2", "p3"] });
+    for (const r of [6, 1, 2, 4]) s = act(s, { type: "DUEL_ROLL" }, r);
+    expect(s.lastDuel?.rounds).toEqual([
+      { rival: "p2", a: 6, b: 1, loser: "p2" },
+      { rival: "p3", a: 2, b: 4, loser: "p1" },
+    ]);
   });
 
   it("Duelo: no puede retar a más rivales de los permitidos", () => {

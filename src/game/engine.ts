@@ -31,11 +31,16 @@ export type Player = {
 export type Decision =
   | { kind: "DISTRIBUTE"; amount: number }
   | { kind: "DUEL"; amount: number }
+  // Duelo en marcha: los rivales ya están elegidos y cada uno tira su dado en el celular, uno a uno (primero quien
+  // reta, luego el rival). `a`/`b` son los dados de la ronda actual (se quedan a la vista hasta la siguiente tirada).
+  | { kind: "DUEL_ROLL"; rivals: string[]; i: number; a: number | null; b: number | null; tie: boolean; rounds: DuelRound[] }
   | { kind: "PATINAZO"; drinks: number; backTo: number }
   | { kind: "RULE" }
   // Quien controla la mesa marca quiénes beben.
   | { kind: "SELECT_DRINKERS"; drinks: number; title: string; text: string }
   | { kind: "SLAVE" }
+
+export type DuelRound = { rival: string; a: number; b: number; loser: string };
 
 export type LogEntry = { id: number; text: string };
 
@@ -52,7 +57,7 @@ export type GameState = {
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
   /** Último duelo resuelto (los dados se tiran en el servidor): la TV y el celular enseñan el resultado. */
-  lastDuel?: { seq: number; by: string; rounds: { rival: string; a: number; b: number; loser: string }[] } | null;
+  lastDuel?: { seq: number; by: string; rounds: DuelRound[] } | null;
   winner: string | null;
   log: LogEntry[];
   logSeq: number;
@@ -62,6 +67,7 @@ export type Action =
   | { type: "ROLL" }
   | { type: "DISTRIBUTE"; drinks: Record<string, number> }
   | { type: "DUEL"; opponents: string[] }
+  | { type: "DUEL_ROLL" }
   | { type: "PATINAZO"; choice: "drink" | "back" }
   | { type: "SET_RULE" }
   | { type: "SELECT_DRINKERS"; ids: string[] }
@@ -352,22 +358,42 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
   if (d.kind === "DUEL" && action.type === "DUEL") {
     const opps = [...new Set(action.opponents)];
     if (opps.length < 1 || opps.length > d.amount || opps.some((id) => id === p.id || !ids.has(id))) return false;
-    const rounds: NonNullable<GameState["lastDuel"]>["rounds"] = [];
-    for (const id of opps) {
-      const rival = s.players.find((q) => q.id === id)!;
-      let a = d6(rng);
-      let b = d6(rng);
-      while (a === b) {
-        log(s, `💀 ${p.name} ${a} vs ${rival.name} ${b}: empate, otra vez.`);
-        a = d6(rng);
-        b = d6(rng);
-      }
-      const [winner, loser] = a > b ? [p, rival] : [rival, p];
-      log(s, `💀 ${p.name} ${a} vs ${rival.name} ${b}: pierde ${loser.name}.`);
-      drink(s, loser.id, 1, winner.id);
-      rounds.push({ rival: rival.id, a, b, loser: loser.id });
+    log(s, `💀 ${p.name} reta a ${opps.map((id) => s.players.find((q) => q.id === id)!.name).join(" y a ")}: ¡cada uno tira su dado!`);
+    decide(s, { kind: "DUEL_ROLL", rivals: opps, i: 0, a: null, b: null, tie: false, rounds: [] });
+    return true;
+  }
+
+  // Cada dado del duelo lo tira el celular a mano (primero quien reta, luego su rival); con empate se repite la ronda.
+  if (d.kind === "DUEL_ROLL" && action.type === "DUEL_ROLL") {
+    const rival = s.players.find((q) => q.id === d.rivals[d.i])!;
+    const fresh = d.a === null || d.b !== null; // empieza una ronda: tira quien reta
+    const r = d6(rng);
+    s.lastRoll = r;
+    s.rollSeq = (s.rollSeq ?? 0) + 1;
+    if (fresh) {
+      s.lastRoller = p.id;
+      d.a = r;
+      d.b = null;
+      d.tie = false;
+      return true;
     }
-    s.lastDuel = { seq: (s.lastDuel?.seq ?? 0) + 1, by: p.id, rounds };
+    s.lastRoller = rival.id;
+    d.b = r;
+    const a = d.a!;
+    if (a === r) {
+      log(s, `💀 ${p.name} ${a} vs ${rival.name} ${r}: empate, otra vez.`);
+      d.tie = true;
+      return true;
+    }
+    const [winner, loser] = a > r ? [p, rival] : [rival, p];
+    log(s, `💀 ${p.name} ${a} vs ${rival.name} ${r}: pierde ${loser.name}.`);
+    drink(s, loser.id, 1, winner.id);
+    d.rounds.push({ rival: rival.id, a, b: r, loser: loser.id });
+    if (d.i + 1 < d.rivals.length) {
+      d.i += 1; // siguiente rival: los dados de esta ronda siguen a la vista hasta que se tire el nuevo
+      return true;
+    }
+    s.lastDuel = { seq: (s.lastDuel?.seq ?? 0) + 1, by: p.id, rounds: d.rounds };
     endTurn(s);
     return true;
   }

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Die } from "@/components/Fx";
+import { useShake } from "@/lib/useShake";
 import type { Action, Decision, Player } from "@/game/engine";
 
 type Props = {
@@ -23,7 +25,7 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
       return (
         <PickPlayers
           title={`Reta hasta a ${decision.amount}`}
-          text="Cada duelo se tira automáticamente: quien saque menos, bebe 1."
+          text="Cada uno tira su dado en el celular, uno a uno: quien saque menos, bebe 1."
           players={others}
           max={decision.amount}
           min={1}
@@ -31,6 +33,9 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
           onDone={(ids) => onAction({ type: "DUEL", opponents: ids })}
         />
       );
+
+    case "DUEL_ROLL":
+      return <DuelRoll decision={decision} me={me} players={players} onRoll={() => onAction({ type: "DUEL_ROLL" })} />;
 
     case "SELECT_DRINKERS":
       return (
@@ -108,6 +113,58 @@ function Distribute({ amount, players, onDone }: { amount: number; players: Play
         REPARTIR
       </button>
     </Card>
+  );
+}
+
+/** Duelo en marcha: el celular tira el dado de cada duelista, uno a uno (primero quien reta, luego su rival). */
+function DuelRoll({ decision, me, players, onRoll }: { decision: Extract<Decision, { kind: "DUEL_ROLL" }>; me: Player; players: Player[]; onRoll: () => void }) {
+  const name = (id: string) => players.find((q) => q.id === id)?.name ?? "?";
+  const rival = name(decision.rivals[decision.i]);
+  const challengerRolls = decision.a === null || decision.b !== null;
+  const roller = challengerRolls ? me.name : rival;
+  const [face, setFace] = useState(6);
+  const [rolling, setRolling] = useState(false);
+  useEffect(() => setRolling(false), [decision.a, decision.b, decision.i, decision.rounds.length]);
+  const shake = useShake(() => go(), !rolling);
+  const go = () => {
+    if (rolling) return;
+    setRolling(true);
+    navigator.vibrate?.(80);
+    const id = setInterval(() => setFace(1 + Math.floor(Math.random() * 6)), 80);
+    setTimeout(() => clearInterval(id), 600);
+    onRoll();
+  };
+  return (
+    <div className="flex flex-col items-center gap-3 text-center">
+      <h3 className="font-display text-2xl text-btn-yellow">
+        {me.name} vs {rival}
+      </h3>
+      {decision.tie && <p className="btn-game bg-btn-yellow px-4 py-1 text-lg text-white">¡EMPATE! TIRAN OTRA VEZ</p>}
+      {!challengerRolls && <p className="font-display text-lg text-white/85">{me.name} sacó {decision.a}</p>}
+      <p className="font-display text-xl text-white">Tira el dado de {roller}</p>
+      <button
+        key={`${decision.rounds.length}-${decision.a}-${decision.b}`}
+        onClick={() => {
+          if (shake.state === "needs-permission") void shake.request();
+          go();
+        }}
+        disabled={rolling}
+        aria-label={`Tirar el dado de ${roller}`}
+        className="grid place-items-center rounded-[2rem] p-1 outline-none focus-visible:ring-4 focus-visible:ring-btn-yellow"
+      >
+        <Die value={face} className={`w-40 ${rolling ? "dice-tumble" : "dice-idle"}`} />
+      </button>
+      <p className="text-sm text-white/70">{shake.state === "on" ? "📳 Agita el celular o toca el dado" : "👆 Toca el dado para tirar"}</p>
+      {decision.rounds.length > 0 && (
+        <ul className="w-full text-left text-sm text-white/80">
+          {decision.rounds.map((r, k) => (
+            <li key={k}>
+              {me.name} {r.a} – {name(r.rival)} {r.b}: bebe {name(r.loser)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

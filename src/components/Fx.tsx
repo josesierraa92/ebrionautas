@@ -38,7 +38,10 @@ export function DiceOverlay({ dice }: { dice: DiceFx | null }) {
   if (!dice) return null;
   return (
     <div className="pointer-events-none absolute inset-0 z-40 grid place-items-center bg-space/30">
-      <Die key={`${dice.key}-${dice.rolling}`} value={dice.rolling ? face : dice.value} className={`w-[26%] ${dice.rolling ? "dice-tumble" : "dice-land"}`} />
+      <div className="flex w-[26%] flex-col items-center gap-[1.5cqw]">
+        <Die key={`${dice.key}-${dice.rolling}`} value={dice.rolling ? face : dice.value} className={`w-full ${dice.rolling ? "dice-tumble" : "dice-land"}`} />
+        {dice.by && <span className="banner-title text-[4cqw] leading-none whitespace-nowrap uppercase" style={{ ["--accent" as string]: "#ffc61a" }}>{dice.by}</span>}
+      </div>
     </div>
   );
 }

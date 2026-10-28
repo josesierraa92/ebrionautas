@@ -34,6 +34,7 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
   const wasJailed = useRef(false); // tiró estando en el Purgatorio
   const rollerPos = useRef(me.pos);
   const seenRoll = useRef(game.rollSeq);
+  const seenDuel = useRef(game.lastDuel?.seq);
   // La misma tarjeta que la TV (casilla donde cayó o resultado de la tirada); se queda hasta la siguiente tirada.
   const [card, setCard] = useState<Landed | null>(() => {
     const last = game.players.find((p) => p.id === game.lastRoller);
@@ -65,6 +66,14 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
     seenRoll.current = game.rollSeq;
     if (!game.lastRoll) return;
     const r = game.lastRoll;
+    // tirada de un duelo (la hizo el panel de decisión, no el dado de turno): solo se enseña el dado de quien tiró
+    const duelRoll = game.decision?.kind === "DUEL_ROLL" || (!!game.lastDuel && game.lastDuel.seq !== seenDuel.current);
+    if (duelRoll) {
+      setResult({ value: r, name: game.players.find((p) => p.id === game.lastRoller)?.name ?? roller.current, key: game.rollSeq, lost: false, jailed: false });
+      navigator.vibrate?.([40, 60, 40]);
+      const t = setTimeout(() => setResult(null), RESULT_MS);
+      return () => clearTimeout(t);
+    }
     setResult({ value: r, name: roller.current, key: game.rollSeq, lost: wasLost.current, jailed: wasJailed.current });
     const by = game.lastRoller ?? "";
     const outcome = wasLost.current ? mazeOutcome(roller.current, r) : wasJailed.current ? jailOutcome(roller.current, r) : null;
@@ -81,7 +90,6 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
   }, [game.rollSeq, game.lastRoll, game.lastRoller]);
 
   // Duelo resuelto: la tarjeta pasa a decir quién sacó cuánto y quién bebe.
-  const seenDuel = useRef(game.lastDuel?.seq);
   useEffect(() => {
     if (game.lastDuel?.seq === seenDuel.current) return;
     seenDuel.current = game.lastDuel?.seq;

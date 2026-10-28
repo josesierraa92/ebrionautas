@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LAST_TILE, type GameState } from "@/game/engine";
 import { getTile, type Tile } from "@/game/board";
-import { duelOutcome, jailOutcome, mazeOutcome } from "@/game/rules";
+import { duelOutcome, jailOutcome, mazeOutcome, tileRule } from "@/game/rules";
 import { DEFAULT_ICON, type IconName } from "@/editor/icons";
 import { sfx } from "./sfx";
 
@@ -15,7 +15,8 @@ export const FLY_MS = 750; // vuelo de la Oca, agujero negro, resbalón…
 const BANNER_MS = 1600;
 
 export type Banner = { key: number; title: string; emoji: string; color: string; /** Icono de la casilla (vector) y su número; sin ellos, el emoji. */ icon?: IconName; n?: number };
-export type DiceFx = { key: number; value: number; rolling: boolean };
+/** `by`: quién tira (solo en los duelos, donde cada uno tira su dado). */
+export type DiceFx = { key: number; value: number; rolling: boolean; by?: string };
 /**
  * Casilla donde acaba de caer alguien (para la tarjeta que explica la regla). Se queda
  * hasta la siguiente tirada para que dé tiempo a leerla. `result`: lo que pasó al tirar
@@ -97,17 +98,20 @@ export function useGameFx(game: GameState | null) {
     setSettled(false);
     let t = 0;
     const rolled = (game.rollSeq ?? 0) > (before.rollSeq ?? 0) && game.lastRoll;
+    // tirada de un duelo: cada uno tira su dado, no mueve a nadie ni cambia la tarjeta de la casilla
+    const duelRoll = !!rolled && before.decision?.kind === "DUEL_ROLL";
     if (rolled) {
       const key = ++seq.current;
-      setDice({ key, value: game.lastRoll!, rolling: true });
+      const by = duelRoll ? game.players.find((p) => p.id === game.lastRoller)?.name : undefined;
+      setDice({ key, value: game.lastRoll!, rolling: true, by });
       sfx.dice();
-      later(DICE_MS, () => setDice((d) => (d?.key === key ? { key, value: game.lastRoll!, rolling: false } : d)));
+      later(DICE_MS, () => setDice((d) => (d?.key === key ? { key, value: game.lastRoll!, rolling: false, by } : d)));
       later(DICE_MS + 500, () => setDice((d) => (d?.key === key ? null : d)));
       t = DICE_MS + 100;
     }
 
     const mover = game.players.find((p) => p.pos !== startFrom[p.id]);
-    if (rolled) {
+    if (rolled && !duelRoll) {
       // Nueva tirada: la tarjeta de la casilla anterior se va y llega la nueva.
       const roller = before.players[before.turn];
       const key = ++seq.current;
@@ -128,10 +132,8 @@ export function useGameFx(game: GameState | null) {
           setDice(null);
           setBanner(
             result.good
-              ? { key: bkey, title: "¡SE SALVÓ!", emoji: "✨", color: "#5cd23c" }
-              : jail
-                ? { key: bkey, title: `¡FIANZA: ${jail.drinks} VASOS!`, emoji: "🔓", color: "#ffc61a" }
-                : { key: bkey, title: "¡A BEBER!", emoji: "🍷", color: "#ffc61a" },
+              ? { key: bkey, title: result.title, emoji: "✨", color: "#5cd23c" }
+              : { key: bkey, title: result.title, emoji: jail ? "🔓" : "🍷", color: "#ffc61a" },
           );
           if (result.good) sfx.fly();
           else sfx.drink();
@@ -152,7 +154,7 @@ export function useGameFx(game: GameState | null) {
       );
       t += path.length * STEP_MS;
       const landed = getTile(landing);
-      at(t, () => showEvent(landed));
+      at(t, () => showEvent(landed, mover.id));
       if (landing !== mover.pos) {
         t += path.length ? 400 : 0;
         at(t, () => {
@@ -191,12 +193,14 @@ export function useGameFx(game: GameState | null) {
     // Margen para que se lea el título de la casilla antes de la tarjeta.
     at(t + (t > 0 ? 400 : 0), () => setSettled(true));
 
-    function showEvent(tile: Tile) {
+    function showEvent(tile: Tile, playerId: string) {
       const ev = EVENTS[tile.type];
       if (!ev) return sfx.land();
       const key = ++seq.current;
       setDice(null); // que el título no quede encima del dado
-      setBanner({ key, title: ev.title, emoji: ev.emoji, color: ev.color, icon: DEFAULT_ICON[tile.type], n: tile.n });
+      // el título grande es el de la tarjeta de la casilla (si el admin lo cambia en el editor, cambia también aquí)
+      const title = tileRule(tile.n, game!, playerId).title || ev.title;
+      setBanner({ key, title, emoji: ev.emoji, color: ev.color, icon: DEFAULT_ICON[tile.type], n: tile.n });
       sfx[ev.sound]();
       later(BANNER_MS, () => setBanner((b) => (b?.key === key ? null : b)));
     }

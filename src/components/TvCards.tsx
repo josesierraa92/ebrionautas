@@ -18,6 +18,8 @@ export function decisionText(decision: Decision, name: string): [string, string]
       return ["Ronda de mezcal", `${name} reparte ${decision.amount} ${decision.amount === 1 ? "vaso" : "vasos"} entre quien quiera.`];
     case "DUEL":
       return ["Duelo de calaveras", `${name} reta hasta a ${decision.amount} ${decision.amount === 1 ? "rival" : "rivales"}. Quien saque menos, bebe.`];
+    case "DUEL_ROLL":
+      return ["Duelo de calaveras", `${name} y su rival tiran el dado: quien saque menos, bebe.`];
     case "SELECT_DRINKERS":
       return [decision.title, decision.text];
     case "PATINAZO":
@@ -30,12 +32,19 @@ export function decisionText(decision: Decision, name: string): [string, string]
 }
 
 /** Qué hay que hacer en el celular para resolver la decisión. */
-function decisionPrompt(decision: Decision, name: string): string {
+function decisionPrompt(decision: Decision, name: string, game?: GameState): string {
   switch (decision.kind) {
     case "DISTRIBUTE":
       return `${name} reparte los vasos desde el celular.`;
     case "DUEL":
       return `${name} elige a sus rivales en el celular.`;
+    case "DUEL_ROLL": {
+      const nm = (id: string) => game?.players.find((q) => q.id === id)?.name ?? "?";
+      const rival = nm(decision.rivals[decision.i]);
+      const fresh = decision.a === null || decision.b !== null;
+      if (decision.tie) return `¡Empate! Vuelven a tirar: primero ${name}, en el celular.`;
+      return fresh ? `Tira el dado de ${name} en el celular.` : `${name} sacó ${decision.a}. Ahora tira el dado de ${rival} en el celular.`;
+    }
     case "SELECT_DRINKERS":
       return "Marcad en el celular quién bebe.";
     case "PATINAZO":
@@ -104,7 +113,7 @@ export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
   return (
     // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.
     <div className="pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]">
-      <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n}`} title={rule.title} text={rule.text} prompt={decision ? decisionPrompt(decision, player.name) : null} unit="1cqw" cardKey={cardKey} />
+      <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n}`} title={rule.title} text={rule.text} prompt={decision ? decisionPrompt(decision, player.name, game) : null} unit="1cqw" cardKey={cardKey} />
     </div>
   );
 }
