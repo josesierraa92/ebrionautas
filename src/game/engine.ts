@@ -63,7 +63,7 @@ export type Action =
   | { type: "DISTRIBUTE"; drinks: Record<string, number> }
   | { type: "DUEL"; opponents: string[] }
   | { type: "PATINAZO"; choice: "drink" | "back" }
-  | { type: "SET_RULE"; text: string }
+  | { type: "SET_RULE" }
   | { type: "SELECT_DRINKERS"; ids: string[] }
   | { type: "CHOOSE_SLAVE"; id: string }
   | { type: "DRANK"; id: string }
@@ -385,10 +385,9 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
   }
 
   if (d.kind === "RULE" && action.type === "SET_RULE") {
-    const text = action.text.trim();
-    if (!text) return false;
-    s.rule = { text, by: p.id };
-    log(s, `⚖️ Nueva ley de ${p.name}: "${text}"`);
+    // la ley se dicta en voz alta: aquí solo se anota que hay una vigente (para poder penalizar a quien la rompa)
+    s.rule = { text: "", by: p.id };
+    log(s, `⚖️ ${p.name} dictó una nueva ley.`);
     endTurn(s);
     return true;
   }

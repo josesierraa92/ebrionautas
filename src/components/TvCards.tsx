@@ -41,7 +41,7 @@ function decisionPrompt(decision: Decision, name: string): string {
     case "PATINAZO":
       return `${name} elige en el celular: beber o rodar hacia atrás.`;
     case "RULE":
-      return `${name} escribe su ley en el celular.`;
+      return `${name} dicta su ley en voz alta y toca «Ya la dicté» en el celular.`;
     case "SLAVE":
       return `${name} elige en el celular con quién hace el Pacto de Sangre.`;
   }

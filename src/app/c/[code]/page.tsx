@@ -7,7 +7,6 @@ import DecisionPanel from "@/components/DecisionPanel";
 import DiceController from "@/components/DiceController";
 import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
-import RuleBanner from "@/components/RuleBanner";
 import Setup from "@/components/Setup";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Action, type Gender } from "@/game/engine";
@@ -162,7 +161,6 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
                 ✕ CERRAR
               </button>
             </div>
-            {game.rule && <RuleBanner text={game.rule.text} />}
             <PlayersList game={game} onPenalty={(id) => act({ type: "PENALTY", id })} onDrank={(id) => act({ type: "DRANK", id })} />
             <GameLog log={game.log} max={10} />
             <Board players={game.players} current={me.id} />

@@ -65,7 +65,7 @@ describe("mesas", () => {
   it("rechaza jugadas inválidas sin cambiar la versión", async () => {
     const { code, secret } = await playing();
     const v = (await getRoom(code)).version;
-    await expect(actInRoom(code, secret, { type: "SET_RULE", text: "x" })).rejects.toThrow("no es válida");
+    await expect(actInRoom(code, secret, { type: "SET_RULE" })).rejects.toThrow("no es válida");
     expect((await getRoom(code)).version).toBe(v);
   });
 

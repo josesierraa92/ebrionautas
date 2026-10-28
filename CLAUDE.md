@@ -210,3 +210,6 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   convierten con `node scripts/editor/gltf2glb.mjs <carpeta> public/models/<kit>`.
   `node scripts/editor/catalog.mjs` genera `public/models/catalog.json` y las miniaturas; volver a ejecutarlo al
   añadir modelos. Ahí también va la escala con la que entra cada kit (`KITS`).
+
+- Ley del Más Allá: la ley se dicta **en voz alta** (pedido del usuario); no se escribe ni hay barra «Ley vigente». El
+  celular solo toca «YA LA DICTÉ» (`SET_RULE` sin texto, `rule.text` queda vacío) y `rule` solo sirve para mostrar el +1 de penalización.

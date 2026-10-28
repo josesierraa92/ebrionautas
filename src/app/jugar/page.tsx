@@ -7,7 +7,6 @@ import { Confetti } from "@/components/Fx";
 import DecisionPanel from "@/components/DecisionPanel";
 import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
-import RuleBanner from "@/components/RuleBanner";
 import SoundToggle from "@/components/SoundToggle";
 import Setup from "@/components/Setup";
 import TurnHeader from "@/components/TurnHeader";
@@ -72,7 +71,6 @@ export default function JugarPage() {
             NUEVA PARTIDA
           </button>
         </div>
-        {game.rule && <RuleBanner text={game.rule.text} />}
         <BoardStage
           players={game.players}
           current={me.id}

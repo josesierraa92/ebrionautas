@@ -7,7 +7,6 @@ import BoardStage from "@/components/BoardStage";
 import { Confetti } from "@/components/Fx";
 import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
-import RuleBanner from "@/components/RuleBanner";
 import SoundToggle from "@/components/SoundToggle";
 import TurnHeader from "@/components/TurnHeader";
 import { RuleCard, TurnChip, decisionText } from "@/components/TvCards";
@@ -101,11 +100,6 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const overlays = (
     <>
       <TurnChip game={game} moving={!fx.settled} rolling={!!fx.dice?.rolling} />
-      {!panelOpen && game.rule && (
-        <div className="pointer-events-none absolute right-[2%] bottom-[2%] left-[2%] z-30">
-          <RuleBanner text={game.rule.text} />
-        </div>
-      )}
       {card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} />}
     </>
   );
@@ -152,13 +146,12 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
             )}
           </span>
         </div>
-        {game.rule && <RuleBanner text={game.rule.text} />}
         <BoardStage
           players={game.players}
           current={me.id}
           winner={game.winner}
           fx={fx}
-          className={`aspect-[16/10] lg:aspect-auto ${game.rule ? "lg:h-[calc(100dvh-9.5rem)]" : "lg:h-[calc(100dvh-5.5rem)]"}`}
+          className={`aspect-[16/10] lg:aspect-auto lg:h-[calc(100dvh-5.5rem)]`}
         >
           {overlays}
         </BoardStage>

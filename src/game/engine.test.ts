@@ -46,7 +46,7 @@ describe("movimiento", () => {
 
   it("no hace nada si la acción no corresponde a la fase", () => {
     const s = game();
-    expect(applyAction(s, { type: "SET_RULE", text: "x" })).toBe(s);
+    expect(applyAction(s, { type: "SET_RULE" })).toBe(s);
   });
 });
 
@@ -144,9 +144,8 @@ describe("casillas", () => {
 
   it("Regla: queda activa y se puede penalizar a quien la rompa", () => {
     let s = rollFrom(game(), 8, 2); // 10
-    expect(act(s, { type: "SET_RULE", text: "  " })).toBe(s);
-    s = act(s, { type: "SET_RULE", text: "Prohibido decir beber" });
-    expect(s.rule?.text).toBe("Prohibido decir beber");
+    s = act(s, { type: "SET_RULE" });
+    expect(s.rule).not.toBeNull();
     s = act(s, { type: "PENALTY", id: "p3" });
     expect(s.players[2].drunk).toBe(1);
   });

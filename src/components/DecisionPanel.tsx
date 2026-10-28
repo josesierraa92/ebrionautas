@@ -58,7 +58,7 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
       );
 
     case "RULE":
-      return <RuleInput onDone={(text) => onAction({ type: "SET_RULE", text })} />;
+      return <RuleInput onDone={() => onAction({ type: "SET_RULE" })} />;
 
     case "SLAVE":
       return (
@@ -150,19 +150,11 @@ function PickPlayers(props: {
   );
 }
 
-function RuleInput({ onDone }: { onDone: (t: string) => void }) {
-  const [text, setText] = useState("");
+function RuleInput({ onDone }: { onDone: () => void }) {
   return (
-    <Card title="Ley del Más Allá" text="Pon una norma para todos. Dura hasta que alguien ponga otra. Quien la rompa, bebe.">
-      <input
-        value={text}
-        maxLength={80}
-        onChange={(e) => setText(e.target.value)}
-        placeholder='Ej. "Prohibido decir la palabra beber"'
-        className="rounded-xl border-[3px] border-ink bg-white px-3 py-2 text-ink outline-none"
-      />
-      <button disabled={!text.trim()} onClick={() => onDone(text)} className="btn-game bg-btn-green py-3 text-lg text-white disabled:bg-btn-grey">
-        DICTAR LEY
+    <Card title="Ley del Más Allá" text="Dicta tu ley en voz alta para todos. Dura hasta que alguien dicte otra. Quien la rompa, bebe.">
+      <button onClick={onDone} className="btn-game bg-btn-green py-3 text-lg text-white">
+        YA LA DICTÉ
       </button>
     </Card>
   );
