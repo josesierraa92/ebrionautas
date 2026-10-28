@@ -105,7 +105,11 @@ function useBoxSize() {
 /** ¿Se pidió el tablero en imagen? (`?imagen` en la dirección, o lo recuerda esta TV si el 3D le fue mal). */
 function wantsImage() {
   try {
-    return new URLSearchParams(location.search).has("imagen") || localStorage.getItem("ebrio:tablero") === "imagen";
+    if (new URLSearchParams(location.search).has("imagen")) return true;
+    // si el 3D fue lento en esta TV se queda en imagen un rato (media hora), no para siempre: así una racha mala no la
+    // deja sin animaciones
+    const t = Number(localStorage.getItem("ebrio:tablero-imagen"));
+    return t > Date.now();
   } catch {
     return false;
   }
@@ -139,7 +143,7 @@ export default function IsoBoard(props: Props) {
             console.warn("Tablero 3D desactivado:", why);
             if (why === "lento")
               try {
-                localStorage.setItem("ebrio:tablero", "imagen");
+                localStorage.setItem("ebrio:tablero-imagen", String(Date.now() + 30 * 60 * 1000));
               } catch {}
             setMode("off");
           }}

@@ -31,6 +31,8 @@ type Token = {
   yawGoal: number;
   label: HTMLDivElement;
   walking: boolean;
+  /** Segundos que lleva sin moverse (para no volver a «quieto» entre dos pasos seguidos). */
+  still: number;
   /** Ya llegó a su casilla de verdad (no está a mitad de una animación): mira a la casilla siguiente. */
   settled: boolean;
 };
@@ -202,7 +204,7 @@ export class LiveBoard {
     this.labels.appendChild(label);
     const yaw = this.idleYaw(p.pos) ?? Math.PI / 4;
     group.rotation.y = yaw;
-    return { character, group, model, mixer, idle, walk, height, pos: p.pos, goal: at.clone(), from: at.clone(), t: 1, dur: STEP_MS, fly: false, yaw, yawGoal: yaw, label, walking: false, settled: true };
+    return { character, group, model, mixer, idle, walk, height, pos: p.pos, goal: at.clone(), from: at.clone(), t: 1, dur: STEP_MS, fly: false, yaw, yawGoal: yaw, label, walking: false, still: 1, settled: true };
   }
 
   /** Quieto, mira hacia la casilla siguiente (en la última, en el sentido en que llegó). */
@@ -232,13 +234,19 @@ export class LiveBoard {
         if (y !== null) t.yawGoal = y;
       }
       // caminar mientras se mueve; respirar (idle) quieto
-      const walking = moving && !t.fly;
+      // Entre un paso y el siguiente hay unas décimas de segundo en que la ficha «llegó» pero aún no sale la siguiente
+      // casilla: no se vuelve a «quieto» hasta pasado un momento, para que camine seguido sin trompicones.
+      t.still = moving ? 0 : t.still + dt;
+      const walking = (moving && !t.fly) || (t.walking && t.still < 0.3 && !t.fly);
       if (walking !== t.walking && t.idle && t.walk) {
         const [from, to] = walking ? [t.idle, t.walk] : [t.walk, t.idle];
-        to.reset().play();
-        from.crossFadeTo(to, 0.2, false);
+        from.fadeOut(0.2);
+        to.reset().fadeIn(0.2).play();
         t.walking = walking;
       }
+      // la animación elegida siempre corre (si se paró por algún motivo, se vuelve a poner en marcha)
+      const on = walking ? t.walk : t.idle;
+      if (on && !on.isRunning()) on.reset().fadeIn(0.2).play();
       // giro suave hacia donde va
       let d = t.yawGoal - t.yaw;
       d = Math.atan2(Math.sin(d), Math.cos(d));

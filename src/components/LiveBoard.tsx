@@ -58,12 +58,26 @@ export default function LiveBoard({ layout, onReady, onFail, ...state }: Props) 
         if (!alive) return;
         setShown(true);
         onReady();
-        // si el aparato no llega a ~24 fotogramas por segundo, mejor la imagen (se nota menos que un 3D a saltos)
-        const f0 = live.frames;
+        // Si el aparato va a menos de ~18 fotogramas por segundo de forma sostenida, mejor la imagen (se nota menos que
+        // un 3D a saltos). Se mide DESPUÉS de unos segundos de calentamiento (al principio se compilan los shaders y
+        // va lento aunque luego vaya fluido) y en dos ventanas seguidas; con la pestaña oculta no se mide (el
+        // navegador para los fotogramas y parecería lento).
         if (new URLSearchParams(location.search).has("3d")) return; // forzado (pruebas): sin comprobar la velocidad
-        watch = window.setTimeout(() => {
-          if (alive && live.frames - f0 < 24 * 4) onFail("lento");
-        }, 4000);
+        const WINDOW = 4000;
+        let slow = 0;
+        const measure = () => {
+          const f0 = live.frames;
+          const t0 = performance.now();
+          watch = window.setTimeout(() => {
+            if (!alive) return;
+            if (document.hidden) return measure();
+            const fps = ((live.frames - f0) / (performance.now() - t0)) * 1000;
+            slow = fps < 18 ? slow + 1 : 0;
+            if (slow >= 2) return onFail("lento");
+            measure();
+          }, WINDOW);
+        };
+        watch = window.setTimeout(measure, 3000);
       } catch (e) {
         if (alive) onFail(e instanceof Error ? e.message : "error");
       }

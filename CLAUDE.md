@@ -59,7 +59,10 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
   animaciones `idle` (respira) y `walk`, girando hacia donde van, con un saltito por casilla, arco en los vuelos, luz
   propia suave y el nombre en HTML encima. Mientras carga se ve la imagen; si no hay WebGL o no llega a ~24 fps, se
   queda la imagen (y esa TV lo recuerda: `localStorage` `ebrio:tablero` = `imagen`; `?imagen` lo fuerza y `?3d`
-  quita la comprobación de velocidad, para pruebas).
+  quita la comprobación de velocidad, para pruebas). La comprobación de velocidad espera 3 s de calentamiento (se compilan
+  shaders), mide en dos ventanas de 4 s (<18 fps en las dos) y no mide con la pestaña oculta; si falla, esa TV se queda
+  en imagen solo 30 min (`ebrio:tablero-imagen`). Caminar/quieto con histéresis de 0,3 s (`still`) para no parpadear
+  entre pasos seguidos.
 - Respaldo: **tablero isométrico en imagen** (`IsoBoard`): una imagen 3D pre-renderizada (ver abajo) con las fichas
   encima.
 - Cámara: la imagen del tablero se pinta una vez ya acercada (tamaño final) y la cámara solo la desplaza con
