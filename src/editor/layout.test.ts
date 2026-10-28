@@ -158,7 +158,7 @@ describe("tamaño de los personajes", () => {
     const base = newLayout(10, 8);
     expect(base.characterSize).toBe(1);
     expect(parseLayout({ ...base, characterSize: undefined })?.characterSize).toBe(1);
-    expect(parseLayout({ ...base, characterSize: 9 })?.characterSize).toBe(2);
+    expect(parseLayout({ ...base, characterSize: 9 })?.characterSize).toBe(4);
     expect(parseLayout({ ...base, characterSize: 0.1 })?.characterSize).toBe(0.5);
     expect(resize({ ...base, characterSize: 1.4 }, 20, 12).characterSize).toBe(1.4);
   });

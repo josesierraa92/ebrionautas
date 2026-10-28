@@ -99,7 +99,7 @@ export type BoardLayout = {
   characterSize: number;
 };
 
-export const CHARACTER_SIZE = { min: 0.5, max: 2, default: 1 };
+export const CHARACTER_SIZE = { min: 0.5, max: 4, default: 1 };
 
 /**
  * Cámara de la TV. `az`: giro alrededor del tablero en grados (45 = desde +x +z, como la isométrica); `el`: altura en

@@ -52,7 +52,7 @@ export function parsePublished(raw: unknown): Omit<PublishedBoard, "image" | "ve
   if (tiles.some((t) => !t)) return null;
   const zoom = finite(r.zoom) ? Math.min(12, Math.max(1, r.zoom)) : undefined;
   const characters = parseSheet(r.characters);
-  const characterScale = finite(r.characterScale) ? Math.min(2, Math.max(0.5, r.characterScale)) : undefined;
+  const characterScale = finite(r.characterScale) ? Math.min(4, Math.max(0.5, r.characterScale)) : undefined;
   const c = r.chunks as Record<string, unknown> | undefined;
   const chunks =
     c && finite(c.size) && finite(c.cols) && finite(c.rows) && Array.isArray(c.urls) && c.size >= 256 && c.size <= 4096 &&
