@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { loadAll, type Loaded } from "@/editor/characterSheet";
-import { TILE_SIZE, type BoardLayout } from "@/editor/layout";
+import { nameCssVars, TILE_SIZE, type BoardLayout } from "@/editor/layout";
 import { EditorScene } from "@/editor/scene";
 import { CHARACTER_HEIGHT, characterOf, TOKEN_TO_TILE } from "@/game/characters";
 import type { Player } from "@/game/engine";
@@ -71,6 +71,8 @@ export class LiveBoard {
     this.scene.modelUrl = modelUrl;
     this.scene.onFrame = (dt) => this.frame(dt);
     this.scene.onAfterFrame = () => this.placeLabels();
+    // aspecto de los nombres elegido en el editor («🧟 Fichas» → Nombre sobre el personaje)
+    for (const [k, v] of Object.entries(nameCssVars(layout.names))) labels.style.setProperty(k, v);
     // sombra suave bajo los pies (las sombras del escenario están congeladas: los zombis no las proyectan)
     const c = document.createElement("canvas");
     c.width = c.height = 64;
@@ -276,7 +278,7 @@ export class LiveBoard {
     for (const t of this.tokens.values()) {
       const p = this.scene.toScreen(t.group.position.clone().add(new THREE.Vector3(0, t.height * 1.04, 0)));
       t.label.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`;
-      t.label.style.fontSize = `${Math.max(10, tilePx * 0.088)}px`;
+      t.label.style.fontSize = `${Math.max(10, tilePx * 0.088) * (this.layout.names.size / 100)}px`;
     }
   }
 }

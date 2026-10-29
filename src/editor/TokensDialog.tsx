@@ -9,7 +9,64 @@ import { PLAYER_COLORS } from "@/game/tileStyle";
 import type { Catalog } from "./catalogTypes";
 import { renderCharacterSheet } from "./characterSheet";
 import { loadModelScene, renderToken } from "./modelRender";
-import { CHARACTER_SIZE, DEFAULT_TOKEN, TOKEN_SIZE, type BoardLayout, type TokenSpec, type TvView } from "./layout";
+import { CHARACTER_SIZE, DEFAULT_NAMES, DEFAULT_TOKEN, NAME_LIMITS, NUMBER_FONTS, TOKEN_SIZE, nameCssVars, type BoardLayout, type NameStyle, type NumberFont, type TokenSpec, type TvView } from "./layout";
+
+/** Ajustes del nombre que flota sobre cada personaje, con una vista previa que usa el mismo CSS (`.live-name`) que el tablero. */
+function NamesSection({ names, onChange }: { names: NameStyle; onChange: (n: NameStyle) => void }) {
+  const set = (patch: Partial<NameStyle>) => onChange({ ...names, ...patch });
+  const slider = (label: string, key: "size" | "spacing" | "bubble" | "glow", unit: string, step: number) => (
+    <label className="grid gap-0.5 text-sm">
+      <span className="flex justify-between">
+        {label}{" "}
+        <b>
+          {names[key]}
+          {unit}
+        </b>
+      </span>
+      <input type="range" min={NAME_LIMITS[key].min} max={NAME_LIMITS[key].max} step={step} value={names[key]} onChange={(e) => set({ [key]: Number(e.target.value) })} />
+    </label>
+  );
+  const vars = nameCssVars(names) as React.CSSProperties;
+  return (
+    <section className="flex gap-4 rounded-xl bg-white/5 p-3">
+      {/* vista previa: el mismo CSS que el tablero, a tamaño de ejemplo sobre un fondo de escenario */}
+      <div className="grid h-40 w-64 shrink-0 place-items-center rounded-xl bg-[#1d3a2a]" style={vars}>
+        <div className="relative h-24 w-full">
+          {[
+            ["ALEJO", "#ff3fd0", "30%"],
+            ["VANE", "#3ba0ff", "72%"],
+          ].map(([n, c, left]) => (
+            <div key={n} className="live-name" style={{ left, top: 18, fontSize: 20 * (names.size / 100), transform: "translateX(-50%)", ["--c" as string]: c }}>
+              {n}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-2">
+        <p className="col-span-2 text-sm">
+          <b>Nombre sobre el personaje</b> · cómo se ven los nombres que flotan encima de las fichas en la TV (burbuja negra con el nombre en blanco y una flechita neón del color de cada jugador).
+        </p>
+        {slider("Tamaño", "size", " %", 5)}
+        <label className="grid gap-0.5 text-sm">
+          Tipo de letra
+          <select value={names.font} onChange={(e) => set({ font: e.target.value as NumberFont })} className="rounded bg-white/10 px-2 py-1 text-sm">
+            {(Object.keys(NUMBER_FONTS) as NumberFont[]).map((f) => (
+              <option key={f} value={f} className="bg-[#1c1f27]">
+                {NUMBER_FONTS[f].label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {slider("Espaciado entre letras", "spacing", " cent. de em", 1)}
+        {slider("Opacidad de la burbuja negra", "bubble", " %", 5)}
+        {slider("Intensidad del neón de la flecha", "glow", " %", 10)}
+        <button className="col-span-1 self-end rounded-lg bg-white/10 px-2 py-1.5 text-xs hover:bg-white/20" onClick={() => onChange(DEFAULT_NAMES)}>
+          Volver a los valores de serie
+        </button>
+      </div>
+    </section>
+  );
+}
 
 type Sheet = { url: string; cw: number; ch: number; feet: number; span: number; portraits: string[] };
 
@@ -186,6 +243,8 @@ export default function TokensDialog({
             </label>
           </div>
         </section>
+
+        <NamesSection names={layout.names} onChange={(names) => onChange({ ...layout, names })} />
 
         <p className="text-sm opacity-70">
           Fichas propias (opcional): elige un modelo del catálogo (o uno tuyo) para el color de un jugador; las que no

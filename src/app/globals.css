@@ -116,9 +116,9 @@ body {
   top: 0;
   white-space: nowrap;
   line-height: 1;
-  font-family: var(--font-lilita), sans-serif;
+  font-family: var(--name-font, var(--font-lilita)), sans-serif; /* lo que se elige en el editor (`--name-*` los pone liveBoard.ts en el contenedor) */
   text-transform: uppercase;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--name-spacing, -0.01em);
   will-change: transform; /* crea un contexto de apilado: la burbuja (::before, z-index -1) queda detrás de las letras */
   color: #fff; /* el nombre va en blanco sobre una burbuja negra; la flechita, del color del jugador y con luz neón */
 }
@@ -132,7 +132,7 @@ body {
   top: -0.24em;
   height: 1.48em;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, var(--name-bubble, 0.5));
 }
 /* flechita debajo de la burbuja que señala al personaje: del color del jugador (`--c`), sin borde oscuro y con un resplandor neón intenso del mismo color */
 .live-name::after {
@@ -144,7 +144,7 @@ body {
   border-left: 0.27em solid transparent;
   border-right: 0.27em solid transparent;
   border-top: 0.31em solid var(--c, #fff);
-  filter: drop-shadow(0 0 0.12em var(--c, #fff)) drop-shadow(0 0 0.3em var(--c, #fff)) drop-shadow(0 0 0.6em var(--c, #fff)) drop-shadow(0 0 1.1em var(--c, #fff));
+  filter: drop-shadow(0 0 calc(0.12em * var(--name-glow, 1)) var(--c, #fff)) drop-shadow(0 0 calc(0.3em * var(--name-glow, 1)) var(--c, #fff)) drop-shadow(0 0 calc(0.6em * var(--name-glow, 1)) var(--c, #fff)) drop-shadow(0 0 calc(1.1em * var(--name-glow, 1)) var(--c, #fff));
 }
 /* Personajes zombi del tablero: respiran (el pecho sube y baja: se estiran un poco desde los pies). Con `transform`
    (no la propiedad `scale`, que los navegadores de TV antiguos no conocen); el espejo va en otra capa por dentro. */

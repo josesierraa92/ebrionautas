@@ -161,6 +161,12 @@ describe("tamaño de los personajes", () => {
     expect(parseLayout({ ...base, characterSize: 9 })?.characterSize).toBe(4);
     expect(parseLayout({ ...base, characterSize: 0.1 })?.characterSize).toBe(0.5);
     expect(resize({ ...base, characterSize: 1.4 }, 20, 12).characterSize).toBe(1.4);
+    // nombre sobre los personajes: de serie los valores de antes, cada campo en su rango y la letra solo de la lista
+    expect(base.names).toEqual({ size: 100, font: "lilita", spacing: -1, bubble: 50, glow: 100 });
+    expect(parseLayout({ ...base, names: undefined })?.names).toEqual(base.names);
+    expect(parseLayout({ ...base, names: { size: 999, font: "creepster", spacing: -99, bubble: 30, glow: "mucho" } })?.names).toEqual({ size: 200, font: "creepster", spacing: -10, bubble: 30, glow: 100 });
+    expect(parseLayout({ ...base, names: { font: "comic-sans" } })?.names.font).toBe("lilita");
+    expect(resize({ ...base, names: { ...base.names, size: 140 } }, 20, 12).names.size).toBe(140);
   });
 });
 
