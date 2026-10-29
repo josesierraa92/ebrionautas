@@ -7,6 +7,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { builtinIcon, drawIcon } from "./icons";
+import { viewerQuality, type Quality } from "./quality";
 import { findLamp, type Lamp } from "./lamp";
 import { lightOf, NUMBER_FONTS, parseTvView, tvDirection, type NumberFont, type NumberStyle, type TvView } from "./layout";
 import { brushCells, GROUNDS, groundAt, LEVEL, LIQUIDS, lookOf, TILE_SIZE, tileAnchor, tileTypeOf, type BoardLayout, type TileKind, type LightId, type PlacedObject } from "./layout";
@@ -28,10 +29,6 @@ export type SceneEvents = {
 
 const BASE = -0.8; // fondo del bloque de tierra del mundo
 const CAM_DIST = 200;
-/** Visor (TV): fotogramas por segundo fijos y ancho máximo de la imagen en píxeles reales. */
-const VIEWER_FPS = 30;
-const VIEWER_MAX_W = 1920;
-const VIEWER_LIGHTS = 4; // focos de verdad a la vez en la TV (los faroles más cercanos a la cámara)
 /** Colores de las casillas estilo carretera. */
 const ROAD = { asphalt: "#4a4d54", edge: "#2c2e33" }; // distancia de la cámara ortográfica al centro (la niebla se mide desde ahí)
 
@@ -119,6 +116,8 @@ export class EditorScene {
   private viewer: boolean;
   /** Visor: escala de la resolución interna (1 = completa; baja sola si el aparato no llega). */
   resScale = 1;
+  /** Visor: calidad según el aparato (PC, móvil o Smart TV): luces, fotogramas, resolución y sombras. */
+  quality: Quality | null = null;
   private look = new THREE.Vector3();
   private lookGoal = new THREE.Vector3();
   /** Se llama en cada fotograma del visor con los segundos desde el anterior (para animar las fichas). */
@@ -130,11 +129,12 @@ export class EditorScene {
     opts: { viewer?: boolean } = {},
   ) {
     this.viewer = !!opts.viewer;
+    if (this.viewer) this.quality = viewerQuality();
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: !this.viewer, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     // en la TV, sombras más baratas de leer (están congeladas, pero cada píxel las consulta en cada fotograma)
-    this.renderer.shadowMap.type = this.viewer ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = this.viewer && this.quality!.level !== "alta" ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.NeutralToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     container.appendChild(this.renderer.domElement);
@@ -142,7 +142,7 @@ export class EditorScene {
 
     this.scene.add(this.hemi, this.sun, this.sun.target, this.objectRoot, this.grid, this.bounds, this.tileRoot, this.mistRoot);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(this.viewer ? 2048 : 4096, this.viewer ? 2048 : 4096);
+    this.sun.shadow.mapSize.set(this.quality?.shadowSize ?? 4096, this.quality?.shadowSize ?? 4096);
     this.sun.shadow.bias = -0.0004;
     this.sun.shadow.normalBias = 0.02;
 
@@ -226,7 +226,7 @@ export class EditorScene {
         this.frame = requestAnimationFrame(viewLoop);
         // como en las consolas: 30 fotogramas por segundo fijos (la mitad de trabajo que a 60 y se ve igual de fluido
         // en un tablero), y deja tiempo libre para el resto de la página (consultar la mesa, el dado, los títulos)
-        if (now - last < 1000 / VIEWER_FPS - 4) return;
+        if (now - last < 1000 / this.quality!.fps - 4) return;
         const dt = Math.min(0.1, (now - last) / 1000);
         last = now;
         // resolución dinámica: si no llega a ~24 fps baja la resolución interna (hasta 0,75: más abajo se ve pixelado y no gana
@@ -238,13 +238,13 @@ export class EditorScene {
           windowFrames = 0;
           if (debugEl) {
             const i = this.renderer.info.render;
-            debugEl.textContent = `${fps.toFixed(0)} fps · res ${(this.resScale * 100).toFixed(0)}% · ${this.renderer.domElement.width}×${this.renderer.domElement.height} · ${i.calls} dibujos · ${(i.triangles / 1000).toFixed(0)}k tri`;
+            debugEl.textContent = `${this.quality!.level} (${this.quality!.why}) · ${fps.toFixed(0)} fps · res ${(this.resScale * 100).toFixed(0)}% · ${this.renderer.domElement.width}×${this.renderer.domElement.height} · ${i.calls} dibujos · ${(i.triangles / 1000).toFixed(0)}k tri`;
           }
-          if (fps < 24 && this.resScale > 0.75) {
+          if (fps < this.quality!.fps * 0.8 && this.resScale > 0.75) {
             this.resScale = Math.max(0.75, this.resScale - 0.1);
             good = 0;
             this.resize();
-          } else if (fps >= 28 && this.resScale < 1 && ++good >= 5) {
+          } else if (fps >= this.quality!.fps * 0.93 && this.resScale < 1 && ++good >= 5) {
             this.resScale = Math.min(1, this.resScale + 0.1);
             good = 0;
             this.resize();
@@ -298,7 +298,7 @@ export class EditorScene {
     if (this.viewer) {
       // TV: como mucho 1920 píxeles reales de ancho (una TV 4K escala sola; dibujar 3840 era 4 veces más trabajo), por la
       // resolución dinámica
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, VIEWER_MAX_W / w) * this.resScale);
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.quality!.maxWidth / w) * this.resScale);
     }
     this.renderer.setSize(w, h);
     if (this.viewer) {
@@ -387,7 +387,7 @@ export class EditorScene {
   private lampSlots: { light: THREE.SpotLight; lamp: number; k: number }[] = [];
 
   /**
-   * Cada foco de verdad encarece cada píxel de toda la escena (con 9 faroles, 9 veces), así que en la TV hay solo `VIEWER_LIGHTS`
+   * Cada foco de verdad encarece cada píxel de toda la escena (con 9 faroles, 9 veces), así que en la TV hay solo `quality.lights`
    * focos y cada fotograma se reparten entre los faroles más cercanos a lo que enseña la cámara (la cantidad de luces no cambia, así
    * no se recompilan los shaders). Se apagan y encienden con suavidad al cambiar de farol.
    */
@@ -401,7 +401,7 @@ export class EditorScene {
         this.viewerLamps.push({ pos: lampGroup.getWorldPosition(new THREE.Vector3()), color: light.color.clone(), intensity: light.intensity, distance: light.distance });
       }
     }
-    const n = Math.min(VIEWER_LIGHTS, this.viewerLamps.length);
+    const n = Math.min(this.quality!.lights, this.viewerLamps.length);
     for (let i = 0; i < n; i++) {
       const light = new THREE.SpotLight();
       light.angle = Math.PI * 0.32;

@@ -285,3 +285,8 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - La tarjeta «Resultado del duelo» (TV y celular) lleva el icono vectorial de su casilla (`tileIcon` en `Landed.result`), no un emoji propio.
 - Celular (pedido del usuario): con la tarjeta arriba, los paneles de decisión (`DecisionPanel` con `compact`) NO repiten la explicación de la regla; solo muestran lo que hay que hacer (botones, rivales, cuántos vasos quedan). Sin `compact` (`/jugar`, que no tiene tarjeta) sí llevan título y texto.
 - Celular, pantalla de decisión: la tarjeta va centrada en el espacio libre (`unit="18px"`) y las opciones **abajo, al alcance del pulgar**, para que no quede un hueco vacío bajo los botones (`DiceController`).
+- **Calidad según el aparato** (`src/editor/quality.ts`, pedido del usuario: luces distintas en PC y en TV para el rendimiento): `viewerQuality()` detecta por el
+  navegador — Smart TV/Android TV/Fire TV/consolas → **baja** (2 focos, 30 fps, 1920 px); móvil o PC modesto (≤4 núcleos/≤4 GB) → **media** (4 focos,
+  30 fps, 1920 px); PC → **alta** (6 focos, 60 fps, 2560 px, sombras suaves de 4096). Se fuerza con `?calidad=alta|media|baja`; `?debug` enseña el nivel.
+  Encima, la resolución dinámica baja sola si no llega al 80 % de los fps objetivo. La detección por navegador no es infalible (una Smart TV con un
+  navegador que se hace pasar por PC saldría «alta»): si pasa, abrir la TV con `?calidad=baja`.
