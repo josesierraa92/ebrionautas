@@ -179,6 +179,46 @@ function dropProps(mesh: THREE.Mesh, id: string) {
 export type Loaded = { root: THREE.Object3D; clips: THREE.AnimationClip[] };
 let loading: Promise<Loaded[]> | null = null;
 
+/**
+ * Luz neón amarilla en los ojos: en la casilla (x, y, w, h) del dibujo busca los píxeles amarillo vivo (los ojos de `yellowEyes`) y
+ * pinta encima, en suma de luz, esos mismos píxeles muy desenfocados (un halo ancho y otro más pegado) más el núcleo más claro.
+ * Se hace sobre el dibujo ya hecho porque el 3D no tiene resplandor; así vale para los retratos, los sprites y el respaldo de imagen.
+ */
+function eyeGlow(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  const img = ctx.getImageData(x, y, w, h);
+  const d = img.data;
+  let n = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    // el amarillo de los ojos ya dibujado es limón (tono 52°-64°); la ropa y el pelo amarillos son más naranjas (tono < 50°), así que no brillan
+    const [r, g, b] = [d[i], d[i + 1], d[i + 2]];
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const hue = max === min ? 0 : max === r ? (60 * (g - b)) / (max - min) : max === g ? 60 * (2 + (b - r) / (max - min)) : 60 * (4 + (r - g) / (max - min));
+    const yellow = d[i + 3] > 120 && max > 175 && (max - min) / max > 0.65 && hue >= 52 && hue <= 64;
+    if (yellow) {
+      [d[i], d[i + 1], d[i + 2], d[i + 3]] = [255, 234, 40, 255];
+      n++;
+    } else d[i + 3] = 0;
+  }
+  if (!n) return;
+  const mask = document.createElement("canvas");
+  mask.width = w;
+  mask.height = h;
+  mask.getContext("2d")!.putImageData(img, 0, 0);
+  const s = w / 192; // el dibujo puede ir a doble resolución
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.globalCompositeOperation = "lighter";
+  for (const [blur, alpha] of [[9 * s, 0.75], [4.5 * s, 0.9], [2 * s, 0.9]] as const) {
+    ctx.filter = `blur(${blur}px)`;
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(mask, x, y);
+  }
+  ctx.restore();
+}
+
 /** Los 12 personajes ya convertidos en zombi (piel verde y ojos amarillos), con sus animaciones. */
 export function loadAll(): Promise<Loaded[]> {
   loading ??= Promise.all(
@@ -284,6 +324,7 @@ export async function renderCharacterSheet(view: TvView, cw = 192, ch = 288): Pr
         holder.rotation.y = az + turn;
         renderer.render(scene, camera);
         ctx.drawImage(renderer.domElement, (j * 3 + k) * cw, row * ch);
+        if (j === 0) eyeGlow(ctx, (j * 3 + k) * cw, row * ch, cw, ch); // solo de frente: de espaldas no se ven los ojos
       }
     }
     mixer.stopAllAction();
