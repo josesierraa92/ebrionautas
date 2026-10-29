@@ -78,7 +78,7 @@ export default function GameCard({
       </div>
       {/* pastilla «CASILLA N» arriba en el centro, montada sobre el borde */}
       <div className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-display uppercase" style={{ padding: `${u(0.2)} ${u(1)}`, borderRadius: u(9), background: GREEN, color: "#14260a", fontSize: u(0.95), letterSpacing: "0.04em" }}>
-        <Kicker text={kicker} />
+        {kicker}
       </div>
     </div>
   );
@@ -115,17 +115,3 @@ function titleSize(title: string) {
   const perLine = Math.ceil(title.length / 2) + 1;
   return Math.max(1.2, Math.min(2.2, 11 / (0.6 * perLine)));
 }
-
-/** «Casilla 48 · Vane»: la palabra con el color de la pastilla y el número en blanco. */
-function Kicker({ text }: { text: string }) {
-  const m = /^(\D*?)(\d+)(.*)$/.exec(text);
-  if (!m) return <>{text}</>;
-  return (
-    <>
-      {m[1]}
-      <span style={{ color: "#fff" }}>{m[2]}</span>
-      {m[3]}
-    </>
-  );
-}
-
