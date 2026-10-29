@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CARD_GROUPS, cardCatalog, fillCard, groupOf, parseCardOverrides, RESULT_KEYS, type CardDef, type CardOverrides } from "@/game/cards";
 import { createGame } from "@/game/engine";
-import { tileVars } from "@/game/rules";
+import { staticCardVars, tileVars } from "@/game/rules";
 import { fetchCardTexts } from "@/lib/useCardTexts";
 import { TILE_ACCENT } from "@/game/tileStyle";
 import { DEFAULT_ICON } from "@/editor/icons";
@@ -115,8 +115,9 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
           </button>
         </div>
         <p className="text-sm opacity-70">
-          Aquí está cada tarjeta una sola vez (las casillas que comparten tarjeta salen juntas). Cambia el título o el texto; los{" "}
-          <code className="rounded bg-white/10 px-1">{"{huecos}"}</code> se rellenan solos con los datos de la partida. Lo que no cambies se queda como está.
+          Aquí está cada tarjeta una sola vez (las casillas que comparten tarjeta salen juntas). Escribe el título y el texto tal como quieres
+          que salgan en el juego. Solo lo que cambia en cada partida va entre llaves, por ejemplo{" "}
+          <code className="rounded bg-white/10 px-1">{"{nombre}"}</code> (el jugador): déjalo tal cual y se rellena solo.
           {saved === null && " Cargando…"}
         </p>
 
@@ -151,7 +152,7 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
                 {groups.map((g) => (
                   <a key={g.id} href={`#grupo-${g.id}`} className="rounded-lg bg-white/10 px-2.5 py-1 text-xs hover:bg-white/20" onClick={(e) => { e.preventDefault(); document.getElementById(`grupo-${g.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
                     <b>{g.title}</b> · {g.cards.length} {g.cards.length === 1 ? "tarjeta" : "tarjetas"}
-                    {g.tiles > 0 && ` · ${g.tiles} casillas`}
+                    {g.tiles > 0 && ` · ${g.tiles} ${g.tiles === 1 ? "casilla" : "casillas"}`}
                   </a>
                 ))}
               </div>
@@ -161,7 +162,7 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
             <section key={g.id} id={`grupo-${g.id}`} className="grid gap-3 scroll-mt-2">
               <div className="sticky top-0 z-10 -mx-1 rounded-lg bg-[#1c1f27]/95 px-1 py-1.5 backdrop-blur">
                 <h3 className="font-display text-lg text-amber-300">
-                  {g.title} <span className="text-sm text-white/60">· {g.cards.length} {g.cards.length === 1 ? "tarjeta" : "tarjetas"}{g.tiles > 0 && ` · ${g.tiles} casillas`}</span>
+                  {g.title} <span className="text-sm text-white/60">· {g.cards.length} {g.cards.length === 1 ? "tarjeta" : "tarjetas"}{g.tiles > 0 && ` · ${g.tiles} ${g.tiles === 1 ? "casilla" : "casillas"}`}</span>
                 </h3>
                 <p className="text-xs opacity-60">{g.about}</p>
               </div>
@@ -178,8 +179,15 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
 }
 
 function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { title?: string; text?: string } | undefined; onChange: (f: "title" | "text", v: string) => void; onReset: () => void }) {
+  // Los datos que siempre valen lo mismo («1 vaso», «los hombres»…) se enseñan ya escritos en el texto: se edita el mismo texto del juego.
+  const fixed = useMemo(() => staticCardVars(def), [def]);
+  const fillFixed = (x: string) => fillCard(x, fixed);
   const title = value?.title ?? def.defaults.title;
-  const text = value?.text ?? def.defaults.text;
+  const text = fillFixed(value?.text ?? def.defaults.text);
+  const defaultText = fillFixed(def.defaults.text);
+  // si el texto vuelve a ser igual al de serie no cuenta como edición
+  const changeText = (v: string) => onChange("text", v === defaultText ? def.defaults.text : v);
+  const dynamicVars = def.vars.filter((v) => !(v.name in fixed));
   const edited = (value?.title !== undefined && value.title !== def.defaults.title) || (value?.text !== undefined && value.text !== def.defaults.text);
   // casilla de la que toma icono y color: la primera que usa la tarjeta (el resultado del duelo, la de duelo)
   const first = def.tiles[0] ? BOARD[def.tiles[0] - 1] : def.key === RESULT_KEYS.duel ? BOARD.find((t) => t.type === "DUELO") ?? null : null;
@@ -215,16 +223,16 @@ function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { 
           )}
         </div>
         <input className="rounded-md bg-white/10 px-2 py-1.5 text-sm font-semibold" value={title} maxLength={60} onChange={(e) => onChange("title", e.target.value)} aria-label={`Título de ${def.label}`} />
-        <textarea className="min-h-20 rounded-md bg-white/10 px-2 py-1.5 text-sm" value={text} maxLength={600} onChange={(e) => onChange("text", e.target.value)} aria-label={`Texto de ${def.label}`} />
-        {def.vars.length > 0 && (
+        <textarea className="min-h-20 rounded-md bg-white/10 px-2 py-1.5 text-sm" value={text} maxLength={600} onChange={(e) => changeText(e.target.value)} aria-label={`Texto de ${def.label}`} />
+        {dynamicVars.length > 0 && (
           <p className="text-[11px] opacity-70">
-            Huecos:{" "}
-            {def.vars.map((v) => (
-              <button key={v.name} type="button" title={`Añade {${v.name}} al texto — ${v.about}`} className="mr-1 rounded bg-white/10 px-1.5 py-0.5 hover:bg-white/20" onClick={() => onChange("text", `${text}{${v.name}}`)}>
+            Cambian en cada partida (toca uno para añadirlo al texto):{" "}
+            {dynamicVars.map((v) => (
+              <button key={v.name} type="button" title={v.about} className="mr-1 rounded bg-white/10 px-1.5 py-0.5 hover:bg-white/20" onClick={() => changeText(`${text}{${v.name}}`)}>
                 {`{${v.name}}`}
               </button>
             ))}
-            <span className="opacity-80">({def.vars.map((v) => `${v.name}: ${v.about}`).join(" · ")})</span>
+            <span className="opacity-80">({dynamicVars.map((v) => `${v.name}: ${v.about}`).join(" · ")})</span>
           </p>
         )}
       </div>

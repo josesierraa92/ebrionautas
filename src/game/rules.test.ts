@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { CARD_GROUPS, cardCatalog, groupOf, parseCardOverrides, setCardOverrides } from "./cards";
 import { createGame } from "./engine";
-import { jailOutcome, mazeOutcome, tileRule } from "./rules";
+import { jailOutcome, mazeOutcome, staticCardVars, tileRule } from "./rules";
 
 describe("mazeOutcome", () => {
   it("con 5 o 6 se salva y no bebe", () => {
@@ -83,6 +83,19 @@ describe("grupos del editor de tarjetas", () => {
     const tipos = new Set(cardCatalog().filter((c) => c.tiles.length).map((c) => c.key.split(":")[0]));
     const cubiertos = new Set(CARD_GROUPS.flatMap((g) => g.types as readonly string[]));
     for (const t of tipos) expect(cubiertos.has(t)).toBe(true);
+  });
+});
+
+describe("editor: datos fijos dentro del texto", () => {
+  const def = (key: string) => cardCatalog().find((c) => c.key === key)!;
+  it("lo que siempre vale lo mismo se enseña escrito; lo que cambia en cada partida, entre llaves", () => {
+    expect(staticCardVars(def("RASGO:Travoltas"))).toEqual({ vasos: "1 vaso", quienes: "quienes lleven melena o el pelo con gomina" });
+    expect(staticCardVars(def("POSICION:Pa' los de atrás"))).toMatchObject({ vasos: "1 vaso", lado: "por detrás" });
+    expect(Object.keys(staticCardVars(def("POSICION:Pa' los de atrás")))).not.toContain("nombre");
+    expect(staticCardVars(def("OCA"))).toEqual({}); // el destino cambia según la casilla
+    expect(staticCardVars(def("PATINAZO"))).toEqual({ vasos: "2 vasos" }); // la casilla a la que rueda cambia
+    expect(staticCardVars(def("A_BEBER"))).toEqual({}); // los vasos son al azar
+    expect(staticCardVars(def("RESULTADO:duelo"))).toEqual({});
   });
 });
 

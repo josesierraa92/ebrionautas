@@ -2,7 +2,7 @@
 
 import { TRAIT_LABELS, getTile } from "./board";
 import { RESULT_KEYS, cardKeyOf, cardText } from "./cards";
-import { jailBail, type GameState } from "./engine";
+import { createGame, jailBail, type GameState } from "./engine";
 
 const vasos = (n: number) => `${n} ${n === 1 ? "vaso" : "vasos"}`;
 
@@ -60,6 +60,27 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
     default:
       return { nombre };
   }
+}
+
+/** Datos que cambian en cada partida (nombre del jugador, quiénes están en la mesa, lo que sale al azar…): nunca se escriben a mano. */
+const DYNAMIC_VARS = new Set(["nombre", "lista", "rivales", "categoria", "dado", "resultado"]);
+
+/**
+ * Huecos de una tarjeta que valen SIEMPRE lo mismo (por ejemplo «1 vaso» y «los hombres» en Machos): el editor los enseña ya escritos
+ * dentro del texto, para que se edite el mismo texto que sale en el juego. Un hueco es fijo si es igual en todas las casillas que usan
+ * la tarjeta y no depende de la partida. Los demás (`{nombre}`, `{destino}`…) se quedan entre llaves.
+ */
+export function staticCardVars(def: { tiles: number[]; vars: { name: string }[] }): Record<string, string | number> {
+  if (!def.tiles.length) return {};
+  const game = createGame([{ name: "Ana", color: "#fff" }, { name: "Beto", color: "#000" }, { name: "Caro", color: "#888" }]);
+  const per = def.tiles.map((n) => tileVars(n, game, game.players[0].id));
+  const out: Record<string, string | number> = {};
+  for (const v of def.vars) {
+    if (DYNAMIC_VARS.has(v.name)) continue;
+    const first = per[0][v.name];
+    if (first !== undefined && per.every((p) => p[v.name] === first)) out[v.name] = first;
+  }
+  return out;
 }
 
 /** Título y regla de la casilla `n` para el jugador `playerId`, con los datos de la partida (textos: `game/cards.ts`). */
