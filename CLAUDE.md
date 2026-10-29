@@ -290,3 +290,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   30 fps, 1920 px); PC → **alta** (6 focos, 60 fps, 2560 px, sombras suaves de 4096). Se fuerza con `?calidad=alta|media|baja`; `?debug` enseña el nivel.
   Encima, la resolución dinámica baja sola si no llega al 80 % de los fps objetivo. La detección por navegador no es infalible (una Smart TV con un
   navegador que se hace pasar por PC saldría «alta»): si pasa, abrir la TV con `?calidad=baja`.
+- `GameCard` (TV, celular y vista previa del editor): arriba icono + «CASILLA N · NOMBRE» en una fila y el título **debajo, a todo el ancho**, con tamaño según su longitud (`titleSize`) para que no pase de 2 renglones (`text-wrap: balance`); antes el título quedaba en una columna estrecha y se partía en 4 renglones.

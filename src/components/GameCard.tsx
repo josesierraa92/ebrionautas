@@ -52,25 +52,24 @@ export default function GameCard({
         />
       )}
       <div className="relative" style={{ padding: `${u(1.1)} ${u(1.4)} ${u(1.3)}`, display: "grid", gap: u(0.9) }}>
+        {/* fila de arriba: icono y «CASILLA N · NOMBRE»; el título va debajo, a todo el ancho, en dos renglones como mucho */}
         <div className="flex items-center" style={{ gap: u(1.1) }}>
           {mask ? (
-            <div className="shrink-0" style={{ width: u(4), filter: `drop-shadow(${u(0.14)} 0 0 #0a071a) drop-shadow(${u(-0.14)} 0 0 #0a071a) drop-shadow(0 ${u(0.14)} 0 #0a071a) drop-shadow(0 ${u(-0.14)} 0 #0a071a)` }}>
+            <div className="shrink-0" style={{ width: u(3.6), filter: `drop-shadow(${u(0.14)} 0 0 #0a071a) drop-shadow(${u(-0.14)} 0 0 #0a071a) drop-shadow(0 ${u(0.14)} 0 #0a071a) drop-shadow(0 ${u(-0.14)} 0 #0a071a)` }}>
               <div style={{ aspectRatio: "1", background: accent, WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" }} />
             </div>
           ) : (
-            <span className="shrink-0 leading-none" style={{ fontSize: u(3.4) }}>
+            <span className="shrink-0 leading-none" style={{ fontSize: u(3.2) }}>
               {emoji}
             </span>
           )}
-          <div className="min-w-0">
-            <p className="font-sans font-bold uppercase" style={{ fontSize: u(0.95), letterSpacing: "0.4em", color: accent }}>
-              {kicker}
-            </p>
-            <h3 className="banner-title leading-[1.05]" style={{ fontSize: u(2.3), ["--accent" as string]: accent }}>
-              {title}
-            </h3>
-          </div>
+          <p className="min-w-0 font-sans font-bold uppercase" style={{ fontSize: u(0.88), letterSpacing: "0.26em", color: accent }}>
+            {kicker}
+          </p>
         </div>
+        <h3 className="banner-title leading-[1.05]" style={{ fontSize: u(titleSize(title)), textWrap: "balance", ["--accent" as string]: accent }}>
+          {title}
+        </h3>
         <p className="font-sans font-semibold whitespace-pre-line" style={{ fontSize: u(1.3), lineHeight: 1.35, color: "#efeaff" }}>
           {text}
         </p>
@@ -83,3 +82,13 @@ export default function GameCard({
     </div>
   );
 }
+
+/**
+ * Tamaño del título (en `--u`) para que quepa en dos renglones: el ancho útil de la tarjeta es de unas 19 `--u` y la letra de terror
+ * ocupa ~0,56 de su tamaño por carácter; los títulos cortos van al tamaño máximo.
+ */
+function titleSize(title: string) {
+  const perLine = Math.ceil(title.length / 2) + 2;
+  return Math.max(1.5, Math.min(2.6, 19 / (0.56 * perLine)));
+}
+
