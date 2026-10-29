@@ -58,6 +58,8 @@ export type GameState = {
   lastRoller?: string | null; // id de quien hizo la última tirada
   /** Vasos del último trago de regalo (1 a 3, al azar): la tarjeta de la casilla los enseña. */
   giftAmount?: number | null;
+  /** La jugada terminó y el celular aún no tocó «Siguiente turno»: la TV sigue enseñando a quien jugó (cámara y cuadro de turno). */
+  waiting?: boolean;
   /** Categoría que salió en La Ouija (se queda hasta la siguiente). */
   category?: string | null;
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
@@ -71,6 +73,7 @@ export type GameState = {
 
 export type Action =
   | { type: "ROLL" }
+  | { type: "NEXT_TURN" }
   | { type: "DISTRIBUTE"; drinks: Record<string, number> }
   | { type: "DUEL"; opponents: string[] }
   | { type: "DUEL_ROLL" }
@@ -137,6 +140,13 @@ export function applyAction(state: GameState, action: Action, rng: Rng = Math.ra
   if (state.phase === "FINISHED") return state;
   const s = structuredClone(state);
 
+  // «Siguiente turno» en el celular: la TV pasa (cámara y cuadro) a quien tiene el turno
+  if (action.type === "NEXT_TURN") {
+    if (!state.waiting) return state;
+    s.waiting = false;
+    return s;
+  }
+
   if (action.type === "PENALTY") {
     const target = s.players.find((p) => p.id === action.id);
     if (!target) return state;
@@ -147,6 +157,7 @@ export function applyAction(state: GameState, action: Action, rng: Rng = Math.ra
 
   if (action.type === "ROLL") {
     if (s.phase !== "ROLL") return state;
+    s.waiting = false;
     roll(s, rng);
     return s;
   }
@@ -167,6 +178,7 @@ function startTurn(s: GameState) {
 
 function endTurn(s: GameState) {
   s.decision = null;
+  s.waiting = true;
   if (s.extraRoll) {
     s.extraRoll = false;
     s.phase = "ROLL";

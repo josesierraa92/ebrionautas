@@ -17,6 +17,8 @@ type Props = {
   game: GameState;
   busy: boolean;
   onRoll: () => void;
+  /** «Siguiente turno»: avisa a la TV (cámara y cuadro de turno) de que ya se vio la tarjeta. */
+  onNext?: () => void;
   /** Lo que se enseña cuando hay que decidir algo (tras mostrar el resultado del dado). */
   decision?: React.ReactNode;
 };
@@ -25,7 +27,7 @@ type Props = {
  * Pantalla del celular en la fase de tirar: un dado gigante que se tira agitando el
  * celular o tocándolo, de quién es el turno y a quién se le pasa después.
  */
-export default function DiceController({ game, busy, onRoll, decision }: Props) {
+export default function DiceController({ game, busy, onRoll, onNext, decision }: Props) {
   const me = currentPlayer(game);
   const [face, setFace] = useState(1);
   const [result, setResult] = useState<{ value: number; name: string; key: number; lost: boolean; jailed: boolean } | null>(null);
@@ -47,6 +49,21 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
   useEffect(() => {
     if (game.phase === "DECISION" && card) setDismissed(card.key);
   }, [game.phase, card]);
+  // Una sola vez por jugada (y solo si la TV está esperando: si no, el motor rechazaría la acción).
+  const nextSent = useRef(-1);
+  const sendNext = () => {
+    if (!game.waiting || nextSent.current === game.logSeq) return;
+    nextSent.current = game.logSeq;
+    onNext?.();
+  };
+  // Si la tarjeta ya se vio junto a la decisión no hay botón «Siguiente turno»: al resolverse la decisión se avisa a la TV sin
+  // pedirlo (salvo que salga la tarjeta de resultado de un duelo, que sí lleva su botón).
+  const prevPhase = useRef(game.phase);
+  useEffect(() => {
+    const was = prevPhase.current;
+    prevPhase.current = game.phase;
+    if (was === "DECISION" && game.phase === "ROLL" && game.lastDuel?.seq === seenDuel.current) sendNext();
+  }, [game.phase]); // eslint-disable-line react-hooks/exhaustive-deps
   const canRoll = game.phase === "ROLL" && !busy && !result && (!card || dismissed === card.key);
   const roll = () => {
     if (!canRoll) return;
@@ -150,7 +167,13 @@ export default function DiceController({ game, busy, onRoll, decision }: Props) 
           })()}
           <PhoneRuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={card.result} unit="19px" />
         </div>
-        <button onClick={() => setDismissed(card.key)} className="btn-game bg-btn-green py-4 text-2xl text-white">
+        <button
+          onClick={() => {
+            setDismissed(card.key);
+            sendNext();
+          }}
+          className="btn-game bg-btn-green py-4 text-2xl text-white"
+        >
           SIGUIENTE TURNO ▶
         </button>
       </div>

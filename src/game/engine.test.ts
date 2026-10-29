@@ -286,3 +286,20 @@ describe("Murciélago", () => {
   });
 });
 
+describe("Siguiente turno", () => {
+  it("al terminar una jugada la TV espera; NEXT_TURN la libera (y solo vale una vez)", () => {
+    let s = rollFrom(game(), 1, 3); // 4: La Capilla, sin decisión
+    expect(s.waiting).toBe(true);
+    s = act(s, { type: "NEXT_TURN" });
+    expect(s.waiting).toBe(false);
+    expect(act(s, { type: "NEXT_TURN" })).toBe(s);
+  });
+
+  it("tirar también libera la espera", () => {
+    let s = rollFrom(game(), 1, 3);
+    expect(s.waiting).toBe(true);
+    s = act(s, { type: "ROLL" }, 1); // tira sin esperar el botón
+    expect(s.waiting).toBe(false);
+  });
+});
+

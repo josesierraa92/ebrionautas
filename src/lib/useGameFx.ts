@@ -216,7 +216,7 @@ export function useGameFx(game: GameState | null) {
     [],
   );
 
-  // La cámara sigue a quien se mueve; en cuanto termina la jugada (y el cuadro de arriba dice «Turno de X») pasa a X.
+  // La cámara sigue a quien se mueve; al tocar «Siguiente turno» en el celular (`waiting` pasa a falso) pasa a quien tiene el turno.
   const turnId = game && !game.winner ? game.players[game.turn]?.id : null;
-  return { shown, flying, dice, banner, settled, landed, focus: settled && turnId ? turnId : focus };
+  return { shown, flying, dice, banner, settled, landed, focus: settled && turnId && !game?.waiting ? turnId : focus };
 }

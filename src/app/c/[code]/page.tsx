@@ -139,6 +139,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
           game={game}
           busy={busy}
           onRoll={() => act({ type: "ROLL" })}
+          onNext={() => act({ type: "NEXT_TURN" })}
           decision={
             game.decision && (
               // fieldset deshabilitado: evita enviar la misma jugada dos veces mientras llega la respuesta

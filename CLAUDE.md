@@ -242,8 +242,10 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - Nombres sobre las fichas (`.live-name`, en 3D y en el respaldo de `IsoBoard`): en el **color del jugador** (el mismo del marco del
   `TurnChip`), con contorno azul muy oscuro (`#090b2a`, 0,34em). El contorno blanco se quitó a petición del usuario.
   La pantalla de la tarjeta lleva arriba «Turno de NOMBRE» con su avatar (de quién es la tarjeta).
-- Cámara de la TV: sigue a la ficha que se mueve y, al terminar la jugada (`settled`, cuando el `TurnChip` pasa a «Turno de X»), se va a
-  enfocar a quien tiene el turno (`focus` que devuelve `useGameFx`).
+- Cámara y cuadro de turno de la TV (pedido del usuario): siguen a quien jugó hasta que el celular toca **«SIGUIENTE TURNO»**; entonces la cámara va
+  a quien tiene el turno y el `TurnChip` cambia. El motor lo marca con `GameState.waiting` (`true` en `endTurn`, `false` con la acción
+  `NEXT_TURN` o al tirar). Si la tarjeta ya se vio junto a una decisión, el celular manda `NEXT_TURN` solo al resolverla (`DiceController`).
+
 - **Trago de regalo** (casillas A_BEBER, antes «Ronda de mezcal»): reparte de **1 a 3 vasos al azar** (`giftAmount` en el estado; el número de
   la casilla ya no cuenta). Todos los títulos de la pantalla (banner de la casilla, panel de la TV y del celular) salen de la tarjeta
   (`cardTitle(key)` / `tileRule`), y `useGameFx` carga los textos propios al arrancar para que el primer título grande ya sea el editado.

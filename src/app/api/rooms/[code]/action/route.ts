@@ -4,6 +4,7 @@ import { RoomError, actInRoom } from "@/server/rooms";
 
 const ACTION_TYPES = new Set<Action["type"]>([
   "ROLL",
+  "NEXT_TURN",
   "DISTRIBUTE",
   "DUEL",
   "DUEL_ROLL",
