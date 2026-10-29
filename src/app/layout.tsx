@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Creepster, Fredoka, Lilita_One } from "next/font/google";
+import { Creepster, Fredoka, Lilita_One, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 
 const display = Lilita_One({
@@ -12,6 +12,12 @@ const display = Lilita_One({
 const spooky = Creepster({
   variable: "--font-spooky",
   weight: "400",
+  subsets: ["latin"],
+});
+
+// Texto descriptivo de las tarjetas (pedido del usuario: títulos en Lilita One y el texto de abajo en Nunito Sans)
+const reading = Nunito_Sans({
+  variable: "--font-nunito",
   subsets: ["latin"],
 });
 
@@ -37,7 +43,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${display.variable} ${body.variable} ${spooky.variable} antialiased`}>
+      <body className={`${display.variable} ${body.variable} ${spooky.variable} ${reading.variable} antialiased`}>
         {children}
       </body>
     </html>
