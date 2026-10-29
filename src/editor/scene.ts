@@ -918,7 +918,9 @@ export class EditorScene {
         light.decay = 1.5;
         light.target.position.set(0, -1, 0);
         if (this.viewer) light.visible = false; // en la TV las luces reales son pocas y siguen a la cámara (collectViewerLamps)
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glow(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glow(), blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, transparent: true }));
+        // sin prueba de profundidad: el halo mira siempre a la cámara y el suelo lo cortaba en una línea recta horizontal
+        sprite.renderOrder = 4;
         const lampGroup = new THREE.Group();
         // una vela (o brasero) tiene la llama casi pegada a su base: el foco desde ahí deja una mancha amarilla dura sobre la
         // losa y casi nada alrededor. Se sube el punto de luz hasta ~1,3 sobre la base del modelo para que reparta suave.
