@@ -307,3 +307,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   **cuadro redondeado** (no hexágono) con el icono oscuro a la izquierda y flechita a la derecha. Título en **Lilita One** en mayúsculas (`titleSize`,
   máx. 2 renglones), texto en **Nunito Sans 700** (`--font-nunito`, `layout.tsx`) color `#d8d4f6`, y botón morado con dado blanco para lo que toca
   hacer en el celular.
+- `GameCard`: el icono va centrado y grande (74 %) en su cuadro, el verde es más neón (`#b6ff3b`→`#2fd11a`) y el dado del botón del celular enseña lo que sacó (`dice` = `game.lastRoll`, `DiceIcon`). El hueco `{destino}` sigue funcionando en `tileVars` por si hay un texto propio guardado con él.

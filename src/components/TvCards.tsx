@@ -119,7 +119,7 @@ export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
   return (
     // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.
     <div className="pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]">
-      <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n}`} title={rule.title} text={rule.text} prompt={decision ? decisionPrompt(decision, player.name, game) : null} unit="1cqw" cardKey={cardKey} />
+      <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n}`} title={rule.title} text={rule.text} prompt={decision ? decisionPrompt(decision, player.name, game) : null} dice={game.lastRoll} unit="1cqw" cardKey={cardKey} />
     </div>
   );
 }

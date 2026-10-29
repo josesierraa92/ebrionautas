@@ -41,7 +41,8 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
       return { nombre, rivales: `${max} ${max === 1 ? "rival" : "rivales"}` };
     }
     case "OCA":
-      return { nombre, casilla: tile.next ?? "" };
+      // `destino` ya no está en el texto de serie, pero un texto propio guardado antes lo puede usar
+      return { nombre, casilla: tile.next ?? "", destino: tile.next ? `volar hasta la casilla ${tile.next} y volver a tirar` : "volver a tirar" };
     case "PATINAZO":
       return { nombre, vasos: vasos(tile.drinks), casilla: tile.backTo };
     case "POSICION": {

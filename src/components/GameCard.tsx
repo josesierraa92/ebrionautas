@@ -9,8 +9,8 @@ import BeerIcon from "@/components/BeerIcon";
 import { iconMaskUrl, type IconName } from "@/editor/icons";
 
 /** Verde biche con degradado a un verde más oscuro: el color de acento de todas las tarjetas (pastilla, cuadro del icono y flechita). */
-const GREEN_LIGHT = "#a3e635";
-const GREEN = `linear-gradient(160deg, ${GREEN_LIGHT}, #3f8f1c)`;
+const GREEN_LIGHT = "#b6ff3b";
+const GREEN = `linear-gradient(160deg, ${GREEN_LIGHT}, #2fd11a)`;
 
 export default function GameCard({
   icon,
@@ -19,6 +19,7 @@ export default function GameCard({
   title,
   text,
   prompt,
+  dice,
   unit,
   cardKey,
 }: {
@@ -30,6 +31,8 @@ export default function GameCard({
   title: string;
   text: string;
   prompt?: string | null;
+  /** Lo que sacó el dado: el dado del botón de «qué hacer en el celular» enseña ese número. */
+  dice?: number | null;
   unit: string;
   cardKey: number;
 }) {
@@ -46,7 +49,7 @@ export default function GameCard({
             <div className="shrink-0" style={{ width: u(4), aspectRatio: "1", borderRadius: u(1), background: "#1a0b38", padding: u(0.2) }}>
               <div className="grid h-full w-full place-items-center" style={{ borderRadius: u(0.8), background: GREEN }}>
                 {mask ? (
-                  <div style={{ width: "58%", aspectRatio: "1", background: "#1d1640", ...maskStyle(mask) }} />
+                  <div style={{ width: "74%", aspectRatio: "1", background: "#14260a", ...maskStyle(mask) }} />
                 ) : (
                   <span className="leading-none" style={{ fontSize: u(2.2) }}>
                     {emoji === "🍷" ? <BeerIcon size="1em" /> : emoji}
@@ -65,7 +68,7 @@ export default function GameCard({
           </p>
           {prompt && (
             <div className="flex items-center" style={{ marginTop: u(1.2), gap: u(0.9), padding: `${u(0.7)} ${u(1.1)}`, borderRadius: u(9), background: "linear-gradient(90deg, #5747e0, #7b55f2)", boxShadow: `inset 0 ${u(-0.18)} 0 rgba(0,0,0,.25), 0 0 0 ${u(0.12)} #2a2370` }}>
-              <DiceIcon size={u(2)} />
+              <DiceIcon size={u(2.2)} value={dice} />
               <p className="font-display leading-tight text-white uppercase" style={{ fontSize: u(0.95), letterSpacing: "0.02em" }}>
                 {prompt}
               </p>
@@ -81,19 +84,24 @@ export default function GameCard({
   );
 }
 
-/** Dado blanco del botón de «qué hacer en el celular». */
-function DiceIcon({ size }: { size: string }) {
+/** Puntos de cada cara del dado en una cuadrícula de 3×3 (coordenadas 0..2). */
+const PIPS: Record<number, [number, number][]> = {
+  1: [[1, 1]],
+  2: [[0, 0], [2, 2]],
+  3: [[0, 0], [1, 1], [2, 2]],
+  4: [[0, 0], [2, 0], [0, 2], [2, 2]],
+  5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]],
+  6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]],
+};
+
+/** Dado blanco del botón de «qué hacer en el celular»: enseña lo que sacó (sin dato, la cara del 5). */
+function DiceIcon({ size, value }: { size: string; value?: number | null }) {
+  const face = value && value >= 1 && value <= 6 ? value : 5;
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} className="shrink-0" aria-hidden>
       <rect x="2" y="2" width="20" height="20" rx="5" fill="#fff" />
-      {[
-        [7.5, 7.5],
-        [16.5, 7.5],
-        [12, 12],
-        [7.5, 16.5],
-        [16.5, 16.5],
-      ].map(([cx, cy]) => (
-        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.9" fill="#2b2470" />
+      {PIPS[face].map(([cx, cy]) => (
+        <circle key={`${cx}-${cy}`} cx={7.5 + cx * 4.5} cy={7.5 + cy * 4.5} r="1.9" fill="#2b2470" />
       ))}
     </svg>
   );
