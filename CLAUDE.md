@@ -348,3 +348,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - `TurnChip`: el texto se corrió otros 4 px a la derecha (`pl-[47px]`), pedido del usuario.
 - `TurnChip`: «TURNO DE» vuelve a ser **verde neón liso** `#bffa58`, sin degradado (el usuario probó el degradado y prefirió quitarlo; el anillo del retrato sí conserva el suyo).
 - `TurnChip` (pedido del usuario: «la misma estética»): la **placa** lleva exactamente los colores de la tarjeta de casilla (`GameCard`): fondo en degradado `#2f1768 → #29155a → #210f4d` y borde de 5 px en el morado más claro `#452b8e` (esquinas `rounded-2xl`); antes borde `#1a0b38` y fondo plano `#2d1460`. Si cambian los colores de `GameCard`, cambiarlos aquí también.
+- `TurnChip`: la placa es **más baja que el cuadro del personaje** (`py-1`, ~80 px contra ~94 px del retrato con su anillo; antes `py-2`), pedido del usuario.
