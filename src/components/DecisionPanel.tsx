@@ -54,10 +54,10 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
       return (
         <Card title={compact ? undefined : "¿Bebes para seguir?"} text={compact ? undefined : decision.next ? `Bebe 1 vaso y vuela hasta la casilla ${decision.next}, y vuelve a tirar. O plántate aquí.` : "Es el último murciélago: bebe 1 vaso y vuelve a tirar, o plántate aquí."}>
           <button onClick={() => onAction({ type: "OCA", choice: "fly" })} className="btn-game bg-btn-green py-3 text-lg text-white">
-            🦇 SÍ, BEBO{decision.next ? ` Y VUELO A LA ${decision.next}` : " Y VUELVO A TIRAR"}
+            SÍ, BEBO{decision.next ? ` Y VUELO A LA ${decision.next}` : " Y VUELVO A TIRAR"}
           </button>
           <button onClick={() => onAction({ type: "OCA", choice: "stay" })} className="btn-game bg-btn-yellow py-3 text-lg text-white">
-            🛑 NO, ME PLANTO
+            NO, ME PLANTO
           </button>
         </Card>
       );
@@ -207,7 +207,6 @@ function PickPlayers(props: {
               className={`btn-game truncate px-2 py-2 text-base text-white ${on ? "" : "opacity-50"}`}
               style={{ background: p.color }}
             >
-              {on ? "🍷 " : ""}
               {p.name}
             </button>
           );
