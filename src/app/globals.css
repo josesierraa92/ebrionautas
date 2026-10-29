@@ -124,7 +124,7 @@ body {
   -webkit-text-stroke: 0.34em #090b2a; /* contorno azul muy oscuro */
   paint-order: stroke fill;
 }
-/* flechita debajo del nombre que señala al personaje: del color del jugador (`--c`), con un filo oscuro fino y un resplandor neón del mismo color */
+/* flechita debajo del nombre que señala al personaje: del color del jugador (`--c`), sin borde oscuro y con un resplandor neón del mismo color */
 .live-name::after {
   content: "";
   display: block;
@@ -134,8 +134,7 @@ body {
   border-left: 0.27em solid transparent;
   border-right: 0.27em solid transparent;
   border-top: 0.31em solid var(--c, #fff);
-  filter: drop-shadow(0.06em 0 0 #090b2a) drop-shadow(-0.06em 0 0 #090b2a) drop-shadow(0 0.06em 0 #090b2a) drop-shadow(0 -0.06em 0 #090b2a)
-    drop-shadow(0 0 0.2em var(--c, #fff)) drop-shadow(0 0 0.5em var(--c, #fff)) drop-shadow(0 0 1em var(--c, #fff));
+  filter: drop-shadow(0 0 0.2em var(--c, #fff)) drop-shadow(0 0 0.5em var(--c, #fff)) drop-shadow(0 0 1em var(--c, #fff));
 }
 /* Personajes zombi del tablero: respiran (el pecho sube y baja: se estiran un poco desde los pies). Con `transform`
    (no la propiedad `scale`, que los navegadores de TV antiguos no conocen); el espejo va en otra capa por dentro. */
