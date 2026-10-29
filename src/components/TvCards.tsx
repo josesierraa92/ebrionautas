@@ -175,7 +175,7 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
           <p className="relative top-[4px] font-display text-[1rem] leading-none tracking-wider uppercase" style={{ background: "linear-gradient(180deg, #e3ff9a 0%, #bffa58 45%, #5fc34a 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
             {winner ? "¡Ganador!" : "Turno de"}
           </p>
-          <p className="mt-1 font-display text-[2.6rem] leading-none text-white uppercase" style={{ textShadow: "0 3px 0 #1a0b38, 0 5px 0 #1a0b38" }}>
+          <p className="mt-1 font-display text-[2.6rem] leading-none text-white uppercase" style={{ textShadow: "0 2px 0 #1a0b38, 0 3px 0 #1a0b38" }}>
             {who.name}
           </p>
         </div>

@@ -340,3 +340,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - `TurnChip`: la placa se recortó a la derecha (`pr-[26px]`: ~30 px de aire después del nombre, antes 28 px más un hueco de ~30), pedido del usuario.
 - `TurnChip`: «TURNO DE» bajó 1 px más (`top-[4px]`), pedido del usuario.
 - `TurnChip`: con **degradados** (pedido del usuario): el anillo de color del jugador es un `linear-gradient(150deg)` del mismo color más claro → color → más oscuro (`shadeHex`, un contenedor de 5 px de relleno en lugar de `box-shadow`, que no admite degradados) y «TURNO DE» lleva el verde en degradado de texto (`#e3ff9a → #bffa58 → #5fc34a`, `background-clip: text`).
+- `TurnChip`: la sombra del nombre es más corta (`0 2px 0, 0 3px 0` #1a0b38; antes 3 y 5 px), pedido del usuario.
