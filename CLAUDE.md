@@ -337,3 +337,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - `TurnChip`: «TURNO DE» (1rem) y el nombre (2,6rem) solo un poquito más grandes que el original (14 px y 2,25rem); una subida mayor (lg / 3,25rem) fue demasiado.
 - `TurnChip`: la placa ya **no va ladeada**, sus lados son verticales (pedido del usuario; antes `-skew-x-6`).
 - `TurnChip`: «TURNO DE» sube 1 px (16 px) y todo el texto se corre 3 px a la derecha (`pl-[39px]`), pedido del usuario.
+- `TurnChip`: la placa se recortó a la derecha (`pr-[26px]`: ~30 px de aire después del nombre, antes 28 px más un hueco de ~30), pedido del usuario.
