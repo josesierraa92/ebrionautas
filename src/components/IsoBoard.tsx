@@ -106,8 +106,9 @@ function useBoxSize() {
 function wantsImage() {
   try {
     if (new URLSearchParams(location.search).has("imagen")) return true;
-    // si el 3D fue lento en esta TV se queda en imagen un rato (media hora), no para siempre: así una racha mala no la
-    // deja sin animaciones
+    // si el 3D fue lento DOS cargas seguidas en esta TV se queda en imagen un rato (media hora). Con una sola no: antes
+    // bastaba una racha lenta (p. ej. justo tras un F5) para que cada recarga abriera la imagen, con los personajes quietos
+    // y otro encuadre
     const t = Number(localStorage.getItem("ebrio:tablero-imagen"));
     return t > Date.now();
   } catch {
@@ -154,11 +155,21 @@ export default function IsoBoard(props: Props) {
           focus={props.focus}
           characterScale={geo.characterScale}
           onReady={() => setMode("on")}
+          onSmooth={() => {
+            try {
+              localStorage.removeItem("ebrio:tablero-lento"); // fue bien: se olvida la carga lenta anterior
+            } catch {}
+          }}
           onFail={(why) => {
             console.warn("Tablero 3D desactivado:", why);
             if (why === "lento")
               try {
-                localStorage.setItem("ebrio:tablero-imagen", String(Date.now() + 30 * 60 * 1000));
+                const strikes = Number(localStorage.getItem("ebrio:tablero-lento") || 0) + 1;
+                localStorage.setItem("ebrio:tablero-lento", String(strikes));
+                if (strikes >= 2) {
+                  localStorage.setItem("ebrio:tablero-imagen", String(Date.now() + 30 * 60 * 1000));
+                  localStorage.removeItem("ebrio:tablero-lento");
+                }
               } catch {}
             setMode("off");
           }}

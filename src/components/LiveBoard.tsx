@@ -8,7 +8,7 @@ import type { BoardLayout } from "@/editor/layout";
 import { EDITOR_FONT_CLASSES } from "@/editor/fonts";
 import type { LiveBoard as Live, LiveState } from "@/live/liveBoard";
 
-type Props = LiveState & { layout: BoardLayout; onReady: () => void; onFail: (why: string) => void };
+type Props = LiveState & { layout: BoardLayout; onReady: () => void; onFail: (why: string) => void; onSmooth?: () => void };
 
 /** Ruta del .glb de cada modelo: el catálogo de serie más los modelos propios subidos. */
 async function modelIndex(): Promise<Map<string, string>> {
@@ -32,7 +32,7 @@ function hasWebGL() {
   }
 }
 
-export default function LiveBoard({ layout, onReady, onFail, ...state }: Props) {
+export default function LiveBoard({ layout, onReady, onFail, onSmooth, ...state }: Props) {
   const viewRef = useRef<HTMLDivElement>(null);
   const labelsRef = useRef<HTMLDivElement>(null);
   const liveRef = useRef<Live | null>(null);
@@ -61,11 +61,14 @@ export default function LiveBoard({ layout, onReady, onFail, ...state }: Props) 
         // Si el aparato va a menos de ~18 fotogramas por segundo de forma sostenida, mejor la imagen (se nota menos que
         // un 3D a saltos). Se mide DESPUÉS de unos segundos de calentamiento (al principio se compilan los shaders y
         // va lento aunque luego vaya fluido) y en dos ventanas seguidas; con la pestaña oculta no se mide (el
-        // navegador para los fotogramas y parecería lento).
+        // navegador para los fotogramas y parecería lento). Solo al empezar (6 ventanas, ~30 s): antes se medía toda la
+        // partida y una racha lenta cualquiera (p. ej. justo tras un F5) dejaba la TV en imagen, con los personajes quietos.
         if (new URLSearchParams(location.search).has("3d")) return; // forzado (pruebas): sin comprobar la velocidad
         const WINDOW = 4000;
         let slow = 0;
+        let windows = 0;
         const measure = () => {
+          if (++windows > 6) return onSmooth?.();
           const f0 = live.frames;
           const t0 = performance.now();
           watch = window.setTimeout(() => {
