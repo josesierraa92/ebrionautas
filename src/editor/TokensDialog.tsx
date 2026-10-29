@@ -14,7 +14,7 @@ import { CHARACTER_SIZE, DEFAULT_NAMES, DEFAULT_TOKEN, NAME_LIMITS, NUMBER_FONTS
 /** Ajustes del nombre que flota sobre cada personaje, con una vista previa que usa el mismo CSS (`.live-name`) que el tablero. */
 function NamesSection({ names, onChange }: { names: NameStyle; onChange: (n: NameStyle) => void }) {
   const set = (patch: Partial<NameStyle>) => onChange({ ...names, ...patch });
-  const slider = (label: string, key: "size" | "spacing" | "bubble" | "glow", unit: string, step: number) => (
+  const slider = (label: string, key: "size" | "spacing" | "bubble" | "glow" | "reach", unit: string, step: number) => (
     <label className="grid gap-0.5 text-sm">
       <span className="flex justify-between">
         {label}{" "}
@@ -59,7 +59,8 @@ function NamesSection({ names, onChange }: { names: NameStyle; onChange: (n: Nam
         </label>
         {slider("Espaciado entre letras", "spacing", " cent. de em", 1)}
         {slider("Opacidad de la burbuja negra", "bubble", " %", 5)}
-        {slider("Intensidad del neón de la flecha", "glow", " %", 10)}
+        {slider("Fuerza del neón de la flecha (cuánto brilla)", "glow", " %", 10)}
+        {slider("Alcance del neón de la flecha (hasta dónde llega)", "reach", " %", 10)}
         <button className="col-span-1 self-end rounded-lg bg-white/10 px-2 py-1.5 text-xs hover:bg-white/20" onClick={() => onChange(DEFAULT_NAMES)}>
           Volver a los valores de serie
         </button>

@@ -15,6 +15,7 @@ import Winner from "@/components/Winner";
 import { currentPlayer, type Decision } from "@/game/engine";
 import { api, hostKey, saved, useRoom } from "@/lib/room-client";
 import { useAutoUpdate } from "@/lib/useAutoUpdate";
+import { usePublishedLayout } from "@/lib/usePublishedBoard";
 import { useGameFx } from "@/lib/useGameFx";
 
 /** Pantalla grande (TV / portátil): QR para el control, tablero y marcador. Solo muestra. */
@@ -26,6 +27,9 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const fx = useGameFx(room?.game ?? null);
   // Se recarga sola cuando hay una versión nueva del juego (sin dado ni jugada en marcha).
   useAutoUpdate(fx.settled && !fx.dice && !fx.banner);
+  // tamaño de la tarjeta de la casilla y del cuadro del turno elegido en el editor (el diseño publicado; 100 % de serie)
+  const published = usePublishedLayout(true);
+  const ui = published?.ui ?? { card: 100, chip: 100 };
   // Panel del marcador a la derecha: se puede ocultar para ver solo el tablero (se recuerda en esta TV).
   const [panelOpen, setPanelOpen] = useState(true);
 
@@ -106,8 +110,8 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
 
   const overlays = (
     <>
-      <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} />
-      {card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} />}
+      <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} scale={ui.chip / 100} />
+      {card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} scale={ui.card / 100} />}
     </>
   );
 

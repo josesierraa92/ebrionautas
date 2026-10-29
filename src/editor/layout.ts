@@ -99,24 +99,37 @@ export type BoardLayout = {
   characterSize: number;
   /** Cómo se ve el nombre que flota sobre cada personaje (tamaño, letra, espaciado, burbuja y neón de la flecha). */
   names: NameStyle;
+  /** Tamaño de lo que se dibuja encima del tablero en la TV. */
+  ui: UiSize;
 };
+
+/** Tamaño (en %) de la tarjeta de la casilla (esquina de abajo a la derecha) y del cuadro del turno (esquina de arriba a la izquierda). 100 = el de serie. */
+export type UiSize = { card: number; chip: number };
+export const DEFAULT_UI: UiSize = { card: 100, chip: 100 };
+export const UI_SIZE_LIMITS = { min: 50, max: 180 };
+export function parseUi(raw: unknown): UiSize {
+  const n = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const lim = (v: unknown, d: number) => Math.round(Math.max(UI_SIZE_LIMITS.min, Math.min(UI_SIZE_LIMITS.max, num(v, d))));
+  return { card: lim(n.card, DEFAULT_UI.card), chip: lim(n.chip, DEFAULT_UI.chip) };
+}
 
 /**
  * Nombre sobre los personajes: `size` y `glow` y `bubble` en %, `spacing` en centésimas de em (−5 = −0,05 em), `font` de `NUMBER_FONTS`.
  * Los valores de serie son los de antes de que fuera editable.
  */
-export type NameStyle = { size: number; font: NumberFont; spacing: number; bubble: number; glow: number };
-export const DEFAULT_NAMES: NameStyle = { size: 100, font: "lilita", spacing: -1, bubble: 50, glow: 100 };
+export type NameStyle = { size: number; font: NumberFont; spacing: number; bubble: number; glow: number; reach: number };
+export const DEFAULT_NAMES: NameStyle = { size: 100, font: "lilita", spacing: -1, bubble: 50, glow: 100, reach: 100 };
 export const NAME_LIMITS = {
   size: { min: 50, max: 200 },
   spacing: { min: -10, max: 30 },
   bubble: { min: 0, max: 100 },
-  glow: { min: 0, max: 250 },
+  glow: { min: 0, max: 200 }, // fuerza del neón de la flecha: cuánto brilla
+  reach: { min: 20, max: 300 }, // alcance del neón: hasta dónde llega la luz
 };
 /** Variables CSS con las que `.live-name` (globals.css) dibuja el nombre: tipo de letra, espaciado, burbuja y neón. El tamaño lo aplica quien lo coloca. */
 export function nameCssVars(n: NameStyle): Record<string, string> {
   const f = NUMBER_FONTS[n.font];
-  return { "--name-font": `var(${f.cssVar}), ${f.fallback}`, "--name-spacing": `${n.spacing / 100}em`, "--name-bubble": String(n.bubble / 100), "--name-glow": String(n.glow / 100) };
+  return { "--name-font": `var(${f.cssVar}), ${f.fallback}`, "--name-spacing": `${n.spacing / 100}em`, "--name-bubble": String(n.bubble / 100), "--name-glow": String(n.glow / 100), "--name-reach": String(n.reach / 100) };
 }
 /** Valida un `NameStyle` que llega de fuera (o un parcial): cada campo en su rango, lo demás de serie. */
 export function parseNames(raw: unknown): NameStyle {
@@ -128,6 +141,7 @@ export function parseNames(raw: unknown): NameStyle {
     spacing: lim(n.spacing, DEFAULT_NAMES.spacing, NAME_LIMITS.spacing),
     bubble: lim(n.bubble, DEFAULT_NAMES.bubble, NAME_LIMITS.bubble),
     glow: lim(n.glow, DEFAULT_NAMES.glow, NAME_LIMITS.glow),
+    reach: lim(n.reach, DEFAULT_NAMES.reach, NAME_LIMITS.reach),
   };
 }
 
@@ -246,6 +260,7 @@ export function newLayout(w = 32, h = 24): BoardLayout {
     tvView: DEFAULT_TV_VIEW,
     characterSize: CHARACTER_SIZE.default,
     names: DEFAULT_NAMES,
+    ui: DEFAULT_UI,
   };
 }
 
@@ -337,7 +352,7 @@ export function resize(l: BoardLayout, w: number, h: number): BoardLayout {
       out.ground[y * w + x] = l.ground[cellIndex(l, x, y)];
       out.height[y * w + x] = l.height[cellIndex(l, x, y)];
     }
-  return { ...out, light: l.light, shadow: l.shadow, mist: l.mist, tileStyles: l.tileStyles, numbers: l.numbers, tokens: l.tokens, tvView: l.tvView, characterSize: l.characterSize, names: l.names, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
+  return { ...out, light: l.light, shadow: l.shadow, mist: l.mist, tileStyles: l.tileStyles, numbers: l.numbers, tokens: l.tokens, tvView: l.tvView, characterSize: l.characterSize, names: l.names, ui: l.ui, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
 }
 
 /** Altura (en unidades del mundo) de la superficie de una celda. Los líquidos quedan un poco hundidos. */
@@ -441,7 +456,7 @@ export function parseLayout(raw: unknown): BoardLayout | null {
       base: typeof t.base === "boolean" ? t.base : DEFAULT_TOKEN.base,
     };
   });
-  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers, tokens, tvView: parseTvView(r.tvView), characterSize, names: parseNames(r.names) };
+  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers, tokens, tvView: parseTvView(r.tvView), characterSize, names: parseNames(r.names), ui: parseUi(r.ui) };
 }
 
 /** Un emoji/texto corto o una imagen pequeña subida desde el editor. */

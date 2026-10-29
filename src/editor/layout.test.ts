@@ -162,11 +162,17 @@ describe("tamaño de los personajes", () => {
     expect(parseLayout({ ...base, characterSize: 0.1 })?.characterSize).toBe(0.5);
     expect(resize({ ...base, characterSize: 1.4 }, 20, 12).characterSize).toBe(1.4);
     // nombre sobre los personajes: de serie los valores de antes, cada campo en su rango y la letra solo de la lista
-    expect(base.names).toEqual({ size: 100, font: "lilita", spacing: -1, bubble: 50, glow: 100 });
+    expect(base.names).toEqual({ size: 100, font: "lilita", spacing: -1, bubble: 50, glow: 100, reach: 100 });
     expect(parseLayout({ ...base, names: undefined })?.names).toEqual(base.names);
-    expect(parseLayout({ ...base, names: { size: 999, font: "creepster", spacing: -99, bubble: 30, glow: "mucho" } })?.names).toEqual({ size: 200, font: "creepster", spacing: -10, bubble: 30, glow: 100 });
+    expect(parseLayout({ ...base, names: { size: 999, font: "creepster", spacing: -99, bubble: 30, glow: "mucho", reach: 9999 } })?.names).toEqual({ size: 200, font: "creepster", spacing: -10, bubble: 30, glow: 100, reach: 300 });
     expect(parseLayout({ ...base, names: { font: "comic-sans" } })?.names.font).toBe("lilita");
     expect(resize({ ...base, names: { ...base.names, size: 140 } }, 20, 12).names.size).toBe(140);
+    // tamaño de la interfaz de la TV: 100 % de serie, entre 50 y 180
+    expect(base.ui).toEqual({ card: 100, chip: 100 });
+    expect(parseLayout({ ...base, ui: undefined })?.ui).toEqual({ card: 100, chip: 100 });
+    expect(parseLayout({ ...base, ui: { card: 999, chip: 10 } })?.ui).toEqual({ card: 180, chip: 50 });
+    expect(parseLayout({ ...base, ui: { card: "grande", chip: 120 } })?.ui).toEqual({ card: 100, chip: 120 });
+    expect(resize({ ...base, ui: { card: 130, chip: 80 } }, 20, 12).ui).toEqual({ card: 130, chip: 80 });
   });
 });
 

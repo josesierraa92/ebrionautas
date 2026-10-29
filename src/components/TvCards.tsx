@@ -123,12 +123,12 @@ export function cardContent(game: GameState, n: number, playerId: string, result
   return { player, style, decision, rule, drinks, light, accent, icon, emoji: style.icon };
 }
 
-export function RuleCard({ game, n, playerId, cardKey, result }: Props) {
+export function RuleCard({ game, n, playerId, cardKey, result, scale = 1 }: Props & { scale?: number }) {
   useCardTexts();
   const { player, decision, rule, accent, icon, emoji } = cardContent(game, n, playerId, result);
   return (
     // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.
-    <div className="pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]">
+    <div className="pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]" style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "bottom right" } : undefined}>
       <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n}`} title={rule.title} text={rule.text} prompt={decision ? decisionPrompt(decision, player.name, game) : null} dice={game.lastRoll} unit="1cqw" cardKey={cardKey} />
     </div>
   );
@@ -145,7 +145,7 @@ export function PhoneRuleCard({ game, n, playerId, cardKey, result, unit = "14px
  * Mientras la TV anima la tirada (`moving`, `rolling`) no se adelanta el resultado ni el turno siguiente.
  */
 // Solo quién tiene el turno: el dado ya se ve grande en el tablero y el número sale en el título de la jugada.
-export function TurnChip({ game, moving = false }: { game: GameState; moving?: boolean; rolling?: boolean }) {
+export function TurnChip({ game, moving = false, scale = 1 }: { game: GameState; moving?: boolean; rolling?: boolean; scale?: number }) {
   const roller = game.players.find((p) => p.id === game.lastRoller);
   const winner = game.players.find((p) => p.id === game.winner);
   const who = winner ?? (moving && roller ? roller : currentPlayer(game));
@@ -154,7 +154,7 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
   // «Turno de» en el verde neón de las tarjetas (`#bffa58`) y 3 px más abajo, nombre con sombra dura azul muy oscuro, sin filete (todo en CSS, mismo estilo
   // grueso y plano que las tarjetas).
   return (
-    <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center max-md:top-16 max-md:scale-90 max-md:origin-top-left">
+    <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center max-md:top-16 max-md:scale-90 max-md:origin-top-left" style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "top left" } : undefined}>
       {/* anillo de color del jugador con degradado (más claro arriba a la izquierda, más oscuro abajo a la derecha) */}
       <div className="relative z-10 -mr-[30px] -ml-[5px] shrink-0" style={{ padding: 5, borderRadius: 21, background: `linear-gradient(150deg, ${shadeHex(color, 0.12)} 0%, ${color} 35%, ${shadeHex(color, -0.38)} 100%)`, boxShadow: "0 6px 12px rgba(0,0,0,.45)" }}>
         <div

@@ -34,7 +34,7 @@ import {
   type LightId,
   type ObjectLight,
   type PlacedObject,
-  TV_VIEW_LIMITS,
+  TV_VIEW_LIMITS, UI_SIZE_LIMITS, DEFAULT_UI,
   type TvView,
 } from "./layout";
 import { EditorScene, type GizmoMode, type Tool } from "./scene";
@@ -87,6 +87,7 @@ export default function BoardEditor() {
   const strokeBefore = useRef<BoardLayout | null>(null);
   const flattenLevel = useRef(0);
   const shadowBefore = useRef<BoardLayout | null>(null);
+  const uiBefore = useRef<BoardLayout | null>(null);
   // zoom e inclinación de la TV: se ven al momento en «Vista TV»; deshacer guarda el valor de antes de arrastrar
   const viewBefore = useRef<BoardLayout | null>(null);
   const setTvView = (v: Partial<TvView>) => {
@@ -944,6 +945,37 @@ export default function BoardEditor() {
           />
           <span className="w-20 text-right text-xs opacity-70">{Math.round(layout.tvView.el)}°</span>
         </label>
+          </section>
+          <section className="grid gap-2 rounded-xl bg-white/5 p-2.5">
+            <h3 className="font-display text-sm text-amber-400">🖥️ Tamaño de la interfaz en la TV</h3>
+            {([
+              ["card", "Tarjeta de la casilla", "La tarjeta que sale abajo a la derecha al caer en una casilla"],
+              ["chip", "Cuadro del turno", "El cuadro con el personaje y «Turno de…» arriba a la izquierda"],
+            ] as const).map(([key, label, tip]) => (
+              <label key={key} className="grid gap-0.5 text-sm" title={tip}>
+                <span className="flex justify-between">
+                  {label} <b>{layout.ui[key]} %</b>
+                </span>
+                <input
+                  type="range"
+                  min={UI_SIZE_LIMITS.min}
+                  max={UI_SIZE_LIMITS.max}
+                  step={5}
+                  value={layout.ui[key]}
+                  onPointerDown={() => (uiBefore.current = layoutRef.current)}
+                  onChange={(e) => setLayout({ ...layoutRef.current, ui: { ...layoutRef.current.ui, [key]: Number(e.target.value) } })}
+                  onPointerUp={() => {
+                    if (uiBefore.current && uiBefore.current !== layoutRef.current) history.current.push(uiBefore.current);
+                    uiBefore.current = null;
+                    setTick((t) => t + 1);
+                  }}
+                />
+              </label>
+            ))}
+            <p className="text-[11px] opacity-60">Se guarda con el diseño y se ve en la TV al «Publicar». 100 % = el tamaño de serie; el cuadro crece desde su esquina.</p>
+            <button className="rounded-lg bg-white/10 px-2 py-1 text-xs hover:bg-white/20" onClick={() => commit({ ...layoutRef.current, ui: DEFAULT_UI })}>
+              Volver al 100 %
+            </button>
           </section>
           <section className="grid gap-2 rounded-xl bg-white/5 p-2.5">
             <h3 className="font-display text-sm text-amber-400">🌙 Sombras y neblina</h3>

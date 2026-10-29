@@ -144,7 +144,14 @@ body {
   border-left: 0.27em solid transparent;
   border-right: 0.27em solid transparent;
   border-top: 0.31em solid var(--c, #fff);
-  filter: drop-shadow(0 0 calc(0.12em * var(--name-glow, 1)) var(--c, #fff)) drop-shadow(0 0 calc(0.3em * var(--name-glow, 1)) var(--c, #fff)) drop-shadow(0 0 calc(0.6em * var(--name-glow, 1)) var(--c, #fff)) drop-shadow(0 0 calc(1.1em * var(--name-glow, 1)) var(--c, #fff));
+  /* alcance = radio de la luz (--name-reach); fuerza = su opacidad (--name-glow, 0-2: de 1 a 2 se suma una segunda capa). Primero una versión simple por si el navegador de la TV no conoce color-mix */
+  filter: drop-shadow(0 0 calc(0.12em * var(--name-reach, 1)) var(--c, #fff)) drop-shadow(0 0 calc(0.3em * var(--name-reach, 1)) var(--c, #fff)) drop-shadow(0 0 calc(0.6em * var(--name-reach, 1)) var(--c, #fff)) drop-shadow(0 0 calc(1.1em * var(--name-reach, 1)) var(--c, #fff));
+  filter: drop-shadow(0 0 calc(0.12em * var(--name-reach, 1)) color-mix(in srgb, var(--c, #fff) calc(min(var(--name-glow, 1), 1) * 100%), transparent))
+    drop-shadow(0 0 calc(0.3em * var(--name-reach, 1)) color-mix(in srgb, var(--c, #fff) calc(min(var(--name-glow, 1), 1) * 100%), transparent))
+    drop-shadow(0 0 calc(0.6em * var(--name-reach, 1)) color-mix(in srgb, var(--c, #fff) calc(min(var(--name-glow, 1), 1) * 100%), transparent))
+    drop-shadow(0 0 calc(1.1em * var(--name-reach, 1)) color-mix(in srgb, var(--c, #fff) calc(min(var(--name-glow, 1), 1) * 100%), transparent))
+    drop-shadow(0 0 calc(0.2em * var(--name-reach, 1)) color-mix(in srgb, var(--c, #fff) calc(max(var(--name-glow, 1) - 1, 0) * 100%), transparent))
+    drop-shadow(0 0 calc(0.6em * var(--name-reach, 1)) color-mix(in srgb, var(--c, #fff) calc(max(var(--name-glow, 1) - 1, 0) * 100%), transparent));
 }
 /* Personajes zombi del tablero: respiran (el pecho sube y baja: se estiran un poco desde los pies). Con `transform`
    (no la propiedad `scale`, que los navegadores de TV antiguos no conocen); el espejo va en otra capa por dentro. */
