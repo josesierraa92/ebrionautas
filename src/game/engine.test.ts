@@ -344,5 +344,14 @@ describe("Siguiente turno", () => {
     s = act(s, { type: "ROLL" }, 1); // tira sin esperar el botón
     expect(s.waiting).toBe(false);
   });
-});
 
+  it("Clasificatoria: solo al terminar la partida, y se puede abrir y cerrar", () => {
+    expect(act(game(2), { type: "RANKING", on: true }).ranking).toBeUndefined(); // sin ganador no vale
+    let s = rollFrom(game(2), 59, 3); // Ana llega a la 62 y gana
+    expect(s.phase).toBe("FINISHED");
+    s = act(s, { type: "RANKING", on: true });
+    expect(s.ranking).toBe(true);
+    s = act(s, { type: "RANKING", on: false });
+    expect(s.ranking).toBe(false);
+  });
+});

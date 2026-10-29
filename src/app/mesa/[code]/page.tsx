@@ -9,6 +9,7 @@ import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
 import SoundToggle from "@/components/SoundToggle";
 import TurnHeader from "@/components/TurnHeader";
+import Clasificatoria from "@/components/Clasificatoria";
 import { RuleCard, TurnChip, decisionText } from "@/components/TvCards";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Decision } from "@/game/engine";
@@ -100,6 +101,9 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
         ? { n: fx.landed.n, playerId: fx.landed.playerId, key: fx.landed.key, result: fx.landed.result }
         : null;
 
+  // el celular abrió la clasificatoria: sustituye al mensaje de ganador y tapa el tablero (fuera de BoardStage: ocupa toda la pantalla)
+  const ranking = winner && game.ranking ? <Clasificatoria game={game} unit="min(1.7vw, 2.6vh)" /> : null;
+
   const overlays = (
     <>
       <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} />
@@ -123,7 +127,8 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
             </button>
           </div>
         </BoardStage>
-        {winner && <Confetti />}
+        {winner && !game.ranking && <Confetti />}
+        {ranking}
       </main>
     );
   }
@@ -158,7 +163,8 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
         >
           {overlays}
         </BoardStage>
-        {winner && <Confetti />}
+        {winner && !game.ranking && <Confetti />}
+        {ranking}
       </section>
       <aside className="flex flex-col gap-4 lg:w-[28rem]">
         <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">

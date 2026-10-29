@@ -20,7 +20,6 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
   const [secret, setSecret] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [ranking, setRanking] = useState(false); // clasificatoria al terminar la partida
   const [actionError, setActionError] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
 
@@ -121,10 +120,10 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
         </button>
       </div>
 
-      {winner ? (
+      {winner && game.ranking ? null : winner ? (
         <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
           <Winner winner={winner} players={game.players}>
-            <button onClick={() => setRanking(true)} className="btn-game bg-btn-blue py-3 text-xl text-white">
+            <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game bg-btn-blue py-3 text-xl text-white">
               VER CLASIFICATORIA
             </button>
             <button
@@ -157,7 +156,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
       )}
       {actionError && <ErrorBox text={actionError} />}
       {error && <p className="text-sm text-btn-red">⚠️ {error}</p>}
-      {winner && ranking && <Clasificatoria game={game} onClose={() => setRanking(false)} />}
+      {winner && game.ranking && <Clasificatoria game={game} onClose={() => act({ type: "RANKING", on: false })} />}
 
       {menu && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-space/95">

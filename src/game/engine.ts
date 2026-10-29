@@ -73,6 +73,8 @@ export type GameState = {
   lastDuel?: { seq: number; by: string; rounds: DuelRound[] } | null;
   /** Último pago en el Purgatorio: cuánto pagó y cuánto le queda (0 = salió). La TV y el celular enseñan el resultado. */
   lastJail?: { seq: number; by: string; paid: number; left: number } | null;
+  /** Terminada la partida: el celular abrió la clasificatoria, que se ve también en la TV en lugar del mensaje de ganador. */
+  ranking?: boolean;
   winner: string | null;
   log: LogEntry[];
   logSeq: number;
@@ -90,6 +92,7 @@ export type Action =
   | { type: "SELECT_DRINKERS"; ids: string[] }
   | { type: "CHOOSE_SLAVE"; id: string }
   | { type: "JAIL_PAY"; n: number }
+  | { type: "RANKING"; on: boolean }
   | { type: "DRANK"; id: string }
   | { type: "PENALTY"; id: string };
 
@@ -143,6 +146,12 @@ export function applyAction(state: GameState, action: Action, rng: Rng = Math.ra
     log(s, `✅ ${p.name} se bebió ${p.pending} ${vasos(p.pending)}.`);
     p.pending = 0;
     return s;
+  }
+
+  // Clasificatoria del final: solo cuando la partida terminó; se enseña en la TV y en el celular
+  if (action.type === "RANKING") {
+    if (state.phase !== "FINISHED" || !!state.ranking === !!action.on) return state;
+    return { ...state, ranking: !!action.on };
   }
 
   if (state.phase === "FINISHED") return state;

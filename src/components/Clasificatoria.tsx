@@ -16,16 +16,17 @@ export function standings(game: GameState) {
   return [...game.players].sort((a, b) => b.drunk - a.drunk || Number(b.id === game.winner) - Number(a.id === game.winner) || a.name.localeCompare(b.name));
 }
 
-export default function Clasificatoria({ game, onClose, unit = "17px" }: { game: GameState; onClose: () => void; unit?: string }) {
+/** `onClose` vacío = solo se mira (la TV: la cierra el celular). */
+export default function Clasificatoria({ game, onClose, unit = "17px" }: { game: GameState; onClose?: () => void; unit?: string }) {
   const rows = standings(game);
   const max = Math.max(1, ...rows.map((p) => p.drunk));
   const total = rows.reduce((a, p) => a + p.drunk, 0);
   const u = (k: number) => `calc(var(--u) * ${k})`;
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 px-4 py-6" role="dialog" aria-modal="true" aria-label="Clasificatoria" onClick={onClose}>
-      <div className="card-pop relative w-full max-w-md" style={{ ["--u" as string]: unit, paddingTop: u(0.9), filter: `drop-shadow(0 ${u(0.4)} ${u(0.6)} rgba(0,0,0,.55))` }} onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[70] grid place-items-center bg-[#090620]/95 px-4 py-6" role="dialog" aria-modal="true" aria-label="Clasificatoria" onClick={onClose}>
+      <div className="card-pop relative w-full" style={{ ["--u" as string]: unit, maxWidth: "calc(var(--u) * 26)", paddingTop: u(0.9), filter: `drop-shadow(0 ${u(0.4)} ${u(0.6)} rgba(0,0,0,.55))` }} onClick={(e) => e.stopPropagation()}>
         <div style={{ borderRadius: u(1.1), border: `${u(0.32)} solid #452b8e`, background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
-          <div className="flex max-h-[80dvh] flex-col" style={{ padding: `${u(1.9)} ${u(1.3)} ${u(1.3)}`, gap: u(0.9) }}>
+          <div className="flex max-h-[85dvh] flex-col" style={{ padding: `${u(1.9)} ${u(1.3)} ${u(1.3)}`, gap: u(0.9) }}>
             <div className="text-center">
               <h3 className="font-display leading-none text-white uppercase" style={{ fontSize: u(2.1), letterSpacing: "0.01em" }}>
                 Clasificatoria
@@ -68,9 +69,11 @@ export default function Clasificatoria({ game, onClose, unit = "17px" }: { game:
               })}
             </ol>
 
-            <button onClick={onClose} className="btn-game bg-btn-green py-3 text-xl text-white">
-              CERRAR
-            </button>
+            {onClose && (
+              <button onClick={onClose} className="btn-game bg-btn-green py-3 text-xl text-white">
+                CERRAR
+              </button>
+            )}
           </div>
         </div>
         <div className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-display uppercase" style={{ padding: `${u(0.2)} ${u(1)}`, borderRadius: u(9), background: GREEN, color: "#14260a", fontSize: u(0.95), letterSpacing: "0.04em" }}>
