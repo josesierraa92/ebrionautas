@@ -122,6 +122,20 @@ body {
   -webkit-text-stroke: 0.34em #090b2a; /* contorno azul muy oscuro */
   paint-order: stroke fill;
   will-change: transform;
+  color: #fff;
+}
+/* flechita debajo del nombre que señala al personaje, del color de su ficha (`--c`) con el mismo contorno oscuro */
+.live-name::after {
+  content: "";
+  display: block;
+  width: 0;
+  height: 0;
+  margin: 0.22em auto 0;
+  border-left: 0.36em solid transparent;
+  border-right: 0.36em solid transparent;
+  border-top: 0.42em solid var(--c, #fff);
+  filter: drop-shadow(0.09em 0 0 #090b2a) drop-shadow(-0.09em 0 0 #090b2a) drop-shadow(0 0.09em 0 #090b2a)
+    drop-shadow(0 -0.09em 0 #090b2a);
 }
 /* Personajes zombi del tablero: respiran (el pecho sube y baja: se estiran un poco desde los pies). Con `transform`
    (no la propiedad `scale`, que los navegadores de TV antiguos no conocen); el espejo va en otra capa por dentro. */

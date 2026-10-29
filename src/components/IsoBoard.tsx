@@ -359,7 +359,7 @@ function Token({ t, z, k, sheet, scale, current, winner, flying }: { t: TokenDat
             fontSize: (n > 8 ? 11 : n > 3 ? 13 : 16) * k,
             lineHeight: 1,
             letterSpacing: "-0.01em",
-            color: p.color, // el color del jugador, con contorno azul oscuro y blanco (clase live-name)
+            ["--c" as string]: p.color, // nombre blanco; la flechita de debajo, del color del jugador (clase live-name)
           }}
         >
           {p.name}
