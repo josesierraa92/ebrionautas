@@ -35,6 +35,10 @@ type Token = {
   still: number;
   /** Ya llegó a su casilla de verdad (no está a mitad de una animación): mira a la casilla siguiente. */
   settled: boolean;
+  /** Escala de serie del modelo y fase de la respiración (cada uno respira a su ritmo). */
+  base: number;
+  breath: number;
+  amp: number;
 };
 
 export type LiveState = {
@@ -170,7 +174,8 @@ export class LiveBoard {
     const src = this.chars[character];
     const model = cloneSkinned(src.root);
     const size = new THREE.Box3().setFromObject(src.root).getSize(new THREE.Vector3());
-    model.scale.setScalar(height / size.y);
+    const base = height / size.y;
+    model.scale.setScalar(base);
     model.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
@@ -208,7 +213,7 @@ export class LiveBoard {
     this.labels.appendChild(label);
     const yaw = this.idleYaw(p.pos) ?? Math.PI / 4;
     group.rotation.y = yaw;
-    return { character, group, model, mixer, idle, walk, height, pos: p.pos, goal: at.clone(), from: at.clone(), t: 1, dur: STEP_MS, fly: false, yaw, yawGoal: yaw, label, walking: false, still: 1, settled: true };
+    return { character, group, model, mixer, idle, walk, height, pos: p.pos, goal: at.clone(), from: at.clone(), t: 1, dur: STEP_MS, fly: false, yaw, yawGoal: yaw, label, walking: false, still: 1, settled: true, base, breath: Math.random() * Math.PI * 2, amp: 1 };
   }
 
   /** Quieto, mira hacia la casilla siguiente (en la última, en el sentido en que llegó). */
@@ -255,6 +260,12 @@ export class LiveBoard {
       t.yaw += d * (1 - Math.exp(-dt * 12));
       t.group.rotation.y = t.yaw;
       t.mixer.update(dt * (walking ? 1.4 : 1));
+      // respiración visible: la animación «idle» del kit apenas mueve los brazos y desde la cámara de la TV no se notaba;
+      // quieto, el cuerpo se estira y encoge un poco (unos 2,6 s por respiración); al caminar se apaga suave
+      t.breath += dt * 2.4;
+      t.amp += ((walking || t.fly ? 0 : 1) - t.amp) * (1 - Math.exp(-dt * 5));
+      const k = Math.sin(t.breath) * 0.035 * t.amp;
+      t.model.scale.set(t.base * (1 - k * 0.45), t.base * (1 + k), t.base * (1 - k * 0.45));
     }
   }
 
