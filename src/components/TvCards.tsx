@@ -149,23 +149,21 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
   const winner = game.players.find((p) => p.id === game.winner);
   const who = winner ?? (moving && roller ? roller : currentPlayer(game));
   const color = who.color;
-  // Placa de HUD de videojuego: retrato enmarcado con el color del jugador que sobresale de una placa oscura ladeada,
-  // «Turno de» en el verde neón de las tarjetas (`#bffa58`) y 3 px más abajo, nombre con sombra dura azul muy oscuro, sin filete (todo en CSS, mismo estilo
-  // grueso y plano que las tarjetas).
+  // Misma estética que las tarjetas de casilla (`GameCard`): panel morado con borde grueso (#452b8e, 0,32 `--u`), esquinas levemente
+  // redondeadas, «Turno de» en verde neón y el retrato en un cuadro redondeado con el color del jugador en su borde. Se mide en la
+  // misma unidad que la tarjeta de la TV (1cqw) para que todo tenga el mismo grosor y escala.
+  const u = (k: number) => `calc(var(--u) * ${k})`;
   return (
-    <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center max-md:top-16 max-md:scale-90 max-md:origin-top-left">
-      <div
-        className="relative z-10 -mr-5 grid shrink-0 place-items-center overflow-hidden rounded-2xl border-[4px] border-ink"
-        style={{ width: 84, height: 84, background: "radial-gradient(circle at 50% 35%, #8a58e0, #4a2a94 60%, #2d1460)", boxShadow: `0 0 0 3px ${color}, 0 5px 0 3px ${color}, 0 8px 14px rgba(0,0,0,.45)` }}
-      >
-        <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={62} character={characterOf(game.players, who.id)} />
-      </div>
-      <div className="relative -skew-x-6 overflow-hidden rounded-xl border-[4px] border-[#1a0b38] bg-[#2d1460]/95 py-2 pr-7 pl-12 shadow-[0_6px_0_#1a0b38,0_10px_16px_rgba(0,0,0,.45)]">
-        <div className="skew-x-6">
-          <p className="relative top-[3px] font-display text-sm leading-none tracking-wider text-[#bffa58] uppercase">
+    <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 max-md:top-16 max-md:origin-top-left max-md:scale-90" style={{ ["--u" as string]: "1cqw", filter: `drop-shadow(0 ${u(0.4)} ${u(0.6)} rgba(0,0,0,.55))` }}>
+      <div className="flex items-center" style={{ gap: u(1), padding: `${u(0.7)} ${u(1.8)} ${u(0.7)} ${u(0.7)}`, borderRadius: u(1.1), border: `${u(0.32)} solid #452b8e`, background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
+        <div className="grid shrink-0 place-items-center overflow-hidden" style={{ width: u(5), height: u(5), borderRadius: u(0.9), border: `${u(0.32)} solid ${color}`, background: "radial-gradient(circle at 50% 35%, #8a58e0, #4a2a94 60%, #2d1460)" }}>
+          <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={62} character={characterOf(game.players, who.id)} className="h-[calc(var(--u)*4.4)] w-auto" />
+        </div>
+        <div>
+          <p className="font-display leading-none uppercase" style={{ fontSize: u(0.95), letterSpacing: "0.04em", color: "#bffa58" }}>
             {winner ? "¡Ganador!" : "Turno de"}
           </p>
-          <p className="mt-1 font-display text-4xl leading-none text-white uppercase" style={{ textShadow: "0 3px 0 #1a0b38, 0 5px 0 #1a0b38" }}>
+          <p className="font-display leading-none text-white uppercase" style={{ marginTop: u(0.35), fontSize: u(2.3) }}>
             {who.name}
           </p>
         </div>
