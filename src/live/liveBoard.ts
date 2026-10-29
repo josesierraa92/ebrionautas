@@ -3,8 +3,8 @@
 // caminan de casilla en casilla mirando hacia donde van. La cámara sigue a la ficha que toca.
 import * as THREE from "three";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { loadAll, type Loaded } from "@/editor/characterSheet";
-import { nameCssVars, TILE_SIZE, type BoardLayout } from "@/editor/layout";
+import { eyeEmissiveMap, loadAll, type Loaded } from "@/editor/characterSheet";
+import { nameCssVars, TILE_SIZE, tvDirection, type BoardLayout } from "@/editor/layout";
 import { EditorScene } from "@/editor/scene";
 import { CHARACTER_HEIGHT, characterOf, TOKEN_TO_TILE } from "@/game/characters";
 import type { Player } from "@/game/engine";
@@ -39,6 +39,10 @@ type Token = {
   base: number;
   breath: number;
   amp: number;
+  /** Halo de luz amarillo de cada ojo (cuelgan del hueso de la cabeza) y cómo giraba la cabeza en reposo, para saber hacia dónde mira. */
+  glow: THREE.Sprite[];
+  head: THREE.Object3D | null;
+  headRestInv: THREE.Quaternion;
 };
 
 export type LiveState = {
@@ -56,8 +60,14 @@ export class LiveBoard {
   private chars: Loaded[] = [];
   private tokens = new Map<string, Token>();
   private shadowTex: THREE.Texture;
+  /** Halo redondo y suave de los ojos. */
+  private glowTex: THREE.Texture;
+  /** Hacia dónde está la cámara de la TV (unitario): el halo de los ojos solo se ve cuando la cara mira hacia ella. */
+  private camDir: THREE.Vector3;
   private state: LiveState | null = null;
   private first = true;
+  private tmpQ = new THREE.Quaternion();
+  private tmpV = new THREE.Vector3();
   /** Fotogramas pintados (para saber si el aparato puede con el 3D). */
   frames = 0;
 
@@ -83,6 +93,17 @@ export class LiveBoard {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 64, 64);
     this.shadowTex = new THREE.CanvasTexture(c);
+    const gc = document.createElement("canvas");
+    gc.width = gc.height = 64;
+    const gctx = gc.getContext("2d")!;
+    const gg = gctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gg.addColorStop(0, "rgba(255,244,120,1)");
+    gg.addColorStop(0.3, "rgba(255,230,40,0.7)");
+    gg.addColorStop(1, "rgba(255,210,0,0)");
+    gctx.fillStyle = gg;
+    gctx.fillRect(0, 0, 64, 64);
+    this.glowTex = new THREE.CanvasTexture(gc);
+    this.camDir = new THREE.Vector3(...tvDirection(layout.tvView)).normalize();
   }
 
   /** Carga el escenario y los personajes; resuelve cuando está todo listo para enseñarse. */
@@ -187,13 +208,30 @@ export class LiveBoard {
         const c = m.clone();
         if (c.map) {
           c.emissive = new THREE.Color("#ffffff");
-          c.emissiveMap = c.map;
-          c.emissiveIntensity = 0.32;
+          c.emissiveMap = eyeEmissiveMap(c.map); // luz propia suave en todo el cuerpo y los ojos amarillos a plena luz (neón)
+          c.emissiveIntensity = 1;
         }
         return c;
       }) as unknown as THREE.Material;
       if (Array.isArray(mesh.material) && mesh.material.length === 1) mesh.material = mesh.material[0];
     });
+    // halo de luz amarillo en cada ojo: cuelga del hueso de la cabeza (en reposo, antes de escalar y de animar)
+    const head = model.getObjectByName("head") ?? null;
+    const glow: THREE.Sprite[] = [];
+    const headRestInv = new THREE.Quaternion();
+    if (head) {
+      model.updateMatrixWorld(true);
+      head.getWorldQuaternion(headRestInv).invert();
+      for (const e of src.eyes) {
+        const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glowTex, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, transparent: true, opacity: 0 }));
+        // el modelo ya está escalado (`base`): el ojo (en medidas del modelo sin escalar) se lleva a medidas del mundo antes de pasarlo al hueso
+        s.position.copy(head.worldToLocal(e.clone().add(new THREE.Vector3(0, 0, 0.02)).multiplyScalar(base)));
+        s.scale.setScalar(0.14);
+        s.renderOrder = 6;
+        head.add(s);
+        glow.push(s);
+      }
+    }
     const group = new THREE.Group();
     group.position.copy(at);
     group.add(model);
@@ -215,7 +253,7 @@ export class LiveBoard {
     this.labels.appendChild(label);
     const yaw = this.idleYaw(p.pos) ?? Math.PI / 4;
     group.rotation.y = yaw;
-    return { character, group, model, mixer, idle, walk, height, pos: p.pos, goal: at.clone(), from: at.clone(), t: 1, dur: STEP_MS, fly: false, yaw, yawGoal: yaw, label, walking: false, still: 1, settled: true, base, breath: Math.random() * Math.PI * 2, amp: 1 };
+    return { character, group, model, mixer, idle, walk, height, pos: p.pos, goal: at.clone(), from: at.clone(), t: 1, dur: STEP_MS, fly: false, yaw, yawGoal: yaw, label, walking: false, still: 1, settled: true, base, breath: Math.random() * Math.PI * 2, amp: 1, glow, head, headRestInv };
   }
 
   /** Quieto, mira hacia la casilla siguiente (en la última, en el sentido en que llegó). */
@@ -268,6 +306,13 @@ export class LiveBoard {
       t.amp += ((walking || t.fly ? 0 : 1) - t.amp) * (1 - Math.exp(-dt * 5));
       const k = Math.sin(t.breath) * 0.035 * t.amp;
       t.model.scale.set(t.base * (1 - k * 0.45), t.base * (1 + k), t.base * (1 - k * 0.45));
+      // el halo de los ojos se ve cuando la cara mira hacia la cámara (de espaldas o de lado no: no brillaría a través del pelo)
+      if (t.head && t.glow.length) {
+        t.head.getWorldQuaternion(this.tmpQ).multiply(t.headRestInv);
+        const facing = this.tmpV.set(0, 0, 1).applyQuaternion(this.tmpQ).dot(this.camDir);
+        const op = Math.max(0, Math.min(1, facing * 1.8 - 0.1)) * 0.95;
+        for (const g of t.glow) g.material.opacity = op;
+      }
     }
   }
 

@@ -87,7 +87,7 @@ const YELLOW_UV = [(EYE.x + EYE.size / 2) / 512, (EYE.y + EYE.size / 2) / 512];
  * negro (por eso no se puede cambiar en la paleta). Se buscan en la geometría de la cabeza (piezas sueltas, oscuras,
  * planas en la cara y a la altura de los ojos, no de la boca) y se apuntan al amarillo de la paleta.
  */
-function yellowEyes(mesh: THREE.Mesh, map: THREE.Texture) {
+function yellowEyes(mesh: THREE.Mesh, map: THREE.Texture, eyes: THREE.Vector3[]) {
   const geo = mesh.geometry;
   const pos = geo.attributes.position;
   const uv = geo.attributes.uv;
@@ -133,6 +133,10 @@ function yellowEyes(mesh: THREE.Mesh, map: THREE.Texture) {
     if (!(flat && dark && w < 0.27 && h < 0.06 && yc > 0.47 && yc < 0.545)) continue;
     // amarillos y un poco más grandes, para que se vean desde lejos
     const xc = (Math.max(...xs) + Math.min(...xs)) / 2;
+    // dónde están (en coordenadas de la malla, al frente de la cara) para ponerles el halo de luz en el 3D; una pieza ancha es la banda de los dos ojos
+    const front = Math.max(...zs);
+    if (w > 0.15) eyes.push(new THREE.Vector3(xc - w * 0.3, yc, front), new THREE.Vector3(xc + w * 0.3, yc, front));
+    else eyes.push(new THREE.Vector3(xc, yc, front));
     for (const i of vs) {
       uv.setXY(i, YELLOW_UV[0], YELLOW_UV[1]);
       pos.setXY(i, xc + (pos.getX(i) - xc) * (w > 0.15 ? 1.15 : 1.3), yc + (pos.getY(i) - yc) * 1.3);
@@ -189,7 +193,40 @@ function dropProps(mesh: THREE.Mesh, id: string) {
   geo.setIndex(keep);
 }
 
-export type Loaded = { root: THREE.Object3D; clips: THREE.AnimationClip[] };
+export type Loaded = {
+  root: THREE.Object3D;
+  clips: THREE.AnimationClip[];
+  /** Centro de cada ojo amarillo (en el espacio del modelo sin escalar, al frente de la cara): ahí va el halo de luz del 3D. */
+  eyes: THREE.Vector3[];
+};
+
+const emissiveCache = new WeakMap<THREE.Texture, THREE.Texture>();
+/**
+ * Mapa emisivo de un zombi: la paleta oscurecida al 32 % (la luz propia suave de todo el cuerpo) con el cuadrito amarillo de los ojos
+ * a plena luz: los ojos brillan como neón aunque la escena sea de noche.
+ */
+export function eyeEmissiveMap(map: THREE.Texture): THREE.Texture {
+  const cached = emissiveCache.get(map);
+  if (cached) return cached;
+  const img = map.image as CanvasImageSource & { width: number; height: number };
+  const c = document.createElement("canvas");
+  c.width = img.width;
+  c.height = img.height;
+  const ctx = c.getContext("2d")!;
+  ctx.drawImage(img, 0, 0);
+  ctx.fillStyle = "rgba(0,0,0,0.68)";
+  ctx.fillRect(0, 0, c.width, c.height);
+  const k = img.width / 512;
+  ctx.fillStyle = "#ffee33";
+  ctx.fillRect(EYE.x * k, EYE.y * k, EYE.size * k, EYE.size * k);
+  const tex = new THREE.CanvasTexture(c);
+  tex.flipY = map.flipY;
+  tex.colorSpace = map.colorSpace;
+  tex.wrapS = map.wrapS;
+  tex.wrapT = map.wrapT;
+  emissiveCache.set(map, tex);
+  return tex;
+}
 let loading: Promise<Loaded[]> | null = null;
 
 /**
@@ -242,12 +279,17 @@ export function loadAll(): Promise<Loaded[]> {
             DIR + id + ".glb",
             (g) => {
               const maps = new Map<THREE.Texture, THREE.Texture>();
+              const eyes: THREE.Vector3[] = [];
+              let headMesh: THREE.Mesh | null = null;
               g.scene.traverse((o) => {
                 const mesh = o as THREE.Mesh;
                 if (!mesh.isMesh) return;
                 mesh.frustumCulled = false; // con la animación la caja de la malla no es la de reposo
                 const orig = [mesh.material].flat()[0] as THREE.MeshStandardMaterial;
-                if (/head/i.test(mesh.name) && orig.map) yellowEyes(mesh, orig.map);
+                if (/head/i.test(mesh.name) && orig.map) {
+                  yellowEyes(mesh, orig.map, eyes);
+                  headMesh = mesh;
+                }
                 if (/body/i.test(mesh.name)) dropProps(mesh, id);
                 mesh.material = ([mesh.material].flat() as THREE.MeshStandardMaterial[]).map((orig) => {
                   const m = orig.clone();
@@ -260,7 +302,9 @@ export function loadAll(): Promise<Loaded[]> {
                 }) as unknown as THREE.Material;
                 if (Array.isArray(mesh.material) && mesh.material.length === 1) mesh.material = mesh.material[0];
               });
-              ok({ root: g.scene, clips: g.animations });
+              g.scene.updateMatrixWorld(true);
+              if (headMesh) for (const e of eyes) e.applyMatrix4((headMesh as THREE.Mesh).matrixWorld);
+              ok({ root: g.scene, clips: g.animations, eyes });
             },
             undefined,
             fail,
