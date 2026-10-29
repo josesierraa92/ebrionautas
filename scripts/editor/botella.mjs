@@ -1,5 +1,5 @@
 // Genera la botella low poly del juego (vidrio verde, tapa marrón, etiqueta clara con una X negra, como el icono de beber):
-// public/models/juego/botella.glb. Todo es geometría con colores planos (sin texturas), a ~330 triángulos.
+// public/models/juego/botella.glb. Todo es geometría con colores planos (sin texturas), a ~210 triángulos.
 // Uso: node scripts/editor/botella.mjs   (después, node scripts/editor/catalog.mjs para que salga en el catálogo del editor)
 import * as THREE from "three";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
@@ -35,39 +35,41 @@ root.name = "botella";
 
 // cuerpo: perfil (radio, altura) girado alrededor del eje vertical
 const profile = [
+  // botella de cerveza: delgada y alta, con hombros suaves y cuello largo
   [0, 0],
-  [0.3, 0],
-  [0.35, 0.07],
-  [0.35, 0.78],
-  [0.3, 0.92],
-  [0.15, 1.12],
-  [0.13, 1.5],
-  [0.17, 1.52],
-  [0.17, 1.62],
-  [0, 1.62],
+  [0.17, 0],
+  [0.2, 0.05],
+  [0.2, 0.74],
+  [0.17, 0.9],
+  [0.105, 1.12],
+  [0.078, 1.26],
+  [0.078, 1.5],
+  [0.095, 1.52],
+  [0.095, 1.6],
+  [0, 1.6],
 ].map(([r, y]) => new THREE.Vector2(r, y));
 const body = new THREE.Mesh(new THREE.LatheGeometry(profile, SIDES), GLASS);
 body.name = "vidrio";
 root.add(body);
 
 // tapa
-const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.12, SIDES), CAP);
+const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.108, 0.108, 0.1, SIDES), CAP);
 cap.name = "tapa";
-cap.position.y = 1.64;
+cap.position.y = 1.63;
 root.add(cap);
 
-// etiqueta: un trozo de cilindro un poco más ancho que el cuerpo, mirando al frente (+z)
+// etiqueta: un rectángulo alargado (más alto que ancho) que rodea un cuarto del cuerpo, mirando al frente (+z)
 const arc = (Math.PI * 100) / 180;
-const label = new THREE.Mesh(new THREE.CylinderGeometry(0.362, 0.362, 0.44, 4, 1, true, -arc / 2, arc), LABEL);
+const label = new THREE.Mesh(new THREE.CylinderGeometry(0.207, 0.207, 0.52, 4, 1, true, -arc / 2, arc), LABEL);
 label.name = "etiqueta";
-label.position.y = 0.42;
+label.position.y = 0.43;
 root.add(label);
 
 // la X de la etiqueta: dos barras cruzadas
 for (const [i, rot] of [Math.PI / 4, -Math.PI / 4].entries()) {
-  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.06, 0.02), INK);
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.04, 0.012), INK);
   bar.name = `x${i + 1}`;
-  bar.position.set(0, 0.42, 0.372);
+  bar.position.set(0, 0.43, 0.212);
   bar.rotation.z = rot;
   root.add(bar);
 }
