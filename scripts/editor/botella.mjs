@@ -1,5 +1,5 @@
-// Genera la botella low poly del juego (estilo voxel: vidrio verde, tapa marrón, etiqueta clara alargada con una X negra, como el icono de beber):
-// public/models/juego/botella.glb. Todo es geometría con colores planos (sin texturas), unas pocas decenas de cajas.
+// Genera la botella low poly del juego (vidrio verde, tapa marrón, etiqueta clara alargada con una X negra, como el icono de beber):
+// public/models/juego/botella.glb. Todo es geometría con colores planos (sin texturas), unos 300 triángulos.
 // Uso: node scripts/editor/botella.mjs   (después, node scripts/editor/catalog.mjs para que salga en el catálogo del editor)
 import * as THREE from "three";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
@@ -23,42 +23,60 @@ globalThis.FileReader = class {
   }
 };
 
-const flat = (hex, extra = {}) => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.55, metalness: 0, flatShading: true, ...extra });
+const flat = (hex, extra = {}) => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.55, metalness: 0, ...extra });
 const GLASS = flat("#2f9a3c", { roughness: 0.3 });
 const CAP = flat("#8a4a1e");
 const LABEL = flat("#b9f063", { side: THREE.DoubleSide });
 const INK = flat("#14260a");
 
-// Estilo voxel: todo son cajas sobre una cuadrícula de 0,05 (como los personajes y el escenario del juego)
-const U = 0.05;
+// Botella de cerveza redonda con las proporciones del dibujo del usuario: cuerpo ancho y recto (la mitad de la altura), hombros cortos,
+// cuello largo y delgado, collarín y una tapa pequeña; etiqueta alta (más alta que ancha) que cubre casi todo el frente.
+const SIDES = 16; // lados del giro: lo bastante redondo sin pasar de unos cientos de triángulos
 const root = new THREE.Group();
 root.name = "botella";
-const box = (name, w, h, d, x, y, z, mat) => {
-  // medidas en voxeles; (x, z) = centro, y = base
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w * U, h * U, d * U), mat);
-  m.name = name;
-  m.position.set(x * U, (y + h / 2) * U, z * U);
-  root.add(m);
-};
-const HILITE = flat("#52c95f", { roughness: 0.3 });
 
-// botella de cerveza (como el dibujo del usuario): cuerpo recto de 10×16, hombros suaves en escalón, cuello largo y delgado de 4×11,
-// un collarín y una tapa pequeña arriba (32 voxeles de alto)
-box("cuerpo", 10, 16, 10, 0, 0, 0, GLASS);
-box("hombro1", 8, 1, 8, 0, 16, 0, GLASS);
-box("hombro2", 6, 1, 6, 0, 17, 0, GLASS);
-box("cuello", 4, 11, 4, 0, 18, 0, GLASS);
-box("collarin", 6, 1, 6, 0, 29, 0, GLASS);
-box("tapa", 4, 2, 4, 0, 30, 0, CAP);
-// reflejo del vidrio: una columna más clara en la esquina delantera izquierda
-box("brillo", 1, 13, 1, -4, 2, 5.02, HILITE);
+// cuerpo: perfil (radio, altura) girado alrededor del eje vertical
+const profile = [
+  [0, 0],
+  [0.2, 0],
+  [0.25, 0.04],
+  [0.25, 0.84],
+  [0.235, 0.9],
+  [0.19, 0.95],
+  [0.115, 0.99],
+  [0.085, 1.04],
+  [0.085, 1.45],
+  [0.105, 1.465],
+  [0.105, 1.5],
+  [0.085, 1.5],
+  [0, 1.5],
+].map(([r, y]) => new THREE.Vector2(r, y));
+const body = new THREE.Mesh(new THREE.LatheGeometry(profile, SIDES), GLASS);
+body.name = "vidrio";
+root.add(body);
 
-// etiqueta: rectángulo alto (7×11) que cubre casi todo el frente del cuerpo, con una X de 5×5 «píxeles» negros
-const FRONT = 5;
-box("etiqueta", 7, 11, 1, 0, 4, FRONT + 0.5, LABEL);
-for (let k = 0; k < 5; k++)
-  for (const col of k === 2 ? [k] : [k, 4 - k])
-    box(`x${k}${col}`, 1, 1, 0.5, col - 2, 7 + k, FRONT + 1.25, INK);
+// tapa pequeña arriba
+const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.092, 0.11, SIDES), CAP);
+cap.name = "tapa";
+cap.position.y = 1.555;
+root.add(cap);
+
+// etiqueta: un trozo de cilindro (un cuarto de vuelta) más alto que ancho, mirando al frente (+z)
+const arc = (Math.PI * 90) / 180;
+const R = 0.258;
+const label = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.55, 6, 1, true, -arc / 2, arc), LABEL);
+label.name = "etiqueta";
+label.position.y = 0.4;
+root.add(label);
+
+// la X de la etiqueta: dos barras cruzadas
+for (const [i, rot] of [Math.PI / 4, -Math.PI / 4].entries()) {
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.04, 0.012), INK);
+  bar.name = `x${i + 1}`;
+  bar.position.set(0, 0.4, R + 0.004);
+  bar.rotation.z = rot;
+  root.add(bar);
+}
 
 const scene = new THREE.Scene();
 scene.add(root);
