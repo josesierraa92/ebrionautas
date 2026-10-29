@@ -164,7 +164,7 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
       {/* anillo de color del jugador con degradado (más claro arriba a la izquierda, más oscuro abajo a la derecha) */}
       <div className="relative z-10 -mr-[30px] -ml-[5px] shrink-0" style={{ padding: 5, borderRadius: 21, background: `linear-gradient(150deg, ${shadeHex(color, 0.12)} 0%, ${color} 35%, ${shadeHex(color, -0.38)} 100%)`, boxShadow: "0 6px 12px rgba(0,0,0,.45)" }}>
         <div
-          className="grid place-items-center overflow-hidden rounded-2xl border-[4px] border-ink"
+          className="grid place-items-center overflow-hidden rounded-2xl border-[4px] border-[#0c0420]"
           style={{ width: 84, height: 84, background: "radial-gradient(circle at 50% 50%, #5a31ad 0%, #3a1d7a 50%, #1a0b38 100%)" }}
         >
           <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={62} character={characterOf(game.players, who.id)} />

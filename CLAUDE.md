@@ -343,3 +343,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - `TurnChip`: la sombra del nombre es más corta (`0 2px 0, 0 3px 0` #1a0b38; antes 3 y 5 px), pedido del usuario.
 - `TurnChip`: el texto se corrió 4 px más a la derecha (`pl-[43px]`), pedido del usuario.
 - Degradados del `TurnChip` (pedido del usuario): del **color vivo y fuerte (neón) a un tono más normal y oscuro**, sin pasar por un claro: anillo `color +12 % → color → color −38 %` y «TURNO DE» `#c6ff4a → #8be02c → #3f9a2a`.
+- `TurnChip`: el borde interno del retrato (dentro del anillo de color) es un morado casi negro `#0c0420`, no el azul oscuro `ink` (se veía «azulito»; pedido del usuario).
