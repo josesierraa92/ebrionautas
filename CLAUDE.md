@@ -296,10 +296,8 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - **Tropiezo de lápida** (pedido del usuario; antes «Tropiezo con la lápida»): siempre **2 vasos** seguidos (casillas 43 y 56, `drinks: 2` en `board.ts`) o rueda a la casilla de cada una (43 → 12, 56 → 31). La tarjeta, el botón del celular y el motor usan el mismo número; los textos viejos con «3»/«4 vasos» quedan en `LEGACY`.
   Los 2 vasos salen de la constante `PATINAZO_DRINKS` (`board.ts`), no del número guardado en la decisión: una partida en curso con una decisión vieja (con 4) también enseña y cobra 2. Regla general: **la UI y el motor no deben fiarse de números guardados dentro de decisiones antiguas**; si cambias una regla numérica, usa una constante.
 - Editor «📝 Tarjetas» ordenado por **grupos** (`CARD_GROUPS`/`groupOf` en `cards.ts`: Juicio de los vivos, Retos, Casillas con decisión, Estados y castigos, Inicio y meta, Resultados), con resumen arriba (casillas y tarjetas por grupo, saltan al grupo) y en cada tarjeta una etiqueta «Se repite ×N» o «Solo 1 casilla» y el subtipo (Rasgo/Posición/Reto). Un tipo de casilla nuevo debe añadirse a un grupo (hay test).
-- Editor «📝 Tarjetas»: **sin llaves** (pedido del usuario). La caja de texto enseña el MISMO texto que sale en el juego, con los datos de ejemplo
-  puestos («Ana», «la casilla 12»…), y se edita como cualquier texto. `src/editor/cardText.ts`: `toDisplay` rellena los huecos y `toRaw` al guardar
-  vuelve a convertir en hueco (`{nombre}`, `{casilla}`…) lo que coincide con un dato de ejemplo que cambia en cada partida. Los datos que siempre
-  valen lo mismo en esa tarjeta (`staticCardVars` en `rules.ts`: «1 vaso», «los hombres», «2 vasos») quedan como texto normal. Al añadir un hueco
-  nuevo, decide si es fijo (igual en todas las casillas de la tarjeta) o va en `DYNAMIC_VARS`, y que `sampleVars` (CardsDialog) le dé un valor de
-  ejemplo distinguible. Si una tarjeta usa un dato que cambia por casilla (p. ej. el murciélago) y la última casilla es distinta, tiene su propia
-  tarjeta (`OCA:ultimo`, casilla 58).
+- Editor «📝 Tarjetas» (pedido del usuario, versión final): se edita **el mismo texto del juego**. Lo que siempre vale lo mismo en esa tarjeta
+  (`staticCardVars` en `rules.ts`: «1 vaso», «los hombres», «2 vasos») se enseña ya escrito como texto normal; lo que cambia en cada partida o según
+  la casilla (`{nombre}`, `{casilla}`, `{lista}`, `{rivales}`, `{categoria}`…) **se queda entre llaves** para no romper la lógica (se probó quitarlas
+  del todo con datos de ejemplo y el usuario pidió volver a ponerlas donde hacen falta). Al añadir un hueco, decide si es fijo (igual en todas las
+  casillas de la tarjeta) o va en `DYNAMIC_VARS`. El último murciélago (casilla 58) tiene su propia tarjeta (`OCA:ultimo`) porque no vuela a ninguna casilla.
