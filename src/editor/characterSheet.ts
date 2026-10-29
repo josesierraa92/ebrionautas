@@ -114,12 +114,20 @@ function yellowEyes(mesh: THREE.Mesh, map: THREE.Texture) {
     const k = (y * img.width + x) * 4;
     return (0.299 * img.data[k] + 0.587 * img.data[k + 1] + 0.114 * img.data[k + 2]) / 255;
   };
+  const gone = new Set<number>();
   for (const vs of parts.values()) {
     const xs = vs.map((i) => pos.getX(i));
     const ys = vs.map((i) => pos.getY(i));
     const zs = vs.map((i) => pos.getZ(i));
     const [w, h] = [Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
     const yc = (Math.max(...ys) + Math.min(...ys)) / 2;
+    // gafas (las lleva solo un personaje): piezas claras, pequeñas y planas a la altura de los ojos, delante de la cara (lentes, puente y
+    // patillas). Se quitan para que se vean los ojos amarillos como en los demás; la placa de la cara (h 0,27) y los lados (h 0,22) son más grandes y se quedan
+    const light = vs.reduce((a, i) => a + lumAt(i), 0) / vs.length > 0.66;
+    if (light && h <= 0.1 && yc > 0.47 && yc < 0.51 && Math.max(...zs) >= 0.14 && Math.max(...zs) <= 0.18 && Math.max(...xs.map(Math.abs)) <= 0.17) {
+      for (const i of vs) gone.add(i);
+      continue;
+    }
     const flat = Math.max(...zs) - Math.min(...zs) < 0.012 && Math.min(...zs) > 0.14;
     const dark = vs.reduce((a, i) => a + lumAt(i), 0) / vs.length < 0.35;
     if (!(flat && dark && w < 0.27 && h < 0.06 && yc > 0.47 && yc < 0.545)) continue;
@@ -132,6 +140,11 @@ function yellowEyes(mesh: THREE.Mesh, map: THREE.Texture) {
   }
   uv.needsUpdate = true;
   pos.needsUpdate = true;
+  if (gone.size) {
+    const keep: number[] = [];
+    for (let t = 0; t < index.length; t += 3) if (!gone.has(index[t])) keep.push(index[t], index[t + 1], index[t + 2]);
+    geo.setIndex(keep);
+  }
 }
 
 /**
