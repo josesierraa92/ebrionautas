@@ -4,7 +4,7 @@
 // una casilla). Las casillas que comparten tarjeta (p. ej. las 6 «Ronda de mezcal») se muestran una sola vez, con los
 // números de casilla que la usan. Se guardan aparte del tablero y valen para todas las mesas (`/api/admin/cards`).
 import { useEffect, useMemo, useState } from "react";
-import { cardCatalog, fillCard, parseCardOverrides, RESULT_KEYS, type CardDef, type CardOverrides } from "@/game/cards";
+import { CARD_GROUPS, cardCatalog, fillCard, groupOf, parseCardOverrides, RESULT_KEYS, type CardDef, type CardOverrides } from "@/game/cards";
 import { createGame } from "@/game/engine";
 import { tileVars } from "@/game/rules";
 import { fetchCardTexts } from "@/lib/useCardTexts";
@@ -59,6 +59,15 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
     return CARDS.filter((c) => `${c.label} ${c.defaults.title} ${draft[c.key]?.title ?? ""} ${c.defaults.text} ${draft[c.key]?.text ?? ""} ${c.tiles.join(" ")}`.toLowerCase().includes(q));
   }, [search, draft]);
 
+  // las tarjetas ordenadas por grupo (solo los que tienen alguna que coincida con la búsqueda)
+  const groups = useMemo(
+    () =>
+      CARD_GROUPS.map((g) => {
+        const cards = list.filter((c) => groupOf(c) === g.id);
+        return { ...g, cards, tiles: cards.reduce((n, c) => n + c.tiles.length, 0) };
+      }).filter((g) => g.cards.length),
+    [list],
+  );
   const changed = saved !== null && (JSON.stringify(parseCardOverrides(draft)) !== JSON.stringify(saved) || JSON.stringify(cats) !== JSON.stringify(savedCats));
   const set = (key: string, field: "title" | "text", value: string) => setDraft((d) => ({ ...d, [key]: { ...d[key], [field]: value } }));
   const reset = (key: string) =>
@@ -132,8 +141,34 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
               <p className="text-[11px] opacity-70">Una por línea: cambia, borra o añade las que quieras (se guardan con «Guardar»). Máximo 60 letras cada una.</p>
             </div>
           )}
-          {list.map((c) => (
-            <CardEditor key={c.key} def={c} value={draft[c.key]} onChange={(f, v) => set(c.key, f, v)} onReset={() => reset(c.key)} />
+          {/* resumen: cuántas tarjetas distintas hay y cuántas casillas cubre cada grupo (tocar un grupo salta a él) */}
+          {!search.trim() && (
+            <div className="grid gap-2 rounded-xl bg-white/5 p-3">
+              <p className="text-sm">
+                <b>{BOARD.length} casillas</b> en el tablero · <b>{CARDS.filter((c) => c.tiles.length).length} tarjetas distintas</b> (las que se repiten comparten texto) + {CARDS.filter((c) => !c.tiles.length).length} de resultado
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {groups.map((g) => (
+                  <a key={g.id} href={`#grupo-${g.id}`} className="rounded-lg bg-white/10 px-2.5 py-1 text-xs hover:bg-white/20" onClick={(e) => { e.preventDefault(); document.getElementById(`grupo-${g.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
+                    <b>{g.title}</b> · {g.cards.length} {g.cards.length === 1 ? "tarjeta" : "tarjetas"}
+                    {g.tiles > 0 && ` · ${g.tiles} casillas`}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+          {groups.map((g) => (
+            <section key={g.id} id={`grupo-${g.id}`} className="grid gap-3 scroll-mt-2">
+              <div className="sticky top-0 z-10 -mx-1 rounded-lg bg-[#1c1f27]/95 px-1 py-1.5 backdrop-blur">
+                <h3 className="font-display text-lg text-amber-300">
+                  {g.title} <span className="text-sm text-white/60">· {g.cards.length} {g.cards.length === 1 ? "tarjeta" : "tarjetas"}{g.tiles > 0 && ` · ${g.tiles} casillas`}</span>
+                </h3>
+                <p className="text-xs opacity-60">{g.about}</p>
+              </div>
+              {g.cards.map((c) => (
+                <CardEditor key={c.key} def={c} value={draft[c.key]} onChange={(f, v) => set(c.key, f, v)} onReset={() => reset(c.key)} />
+              ))}
+            </section>
           ))}
           {list.length === 0 && <p className="py-8 text-center text-sm opacity-60">Ninguna tarjeta coincide.</p>}
         </div>
@@ -151,6 +186,7 @@ function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { 
   const accent = first ? TILE_ACCENT[first.type] : def.key === RESULT_KEYS.mazeOk ? "#5cd23c" : "#ffc61a";
   const icon = first ? DEFAULT_ICON[first.type] : null;
   const emoji = first ? undefined : def.key === RESULT_KEYS.mazeOk ? "✨" : def.key === RESULT_KEYS.jail ? "🔓" : "🍷";
+  const kind = first && (first.type === "RASGO" ? "Rasgo" : first.type === "POSICION" ? "Posición" : first.type === "RETO" ? "Reto" : null);
   // vista previa: tal como sale en el juego, con los huecos rellenados con una partida de ejemplo
   const vars = useMemo(() => sampleVars(def), [def]);
   const preview = (x: string) => fillCard(x, vars);
@@ -166,6 +202,12 @@ function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { 
       <div className="grid min-w-0 flex-1 content-start gap-1.5">
         <div className="flex items-center gap-2">
           <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs">{def.label}</span>
+          {kind && <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs opacity-80">{kind}</span>}
+          {def.tiles.length > 0 && (
+            <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${def.tiles.length > 1 ? "bg-amber-400/25 text-amber-200" : "bg-emerald-400/20 text-emerald-200"}`} title={`Casillas: ${def.tiles.join(", ")}`}>
+              {def.tiles.length > 1 ? `Se repite ×${def.tiles.length}` : "Solo 1 casilla"}
+            </span>
+          )}
           {edited && (
             <button className="ml-auto text-xs text-amber-300 underline" onClick={onReset}>
               Volver al de serie

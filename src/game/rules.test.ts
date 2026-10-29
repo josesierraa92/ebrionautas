@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cardCatalog, parseCardOverrides, setCardOverrides } from "./cards";
+import { CARD_GROUPS, cardCatalog, groupOf, parseCardOverrides, setCardOverrides } from "./cards";
 import { createGame } from "./engine";
 import { jailOutcome, mazeOutcome, tileRule } from "./rules";
 
@@ -75,3 +75,14 @@ describe("Duelo: a cuántos rivales se puede retar", () => {
     expect(tileRule(7, cuatro, "p1").text).toContain("reta hasta a 1 rival.");
   });
 });
+
+describe("grupos del editor de tarjetas", () => {
+  it("cada tarjeta cae en un grupo y cada tipo de casilla está en uno", () => {
+    const ids = new Set(CARD_GROUPS.map((g) => g.id));
+    for (const c of cardCatalog()) expect(ids.has(groupOf(c))).toBe(true);
+    const tipos = new Set(cardCatalog().filter((c) => c.tiles.length).map((c) => c.key.split(":")[0]));
+    const cubiertos = new Set(CARD_GROUPS.flatMap((g) => g.types as readonly string[]));
+    for (const t of tipos) expect(cubiertos.has(t)).toBe(true);
+  });
+});
+

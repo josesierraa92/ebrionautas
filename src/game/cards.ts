@@ -97,6 +97,24 @@ export function cardCatalog(): CardDef[] {
   return [...seen.values(), ...res];
 }
 
+/** Grupos con que el editor ordena las tarjetas para reconocerlas mejor (cada tipo de casilla nuevo debe caer en uno). */
+export const CARD_GROUPS = [
+  { id: "juicio", title: "Juicio de los vivos", about: "beben los que cumplan un rasgo (Machos, Pares…) o los que van por detrás o por delante", types: ["RASGO", "POSICION"] },
+  { id: "retos", title: "Retos del Más Allá", about: "retos y pruebas para todos", types: ["RETO"] },
+  { id: "decision", title: "Casillas con decisión", about: "quien cae decide o juega algo en el celular", types: ["OCA", "A_BEBER", "DUELO", "CULTURAL", "REGLA", "ESCLAVO", "PATINAZO"] },
+  { id: "estados", title: "Estados y castigos", about: "se queda con un estado o lo mandan de vuelta", types: ["POSADA", "HIPNOSIS", "LABERINTO", "CARCEL", "MUERTE"] },
+  { id: "extremos", title: "Inicio y meta", about: "la salida y la llegada", types: ["SALIDA", "META"] },
+  { id: "resultados", title: "Resultados al tirar", about: "salen después de tirar el dado sin moverse (niebla, purgatorio, duelo)", types: [] as string[] },
+] as const;
+export type CardGroupId = (typeof CARD_GROUPS)[number]["id"];
+
+/** Grupo de una tarjeta del catálogo, según el tipo de su primera casilla (las de resultado van aparte). */
+export function groupOf(def: CardDef): CardGroupId {
+  if (!def.tiles.length) return "resultados";
+  const type = BOARD[def.tiles[0] - 1].type;
+  return CARD_GROUPS.find((g) => (g.types as readonly string[]).includes(type))?.id ?? "decision";
+}
+
 let CATALOG: Map<string, CardDef> | null = null;
 const defOf = (key: string) => (CATALOG ??= new Map(cardCatalog().map((d) => [d.key, d]))).get(key);
 
