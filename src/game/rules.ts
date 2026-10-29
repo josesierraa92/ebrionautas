@@ -24,7 +24,7 @@ export function duelOutcome(game: GameState): { title: string; text: string } | 
   if (!d) return null;
   const name = (id: string) => game.players.find((q) => q.id === id)?.name ?? "?";
   const lines = d.rounds.map((r) => `${name(d.by)} ${r.a} – ${name(r.rival)} ${r.b}: bebe ${name(r.loser)} 1 vaso.`);
-  return { title: "¡Resultado del duelo!", text: lines.join("\n") };
+  return cardText(RESULT_KEYS.duel, { resultado: lines.join("\n") });
 }
 
 /** Los datos con que se rellenan los huecos de la tarjeta de la casilla `n` para el jugador `playerId`. */

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cardCatalog, setCardOverrides } from "./cards";
+import { cardCatalog, parseCardOverrides, setCardOverrides } from "./cards";
 import { createGame } from "./engine";
 import { jailOutcome, mazeOutcome, tileRule } from "./rules";
 
@@ -23,7 +23,7 @@ describe("textos de las tarjetas", () => {
   afterEach(() => setCardOverrides({}));
 
   it("los de serie dicen lo de siempre", () => {
-    expect(tileRule(6, game, "p1")).toEqual({ title: "¡Ronda de mezcal!", text: "Ana reparte 1 vaso entre quien quiera (también se los puede quedar)." });
+    expect(tileRule(6, game, "p1")).toEqual({ title: "Trago de regalo", text: "Ana reparte 1 vaso entre quien quiera (también se los puede quedar)." });
     expect(tileRule(7, game, "p1").text).toBe("Ana reta hasta a 1 rival. Uno a uno tiran el dado: quien saque menos bebe 1 vaso. Si empatan, se repite.");
     expect(tileRule(8, game, "p1").text).toContain("volar hasta la casilla 18 y volver a tirar");
     expect(tileRule(58, game, "p1").text).toContain("volver a tirar (es el último murciélago)");
@@ -48,6 +48,18 @@ describe("textos de las tarjetas", () => {
     expect(keys).toContain("A_BEBER");
     expect(keys).toContain("RASGO:Machos");
     expect(cardCatalog().find((c) => c.key === "A_BEBER")?.tiles).toEqual([6, 14, 22, 30, 49, 59]);
-    expect(keys.filter((k) => k.startsWith("RESULTADO"))).toHaveLength(3);
+    expect(keys.filter((k) => k.startsWith("RESULTADO"))).toHaveLength(4);
+  });
+});
+
+describe("textos viejos guardados en el editor", () => {
+  it("un texto que es justo el de serie anterior no cuenta como edición (así se ve el nuevo)", () => {
+    const old = parseCardOverrides({
+      OCA: { text: "{nombre} bebe 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!»; {destino} y vuelve a tirar." },
+      A_BEBER: { title: "¡Ronda de mezcal!" },
+    });
+    expect(old).toEqual({});
+    const edited = parseCardOverrides({ OCA: { text: "Mi texto propio {nombre}" } });
+    expect(edited.OCA?.text).toBe("Mi texto propio {nombre}");
   });
 });

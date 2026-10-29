@@ -5,6 +5,23 @@ Día de Muertos: los muertos tienen una sola noche al año para salir de fiesta 
 de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirla." Plan original en
 `docs/plan-ebrionautas.md` (escrito con el tema anterior de extraterrestres; las mecánicas siguen valiendo).
 
+## ⚠️ REGLA IMPORTANTE: todo cambio debe verse en el juego Y en el editor
+
+El usuario edita textos, reglas y tablero desde el editor (`/admin/editor`) y le preocupa que lo nuevo solo exista en el juego. **Al cambiar
+cualquier regla, texto, título, número o pantalla, comprueba SIEMPRE las dos partes** y dile al usuario qué verificaste en cada una:
+1. **Textos de las tarjetas** (`src/game/cards.ts`): el texto/título de serie y sus huecos `{x}` (con su explicación en `vars`) tienen que
+   reflejar la regla nueva. El editor «📝 Tarjetas» (`CardsDialog.tsx`) lista ese catálogo y su vista previa usa `sampleVars` (datos de
+   ejemplo: añade ahí los que falten, p. ej. `giftAmount`, `category`). Una tarjeta o resultado nuevo (p. ej. «Duelo: resultado») debe estar
+   en `cardCatalog()` / `RESULT_KEYS` para que se pueda editar.
+2. **Textos guardados antes**: lo que el admin ya guardó en Redis (`cards:custom`) manda sobre el de serie. Si cambias un texto de serie,
+   **añade el viejo a `LEGACY` en `cards.ts`** (se ignora si coincide exactamente) o el editor seguirá enseñando el texto antiguo.
+3. **Listas editables** (categorías de La Ouija: `cards:categories`) y cualquier dato nuevo configurable: se muestran en el editor y se
+   guardan con «💾 Guardar» (`/api/admin/cards`).
+4. Títulos grandes, paneles de decisión y tarjetas de la TV y del celular deben salir de `cardTitle`/`tileRule`, nunca de texto escrito a
+   mano; lo que aún no se puede editar (frases de los paneles del celular, «¡X PIERDE Y BEBE!») hay que decírselo al usuario.
+5. Tras cambiar reglas, ejecuta `npx vitest run` (los tests del catálogo y de textos viejos están en `rules.test.ts`) y revisa el editor
+   (`/admin/editor` → «📝 Tarjetas») con una captura si es un cambio visible.
+
 - Stack: Next.js 15 (App Router, `src/`), TypeScript, Tailwind CSS v4.
 - Comandos: `npm run dev`, `npm run lint`, `npm test` (vitest), `npm run build`.
 - `src/game/board.ts`: las 62 casillas como datos. Las reglas viven en datos,
@@ -262,3 +279,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - Duelo: al terminar sale un título grande en la TV con quién pierde y bebe («¡JOSE PIERDE Y BEBE!», `useGameFx`) y después la tarjeta de
   resultado. El trago de regalo nunca enseña más de 3 vasos en la tarjeta (`Math.min(3, …)`). Tras «Siguiente turno» el celular no vuelve a
   enseñar el dado girando (`spin` en `DiceController`: solo gira si lo que se envía es una tirada).
+- Trago de regalo: el título de serie ahora es «Trago de regalo» (antes «¡Ronda de mezcal!», que queda en `LEGACY`); `TILE_NAMES.A_BEBER` también.

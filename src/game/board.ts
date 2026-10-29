@@ -49,7 +49,7 @@ export const TILE_NAMES: Record<Tile["type"], string> = {
   SALIDA: "Medianoche",
   META: "Tu Tumba",
   POSADA: "La Capilla",
-  A_BEBER: "Ronda de mezcal",
+  A_BEBER: "Trago de regalo",
   DUELO: "Duelo de calaveras",
   OCA: "El Murciélago",
   LABERINTO: "Panteón en Niebla",

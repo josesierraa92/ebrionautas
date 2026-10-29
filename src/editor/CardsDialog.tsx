@@ -16,6 +16,7 @@ const CARDS = cardCatalog();
 
 /** Con qué se rellenan los huecos en la vista previa: una partida de ejemplo (Ana juega; Beto va detrás y Carla delante). */
 function sampleVars(def: CardDef): Record<string, string | number> {
+  if (def.key === RESULT_KEYS.duel) return { resultado: "Ana 5 – Beto 2: bebe Beto 1 vaso." };
   if (def.tiles.length === 0) return def.key === RESULT_KEYS.jail ? { nombre: "Ana", dado: 5, vasos: "4 vasos" } : { nombre: "Ana", dado: def.key === RESULT_KEYS.mazeOk ? 6 : 3 };
   const n = def.tiles[0];
   const game = createGame([
@@ -24,6 +25,8 @@ function sampleVars(def: CardDef): Record<string, string | number> {
     { name: "Carla", color: "#ff66aa", gender: "mujer" },
   ]);
   game.players[0].pos = n;
+  game.giftAmount = 2; // trago de regalo: de ejemplo, 2 vasos
+  game.category = "frutas"; // La Ouija: categoría de ejemplo
   game.players[1].pos = Math.max(1, n - 3);
   game.players[2].pos = n + 3;
   return { ...tileVars(n, game, game.players[0].id), categoria: "Animales" };

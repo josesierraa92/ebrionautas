@@ -6,7 +6,7 @@ export const TILE_STYLE: Record<Tile["type"], { icon: string; bg: [string, strin
   SALIDA: { icon: "🕛", bg: ["#9b5de5", "#5a2a9e"], dark: true, label: "Medianoche" },
   META: { icon: "🪦", bg: ["#ffb627", "#ff7a00"], dark: false, label: "Tu Tumba" },
   POSADA: { icon: "⛪", bg: ["#ffd166", "#d99a1e"], dark: true, label: "Capilla" },
-  A_BEBER: { icon: "🥃", bg: ["#ffd23f", "#f5a300"], dark: false, label: "¡Mezcal!" },
+  A_BEBER: { icon: "🥃", bg: ["#ffd23f", "#f5a300"], dark: false, label: "¡Regalo!" },
   DUELO: { icon: "💀", bg: ["#fff4e6", "#d9c8b4"], dark: false, label: "Duelo" },
   OCA: { icon: "🦇", bg: ["#ff8c42", "#d9480f"], dark: false, label: "Murciélago" },
   LABERINTO: { icon: "🌫️", bg: ["#b8b2d8", "#7d74b0"], dark: true, label: "Niebla" },

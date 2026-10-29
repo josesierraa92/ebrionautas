@@ -17,13 +17,24 @@ const VASOS: CardVar = { name: "vasos", about: "cuántos vasos (con «vaso»/«v
 export const cardKeyOf = (t: Tile) => (t.type === "RASGO" || t.type === "POSICION" || t.type === "RETO" ? `${t.type}:${t.title}` : t.type);
 
 /** Tarjetas de resultado (al tirar sin moverse). */
-export const RESULT_KEYS = { mazeOk: "RESULTADO:niebla-salva", mazeNo: "RESULTADO:niebla-pierde", jail: "RESULTADO:purgatorio" } as const;
+export const RESULT_KEYS = { mazeOk: "RESULTADO:niebla-salva", mazeNo: "RESULTADO:niebla-pierde", jail: "RESULTADO:purgatorio", duel: "RESULTADO:duelo" } as const;
+
+/**
+ * Textos de serie ANTERIORES de las tarjetas que cambiaron de regla: si lo guardado en el editor es justo uno de ellos, no es una
+ * edición del admin sino el texto viejo, y se ignora (así el editor y el juego enseñan el nuevo). Al cambiar un texto de serie, añade el
+ * viejo aquí.
+ */
+const LEGACY: Record<string, { title?: string[]; text?: string[] }> = {
+  OCA: { text: ["{nombre} bebe 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!»; {destino} y vuelve a tirar."] },
+  CULTURAL: { text: ["Sale una categoría. Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso."] },
+  A_BEBER: { title: ["¡Ronda de mezcal!", "Ronda de mezcal"] },
+};
 
 const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?: string }> = {
   SALIDA: { vars: [], defaults: { title: TILE_NAMES.SALIDA, text: "Es medianoche del Día de Muertos: los muertos salen de sus tumbas para su única noche de fiesta. Deben volver antes de que salga el sol… aunque lleguen borrachos." } },
   META: { vars: [], defaults: { title: TILE_NAMES.META, text: "¡Antes del amanecer! El primero en volver a su tumba gana (como pueda tenerse en pie) y reparte el resto de la bebida como quiera." } },
   POSADA: { vars: [NOMBRE], defaults: { title: TILE_NAMES.POSADA, text: "{nombre} se refugia en La Capilla: es suelo sagrado y nadie le puede mandar beber hasta su próximo turno." } },
-  A_BEBER: { vars: [NOMBRE, VASOS], defaults: { title: "¡Ronda de mezcal!", text: "{nombre} reparte {vasos} entre quien quiera (también se los puede quedar)." } },
+  A_BEBER: { vars: [NOMBRE, VASOS], defaults: { title: "Trago de regalo", text: "{nombre} reparte {vasos} entre quien quiera (también se los puede quedar)." } },
   DUELO: { vars: [NOMBRE, { name: "rivales", about: "a cuántos rivales reta («1 rival», «2 rivales»)" }], defaults: { title: TILE_NAMES.DUELO, text: "{nombre} reta hasta a {rivales}. Uno a uno tiran el dado: quien saque menos bebe 1 vaso. Si empatan, se repite." } },
   OCA: {
     vars: [NOMBRE, { name: "destino", about: "lo que gana si bebe («volar hasta la casilla 18 y volver a tirar» o «volver a tirar (es el último murciélago)»)" }],
@@ -72,6 +83,7 @@ export function cardCatalog(): CardDef[] {
   const res: CardDef[] = [
     { key: RESULT_KEYS.mazeOk, label: "Niebla: se salva", tiles: [], vars: [NOMBRE, { name: "dado", about: "lo que sacó" }], defaults: { title: "¡Se salvó!", text: "{nombre} saca {dado} y encuentra la salida del Panteón en Niebla. No bebe y en su próximo turno vuelve a avanzar." } },
     { key: RESULT_KEYS.mazeNo, label: "Niebla: sigue perdido", tiles: [], vars: [NOMBRE, { name: "dado", about: "lo que sacó" }], defaults: { title: "¡Sigue perdido!", text: "{nombre} saca {dado}: no es 5 ni 6. Bebe 1 vaso y sigue perdido entre las tumbas." } },
+    { key: RESULT_KEYS.duel, label: "Duelo: resultado", tiles: [], vars: [{ name: "resultado", about: "una línea por rival: quién sacó cuánto y quién bebe" }], defaults: { title: "¡Resultado del duelo!", text: "{resultado}" } },
     { key: RESULT_KEYS.jail, label: "Purgatorio: sale", tiles: [], vars: [NOMBRE, { name: "dado", about: "lo que sacó" }, VASOS], defaults: { title: "¡Sale del Purgatorio!", text: "{nombre} saca {dado}: bebe {vasos} para pagar sus pecados y sale del Purgatorio. Ahora vuelve a tirar para avanzar." } },
   ];
   return [...seen.values(), ...res];
@@ -115,8 +127,8 @@ export function parseCardOverrides(raw: unknown): CardOverrides {
     const title = clean(r.title, 60);
     const text = clean(r.text, 600);
     const o: Partial<CardText> = {};
-    if (title && title !== d.defaults.title) o.title = title;
-    if (text && text !== d.defaults.text) o.text = text;
+    if (title && title !== d.defaults.title && !LEGACY[key]?.title?.includes(title)) o.title = title;
+    if (text && text !== d.defaults.text && !LEGACY[key]?.text?.includes(text)) o.text = text;
     if (o.title || o.text) out[key] = o;
   }
   return out;
