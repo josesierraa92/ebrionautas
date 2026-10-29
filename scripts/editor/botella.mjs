@@ -42,13 +42,13 @@ const profile = [
   [0.25, 0.04],
   [0.25, 0.84],
   [0.235, 0.9],
-  [0.19, 0.95],
-  [0.115, 0.99],
-  [0.085, 1.04],
-  [0.085, 1.45],
-  [0.105, 1.465],
-  [0.105, 1.5],
-  [0.085, 1.5],
+  [0.195, 0.95],
+  [0.14, 0.99],
+  [0.108, 1.04],
+  [0.108, 1.45],
+  [0.13, 1.465],
+  [0.13, 1.5],
+  [0.108, 1.5],
   [0, 1.5],
 ].map(([r, y]) => new THREE.Vector2(r, y));
 const body = new THREE.Mesh(new THREE.LatheGeometry(profile, SIDES), GLASS);
@@ -56,7 +56,7 @@ body.name = "vidrio";
 root.add(body);
 
 // tapa pequeña arriba
-const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.092, 0.11, SIDES), CAP);
+const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.108, 0.116, 0.11, SIDES), CAP);
 cap.name = "tapa";
 cap.position.y = 1.555;
 root.add(cap);
