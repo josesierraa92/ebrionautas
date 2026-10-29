@@ -1,5 +1,6 @@
 import { characterOf } from "@/game/characters";
 import Marciano from "@/components/Marciano";
+import BeerIcon from "@/components/BeerIcon";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { getTile, PATINAZO_DRINKS } from "@/game/board";
 import { currentPlayer, type Decision, type GameState } from "@/game/engine";
@@ -156,18 +157,29 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
     <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center max-md:top-16 max-md:scale-90 max-md:origin-top-left">
       <div
         className="relative z-10 -mr-5 grid shrink-0 place-items-center overflow-hidden rounded-2xl border-[4px] border-ink"
-        style={{ width: 84, height: 84, background: "radial-gradient(circle at 50% 35%, #8a58e0, #4a2a94 60%, #2d1460)", boxShadow: `0 0 0 3px ${color}, 0 5px 0 3px ${color}, 0 8px 14px rgba(0,0,0,.45)` }}
+        style={{ width: 92, height: 92, background: "radial-gradient(circle at 50% 35%, #8a58e0, #4a2a94 60%, #2d1460)", boxShadow: `0 0 0 5px ${color}, 0 0 0 8px #1a0b38, 0 10px 14px 6px rgba(0,0,0,.4)` }}
       >
-        <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={62} character={characterOf(game.players, who.id)} />
+        <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={68} character={characterOf(game.players, who.id)} />
       </div>
-      <div className="relative -skew-x-6 overflow-hidden rounded-xl border-[4px] border-[#1a0b38] bg-[#2d1460]/95 py-2 pr-7 pl-12 shadow-[0_6px_0_#1a0b38,0_10px_16px_rgba(0,0,0,.45)]">
-        <div className="skew-x-6">
+      <div className="relative -skew-x-6 overflow-hidden rounded-xl border-[4px] border-[#1a0b38] bg-[#2d1460]/95 py-2 pr-3 pl-12 shadow-[0_6px_0_#1a0b38,0_10px_16px_rgba(0,0,0,.45)]">
+        <div className="flex skew-x-6 items-center gap-5">
+         <div>
           <p className="relative top-[3px] font-display text-sm leading-none tracking-wider text-[#bffa58] uppercase">
             {winner ? "¡Ganador!" : "Turno de"}
           </p>
           <p className="mt-1 font-display text-4xl leading-none text-white uppercase" style={{ textShadow: "0 3px 0 #1a0b38, 0 5px 0 #1a0b38" }}>
             {who.name}
           </p>
+         </div>
+          {/* insignia verde ladeada con la botella y los tragos que lleva (como en la maqueta del usuario) */}
+          <div className="-skew-x-12 rounded-lg border-[3px] border-[#1f5a17] px-3 py-1" style={{ background: "linear-gradient(160deg, #bffa58, #5fc34a)", boxShadow: "0 3px 0 #1f5a17" }} title="Tragos que lleva">
+            <div className="flex skew-x-12 items-center gap-1.5">
+              <BeerIcon size="1.9rem" className="drop-shadow-[0_2px_0_rgba(20,38,10,.6)]" />
+              <span className="font-display text-3xl leading-none text-white" style={{ textShadow: "0 2px 0 #1f5a17" }}>
+                {who.drunk}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
