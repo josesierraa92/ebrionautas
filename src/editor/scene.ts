@@ -31,6 +31,7 @@ const CAM_DIST = 200;
 /** Visor (TV): fotogramas por segundo fijos y ancho máximo de la imagen en píxeles reales. */
 const VIEWER_FPS = 30;
 const VIEWER_MAX_W = 1920;
+const VIEWER_LIGHTS = 4; // focos de verdad a la vez en la TV (los faroles más cercanos a la cámara)
 /** Colores de las casillas estilo carretera. */
 const ROAD = { asphalt: "#4a4d54", edge: "#2c2e33" }; // distancia de la cámara ortográfica al centro (la niebla se mide desde ahí)
 
@@ -253,6 +254,7 @@ export class EditorScene {
         // la cámara sigue el punto pedido con suavidad (como en Mario Party), sin saltos
         this.look.lerp(this.lookGoal, 1 - Math.exp(-dt * 2.6));
         this.placeViewerCamera();
+        this.updateViewerLights(dt);
         this.renderer.render(this.scene, this.camera);
       };
       this.frame = requestAnimationFrame(viewLoop);
@@ -368,6 +370,7 @@ export class EditorScene {
     await Promise.all([...this.pendingIcons]);
     await new Promise((ok) => requestAnimationFrame(ok));
     if (this.viewer) {
+      this.collectViewerLamps();
       this.mergeStatic();
       this.renderer.shadowMap.autoUpdate = false;
       this.renderer.shadowMap.needsUpdate = true;
@@ -376,6 +379,66 @@ export class EditorScene {
         this.placeViewerCamera();
         await this.renderer.compileAsync(this.scene, this.camera);
       } catch {}
+    }
+  }
+
+  // --- luces de los faroles en la TV: pocas luces de verdad que siguen a los faroles más cercanos a la cámara ---
+  private viewerLamps: { pos: THREE.Vector3; color: THREE.Color; intensity: number; distance: number }[] = [];
+  private lampSlots: { light: THREE.SpotLight; lamp: number; k: number }[] = [];
+
+  /**
+   * Cada foco de verdad encarece cada píxel de toda la escena (con 9 faroles, 9 veces), así que en la TV hay solo `VIEWER_LIGHTS`
+   * focos y cada fotograma se reparten entre los faroles más cercanos a lo que enseña la cámara (la cantidad de luces no cambia, así
+   * no se recompilan los shaders). Se apagan y encienden con suavidad al cambiar de farol.
+   */
+  private collectViewerLamps() {
+    this.objectRoot.updateMatrixWorld(true);
+    for (const g of this.objectRoot.children) {
+      const rig = g.userData.rig as THREE.Group | undefined;
+      if (!rig) continue;
+      for (const lampGroup of rig.children as THREE.Group[]) {
+        const light = lampGroup.children[0] as THREE.SpotLight;
+        this.viewerLamps.push({ pos: lampGroup.getWorldPosition(new THREE.Vector3()), color: light.color.clone(), intensity: light.intensity, distance: light.distance });
+      }
+    }
+    const n = Math.min(VIEWER_LIGHTS, this.viewerLamps.length);
+    for (let i = 0; i < n; i++) {
+      const light = new THREE.SpotLight();
+      light.angle = Math.PI * 0.32;
+      light.penumbra = 0.7;
+      light.decay = 1.5;
+      light.intensity = 0;
+      light.castShadow = false;
+      this.scene.add(light, light.target);
+      this.lampSlots.push({ light, lamp: -1, k: 0 });
+    }
+  }
+
+  private updateViewerLights(dt: number) {
+    if (!this.lampSlots.length) return;
+    // los faroles más cercanos al punto que mira la cámara (por orden, sin repetir)
+    const order = this.viewerLamps.map((l, i) => ({ i, d: l.pos.distanceToSquared(this.look) })).sort((a, b) => a.d - b.d).slice(0, this.lampSlots.length).map((o) => o.i);
+    const taken = new Set(order);
+    const free = this.lampSlots.filter((s) => s.lamp < 0 || !taken.has(s.lamp));
+    for (const lamp of order) {
+      if (this.lampSlots.some((s) => s.lamp === lamp)) continue;
+      const slot = free.find((s) => s.k < 0.02); // un hueco que ya se apagó
+      if (slot) {
+        slot.lamp = lamp;
+        free.splice(free.indexOf(slot), 1);
+      }
+    }
+    for (const s of this.lampSlots) {
+      const on = s.lamp >= 0 && taken.has(s.lamp);
+      s.k = Math.max(0, Math.min(1, s.k + (on ? 1 : -1) * dt * 2.2));
+      if (s.lamp < 0) continue;
+      const l = this.viewerLamps[s.lamp];
+      s.light.position.copy(l.pos);
+      s.light.target.position.set(l.pos.x, l.pos.y - 1, l.pos.z);
+      s.light.target.updateMatrixWorld();
+      s.light.color.copy(l.color);
+      s.light.distance = l.distance;
+      s.light.intensity = l.intensity * s.k;
     }
   }
 
@@ -840,22 +903,11 @@ export class EditorScene {
         light.penumbra = 0.7;
         light.decay = 1.5;
         light.target.position.set(0, -1, 0);
+        if (this.viewer) light.visible = false; // en la TV las luces reales son pocas y siguen a la cámara (collectViewerLamps)
         const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glow(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
         const lampGroup = new THREE.Group();
         lampGroup.position.copy(at);
         lampGroup.add(light, sprite, light.target);
-        if (this.viewer) {
-          // TV: cada foco de verdad encarece cada píxel de toda la escena (con 20 faroles, 20 veces); en su lugar, un
-          // charco de luz pintado en el suelo bajo la lámpara (casi gratis) y el halo
-          light.visible = false;
-          const pool = new THREE.Mesh(
-            new THREE.PlaneGeometry(1, 1),
-            new THREE.MeshBasicMaterial({ map: this.glow(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, polygonOffset: true, polygonOffsetFactor: -2 }),
-          );
-          pool.rotation.x = -Math.PI / 2;
-          pool.position.y = box.min.y - at.y + 0.02;
-          lampGroup.add(pool);
-        }
         rig.add(lampGroup);
       }
       g.add(rig);
@@ -870,13 +922,6 @@ export class EditorScene {
       sprite.material.opacity = Math.min(0.95, 0.45 + lt.intensity / 150);
       const world = Math.min(2.6, 0.9 + lt.distance * 0.06); // tamaño del halo en casillas
       sprite.scale.set(world / g.scale.x, world / g.scale.y, 1);
-      const pool = lampGroup.children[3] as THREE.Mesh | undefined;
-      if (pool) {
-        const m = pool.material as THREE.MeshBasicMaterial;
-        m.color.set(lt.color).multiplyScalar(Math.min(0.8, 0.25 + lt.intensity / 90));
-        const d = Math.min(7, Math.max(2.2, lt.distance * 0.45)); // diámetro del charco en casillas
-        pool.scale.set(d / g.scale.x, d / g.scale.z, 1);
-      }
     }
     this.setGlowParts(g, lamp, lt.intensity);
   }
@@ -884,11 +929,7 @@ export class EditorScene {
   private disposeRig(g: THREE.Group) {
     const rig = g.userData.rig as THREE.Group | undefined;
     if (!rig) return;
-    for (const lampGroup of rig.children as THREE.Group[]) {
-      (lampGroup.children[1] as THREE.Sprite).material.dispose();
-      const pool = lampGroup.children[3] as THREE.Mesh | undefined;
-      if (pool) (pool.material as THREE.Material).dispose();
-    }
+    for (const lampGroup of rig.children as THREE.Group[]) (lampGroup.children[1] as THREE.Sprite).material.dispose();
     g.remove(rig);
     g.userData.rig = undefined;
   }
