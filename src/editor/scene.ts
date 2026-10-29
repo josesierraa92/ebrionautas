@@ -374,12 +374,20 @@ export class EditorScene {
       this.mergeStatic();
       this.renderer.shadowMap.autoUpdate = false;
       this.renderer.shadowMap.needsUpdate = true;
-      // compila los shaders sin bloquear la página (si el navegador sabe); si no, se compilan al primer dibujo
-      try {
-        this.placeViewerCamera();
-        await this.renderer.compileAsync(this.scene, this.camera);
-      } catch {}
+      await this.precompile();
     }
+  }
+
+  /**
+   * Visor: compila los shaders de todo lo que hay en escena sin bloquear la página (si el navegador sabe hacerlo en paralelo). Se llama
+   * otra vez después de añadir las fichas: si no, el primer dibujo de los zombis (otro tipo de material, con esqueleto) congela la TV un
+   * momento justo al aparecer el tablero.
+   */
+  async precompile() {
+    try {
+      this.placeViewerCamera();
+      await this.renderer.compileAsync(this.scene, this.camera);
+    } catch {}
   }
 
   // --- luces de los faroles en la TV: pocas luces de verdad que siguen a los faroles más cercanos a la cámara ---

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { BOARD, type Tile } from "@/game/board";
@@ -123,11 +123,26 @@ export default function IsoBoard(props: Props) {
   const published = usePublishedBoard();
   const [mode, setMode] = useState<"loading" | "on" | "off">(() => (typeof window !== "undefined" && wantsImage() ? "off" : "loading"));
   const layout = usePublishedLayout(!!published?.live && mode !== "off");
+  // Mientras carga el 3D NO se enseña la imagen: tiene otro encuadre y los personajes quietos, así que al pasar al 3D parecía que
+  // el tablero se congelaba y hacía zoom. Se ve una pantalla de carga; si el 3D tarda más de 15 s, mientras tanto, la imagen.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (mode !== "loading") return;
+    const t = setTimeout(() => setSlow(true), 15000);
+    return () => clearTimeout(t);
+  }, [mode]);
   if (published === undefined) return <div className="h-full w-full" />;
   const geo = published ? publishedGeometry(published) : DEFAULT_GEOMETRY;
+  const live = !!published?.live && mode !== "off";
+  const showImage = !live || (mode === "loading" && slow);
   return (
-    <div className="relative h-full w-full">
-      {mode !== "on" && <IsoBoardView {...props} geo={geo} />}
+    <div className="relative h-full w-full bg-[#0b0820]">
+      {showImage && <IsoBoardView {...props} geo={geo} />}
+      {live && mode === "loading" && !slow && (
+        <div className="absolute inset-0 grid place-items-center">
+          <p className="animate-pulse font-display text-2xl text-white/70">Cargando el tablero…</p>
+        </div>
+      )}
       {layout && mode !== "off" && (
         <LiveBoard
           layout={layout}

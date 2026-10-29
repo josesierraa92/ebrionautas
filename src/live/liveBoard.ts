@@ -84,6 +84,8 @@ export class LiveBoard {
     const [, chars] = await Promise.all([this.scene.ready(), loadAll()]);
     this.chars = chars;
     if (this.state) this.update(this.state);
+    // las fichas ya están en escena: sus shaders se compilan ahora, antes de enseñar el tablero (no con la TV a la vista)
+    await this.scene.precompile();
   }
 
   dispose() {
