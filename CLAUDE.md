@@ -344,3 +344,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - `TurnChip`: el texto se corrió 4 px más a la derecha (`pl-[43px]`), pedido del usuario.
 - Degradados del `TurnChip` (pedido del usuario): del **color vivo y fuerte (neón) a un tono más normal y oscuro**, sin pasar por un claro: anillo `color +12 % → color → color −38 %` y «TURNO DE» `#c6ff4a → #8be02c → #3f9a2a`.
 - `TurnChip`: el borde interno del retrato (dentro del anillo de color) es un morado casi negro `#0c0420`, no el azul oscuro `ink` (se veía «azulito»; pedido del usuario).
+- `TurnChip`: el degradado de «TURNO DE» es **horizontal** (`90deg`: neón a la izquierda → verde oscuro a la derecha), pedido del usuario.
