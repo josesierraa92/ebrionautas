@@ -120,9 +120,9 @@ body {
   text-transform: uppercase;
   letter-spacing: -0.01em;
   will-change: transform;
-  /* el nombre va en el color del jugador con degradado horizontal de neón (--c1) a un tono más oscuro (--c2); la flechita, blanca */
+  /* el nombre va en el color del jugador con degradado vertical de neón (--c1, arriba) a un tono más oscuro (--c2); la flechita, blanca */
   color: transparent;
-  background: linear-gradient(90deg, var(--c1, var(--c, #fff)), var(--c2, var(--c, #fff)));
+  background: linear-gradient(180deg, var(--c1, var(--c, #fff)), var(--c2, var(--c, #fff)));
   -webkit-background-clip: text;
   background-clip: text;
   /* contorno azul muy oscuro por fuera de las letras (un trazo de texto se comería el degradado) */
