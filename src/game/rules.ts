@@ -38,7 +38,7 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
     case "DUELO":
       return { nombre, rivales: `${tile.amount} ${tile.amount === 1 ? "rival" : "rivales"}` };
     case "OCA":
-      return { nombre, destino: tile.next ? `el murciélago lo lleva volando a la siguiente casilla de murciélago (la ${tile.next})` : "es el último murciélago" };
+      return { nombre, destino: tile.next ? `volar hasta la casilla ${tile.next} y volver a tirar` : "volver a tirar (es el último murciélago)" };
     case "PATINAZO":
       return { nombre, vasos: vasos(tile.drinks), casilla: tile.backTo };
     case "POSICION": {

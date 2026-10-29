@@ -253,3 +253,7 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   «🔮 Categorías de La Ouija», una por línea) y se guarda en Redis (`cards:categories`, `src/server/categories.ts`; `GET /api/cards`
   la devuelve en `categories` y `PUT /api/admin/cards` la guarda). El motor lee `getCategories()` (`game/content.ts`); el servidor la carga
   antes de cada `ROLL`/`DUEL_ROLL` (`actInRoom`) y la TV/celular al abrir (`useCardTexts`). De serie: `DEFAULT_CATEGORIES`.
+- **Murciélago (OCA) con decisión** (pedido del usuario): al caer sale la decisión `OCA` (`{ next }`): en el celular «SÍ, BEBO Y VUELO A LA N» (bebe 1,
+  vuela al siguiente murciélago y vuelve a tirar) o «NO, ME PLANTO» (se queda y pasa el turno); en el último murciélago (`next: null`) «sí»
+  solo bebe y vuelve a tirar. Acción `{ type: "OCA", choice: "fly" | "stay" }`. El texto de la tarjeta usa `{destino}` («volar hasta la casilla 18 y
+  volver a tirar»); un texto propio viejo de esta tarjeta hay que revisarlo en «📝 Tarjetas».

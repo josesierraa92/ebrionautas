@@ -50,6 +50,18 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
         />
       );
 
+    case "OCA":
+      return (
+        <Card title="¿Bebes para seguir?" text={decision.next ? `Bebe 1 vaso y vuela hasta la casilla ${decision.next}, y vuelve a tirar. O plántate aquí.` : "Es el último murciélago: bebe 1 vaso y vuelve a tirar, o plántate aquí."}>
+          <button onClick={() => onAction({ type: "OCA", choice: "fly" })} className="btn-game bg-btn-green py-3 text-lg text-white">
+            🦇 SÍ, BEBO{decision.next ? ` Y VUELO A LA ${decision.next}` : " Y VUELVO A TIRAR"}
+          </button>
+          <button onClick={() => onAction({ type: "OCA", choice: "stay" })} className="btn-game bg-btn-yellow py-3 text-lg text-white">
+            🛑 NO, ME PLANTO
+          </button>
+        </Card>
+      );
+
     case "PATINAZO":
       return (
         <Card title="¿Qué eliges?" text="Para no caerte:">

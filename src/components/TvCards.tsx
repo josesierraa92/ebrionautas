@@ -22,6 +22,8 @@ export function decisionText(decision: Decision, name: string): [string, string]
       return [cardTitle("DUELO"), `${name} y su rival tiran el dado: quien saque menos, bebe.`];
     case "SELECT_DRINKERS":
       return [decision.title, decision.text];
+    case "OCA":
+      return [cardTitle("OCA"), `${name} decide si bebe 1 vaso para ${decision.next ? `volar hasta la casilla ${decision.next}` : "volver a tirar"} o se planta.`];
     case "PATINAZO":
       return [cardTitle("PATINAZO"), `${name}: bebe ${decision.drinks} de golpe o rueda hasta la casilla ${decision.backTo}.`];
     case "RULE":
@@ -47,6 +49,8 @@ function decisionPrompt(decision: Decision, name: string, game?: GameState): str
     }
     case "SELECT_DRINKERS":
       return "Marcad en el celular quién bebe.";
+    case "OCA":
+      return `${name} elige en el celular: beber y volar${decision.next ? ` a la ${decision.next}` : ""}, o plantarse.`;
     case "PATINAZO":
       return `${name} elige en el celular: beber o rodar hacia atrás.`;
     case "RULE":
@@ -91,7 +95,9 @@ export function cardContent(game: GameState, n: number, playerId: string, result
       ? decision.drinks
       : decision?.kind === "DISTRIBUTE"
         ? decision.amount
-        : decision?.kind === "PATINAZO"
+        : decision?.kind === "OCA"
+          ? 1
+          : decision?.kind === "PATINAZO"
           ? decision.drinks
           : result && !result.good && !result.icon
             ? (result.drinks ?? 1)

@@ -53,8 +53,9 @@ describe("movimiento", () => {
 });
 
 describe("casillas", () => {
-  it("Oca: bebe 1, salta a la siguiente y vuelve a tirar", () => {
-    const s = rollFrom(game(), 4, 4); // 8
+  it("Oca: si bebe 1, salta a la siguiente y vuelve a tirar", () => {
+    let s = rollFrom(game(), 4, 4); // 8
+    s = act(s, { type: "OCA", choice: "fly" });
     expect(s.players[0].pos).toBe(18);
     expect(s.players[0].drunk).toBe(1);
     expect(s.turn).toBe(0);
@@ -243,6 +244,7 @@ describe("retos, género y deudas", () => {
 
   it("lo bebido queda como deuda hasta confirmar ¡Bebido!", () => {
     let s = rollFrom(game(), 4, 4); // Oca: bebe 1
+    s = act(s, { type: "OCA", choice: "fly" });
     expect(s.players[0].pending).toBe(1);
     s = act(s, { type: "DRANK", id: "p1" });
     expect(s.players[0].pending).toBe(0);
@@ -261,6 +263,26 @@ describe("La Ouija", () => {
     } finally {
       setCategories(DEFAULT_CATEGORIES);
     }
+  });
+});
+
+describe("Murciélago", () => {
+  it("pregunta: si bebe, vuela al siguiente murciélago y vuelve a tirar", () => {
+    let s = rollFrom(game(), 6, 2); // 8
+    expect(s.decision).toEqual({ kind: "OCA", next: 18 });
+    s = act(s, { type: "OCA", choice: "fly" });
+    expect(s.players[0].pos).toBe(18);
+    expect(s.players[0].drunk).toBe(1);
+    expect(s.turn).toBe(0);
+    expect(s.phase).toBe("ROLL");
+  });
+
+  it("si se planta, no bebe, se queda y pasa el turno", () => {
+    let s = rollFrom(game(), 6, 2);
+    s = act(s, { type: "OCA", choice: "stay" });
+    expect(s.players[0].pos).toBe(8);
+    expect(s.players[0].drunk).toBe(0);
+    expect(s.turn).toBe(1);
   });
 });
 

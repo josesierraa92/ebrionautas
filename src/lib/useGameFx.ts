@@ -156,7 +156,7 @@ export function useGameFx(game: GameState | null) {
       );
       t += path.length * STEP_MS;
       const landed = getTile(landing);
-      at(t, () => showEvent(landed, mover.id));
+      if (rolled) at(t, () => showEvent(landed, mover.id)); // (un vuelo por decisión no repite el título)
       if (landing !== mover.pos) {
         t += path.length ? 400 : 0;
         at(t, () => {

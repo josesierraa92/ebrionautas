@@ -26,8 +26,8 @@ const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?:
   A_BEBER: { vars: [NOMBRE, VASOS], defaults: { title: "¡Ronda de mezcal!", text: "{nombre} reparte {vasos} entre quien quiera (también se los puede quedar)." } },
   DUELO: { vars: [NOMBRE, { name: "rivales", about: "a cuántos rivales reta («1 rival», «2 rivales»)" }], defaults: { title: TILE_NAMES.DUELO, text: "{nombre} reta hasta a {rivales}. Uno a uno tiran el dado: quien saque menos bebe 1 vaso. Si empatan, se repite." } },
   OCA: {
-    vars: [NOMBRE, { name: "destino", about: "a dónde vuela («el murciélago lo lleva volando a la siguiente casilla de murciélago (la 18)» o «es el último murciélago»)" }],
-    defaults: { title: "¡De murciélago en murciélago!", text: "{nombre} bebe 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!»; {destino} y vuelve a tirar." },
+    vars: [NOMBRE, { name: "destino", about: "lo que gana si bebe («volar hasta la casilla 18 y volver a tirar» o «volver a tirar (es el último murciélago)»)" }],
+    defaults: { title: "¡De murciélago en murciélago!", text: "{nombre} puede beber 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» para {destino}. Si no quiere, se planta y se queda en esta casilla." },
   },
   LABERINTO: { vars: [NOMBRE], defaults: { title: TILE_NAMES.LABERINTO, text: "{nombre} se pierde entre las tumbas y la niebla. En sus turnos tira el dado: con 5 o 6 escapa; si no, bebe 1 vaso y sigue perdido." } },
   REGLA: { vars: [NOMBRE], defaults: { title: TILE_NAMES.REGLA, text: "{nombre} dicta una ley para todos (por ejemplo: prohibido decir «beber»). Dura hasta que alguien ponga otra. Quien la rompa, bebe 1 vaso." } },

@@ -35,6 +35,8 @@ export type Decision =
   // reta, luego el rival). `a`/`b` son los dados de la ronda actual (se quedan a la vista hasta la siguiente tirada).
   | { kind: "DUEL_ROLL"; rivals: string[]; i: number; a: number | null; b: number | null; tie: boolean; rounds: DuelRound[] }
   | { kind: "PATINAZO"; drinks: number; backTo: number }
+  // Murciélago: quien cae elige si bebe 1 vaso para volar al siguiente murciélago (`next`; null en el último) y volver a tirar, o se planta.
+  | { kind: "OCA"; next: number | null }
   | { kind: "RULE" }
   // Quien controla la mesa marca quiénes beben.
   | { kind: "SELECT_DRINKERS"; drinks: number; title: string; text: string }
@@ -73,6 +75,7 @@ export type Action =
   | { type: "DUEL"; opponents: string[] }
   | { type: "DUEL_ROLL" }
   | { type: "PATINAZO"; choice: "drink" | "back" }
+  | { type: "OCA"; choice: "fly" | "stay" }
   | { type: "SET_RULE" }
   | { type: "SELECT_DRINKERS"; ids: string[] }
   | { type: "CHOOSE_SLAVE"; id: string }
@@ -259,16 +262,8 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       return decide(s, { kind: "DUEL", amount: Math.min(tile.amount, others.length) });
 
     case "OCA":
-      log(s, `🦇 ¡De murciélago en murciélago y bebo porque me toca!`);
-      drink(s, p.id, 1, null);
-      if (tile.next) {
-        p.pos = tile.next;
-        log(s, `🦇 El murciélago lleva a ${p.name} hasta la ${tile.next} y vuelve a tirar.`);
-      } else {
-        log(s, `🦋 ${p.name} vuelve a tirar.`);
-      }
-      s.extraRoll = true;
-      return endTurn(s);
+      log(s, `🦇 ${p.name} cae en un murciélago: ¿bebe 1 vaso para seguir de murciélago en murciélago?`);
+      return decide(s, { kind: "OCA", next: tile.next ?? null });
 
     case "LABERINTO":
       p.status.laberinto = true;
@@ -406,6 +401,24 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
       return true;
     }
     s.lastDuel = { seq: (s.lastDuel?.seq ?? 0) + 1, by: p.id, rounds: d.rounds };
+    endTurn(s);
+    return true;
+  }
+
+  if (d.kind === "OCA" && action.type === "OCA") {
+    if (action.choice === "fly") {
+      log(s, `🦇 ¡De murciélago en murciélago y bebo porque me toca!`);
+      drink(s, p.id, 1, null);
+      if (d.next) {
+        p.pos = d.next;
+        log(s, `🦇 El murciélago lleva a ${p.name} hasta la ${d.next} y vuelve a tirar.`);
+      } else {
+        log(s, `🦋 ${p.name} vuelve a tirar.`);
+      }
+      s.extraRoll = true;
+    } else {
+      log(s, `🦇 ${p.name} se planta: se queda en la ${p.pos}.`);
+    }
     endTurn(s);
     return true;
   }
