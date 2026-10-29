@@ -25,6 +25,7 @@ const KITS = {
   supervivencia: { label: "Supervivencia", scale: 2 },
   ciudad: { label: "Ciudad", scale: 3 },
   halloween: { label: "Halloween", scale: 0.5 }, // KayKit Halloween Bits: vienen ~4 veces más grandes
+  juego: { label: "Del juego", scale: 0.8 }, // modelos propios del juego (scripts/editor/botella.mjs)
 };
 
 const kits = (await readdir(models, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
