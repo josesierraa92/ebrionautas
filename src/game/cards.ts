@@ -14,7 +14,8 @@ const NOMBRE: CardVar = { name: "nombre", about: "el jugador que cayó" };
 const VASOS: CardVar = { name: "vasos", about: "cuántos vasos (con «vaso»/«vasos»)" };
 
 /** Clave de la tarjeta de una casilla: el tipo, y además el título en las que cada una tiene el suyo. */
-export const cardKeyOf = (t: Tile) => (t.type === "RASGO" || t.type === "POSICION" || t.type === "RETO" ? `${t.type}:${t.title}` : t.type);
+export const cardKeyOf = (t: Tile) =>
+  t.type === "RASGO" || t.type === "POSICION" || t.type === "RETO" ? `${t.type}:${t.title}` : t.type === "OCA" && !t.next ? "OCA:ultimo" : t.type;
 
 /** Tarjetas de resultado (al tirar sin moverse). */
 export const RESULT_KEYS = { mazeOk: "RESULTADO:niebla-salva", mazeNo: "RESULTADO:niebla-pierde", jail: "RESULTADO:purgatorio", duel: "RESULTADO:duelo" } as const;
@@ -25,7 +26,12 @@ export const RESULT_KEYS = { mazeOk: "RESULTADO:niebla-salva", mazeNo: "RESULTAD
  * viejo aquí.
  */
 const LEGACY: Record<string, { title?: string[]; text?: string[] }> = {
-  OCA: { text: ["{nombre} bebe 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!»; {destino} y vuelve a tirar."] },
+  OCA: {
+    text: [
+      "{nombre} bebe 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!»; {destino} y vuelve a tirar.",
+      "{nombre} puede beber 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» para {destino}. Si no quiere, se planta y se queda en esta casilla.",
+    ],
+  },
   CULTURAL: { text: ["Sale una categoría. Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso."] },
   A_BEBER: { title: ["¡Ronda de mezcal!", "Ronda de mezcal"] },
   PATINAZO: {
@@ -45,8 +51,14 @@ const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?:
   A_BEBER: { vars: [NOMBRE, VASOS], defaults: { title: "Trago de regalo", text: "{nombre} reparte {vasos} entre quien quiera (también se los puede quedar)." } },
   DUELO: { vars: [NOMBRE, { name: "rivales", about: "a cuántos rivales reta («1 rival», «2 rivales»)" }], defaults: { title: TILE_NAMES.DUELO, text: "{nombre} reta hasta a {rivales}. Uno a uno tiran el dado: quien saque menos bebe 1 vaso. Si empatan, se repite." } },
   OCA: {
-    vars: [NOMBRE, { name: "destino", about: "lo que gana si bebe («volar hasta la casilla 18 y volver a tirar» o «volver a tirar (es el último murciélago)»)" }],
-    defaults: { title: "¡De murciélago en murciélago!", text: "{nombre} puede beber 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» para {destino}. Si no quiere, se planta y se queda en esta casilla." },
+    vars: [NOMBRE, { name: "casilla", about: "a qué casilla vuela (el siguiente murciélago)" }],
+    defaults: { title: "¡De murciélago en murciélago!", text: "{nombre} puede beber 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» para volar hasta la casilla {casilla} y volver a tirar. Si no quiere, se planta y se queda en esta casilla." },
+  },
+  // el último murciélago (casilla 58) no tiene a dónde volar: su propia tarjeta
+  "OCA:ultimo": {
+    label: "El Murciélago (el último)",
+    vars: [NOMBRE],
+    defaults: { title: "¡De murciélago en murciélago!", text: "{nombre} puede beber 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» para volver a tirar: es el último murciélago. Si no quiere, se planta y se queda en esta casilla." },
   },
   LABERINTO: { vars: [NOMBRE], defaults: { title: TILE_NAMES.LABERINTO, text: "{nombre} se pierde entre las tumbas y la niebla. En sus turnos tira el dado: con 5 o 6 escapa; si no, bebe 1 vaso y sigue perdido." } },
   REGLA: { vars: [NOMBRE], defaults: { title: TILE_NAMES.REGLA, text: "{nombre} dicta una ley para todos (por ejemplo: prohibido decir «beber»). Dura hasta que alguien ponga otra. Quien la rompa, bebe 1 vaso." } },
@@ -77,9 +89,9 @@ export function cardCatalog(): CardDef[] {
       old.tiles.push(t.n);
       continue;
     }
-    const base = FIXED[t.type];
+    const base = FIXED[key] ?? FIXED[t.type];
     let def: CardDef;
-    if (base) def = { key, label: TILE_NAMES[t.type], tiles: [t.n], vars: base.vars, defaults: base.defaults };
+    if (base) def = { key, label: base.label ?? TILE_NAMES[t.type], tiles: [t.n], vars: base.vars, defaults: base.defaults };
     else if (t.type === "POSICION")
       def = { key, label: t.title, tiles: [t.n], vars: POSICION_VARS, defaults: { title: t.title, text: "Beben {vasos} todos los que van {lado} de {nombre}{lista}" } };
     else if (t.type === "RASGO")

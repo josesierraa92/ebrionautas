@@ -26,7 +26,7 @@ describe("textos de las tarjetas", () => {
     expect(tileRule(6, game, "p1")).toEqual({ title: "Trago de regalo", text: "Ana reparte 1 vaso entre quien quiera (también se los puede quedar)." });
     expect(tileRule(7, game, "p1").text).toBe("Ana reta hasta a 1 rival. Uno a uno tiran el dado: quien saque menos bebe 1 vaso. Si empatan, se repite.");
     expect(tileRule(8, game, "p1").text).toContain("volar hasta la casilla 18 y volver a tirar");
-    expect(tileRule(58, game, "p1").text).toContain("volver a tirar (es el último murciélago)");
+    expect(tileRule(58, game, "p1").text).toContain("para volver a tirar: es el último murciélago");
     expect(tileRule(43, game, "p1").text).toContain("bebe 2 vasos seguidos o rueda hasta la casilla 12.");
     expect(tileRule(3, game, "p1")).toEqual({ title: "Cegatos", text: "Juicio de los vivos: beben 1 vaso quienes lleven gafas o lentillas." });
     expect(tileRule(12, game, "p1").text).toContain("por detrás de Ana. Esta vez, nadie.");

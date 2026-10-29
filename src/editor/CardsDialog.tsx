@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CARD_GROUPS, cardCatalog, fillCard, groupOf, parseCardOverrides, RESULT_KEYS, type CardDef, type CardOverrides } from "@/game/cards";
 import { createGame } from "@/game/engine";
 import { staticCardVars, tileVars } from "@/game/rules";
+import { toDisplay, toRaw } from "./cardText";
 import { fetchCardTexts } from "@/lib/useCardTexts";
 import { TILE_ACCENT } from "@/game/tileStyle";
 import { DEFAULT_ICON } from "@/editor/icons";
@@ -115,9 +116,8 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
           </button>
         </div>
         <p className="text-sm opacity-70">
-          Aquí está cada tarjeta una sola vez (las casillas que comparten tarjeta salen juntas). Escribe el título y el texto tal como quieres
-          que salgan en el juego. Solo lo que cambia en cada partida va entre llaves, por ejemplo{" "}
-          <code className="rounded bg-white/10 px-1">{"{nombre}"}</code> (el jugador): déjalo tal cual y se rellena solo.
+          Aquí está cada tarjeta una sola vez (las casillas que comparten tarjeta salen juntas). Edita el título y el texto como quieras: es el
+          mismo texto que sale en el juego. Los nombres y números de ejemplo (Ana, la casilla 12…) se cambian solos por los de cada partida.
           {saved === null && " Cargando…"}
         </p>
 
@@ -179,15 +179,18 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
 }
 
 function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { title?: string; text?: string } | undefined; onChange: (f: "title" | "text", v: string) => void; onReset: () => void }) {
-  // Los datos que siempre valen lo mismo («1 vaso», «los hombres»…) se enseñan ya escritos en el texto: se edita el mismo texto del juego.
+  // Se edita el MISMO texto del juego, con los datos de ejemplo puestos; al guardar, los de ejemplo que cambian en cada partida vuelven a
+  // ser huecos (cardText.ts). Los que valen siempre lo mismo («1 vaso», «los hombres») quedan como texto normal.
+  const vars = useMemo(() => sampleVars(def), [def]);
   const fixed = useMemo(() => staticCardVars(def), [def]);
-  const fillFixed = (x: string) => fillCard(x, fixed);
+  const dynamicVars = def.vars.filter((v) => !(v.name in fixed) && String(vars[v.name] ?? "") !== "");
   const title = value?.title ?? def.defaults.title;
-  const text = fillFixed(value?.text ?? def.defaults.text);
-  const defaultText = fillFixed(def.defaults.text);
+  const text = toDisplay(value?.text ?? def.defaults.text, vars);
   // si el texto vuelve a ser igual al de serie no cuenta como edición
-  const changeText = (v: string) => onChange("text", v === defaultText ? def.defaults.text : v);
-  const dynamicVars = def.vars.filter((v) => !(v.name in fixed));
+  const changeText = (v: string) => {
+    const raw = toRaw(v, vars, dynamicVars.map((d) => d.name));
+    onChange("text", raw === def.defaults.text ? def.defaults.text : raw);
+  };
   const edited = (value?.title !== undefined && value.title !== def.defaults.title) || (value?.text !== undefined && value.text !== def.defaults.text);
   // casilla de la que toma icono y color: la primera que usa la tarjeta (el resultado del duelo, la de duelo)
   const first = def.tiles[0] ? BOARD[def.tiles[0] - 1] : def.key === RESULT_KEYS.duel ? BOARD.find((t) => t.type === "DUELO") ?? null : null;
@@ -196,7 +199,6 @@ function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { 
   const emoji = first ? undefined : def.key === RESULT_KEYS.mazeOk ? "✨" : def.key === RESULT_KEYS.jail ? "🔓" : "🍷";
   const kind = first && (first.type === "RASGO" ? "Rasgo" : first.type === "POSICION" ? "Posición" : first.type === "RETO" ? "Reto" : null);
   // vista previa: tal como sale en el juego, con los huecos rellenados con una partida de ejemplo
-  const vars = useMemo(() => sampleVars(def), [def]);
   const preview = (x: string) => fillCard(x, vars);
   return (
     <div className={`flex gap-3 rounded-xl p-3 ${edited ? "bg-amber-400/10 ring-1 ring-amber-400/60" : "bg-white/5"}`}>
@@ -226,13 +228,7 @@ function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { 
         <textarea className="min-h-20 rounded-md bg-white/10 px-2 py-1.5 text-sm" value={text} maxLength={600} onChange={(e) => changeText(e.target.value)} aria-label={`Texto de ${def.label}`} />
         {dynamicVars.length > 0 && (
           <p className="text-[11px] opacity-70">
-            Cambian en cada partida (toca uno para añadirlo al texto):{" "}
-            {dynamicVars.map((v) => (
-              <button key={v.name} type="button" title={v.about} className="mr-1 rounded bg-white/10 px-1.5 py-0.5 hover:bg-white/20" onClick={() => changeText(`${text}{${v.name}}`)}>
-                {`{${v.name}}`}
-              </button>
-            ))}
-            <span className="opacity-80">({dynamicVars.map((v) => `${v.name}: ${v.about}`).join(" · ")})</span>
+            Se cambian solos en cada partida: {dynamicVars.map((v) => `«${vars[v.name]}» = ${v.about}`).join(" · ")}
           </p>
         )}
       </div>

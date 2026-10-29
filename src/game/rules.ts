@@ -41,7 +41,7 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
       return { nombre, rivales: `${max} ${max === 1 ? "rival" : "rivales"}` };
     }
     case "OCA":
-      return { nombre, destino: tile.next ? `volar hasta la casilla ${tile.next} y volver a tirar` : "volver a tirar (es el último murciélago)" };
+      return { nombre, casilla: tile.next ?? "" };
     case "PATINAZO":
       return { nombre, vasos: vasos(tile.drinks), casilla: tile.backTo };
     case "POSICION": {
@@ -63,7 +63,7 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
 }
 
 /** Datos que cambian en cada partida (nombre del jugador, quiénes están en la mesa, lo que sale al azar…): nunca se escriben a mano. */
-const DYNAMIC_VARS = new Set(["nombre", "lista", "rivales", "categoria", "dado", "resultado"]);
+const DYNAMIC_VARS = new Set(["nombre", "lista", "rivales", "categoria", "dado", "resultado", "casilla"]);
 
 /**
  * Huecos de una tarjeta que valen SIEMPRE lo mismo (por ejemplo «1 vaso» y «los hombres» en Machos): el editor los enseña ya escritos
