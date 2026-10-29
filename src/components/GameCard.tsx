@@ -42,7 +42,7 @@ export default function GameCard({
   return (
     <div key={cardKey} className="card-pop relative w-full text-left" style={{ ["--u" as string]: unit, paddingTop: u(0.9), filter: `drop-shadow(0 ${u(0.4)} ${u(0.6)} rgba(0,0,0,.55))` }}>
       {/* panel cuadrado con las esquinas levemente redondeadas, del mismo morado que el cuadro de turno, con borde grueso */}
-      <div style={{ borderRadius: u(1.1), border: `${u(0.32)} solid #4a2a94`, background: "linear-gradient(180deg, #34187a 0%, #2d1460 50%, #220e4d 100%)", boxShadow: `0 0 0 ${u(0.12)} #1a0b38` }}>
+      <div style={{ borderRadius: u(1.1), border: `${u(0.32)} solid #4a2a94`, background: "linear-gradient(180deg, #34187a 0%, #2d1460 50%, #220e4d 100%)" }}>
         <div className="relative" style={{ padding: `${u(1.7)} ${u(1.5)} ${u(1.4)}` }}>
           {/* cabecera: hexágono con el icono y el título */}
           <div className="relative flex items-center" style={{ gap: u(1.1), paddingRight: u(1.4) }}>
@@ -116,14 +116,14 @@ function titleSize(title: string) {
   return Math.max(1.2, Math.min(2.2, 11 / (0.6 * perLine)));
 }
 
-/** «Casilla 48 · Vane»: la palabra con el color de la pastilla y el número en blanco (con un filo oscuro para que se lea sobre el verde). */
+/** «Casilla 48 · Vane»: la palabra con el color de la pastilla y el número en blanco. */
 function Kicker({ text }: { text: string }) {
   const m = /^(\D*?)(\d+)(.*)$/.exec(text);
   if (!m) return <>{text}</>;
   return (
     <>
       {m[1]}
-      <span style={{ color: "#fff", textShadow: "0 0 0.12em #14260a, 0 0.06em 0 #14260a, 0.06em 0 0 #14260a, -0.06em 0 0 #14260a, 0 -0.06em 0 #14260a" }}>{m[2]}</span>
+      <span style={{ color: "#fff" }}>{m[2]}</span>
       {m[3]}
     </>
   );

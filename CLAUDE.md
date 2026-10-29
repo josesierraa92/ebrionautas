@@ -310,3 +310,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - `GameCard`: el icono va centrado y grande (74 %) en su cuadro, el verde es más neón (`#b6ff3b`→`#2fd11a`) y el dado del botón del celular enseña lo que sacó (`dice` = `game.lastRoll`, `DiceIcon`). El hueco `{destino}` sigue funcionando en `tileVars` por si hay un texto propio guardado con él.
 - `GameCard`: el número de la pastilla «CASILLA 48» va en blanco con un filo oscuro (`Kicker`) y la palabra con el color de la pastilla; el icono ocupa el 98 % del cuadro (el murciélago se veía chico).
 - `GameCard`: el cuadro verde del icono y la pastilla «CASILLA N» van **sin borde** (pedido del usuario).
+- `GameCard`: sin el aro negro alrededor de toda la tarjeta (solo queda el borde morado grueso) y el número de la pastilla en blanco liso, sin filo (pedido del usuario).
