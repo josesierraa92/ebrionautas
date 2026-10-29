@@ -122,9 +122,9 @@ body {
   -webkit-text-stroke: 0.34em #090b2a; /* contorno azul muy oscuro */
   paint-order: stroke fill;
   will-change: transform;
-  color: #fff;
+  color: var(--c, #fff); /* el nombre va en el color del jugador y la flechita en blanco */
 }
-/* flechita debajo del nombre que señala al personaje, del color de su ficha (`--c`) con el mismo contorno oscuro */
+/* flechita blanca debajo del nombre que señala al personaje, con el mismo contorno oscuro */
 .live-name::after {
   content: "";
   display: block;
@@ -133,7 +133,7 @@ body {
   margin: 0.12em auto 0;
   border-left: 0.27em solid transparent;
   border-right: 0.27em solid transparent;
-  border-top: 0.31em solid var(--c, #fff);
+  border-top: 0.31em solid #fff;
   filter: drop-shadow(0.09em 0 0 #090b2a) drop-shadow(-0.09em 0 0 #090b2a) drop-shadow(0 0.09em 0 #090b2a)
     drop-shadow(0 -0.09em 0 #090b2a);
 }

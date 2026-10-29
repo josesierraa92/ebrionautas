@@ -263,8 +263,8 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   (`PhoneRuleCard` con `unit="19px"`) y abajo el botón «SIGUIENTE TURNO ▶»; al tocarlo sale «Le toca a …» con el dado en medio
   (`DiceController`, estado `dismissed` por clave de tarjeta; no se puede tirar con la tarjeta abierta). Cuando hay que decidir, la tarjeta
   va encima de las opciones, como antes.
-- Nombres sobre las fichas (`.live-name`, en 3D y en el respaldo de `IsoBoard`): **en blanco** con contorno azul muy oscuro (`#090b2a`,
-  0,34em) y debajo una **flechita del color del jugador** (`::after`, color en la variable `--c`) que señala al personaje (pedido del usuario).
+- Nombres sobre las fichas (`.live-name`, en 3D y en el respaldo de `IsoBoard`): **en el color del jugador** (variable `--c`) con contorno azul muy oscuro (`#090b2a`,
+  0,34em) y debajo una **flechita blanca** (`::after`) que señala al personaje (pedido del usuario; antes al revés: nombre blanco y flecha de color). Más pequeños: `tilePx * 0.088` (mín. 10 px) en 3D, antes `0.11` (mín. 12 px), y 9/10,5/13 px en el respaldo de imagen, antes 11/13/16.
   La pantalla de la tarjeta lleva arriba «Turno de NOMBRE» con su avatar (de quién es la tarjeta).
 - Cámara y cuadro de turno de la TV (pedido del usuario): siguen a quien jugó hasta que el celular toca **«SIGUIENTE TURNO»**; entonces la cámara va
   a quien tiene el turno y el `TurnChip` cambia. El motor lo marca con `GameState.waiting` (`true` en `endTurn`, `false` con la acción

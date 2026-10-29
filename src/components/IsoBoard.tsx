@@ -367,10 +367,10 @@ function Token({ t, z, k, sheet, scale, current, winner, flying }: { t: TokenDat
             top: -top,
             transform: "translate(-50%, -100%)",
             fontFamily: "var(--font-lilita), sans-serif",
-            fontSize: (n > 8 ? 11 : n > 3 ? 13 : 16) * k,
+            fontSize: (n > 8 ? 9 : n > 3 ? 10.5 : 13) * k,
             lineHeight: 1,
             letterSpacing: "-0.01em",
-            ["--c" as string]: p.color, // nombre blanco; la flechita de debajo, del color del jugador (clase live-name)
+            ["--c" as string]: p.color, // el nombre va en el color del jugador y la flechita de debajo en blanco (clase live-name)
           }}
         >
           {p.name}

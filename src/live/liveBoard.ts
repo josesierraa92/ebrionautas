@@ -160,7 +160,7 @@ export class LiveBoard {
       t.settled = pos === p.pos;
       t.label.textContent = p.name;
       t.label.dataset.name = p.name;
-      t.label.style.setProperty("--c", p.color); // nombre blanco; la flechita, del color del jugador (el del cuadro de turno)
+      t.label.style.setProperty("--c", p.color); // nombre en el color del jugador (el del cuadro de turno); la flechita, blanca
     }
     // la cámara sigue a la ficha que toca (o al jugador de turno)
     const f = this.tokens.get(s.focus ?? s.current);
@@ -276,7 +276,7 @@ export class LiveBoard {
     for (const t of this.tokens.values()) {
       const p = this.scene.toScreen(t.group.position.clone().add(new THREE.Vector3(0, t.height * 1.04, 0)));
       t.label.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`;
-      t.label.style.fontSize = `${Math.max(12, tilePx * 0.11)}px`;
+      t.label.style.fontSize = `${Math.max(10, tilePx * 0.088)}px`;
     }
   }
 }
