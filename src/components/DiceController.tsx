@@ -190,17 +190,20 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
   if (game.phase === "DECISION" && decision) {
     const tileNumber = card?.n ?? me.pos;
     const tilePlayerId = card?.playerId ?? me.id;
+    // Pantalla completa: la tarjeta grande y centrada en el espacio que sobra, y las opciones abajo, al alcance del pulgar.
     return (
       <div className="flex flex-1 flex-col gap-4">
-        <PhoneRuleCard
-          game={game}
-          n={tileNumber}
-          playerId={tilePlayerId}
-          cardKey={card?.key ?? (game.decisionSeq ?? tileNumber)}
-          result={card?.result}
-          unit="16px"
-        />
-        {decision}
+        <div className="flex min-h-0 flex-1 flex-col justify-center">
+          <PhoneRuleCard
+            game={game}
+            n={tileNumber}
+            playerId={tilePlayerId}
+            cardKey={card?.key ?? (game.decisionSeq ?? tileNumber)}
+            result={card?.result}
+            unit="18px"
+          />
+        </div>
+        <div className="pb-2">{decision}</div>
       </div>
     );
   }
