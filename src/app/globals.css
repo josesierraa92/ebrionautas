@@ -120,15 +120,11 @@ body {
   text-transform: uppercase;
   letter-spacing: -0.01em;
   will-change: transform;
-  /* el nombre va en el color del jugador con degradado vertical de neón (--c1, arriba) a un tono más oscuro (--c2); la flechita, blanca */
-  color: transparent;
-  background: linear-gradient(180deg, var(--c1, var(--c, #fff)), var(--c2, var(--c, #fff)));
-  -webkit-background-clip: text;
-  background-clip: text;
-  /* contorno azul muy oscuro por fuera de las letras (un trazo de texto se comería el degradado) */
-  filter: drop-shadow(0.1em 0 0 #090b2a) drop-shadow(-0.1em 0 0 #090b2a) drop-shadow(0 0.1em 0 #090b2a) drop-shadow(0 -0.1em 0 #090b2a);
+  color: #fff; /* el nombre va en blanco con contorno oscuro; la flechita, del color del jugador y con luz neón */
+  -webkit-text-stroke: 0.34em #090b2a; /* contorno azul muy oscuro */
+  paint-order: stroke fill;
 }
-/* flechita blanca debajo del nombre que señala al personaje, con el mismo contorno oscuro */
+/* flechita debajo del nombre que señala al personaje: del color del jugador (`--c`), con un filo oscuro fino y un resplandor neón del mismo color */
 .live-name::after {
   content: "";
   display: block;
@@ -137,7 +133,9 @@ body {
   margin: 0.12em auto 0;
   border-left: 0.27em solid transparent;
   border-right: 0.27em solid transparent;
-  border-top: 0.31em solid #fff; /* el contorno oscuro de la flecha lo da el filtro del nombre */
+  border-top: 0.31em solid var(--c, #fff);
+  filter: drop-shadow(0.06em 0 0 #090b2a) drop-shadow(-0.06em 0 0 #090b2a) drop-shadow(0 0.06em 0 #090b2a) drop-shadow(0 -0.06em 0 #090b2a)
+    drop-shadow(0 0 0.2em var(--c, #fff)) drop-shadow(0 0 0.5em var(--c, #fff)) drop-shadow(0 0 1em var(--c, #fff));
 }
 /* Personajes zombi del tablero: respiran (el pecho sube y baja: se estiran un poco desde los pies). Con `transform`
    (no la propiedad `scale`, que los navegadores de TV antiguos no conocen); el espejo va en otra capa por dentro. */
