@@ -9,8 +9,8 @@ import BeerIcon from "@/components/BeerIcon";
 import { iconMaskUrl, type IconName } from "@/editor/icons";
 
 /** Verde biche con degradado a un verde más oscuro: el color de acento de todas las tarjetas (pastilla, cuadro del icono y flechita). */
-const GREEN_LIGHT = "#b6ff3b";
-const GREEN = `linear-gradient(160deg, ${GREEN_LIGHT}, #2fd11a)`;
+const GREEN_LIGHT = "#bffa58";
+const GREEN = `linear-gradient(160deg, ${GREEN_LIGHT}, #5fc34a)`;
 
 export default function GameCard({
   icon,
@@ -42,7 +42,7 @@ export default function GameCard({
   return (
     <div key={cardKey} className="card-pop relative w-full text-left" style={{ ["--u" as string]: unit, paddingTop: u(0.9), filter: `drop-shadow(0 ${u(0.4)} ${u(0.6)} rgba(0,0,0,.55))` }}>
       {/* panel cuadrado con las esquinas levemente redondeadas, del mismo morado que el cuadro de turno, con borde grueso */}
-      <div style={{ borderRadius: u(1.1), border: `${u(0.32)} solid #4a2a94`, background: "linear-gradient(180deg, #34187a 0%, #2d1460 50%, #220e4d 100%)" }}>
+      <div style={{ borderRadius: u(1.1), border: `${u(0.32)} solid #452b8e`, background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
         <div className="relative" style={{ padding: `${u(1.7)} ${u(1.5)} ${u(1.4)}` }}>
           {/* cabecera: hexágono con el icono y el título */}
           <div className="relative flex items-center" style={{ gap: u(1.1), paddingRight: u(1.4) }}>
