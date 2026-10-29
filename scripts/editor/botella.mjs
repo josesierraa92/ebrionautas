@@ -42,21 +42,23 @@ const box = (name, w, h, d, x, y, z, mat) => {
 };
 const HILITE = flat("#52c95f", { roughness: 0.3 });
 
-// botella de cerveza: cuerpo recto de 8×8, hombros en escalón, cuello corto de 4×4 y tapa cuadrada de 6×6 (26 voxeles de alto)
-box("cuerpo", 8, 14, 8, 0, 0, 0, GLASS);
-box("hombro1", 6, 2, 6, 0, 14, 0, GLASS);
-box("hombro2", 5, 2, 5, 0, 16, 0, GLASS);
-box("cuello", 4, 6, 4, 0, 18, 0, GLASS);
-box("tapa", 6, 2, 6, 0, 24, 0, CAP);
+// botella de cerveza (como el dibujo del usuario): cuerpo recto de 10×16, hombros suaves en escalón, cuello largo y delgado de 4×11,
+// un collarín y una tapa pequeña arriba (32 voxeles de alto)
+box("cuerpo", 10, 16, 10, 0, 0, 0, GLASS);
+box("hombro1", 8, 1, 8, 0, 16, 0, GLASS);
+box("hombro2", 6, 1, 6, 0, 17, 0, GLASS);
+box("cuello", 4, 11, 4, 0, 18, 0, GLASS);
+box("collarin", 6, 1, 6, 0, 29, 0, GLASS);
+box("tapa", 4, 2, 4, 0, 30, 0, CAP);
 // reflejo del vidrio: una columna más clara en la esquina delantera izquierda
-box("brillo", 1, 11, 1, -3.5, 2, 4.02, HILITE);
+box("brillo", 1, 13, 1, -4, 2, 5.02, HILITE);
 
-// etiqueta: rectángulo alargado (6×9) pegado al frente, con una X de 5×5 «píxeles» negros
-const FRONT = 4;
-box("etiqueta", 6, 9, 1, 0, 3, FRONT + 0.5, LABEL);
+// etiqueta: rectángulo alto (7×11) que cubre casi todo el frente del cuerpo, con una X de 5×5 «píxeles» negros
+const FRONT = 5;
+box("etiqueta", 7, 11, 1, 0, 4, FRONT + 0.5, LABEL);
 for (let k = 0; k < 5; k++)
   for (const col of k === 2 ? [k] : [k, 4 - k])
-    box(`x${k}${col}`, 1, 1, 0.5, col - 2, 5 + k, FRONT + 1.25, INK);
+    box(`x${k}${col}`, 1, 1, 0.5, col - 2, 7 + k, FRONT + 1.25, INK);
 
 const scene = new THREE.Scene();
 scene.add(root);
