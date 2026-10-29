@@ -162,7 +162,7 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
   return (
     <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center max-md:top-16 max-md:scale-90 max-md:origin-top-left">
       {/* anillo de color del jugador con degradado (más claro arriba a la izquierda, más oscuro abajo a la derecha) */}
-      <div className="relative z-10 -mr-[30px] -ml-[5px] shrink-0" style={{ padding: 5, borderRadius: 21, background: `linear-gradient(150deg, ${shadeHex(color, 0.45)}, ${color} 50%, ${shadeHex(color, -0.4)})`, boxShadow: "0 6px 12px rgba(0,0,0,.45)" }}>
+      <div className="relative z-10 -mr-[30px] -ml-[5px] shrink-0" style={{ padding: 5, borderRadius: 21, background: `linear-gradient(150deg, ${shadeHex(color, 0.12)} 0%, ${color} 35%, ${shadeHex(color, -0.38)} 100%)`, boxShadow: "0 6px 12px rgba(0,0,0,.45)" }}>
         <div
           className="grid place-items-center overflow-hidden rounded-2xl border-[4px] border-ink"
           style={{ width: 84, height: 84, background: "radial-gradient(circle at 50% 50%, #5a31ad 0%, #3a1d7a 50%, #1a0b38 100%)" }}
@@ -172,7 +172,7 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
       </div>
       <div className="relative overflow-hidden rounded-xl border-[4px] border-[#1a0b38] bg-[#2d1460]/95 py-2 pr-[26px] pl-[43px] shadow-[0_6px_12px_rgba(0,0,0,.45)]">
         <div>
-          <p className="relative top-[4px] font-display text-[1rem] leading-none tracking-wider uppercase" style={{ background: "linear-gradient(180deg, #e3ff9a 0%, #bffa58 45%, #5fc34a 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
+          <p className="relative top-[4px] font-display text-[1rem] leading-none tracking-wider uppercase" style={{ background: "linear-gradient(180deg, #c6ff4a 0%, #8be02c 50%, #3f9a2a 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
             {winner ? "¡Ganador!" : "Turno de"}
           </p>
           <p className="mt-1 font-display text-[2.6rem] leading-none text-white uppercase" style={{ textShadow: "0 2px 0 #1a0b38, 0 3px 0 #1a0b38" }}>
