@@ -44,12 +44,13 @@ export default function GameCard({
       {/* panel cuadrado con las esquinas levemente redondeadas, del mismo morado que el cuadro de turno, con borde grueso */}
       <div style={{ borderRadius: u(1.1), border: `${u(0.32)} solid #452b8e`, background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
         <div className="relative" style={{ padding: `${u(1.7)} ${u(1.5)} ${u(1.4)}` }}>
-          {/* cabecera: hexágono con el icono y el título */}
+          {/* cabecera: cuadro con el icono y el título */}
           <div className="relative flex items-center" style={{ gap: u(1.1), paddingRight: u(1.4) }}>
-            <div className="shrink-0" style={{ width: u(4), aspectRatio: "1" }}>
-              <div className="grid h-full w-full place-items-center" style={{ borderRadius: u(0.9), background: GREEN }}>
+            {/* cuadrado exacto (ancho y alto iguales, sin aspect-ratio: el Safari del iPhone lo estiraba) con las esquinas redondeadas */}
+            <div className="shrink-0 grid place-items-center" style={{ width: u(4), height: u(4), minWidth: u(4), minHeight: u(4), borderRadius: u(0.9), background: GREEN }}>
+              <div className="contents">
                 {mask ? (
-                  <div style={{ width: "98%", aspectRatio: "1", background: "#14260a", ...maskStyle(mask) }} />
+                  <div style={{ width: u(3.9), height: u(3.9), background: "#14260a", ...maskStyle(mask) }} />
                 ) : (
                   <span className="leading-none" style={{ fontSize: u(2.2) }}>
                     {emoji === "🍷" ? <BeerIcon size="1em" /> : emoji}
