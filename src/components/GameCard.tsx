@@ -46,8 +46,8 @@ export default function GameCard({
         <div className="relative" style={{ padding: `${u(1.7)} ${u(1.5)} ${u(1.4)}` }}>
           {/* cabecera: hexágono con el icono y el título */}
           <div className="relative flex items-center" style={{ gap: u(1.1), paddingRight: u(1.4) }}>
-            <div className="shrink-0" style={{ width: u(4), aspectRatio: "1", borderRadius: u(1), background: "#1a0b38", padding: u(0.2) }}>
-              <div className="grid h-full w-full place-items-center" style={{ borderRadius: u(0.8), background: GREEN }}>
+            <div className="shrink-0" style={{ width: u(4), aspectRatio: "1" }}>
+              <div className="grid h-full w-full place-items-center" style={{ borderRadius: u(0.9), background: GREEN }}>
                 {mask ? (
                   <div style={{ width: "98%", aspectRatio: "1", background: "#14260a", ...maskStyle(mask) }} />
                 ) : (
@@ -77,7 +77,7 @@ export default function GameCard({
         </div>
       </div>
       {/* pastilla «CASILLA N» arriba en el centro, montada sobre el borde */}
-      <div className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-display uppercase" style={{ padding: `${u(0.2)} ${u(1)}`, borderRadius: u(9), background: GREEN, color: "#14260a", fontSize: u(0.95), letterSpacing: "0.04em", boxShadow: `0 0 0 ${u(0.18)} #1a0b38` }}>
+      <div className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-display uppercase" style={{ padding: `${u(0.2)} ${u(1)}`, borderRadius: u(9), background: GREEN, color: "#14260a", fontSize: u(0.95), letterSpacing: "0.04em" }}>
         <Kicker text={kicker} />
       </div>
     </div>
