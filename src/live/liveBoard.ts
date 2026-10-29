@@ -216,14 +216,11 @@ export class LiveBoard {
     return { character, group, model, mixer, idle, walk, height, pos: p.pos, goal: at.clone(), from: at.clone(), t: 1, dur: STEP_MS, fly: false, yaw, yawGoal: yaw, label, walking: false, still: 1, settled: true, base, breath: Math.random() * Math.PI * 2, amp: 1 };
   }
 
-  /** Quieto, mira hacia la casilla siguiente (en la meta, de frente a la cámara). */
+  /** Quieto, mira hacia la casilla siguiente (en la última, en el sentido en que llegó). */
   private idleYaw(pos: number): number | null {
     const last = this.layout.tiles.length;
-    // en la meta, de frente a la cámara: mirando hacia donde llegaba quedaba de espaldas y solo se veía la cabeza
-    // negra por detrás (parecía una bola oscura)
-    if (pos >= last) return this.scene.cameraYaw();
-    const a = this.scene.tileCenter(pos);
-    const b = this.scene.tileCenter(pos + 1);
+    const a = this.scene.tileCenter(pos === last ? pos - 1 : pos);
+    const b = this.scene.tileCenter(pos === last ? pos : pos + 1);
     if (!a || !b) return null;
     return Math.atan2(b.x - a.x, b.z - a.z);
   }

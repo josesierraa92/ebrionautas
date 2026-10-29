@@ -355,12 +355,6 @@ export class EditorScene {
     return { x: ((v.x + 1) / 2) * this.container.clientWidth, y: ((1 - v.y) / 2) * this.container.clientHeight, visible: v.z < 1 };
   }
 
-  /** Giro (alrededor del eje vertical) con el que algo queda de frente a la cámara de la TV. */
-  cameraYaw() {
-    const [x, , z] = tvDirection(this.layout?.tvView ?? parseTvView(undefined));
-    return Math.atan2(x, z);
-  }
-
   /** Dirección de la cámara de la TV vista desde arriba (para colocar varias fichas en fila en pantalla). */
   screenRight() {
     const az = ((this.layout?.tvView.az ?? 45) * Math.PI) / 180;
