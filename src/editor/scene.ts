@@ -920,7 +920,11 @@ export class EditorScene {
         if (this.viewer) light.visible = false; // en la TV las luces reales son pocas y siguen a la cámara (collectViewerLamps)
         const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glow(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
         const lampGroup = new THREE.Group();
-        lampGroup.position.copy(at);
+        // una vela (o brasero) tiene la llama casi pegada a su base: el foco desde ahí deja una mancha amarilla dura sobre la
+        // losa y casi nada alrededor. Se sube el punto de luz hasta ~1,3 sobre la base del modelo para que reparta suave.
+        const lift = Math.max(0, 1.3 - (at.y - box.min.y) * g.scale.y) / g.scale.y;
+        lampGroup.position.copy(at).add(new THREE.Vector3(0, lift, 0));
+        sprite.position.y = -lift; // el halo se queda en la llama; solo sube el foco
         lampGroup.add(light, sprite, light.target);
         rig.add(lampGroup);
       }
