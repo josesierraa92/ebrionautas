@@ -8,7 +8,9 @@ import { cardCatalog, fillCard, parseCardOverrides, RESULT_KEYS, type CardDef, t
 import { createGame } from "@/game/engine";
 import { tileVars } from "@/game/rules";
 import { fetchCardTexts } from "@/lib/useCardTexts";
-import { tileArt, TILE_STYLE } from "@/game/tileStyle";
+import { TILE_ACCENT } from "@/game/tileStyle";
+import { DEFAULT_ICON } from "@/editor/icons";
+import GameCard from "@/components/GameCard";
 import { BOARD } from "@/game/board";
 import { DEFAULT_CATEGORIES, getCategories, parseCategories } from "@/game/content";
 
@@ -144,25 +146,19 @@ function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { 
   const title = value?.title ?? def.defaults.title;
   const text = value?.text ?? def.defaults.text;
   const edited = (value?.title !== undefined && value.title !== def.defaults.title) || (value?.text !== undefined && value.text !== def.defaults.text);
-  const first = def.tiles[0] ? BOARD[def.tiles[0] - 1] : null;
-  const style = first ? TILE_STYLE[first.type] : { bg: ["#8be86b", "#2fae4a"] };
+  // casilla de la que toma icono y color: la primera que usa la tarjeta (el resultado del duelo, la de duelo)
+  const first = def.tiles[0] ? BOARD[def.tiles[0] - 1] : def.key === RESULT_KEYS.duel ? BOARD.find((t) => t.type === "DUELO") ?? null : null;
+  const accent = first ? TILE_ACCENT[first.type] : def.key === RESULT_KEYS.mazeOk ? "#5cd23c" : "#ffc61a";
+  const icon = first ? DEFAULT_ICON[first.type] : null;
+  const emoji = first ? undefined : def.key === RESULT_KEYS.mazeOk ? "✨" : def.key === RESULT_KEYS.jail ? "🔓" : "🍷";
   // vista previa: tal como sale en el juego, con los huecos rellenados con una partida de ejemplo
   const vars = useMemo(() => sampleVars(def), [def]);
   const preview = (x: string) => fillCard(x, vars);
   return (
     <div className={`flex gap-3 rounded-xl p-3 ${edited ? "bg-amber-400/10 ring-1 ring-amber-400/60" : "bg-white/5"}`}>
       <div className="w-72 shrink-0">
-        {/* igual que la tarjeta de la TV */}
-        <div className="overflow-hidden rounded-[1.2rem] border-[3px] border-[#1b1f4b] bg-[#fbf3e4] text-[#1b1f4b] shadow-[0_5px_0_#1b1f4b]">
-          <div className="flex items-center gap-3 px-3.5 py-2.5" style={{ background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}>
-            {first && <img src={tileArt(first.type)} alt="" className="h-auto w-14 shrink-0 drop-shadow-[0_3px_0_rgba(0,0,0,.3)]" />}
-            <div className="min-w-0">
-              <p className="font-display text-[11px] text-white/90">{def.tiles.length ? `Casilla ${def.tiles[0]}` : "Resultado"}</p>
-              <h4 className="font-display text-xl leading-tight text-white drop-shadow-[0_2px_0_rgba(0,0,0,.35)]">{preview(title) || "…"}</h4>
-            </div>
-          </div>
-          <p className="px-3.5 py-3 font-display text-[15px] leading-snug whitespace-pre-line">{preview(text) || "…"}</p>
-        </div>
+        {/* la misma tarjeta que sale en la TV y en el celular (GameCard): si cambia su diseño, cambia aquí */}
+        <GameCard accent={accent} icon={icon} emoji={emoji} kicker={def.tiles.length ? `Casilla ${def.tiles[0]}` : "Resultado"} title={preview(title) || "…"} text={preview(text) || "…"} unit="12px" cardKey={0} />
         <p className="mt-1.5 text-[11px] opacity-70">
           {def.tiles.length ? `Casilla${def.tiles.length > 1 ? "s" : ""} ${def.tiles.join(", ")}` : "Al tirar el dado"} · así se ve en el juego (con Ana de ejemplo)
         </p>

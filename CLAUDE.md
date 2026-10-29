@@ -9,7 +9,9 @@ de que salga el sol. Lema: "Una noche para beber. Toda la eternidad para dormirl
 
 El usuario edita textos, reglas y tablero desde el editor (`/admin/editor`) y le preocupa que lo nuevo solo exista en el juego. **Al cambiar
 cualquier regla, texto, título, número o pantalla, comprueba SIEMPRE las dos partes** y dile al usuario qué verificaste en cada una:
-1. **Textos de las tarjetas** (`src/game/cards.ts`): el texto/título de serie y sus huecos `{x}` (con su explicación en `vars`) tienen que
+1. **Textos y diseño de las tarjetas** (`src/game/cards.ts`). La vista previa del editor usa el **mismo componente `GameCard`** que el juego
+   (TV y celular): si rediseñas la tarjeta, el editor cambia solo; no vuelvas a dibujar una copia aparte en `CardsDialog`.
+   El texto y los huecos: el texto/título de serie y sus huecos `{x}` (con su explicación en `vars`) tienen que
    reflejar la regla nueva. El editor «📝 Tarjetas» (`CardsDialog.tsx`) lista ese catálogo y su vista previa usa `sampleVars` (datos de
    ejemplo: añade ahí los que falten, p. ej. `giftAmount`, `category`). Una tarjeta o resultado nuevo (p. ej. «Duelo: resultado») debe estar
    en `cardCatalog()` / `RESULT_KEYS` para que se pueda editar.
