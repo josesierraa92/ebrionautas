@@ -162,10 +162,10 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
       </div>
       <div className="relative -skew-x-6 overflow-hidden rounded-xl border-[4px] border-[#1a0b38] bg-[#2d1460]/95 py-2 pr-7 pl-9 shadow-[0_6px_12px_rgba(0,0,0,.45)]">
         <div className="skew-x-6">
-          <p className="relative top-[3px] font-display text-sm leading-none tracking-wider text-[#bffa58] uppercase">
+          <p className="relative top-[3px] font-display text-lg leading-none tracking-wider text-[#bffa58] uppercase">
             {winner ? "¡Ganador!" : "Turno de"}
           </p>
-          <p className="mt-1 font-display text-4xl leading-none text-white uppercase" style={{ textShadow: "0 3px 0 #1a0b38, 0 5px 0 #1a0b38" }}>
+          <p className="mt-1 font-display text-[3.25rem] leading-none text-white uppercase" style={{ textShadow: "0 3px 0 #1a0b38, 0 5px 0 #1a0b38" }}>
             {who.name}
           </p>
         </div>
