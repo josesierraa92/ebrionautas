@@ -2,6 +2,7 @@
 
 import { characterOf } from "@/game/characters";
 import { useEffect, useRef, useState } from "react";
+import BeerIcon from "@/components/BeerIcon";
 import { Die } from "@/components/Fx";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
@@ -143,7 +144,7 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
         <p className="title-game text-7xl">{result.value}</p>
         {result.lost && (
           <p className={`btn-game px-5 py-2 text-2xl text-white ${result.value >= 5 ? "bg-btn-green" : "bg-btn-red"}`}>
-            {result.value >= 5 ? "✨ ¡SE SALVÓ! NO BEBE" : "🍷 SIGUE PERDIDO: BEBE 1"}
+            {result.value >= 5 ? "✨ ¡SE SALVÓ! NO BEBE" : <><BeerIcon /> SIGUE PERDIDO: BEBE 1</>}
           </p>
         )}
         {result.jailed && (

@@ -292,3 +292,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   navegador que se hace pasar por PC saldría «alta»): si pasa, abrir la TV con `?calidad=baja`.
 - `GameCard` (TV, celular y vista previa del editor): arriba icono + «CASILLA N · NOMBRE» en una fila y el título **debajo, a todo el ancho**, con tamaño según su longitud (`titleSize`) para que no pase de 2 renglones (`text-wrap: balance`); antes el título quedaba en una columna estrecha y se partía en 4 renglones.
 - Botones de respuesta del celular (`DecisionPanel`): solo texto, sin emojis (pedido del usuario).
+- Icono de beber (pedido del usuario): en lugar de la copa 🍷 se usa `BeerIcon` (botella de cerveza en contorno blanco con etiqueta cuadrada y una X): contador de tragos del marcador, «SIGUE PERDIDO: BEBE 1» y tarjetas de resultado (`GameCard` convierte el emoji 🍷). Los iconos van siempre solo en contorno, sin relleno.

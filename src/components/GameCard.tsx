@@ -3,6 +3,7 @@
 // Tarjeta de regla del juego (TV y celular): panel oscuro con el color de la casilla como acento, el icono de la casilla
 // en vector (nítido), «CASILLA N» y el título en letra de terror, el texto en la letra del juego y, si hay que decidir
 // algo, una pastilla con lo que toca hacer en el celular. Todo se mide en `--u` (1cqw en la TV; 14px en el celular).
+import BeerIcon from "@/components/BeerIcon";
 import { iconMaskUrl, type IconName } from "@/editor/icons";
 
 export default function GameCard({
@@ -60,7 +61,7 @@ export default function GameCard({
             </div>
           ) : (
             <span className="shrink-0 leading-none" style={{ fontSize: u(3.2) }}>
-              {emoji}
+              {emoji === "🍷" ? <BeerIcon size="1em" /> : emoji}
             </span>
           )}
           <p className="min-w-0 font-sans font-bold uppercase" style={{ fontSize: u(0.88), letterSpacing: "0.26em", color: accent }}>

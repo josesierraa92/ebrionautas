@@ -1,3 +1,4 @@
+import BeerIcon from "@/components/BeerIcon";
 import { characterOf } from "@/game/characters";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
@@ -59,7 +60,7 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
                 </span>
               ))}
             <span className={`shrink-0 rounded-full border-2 border-ink bg-space px-2 font-display ${big ? "text-lg" : "text-sm"}`} title="Total bebido">
-              🍷 {p.drunk}
+              <BeerIcon /> {p.drunk}
             </span>
             {onPenalty && game.rule && !game.winner && (
               <button
