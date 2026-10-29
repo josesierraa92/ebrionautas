@@ -171,6 +171,12 @@ describe("casillas", () => {
     expect(act(s, { type: "PATINAZO", choice: "back" }).players[0].pos).toBe(12);
   });
 
+  it("Patinazo: una decisión guardada antes con otro número de vasos también cuesta 2", () => {
+    const s = rollFrom(game(), 40, 3);
+    const viejo = { ...s, decision: { kind: "PATINAZO" as const, drinks: 4, backTo: 12 } };
+    expect(act(viejo, { type: "PATINAZO", choice: "drink" }).players[0].drunk).toBe(2);
+  });
+
   it("Regla: queda activa y se puede penalizar a quien la rompa", () => {
     let s = rollFrom(game(), 8, 2); // 10
     s = act(s, { type: "SET_RULE" });

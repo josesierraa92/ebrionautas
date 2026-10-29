@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Die } from "@/components/Fx";
+import { PATINAZO_DRINKS } from "@/game/board";
 import { useShake } from "@/lib/useShake";
 import type { Action, Decision, Player } from "@/game/engine";
 
@@ -66,7 +67,7 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
       return (
         <Card title={compact ? undefined : "¿Qué eliges?"} text={compact ? undefined : "Para no caerte:"}>
           <button onClick={() => onAction({ type: "PATINAZO", choice: "drink" })} className="btn-game bg-btn-green py-3 text-lg text-white">
-            BEBER {decision.drinks} DE GOLPE
+            BEBER {PATINAZO_DRINKS} DE GOLPE
           </button>
           <button onClick={() => onAction({ type: "PATINAZO", choice: "back" })} className="btn-game bg-btn-yellow py-3 text-lg text-white">
             RODAR HASTA LA {decision.backTo}

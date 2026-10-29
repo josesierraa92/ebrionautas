@@ -45,6 +45,9 @@ export const TRAIT_LABELS: Record<Trait, string> = {
   anio_impar: "los nacidos en año impar",
 };
 
+/** Tropiezo de lápida: siempre 2 vasos (también para una decisión que ya estuviera guardada con otro número). */
+export const PATINAZO_DRINKS = 2;
+
 export const TILE_NAMES: Record<Tile["type"], string> = {
   SALIDA: "Medianoche",
   META: "Tu Tumba",

@@ -1,7 +1,7 @@
 import { characterOf } from "@/game/characters";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
-import { getTile } from "@/game/board";
+import { getTile, PATINAZO_DRINKS } from "@/game/board";
 import { currentPlayer, type Decision, type GameState } from "@/game/engine";
 import { cardKeyOf, cardTitle, hasCardOverride } from "@/game/cards";
 import { tileRule } from "@/game/rules";
@@ -25,7 +25,7 @@ export function decisionText(decision: Decision, name: string): [string, string]
     case "OCA":
       return [cardTitle("OCA"), `${name} decide si bebe 1 vaso para ${decision.next ? `volar hasta la casilla ${decision.next}` : "volver a tirar"} o se planta.`];
     case "PATINAZO":
-      return [cardTitle("PATINAZO"), `${name}: bebe ${decision.drinks} de golpe o rueda hasta la casilla ${decision.backTo}.`];
+      return [cardTitle("PATINAZO"), `${name}: bebe ${PATINAZO_DRINKS} de golpe o rueda hasta la casilla ${decision.backTo}.`];
     case "RULE":
       return [cardTitle("REGLA"), `${name} dicta una ley para todos. Quien la rompa, bebe.`];
     case "SLAVE":
@@ -98,7 +98,7 @@ export function cardContent(game: GameState, n: number, playerId: string, result
         : decision?.kind === "OCA"
           ? 1
           : decision?.kind === "PATINAZO"
-          ? decision.drinks
+          ? PATINAZO_DRINKS
           : result && !result.good && !result.tileIcon
             ? (result.drinks ?? 1)
             : "drinks" in tile

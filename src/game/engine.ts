@@ -2,7 +2,7 @@
 // No toca la UI ni la red; la Fase 2 lo ejecutará en el servidor.
 
 import type { AvatarConfig } from "./avatar";
-import { BOARD, TILE_NAMES, TRAIT_LABELS, getTile } from "./board";
+import { BOARD, PATINAZO_DRINKS, TILE_NAMES, TRAIT_LABELS, getTile } from "./board";
 import { TONGUE_TWISTERS, getCategories, pick } from "./content";
 
 export const LAST_TILE = BOARD.length;
@@ -321,7 +321,7 @@ function landOn(s: GameState, p: Player, rng: Rng) {
 
     case "PATINAZO":
       log(s, `🪦 ${p.name} tropieza con una lápida.`);
-      return decide(s, { kind: "PATINAZO", drinks: tile.drinks, backTo: tile.backTo });
+      return decide(s, { kind: "PATINAZO", drinks: PATINAZO_DRINKS, backTo: tile.backTo });
 
     case "POSICION": {
       const targets = others.filter((q) => (tile.who === "detras" ? q.pos < p.pos : q.pos > p.pos));
@@ -437,8 +437,8 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
 
   if (d.kind === "PATINAZO" && action.type === "PATINAZO") {
     if (action.choice === "drink") {
-      log(s, `🪦 ${p.name} se agarra de la lápida bebiendo ${d.drinks} de golpe.`);
-      drink(s, p.id, d.drinks, null);
+      log(s, `🪦 ${p.name} se agarra de la lápida bebiendo ${PATINAZO_DRINKS} de golpe.`);
+      drink(s, p.id, PATINAZO_DRINKS, null);
     } else {
       p.pos = d.backTo;
       log(s, `🪦 ${p.name} rueda hasta la ${d.backTo}.`);
