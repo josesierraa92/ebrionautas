@@ -63,3 +63,14 @@ describe("textos viejos guardados en el editor", () => {
     expect(edited.OCA?.text).toBe("Mi texto propio {nombre}");
   });
 });
+
+describe("Duelo: a cuántos rivales se puede retar", () => {
+  it("nunca más que los rivales que hay en la mesa", () => {
+    const dos = createGame([{ name: "Ana", color: "#fff" }, { name: "Beto", color: "#000" }]);
+    expect(tileRule(37, dos, "p1").text).toContain("reta hasta a 1 rival.");
+    const cuatro = createGame(["A", "B", "C", "D", "E"].map((name) => ({ name, color: "#fff" })));
+    expect(tileRule(37, cuatro, "p1").text).toContain("reta hasta a 4 rivales.");
+    expect(tileRule(7, cuatro, "p1").text).toContain("reta hasta a 1 rival.");
+  });
+});
+

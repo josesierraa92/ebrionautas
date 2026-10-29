@@ -280,3 +280,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   resultado. El trago de regalo nunca enseña más de 3 vasos en la tarjeta (`Math.min(3, …)`). Tras «Siguiente turno» el celular no vuelve a
   enseñar el dado girando (`spin` en `DiceController`: solo gira si lo que se envía es una tirada).
 - Trago de regalo: el título de serie ahora es «Trago de regalo» (antes «¡Ronda de mezcal!», que queda en `LEGACY`); `TILE_NAMES.A_BEBER` también.
+- Duelo de calaveras: la tarjeta dice «reta hasta a N» con N = mínimo entre el número de la casilla y los rivales que hay en la mesa (`tileVars`), igual que el motor; con 2 jugadores siempre «1 rival». La vista previa del editor usa 3 jugadores de ejemplo (2 rivales como máximo).

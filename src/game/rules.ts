@@ -35,8 +35,11 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
   switch (tile.type) {
     case "A_BEBER":
       return { nombre, vasos: vasos(Math.min(3, game.giftAmount ?? tile.amount)) };
-    case "DUELO":
-      return { nombre, rivales: `${tile.amount} ${tile.amount === 1 ? "rival" : "rivales"}` };
+    case "DUELO": {
+      // como máximo los rivales que hay en la mesa (el motor hace lo mismo): con 2 jugadores solo se puede retar a 1
+      const max = Math.max(1, Math.min(tile.amount, game.players.length - 1));
+      return { nombre, rivales: `${max} ${max === 1 ? "rival" : "rivales"}` };
+    }
     case "OCA":
       return { nombre, destino: tile.next ? `volar hasta la casilla ${tile.next} y volver a tirar` : "volver a tirar (es el último murciélago)" };
     case "PATINAZO":
