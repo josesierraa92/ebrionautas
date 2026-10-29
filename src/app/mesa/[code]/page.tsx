@@ -13,6 +13,7 @@ import { RuleCard, TurnChip, decisionText } from "@/components/TvCards";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Decision } from "@/game/engine";
 import { api, hostKey, saved, useRoom } from "@/lib/room-client";
+import { useAutoUpdate } from "@/lib/useAutoUpdate";
 import { useGameFx } from "@/lib/useGameFx";
 
 /** Pantalla grande (TV / portátil): QR para el control, tablero y marcador. Solo muestra. */
@@ -22,6 +23,8 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const [hostSecret, setHostSecret] = useState<string | null>(null);
   const [controlUrl, setControlUrl] = useState("");
   const fx = useGameFx(room?.game ?? null);
+  // Se recarga sola cuando hay una versión nueva del juego (sin dado ni jugada en marcha).
+  useAutoUpdate(fx.settled && !fx.dice && !fx.banner);
   // Panel del marcador a la derecha: se puede ocultar para ver solo el tablero (se recuerda en esta TV).
   const [panelOpen, setPanelOpen] = useState(true);
 
