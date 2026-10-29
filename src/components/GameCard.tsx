@@ -1,19 +1,18 @@
 "use client";
 
-// Tarjeta de regla del juego (TV, celular y vista previa del editor), con el diseño que dio el usuario: panel azul morado oscuro con
-// las esquinas cortadas y un filete claro, la pastilla «CASILLA N» del color de la casilla arriba en el centro, a la izquierda un
-// hexágono del color de la casilla con su icono, el título en Lilita One (mayúsculas) con una flechita del color a la derecha, el texto
+// Tarjeta de regla del juego (TV, celular y vista previa del editor), con el diseño que dio el usuario: panel cuadrado del morado del
+// cuadro de turno con las esquinas levemente redondeadas y borde grueso, la pastilla «CASILLA N» verde biche arriba en el centro, a la
+// izquierda un cuadro redondeado verde con el icono de la casilla, el título en Lilita One (mayúsculas) con una flechita del color a la derecha, el texto
 // en Nunito Sans y, si hay que decidir algo, un botón morado con un dado y lo que toca hacer en el celular.
 // Todo se mide en `--u` (1cqw en la TV; unos 18px en el celular; 12px en el editor).
 import BeerIcon from "@/components/BeerIcon";
 import { iconMaskUrl, type IconName } from "@/editor/icons";
 
-/** Polígono con las cuatro esquinas cortadas en diagonal (`c` = tamaño del corte). */
-const chamfer = (c: string) => `polygon(${c} 0, calc(100% - ${c}) 0, 100% ${c}, 100% calc(100% - ${c}), calc(100% - ${c}) 100%, ${c} 100%, 0 calc(100% - ${c}), 0 ${c})`;
-const HEX = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
+/** Verde biche con degradado a un verde más oscuro: el color de acento de todas las tarjetas (pastilla, cuadro del icono y flechita). */
+const GREEN_LIGHT = "#a3e635";
+const GREEN = `linear-gradient(160deg, ${GREEN_LIGHT}, #3f8f1c)`;
 
 export default function GameCard({
-  accent,
   icon,
   emoji,
   kicker,
@@ -23,7 +22,8 @@ export default function GameCard({
   unit,
   cardKey,
 }: {
-  accent: string;
+  /** Color de la casilla (ya no se usa: todas las tarjetas van en verde biche, pedido del usuario). */
+  accent?: string;
   icon: IconName | null;
   emoji?: string;
   kicker: string;
@@ -38,13 +38,13 @@ export default function GameCard({
   const maskStyle = (url: string) => ({ WebkitMaskImage: `url(${url})`, maskImage: `url(${url})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" });
   return (
     <div key={cardKey} className="card-pop relative w-full text-left" style={{ ["--u" as string]: unit, paddingTop: u(0.9), filter: `drop-shadow(0 ${u(0.4)} ${u(0.6)} rgba(0,0,0,.55))` }}>
-      {/* borde: capa clara de fuera y panel por dentro, los dos con las esquinas cortadas */}
-      <div style={{ clipPath: chamfer(u(1.3)), background: "linear-gradient(180deg, #4b43a8, #2c2770)", padding: u(0.16) }}>
-        <div className="relative" style={{ clipPath: chamfer(u(1.22)), background: "linear-gradient(180deg, #27235f 0%, #1c1949 55%, #16133b 100%)", padding: `${u(1.7)} ${u(1.5)} ${u(1.4)}` }}>
+      {/* panel cuadrado con las esquinas levemente redondeadas, del mismo morado que el cuadro de turno, con borde grueso */}
+      <div style={{ borderRadius: u(1.1), border: `${u(0.32)} solid #4a2a94`, background: "linear-gradient(180deg, #34187a 0%, #2d1460 50%, #220e4d 100%)", boxShadow: `0 0 0 ${u(0.12)} #1a0b38` }}>
+        <div className="relative" style={{ padding: `${u(1.7)} ${u(1.5)} ${u(1.4)}` }}>
           {/* cabecera: hexágono con el icono y el título */}
           <div className="relative flex items-center" style={{ gap: u(1.1), paddingRight: u(1.4) }}>
-            <div className="shrink-0" style={{ width: u(4.2), aspectRatio: "0.88", clipPath: HEX, background: "#120f30", padding: u(0.22) }}>
-              <div className="grid h-full w-full place-items-center" style={{ clipPath: HEX, background: `linear-gradient(160deg, ${accent}, color-mix(in srgb, ${accent} 70%, #000))` }}>
+            <div className="shrink-0" style={{ width: u(4), aspectRatio: "1", borderRadius: u(1), background: "#1a0b38", padding: u(0.2) }}>
+              <div className="grid h-full w-full place-items-center" style={{ borderRadius: u(0.8), background: GREEN }}>
                 {mask ? (
                   <div style={{ width: "58%", aspectRatio: "1", background: "#1d1640", ...maskStyle(mask) }} />
                 ) : (
@@ -58,9 +58,9 @@ export default function GameCard({
               {title}
             </h3>
             {/* flechita del color de la casilla a la derecha */}
-            <span aria-hidden className="absolute right-0" style={{ top: "50%", transform: "translateY(-50%)", width: 0, height: 0, borderTop: `${u(0.55)} solid transparent`, borderBottom: `${u(0.55)} solid transparent`, borderRight: `${u(0.7)} solid ${accent}` }} />
+            <span aria-hidden className="absolute right-0" style={{ top: "50%", transform: "translateY(-50%)", width: 0, height: 0, borderTop: `${u(0.55)} solid transparent`, borderBottom: `${u(0.55)} solid transparent`, borderRight: `${u(0.7)} solid ${GREEN_LIGHT}` }} />
           </div>
-          <p className="whitespace-pre-line" style={{ marginTop: u(1), fontFamily: "var(--font-nunito), sans-serif", fontWeight: 600, fontSize: u(1.12), lineHeight: 1.4, letterSpacing: 0, color: "#d8d4f6" }}>
+          <p className="whitespace-pre-line" style={{ marginTop: u(1), fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700, fontSize: u(1.12), lineHeight: 1.4, letterSpacing: 0, color: "#d8d4f6" }}>
             {text}
           </p>
           {prompt && (
@@ -74,7 +74,7 @@ export default function GameCard({
         </div>
       </div>
       {/* pastilla «CASILLA N» arriba en el centro, montada sobre el borde */}
-      <div className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-display uppercase" style={{ padding: `${u(0.2)} ${u(1)}`, borderRadius: u(9), background: accent, color: "#1d1640", fontSize: u(0.95), letterSpacing: "0.04em", boxShadow: `0 0 0 ${u(0.16)} #16133b` }}>
+      <div className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-display uppercase" style={{ padding: `${u(0.2)} ${u(1)}`, borderRadius: u(9), background: GREEN, color: "#14260a", fontSize: u(0.95), letterSpacing: "0.04em", boxShadow: `0 0 0 ${u(0.18)} #1a0b38` }}>
         {kicker}
       </div>
     </div>

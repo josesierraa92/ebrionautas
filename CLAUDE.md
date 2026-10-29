@@ -301,4 +301,9 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   la casilla (`{nombre}`, `{casilla}`, `{lista}`, `{rivales}`, `{categoria}`…) **se queda entre llaves** para no romper la lógica (se probó quitarlas
   del todo con datos de ejemplo y el usuario pidió volver a ponerlas donde hacen falta). Al añadir un hueco, decide si es fijo (igual en todas las
   casillas de la tarjeta) o va en `DYNAMIC_VARS`. El último murciélago (casilla 58) tiene su propia tarjeta (`OCA:ultimo`) porque no vuela a ninguna casilla.
-- **Diseño de la tarjeta** (`GameCard`, versión del usuario con su maqueta): panel azul morado oscuro (`#27235f`→`#16133b`) con esquinas cortadas (`clip-path`) y filete claro (`#4b43a8`), pastilla «CASILLA N» del color de la casilla arriba en el centro, hexágono del color con el icono oscuro a la izquierda, título en **Lilita One** en mayúsculas (`titleSize`, máx. 2 renglones) con flechita del color a la derecha, texto en **Nunito Sans** (`--font-nunito`, `layout.tsx`) color `#d8d4f6`, y botón morado (`#5747e0`→`#7b55f2`) con un dado blanco para lo que toca hacer en el celular. El título ya no va en Creepster.
+- **Diseño de la tarjeta** (`GameCard`, maqueta del usuario y sus ajustes): panel **cuadrado con esquinas levemente redondeadas**, del **mismo morado
+  del cuadro de turno** (`#34187a`→`#2d1460`→`#220e4d`) con **borde grueso** (`#4a2a94` + filo `#1a0b38`); acento **verde biche** con degradado a verde
+  oscuro (`GREEN`, `#a3e635`→`#3f8f1c`) igual en TODAS las tarjetas (ya no usan el color de cada casilla): pastilla «CASILLA N» arriba en el centro,
+  **cuadro redondeado** (no hexágono) con el icono oscuro a la izquierda y flechita a la derecha. Título en **Lilita One** en mayúsculas (`titleSize`,
+  máx. 2 renglones), texto en **Nunito Sans 700** (`--font-nunito`, `layout.tsx`) color `#d8d4f6`, y botón morado con dado blanco para lo que toca
+  hacer en el celular.
