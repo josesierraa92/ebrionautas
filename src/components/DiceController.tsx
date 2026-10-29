@@ -111,7 +111,7 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
     const outcome = wasLost.current ? mazeOutcome(roller.current, r) : wasJailed.current ? jailOutcome(roller.current, r) : null;
     setCard(
       outcome
-        ? { key: game.rollSeq, n: rollerPos.current, playerId: by, result: { good: "escaped" in outcome && outcome.escaped, title: outcome.title, text: outcome.text, drinks: "drinks" in outcome ? outcome.drinks : undefined } }
+        ? { key: game.rollSeq, n: rollerPos.current, playerId: by, result: { good: "escaped" in outcome && outcome.escaped, tileIcon: true, title: outcome.title, text: outcome.text, drinks: "drinks" in outcome ? outcome.drinks : undefined } }
         : { key: game.rollSeq, n: stepPath(rollerPos.current, r).at(-1) ?? rollerPos.current, playerId: by },
     );
     wasLost.current = false;

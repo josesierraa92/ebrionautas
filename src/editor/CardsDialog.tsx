@@ -195,7 +195,9 @@ function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { 
   const changeText = (v: string) => onChange("text", v === fillFixed(def.defaults.text) ? def.defaults.text : v);
   const edited = (value?.title !== undefined && value.title !== def.defaults.title) || (value?.text !== undefined && value.text !== def.defaults.text);
   // casilla de la que toma icono y color: la primera que usa la tarjeta (el resultado del duelo, la de duelo)
-  const first = def.tiles[0] ? BOARD[def.tiles[0] - 1] : def.key === RESULT_KEYS.duel ? BOARD.find((t) => t.type === "DUELO") ?? null : null;
+  // los resultados llevan el icono (negro, vectorial) de su casilla: duelo, niebla (laberinto) y purgatorio (cárcel)
+  const resultTile = def.key === RESULT_KEYS.duel ? "DUELO" : def.key.startsWith("RESULTADO:niebla") ? "LABERINTO" : def.key.startsWith("RESULTADO:purgatorio") ? "CARCEL" : null;
+  const first = def.tiles[0] ? BOARD[def.tiles[0] - 1] : resultTile ? BOARD.find((t) => t.type === resultTile) ?? null : null;
   const accent = first ? TILE_ACCENT[first.type] : def.key === RESULT_KEYS.mazeOk ? "#5cd23c" : "#ffc61a";
   const icon = first ? DEFAULT_ICON[first.type] : null;
   const emoji = first ? undefined : def.key === RESULT_KEYS.mazeOk ? "✨" : def.key === RESULT_KEYS.jail ? "🔓" : def.key.startsWith("RESULTADO:purgatorio") ? "🔥" : "🍷";

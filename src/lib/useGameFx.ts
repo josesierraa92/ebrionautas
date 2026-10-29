@@ -122,7 +122,7 @@ export function useGameFx(game: GameState | null) {
       const maze = roller.status.laberinto ? mazeOutcome(roller.name, game.lastRoll!) : null;
       const jail = roller.status.carcel ? jailOutcome(roller.name, game.lastRoll!) : null;
       const result = maze
-        ? { good: maze.escaped, title: maze.title, text: maze.text }
+        ? { good: maze.escaped, title: maze.title, text: maze.text, tileIcon: true }
         : jail
           ? { good: false, title: jail.title, text: jail.text, drinks: jail.drinks, tileIcon: true }
           : undefined;
