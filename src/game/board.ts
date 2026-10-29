@@ -84,7 +84,7 @@ export const BOARD: Tile[] = [
   { n: 11, type: "RASGO", traits: ["mujer"], drinks: 2, title: "Hembras" },
   { n: 12, type: "POSICION", who: "detras", drinks: 1, title: "Pa' los de atrás" },
   { n: 13, type: "CULTURAL" },
-  { n: 14, type: "A_BEBER", amount: 2 },
+  { n: 14, type: "RETO", title: "Chorizo", text: "Desde ahora tu nombre es Chorizo. Si alguien se equivoca y te llama de otra forma, toma 1 vaso.", drinks: 1 },
   { n: 15, type: "RETO", title: "Cómicos", text: "Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos.", drinks: 2 },
   { n: 16, type: "RETO", title: "Pastosos", text: "Quien lleve mucho dinero en la cartera bebe por cada billete de más.", drinks: 1 },
   { n: 17, type: "HIPNOSIS" },
@@ -93,7 +93,7 @@ export const BOARD: Tile[] = [
   { n: 20, type: "POSADA" },
   // TODO validar texto exacto de la casilla 21
   { n: 21, type: "RASGO", traits: ["anio_impar"], drinks: 1, title: "Impares" },
-  { n: 22, type: "A_BEBER", amount: 3 },
+  { n: 22, type: "RETO", title: "Borrachín", text: "Todos los jugadores toman un trago, excepto el más ebrio (entre todos lo eligen).", drinks: 1 },
   { n: 23, type: "REGLA" },
   // TODO validar texto exacto de la casilla 24
   { n: 24, type: "ESCLAVO" },
@@ -124,7 +124,7 @@ export const BOARD: Tile[] = [
   { n: 46, type: "RASGO", traits: ["tatuaje_piercing"], drinks: 2, title: "Tatuados" },
   { n: 47, type: "DUELO", amount: 5 },
   { n: 48, type: "OCA", next: 58 },
-  { n: 49, type: "A_BEBER", amount: 5 },
+  { n: 49, type: "RETO", title: "Muero de sed", text: "Pon un poco de licor en la mano del jugador de la derecha y bébelo como si fueras un perrito.", drinks: 1 },
   { n: 50, type: "RETO", title: "Escoceses", text: "Si llevas ropa de cuadros, bebe 1 chupito.", drinks: 1 },
   { n: 51, type: "RASGO", traits: ["deportista"], drinks: 2, title: "Musculitos" },
   { n: 52, type: "CULTURAL" },

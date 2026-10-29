@@ -240,7 +240,7 @@ describe("estados", () => {
 
   it("Abducción mental: el hipnotizado absorbe la mitad", () => {
     let s = rollFrom(game(), 14, 3); // Ana en 17
-    s = rollFrom(s, 12, 2, 3); // Beto en 14, regala 2
+    s = rollFrom(s, 28, 2, 3); // Beto en 30 (Trago de regalo), regala 2
     s = act(s, { type: "DISTRIBUTE", drinks: { p3: 2 } });
     expect(s.players[0].drunk).toBe(1);
     expect(s.players[2].drunk).toBe(1);

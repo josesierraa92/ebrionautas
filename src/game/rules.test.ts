@@ -37,7 +37,7 @@ describe("textos de las tarjetas", () => {
   it("lo que cambia el admin sustituye al de serie y rellena los huecos", () => {
     setCardOverrides({ A_BEBER: { title: "¡Salud!", text: "{nombre} manda beber {vasos}." }, "RETO:Cómicos": { title: "Chistosos" } });
     expect(tileRule(6, game, "p1")).toEqual({ title: "¡Salud!", text: "Ana manda beber 1 vaso." });
-    expect(tileRule(14, game, "p2").text).toBe("Beto manda beber 2 vasos."); // otra casilla de la misma tarjeta (reparte 2)
+    expect(tileRule(30, game, "p2").text).toBe("Beto manda beber 3 vasos."); // otra casilla de la misma tarjeta (nunca más de 3)
     expect(tileRule(15, game, "p1")).toEqual({ title: "Chistosos", text: "Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos." });
     expect(mazeOutcome("Ana", 6).title).toBe("¡Se salvó!");
   });
@@ -47,7 +47,7 @@ describe("textos de las tarjetas", () => {
     expect(new Set(keys).size).toBe(keys.length);
     expect(keys).toContain("A_BEBER");
     expect(keys).toContain("RASGO:Machos");
-    expect(cardCatalog().find((c) => c.key === "A_BEBER")?.tiles).toEqual([6, 14, 22, 30, 49, 59]);
+    expect(cardCatalog().find((c) => c.key === "A_BEBER")?.tiles).toEqual([6, 30, 59]);
     expect(keys.filter((k) => k.startsWith("RESULTADO"))).toHaveLength(7);
   });
 });
