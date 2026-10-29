@@ -56,9 +56,9 @@ body.name = "vidrio";
 root.add(body);
 
 // tapa pequeña arriba
-const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.108, 0.116, 0.11, SIDES), CAP);
+const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.098, 0.106, 0.06, SIDES), CAP);
 cap.name = "tapa";
-cap.position.y = 1.555;
+cap.position.y = 1.53;
 root.add(cap);
 
 // etiqueta: un trozo de cilindro (un cuarto de vuelta) más alto que ancho, mirando al frente (+z)
