@@ -34,7 +34,7 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
   const nombre = p?.name ?? "El jugador";
   switch (tile.type) {
     case "A_BEBER":
-      return { nombre, vasos: vasos(game.giftAmount ?? tile.amount) };
+      return { nombre, vasos: vasos(Math.min(3, game.giftAmount ?? tile.amount)) };
     case "DUELO":
       return { nombre, rivales: `${tile.amount} ${tile.amount === 1 ? "rival" : "rivales"}` };
     case "OCA":

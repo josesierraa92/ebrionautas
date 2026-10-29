@@ -174,7 +174,16 @@ export function useGameFx(game: GameState | null) {
     if (duel) {
       const key = ++seq.current;
       setLanded({ key, n: game.players.find((p) => p.id === game.lastDuel!.by)!.pos, playerId: game.lastDuel!.by, result: { good: false, icon: "🔫", ...duel } });
-      at(t, () => sfx.zap());
+      // y un título grande con quién pierde (y bebe), para que no se pierda en la tarjeta pequeña
+      const names = [...new Set(game.lastDuel!.rounds.map((r) => game.players.find((q) => q.id === r.loser)?.name ?? "?"))];
+      const bkey = ++seq.current;
+      const title = names.length === 1 ? `¡${names[0].toUpperCase()} PIERDE Y BEBE!` : `¡PIERDEN ${names.map((n) => n.toUpperCase()).join(" Y ")}!`;
+      at(t, () => {
+        setDice(null);
+        setBanner({ key: bkey, title, emoji: "💀", color: "#ff6b7d" });
+        sfx.zap();
+      });
+      later(t + BANNER_MS + 400, () => setBanner((b) => (b?.key === bkey ? null : b)));
     }
 
     // Alguien bebió: "glu-glu".

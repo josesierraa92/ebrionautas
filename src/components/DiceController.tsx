@@ -64,6 +64,12 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
     prevPhase.current = game.phase;
     if (was === "DECISION" && game.phase === "ROLL" && game.lastDuel?.seq === seenDuel.current) sendNext();
   }, [game.phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  // el dado solo da vueltas si lo que se está enviando es una tirada (no el «Siguiente turno»)
+  const [rolling, setRolling] = useState(false);
+  useEffect(() => {
+    if (!busy) setRolling(false);
+  }, [busy]);
+  const spin = busy && rolling;
   const canRoll = game.phase === "ROLL" && !busy && !result && (!card || dismissed === card.key);
   const roll = () => {
     if (!canRoll) return;
@@ -72,16 +78,17 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
     wasLost.current = me.status.laberinto;
     wasJailed.current = !!me.status.carcel;
     navigator.vibrate?.(80);
+    setRolling(true);
     onRoll();
   };
   const shake = useShake(roll, canRoll);
 
   // Mientras se espera la respuesta, el dado da vueltas con caras al azar.
   useEffect(() => {
-    if (!busy) return;
+    if (!spin) return;
     const id = setInterval(() => setFace(1 + Math.floor(Math.random() * 6)), 80);
     return () => clearInterval(id);
-  }, [busy]);
+  }, [spin]);
 
   // Al llegar una tirada nueva, se enseña el resultado un momento antes de pasar el turno.
   useEffect(() => {
@@ -214,7 +221,7 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
         aria-label={`Tirar el dado por ${me.name}`}
         className="grid place-items-center rounded-[2.5rem] p-2 outline-none focus-visible:ring-4 focus-visible:ring-btn-yellow"
       >
-        <Die value={busy ? face : (game.lastRoll ?? 6)} className={`w-60 ${busy ? "dice-tumble" : "dice-idle"}`} />
+        <Die value={spin ? face : (game.lastRoll ?? 6)} className={`w-60 ${spin ? "dice-tumble" : "dice-idle"}`} />
       </button>
 
       <div className="flex flex-col items-center gap-3">
@@ -223,7 +230,7 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
             ? "🌫️ Saca 5 o 6 para salir de la niebla"
             : me.status.carcel
               ? "🔥 Purgatorio: con 1-3 bebes 2, con 4-6 bebes 4 para salir"
-              : busy ? "Rodando…" : shake.state === "on" ? "📳 Agita el celular o toca el dado" : "👆 Toca el dado para tirar"}
+              : spin ? "Rodando…" : shake.state === "on" ? "📳 Agita el celular o toca el dado" : "👆 Toca el dado para tirar"}
         </p>
         {shake.state === "needs-permission" && (
           <button onClick={() => void shake.request()} className="btn-game bg-btn-blue px-4 py-2 text-white">

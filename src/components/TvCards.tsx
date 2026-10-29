@@ -104,7 +104,7 @@ export function cardContent(game: GameState, n: number, playerId: string, result
             : "drinks" in tile
               ? tile.drinks
               : "amount" in tile && tile.type === "A_BEBER"
-                ? (game.giftAmount ?? tile.amount)
+                ? Math.min(3, game.giftAmount ?? tile.amount)
                 : null;
   // Encabezado claro (dado, gasolinera…): el texto pequeño va oscuro para que se lea.
   const light = !result && !TILE_STYLE[tile.type].dark;

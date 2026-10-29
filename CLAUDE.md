@@ -259,3 +259,6 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
   vuela al siguiente murciélago y vuelve a tirar) o «NO, ME PLANTO» (se queda y pasa el turno); en el último murciélago (`next: null`) «sí»
   solo bebe y vuelve a tirar. Acción `{ type: "OCA", choice: "fly" | "stay" }`. El texto de la tarjeta usa `{destino}` («volar hasta la casilla 18 y
   volver a tirar»); un texto propio viejo de esta tarjeta hay que revisarlo en «📝 Tarjetas».
+- Duelo: al terminar sale un título grande en la TV con quién pierde y bebe («¡JOSE PIERDE Y BEBE!», `useGameFx`) y después la tarjeta de
+  resultado. El trago de regalo nunca enseña más de 3 vasos en la tarjeta (`Math.min(3, …)`). Tras «Siguiente turno» el celular no vuelve a
+  enseñar el dado girando (`spin` en `DiceController`: solo gira si lo que se envía es una tirada).
