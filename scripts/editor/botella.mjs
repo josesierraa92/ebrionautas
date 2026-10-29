@@ -1,5 +1,5 @@
-// Genera la botella low poly del juego (vidrio verde, tapa marrón, etiqueta clara con una X negra, como el icono de beber):
-// public/models/juego/botella.glb. Todo es geometría con colores planos (sin texturas), a ~210 triángulos.
+// Genera la botella low poly del juego (estilo voxel: vidrio verde, tapa marrón, etiqueta clara alargada con una X negra, como el icono de beber):
+// public/models/juego/botella.glb. Todo es geometría con colores planos (sin texturas), unas pocas decenas de cajas.
 // Uso: node scripts/editor/botella.mjs   (después, node scripts/editor/catalog.mjs para que salga en el catálogo del editor)
 import * as THREE from "three";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
@@ -29,50 +29,34 @@ const CAP = flat("#8a4a1e");
 const LABEL = flat("#b9f063", { side: THREE.DoubleSide });
 const INK = flat("#14260a");
 
-const SIDES = 8; // pocos lados: se nota que es low poly
+// Estilo voxel: todo son cajas sobre una cuadrícula de 0,05 (como los personajes y el escenario del juego)
+const U = 0.05;
 const root = new THREE.Group();
 root.name = "botella";
+const box = (name, w, h, d, x, y, z, mat) => {
+  // medidas en voxeles; (x, z) = centro, y = base
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w * U, h * U, d * U), mat);
+  m.name = name;
+  m.position.set(x * U, (y + h / 2) * U, z * U);
+  root.add(m);
+};
+const HILITE = flat("#52c95f", { roughness: 0.3 });
 
-// cuerpo: perfil (radio, altura) girado alrededor del eje vertical
-const profile = [
-  // botella de cerveza: delgada y alta, con hombros suaves y cuello largo
-  [0, 0],
-  [0.17, 0],
-  [0.2, 0.05],
-  [0.2, 0.74],
-  [0.17, 0.9],
-  [0.105, 1.12],
-  [0.078, 1.26],
-  [0.078, 1.5],
-  [0.095, 1.52],
-  [0.095, 1.6],
-  [0, 1.6],
-].map(([r, y]) => new THREE.Vector2(r, y));
-const body = new THREE.Mesh(new THREE.LatheGeometry(profile, SIDES), GLASS);
-body.name = "vidrio";
-root.add(body);
+// botella de cerveza: cuerpo recto de 8×8, hombros en escalón, cuello corto de 4×4 y tapa cuadrada de 6×6 (26 voxeles de alto)
+box("cuerpo", 8, 14, 8, 0, 0, 0, GLASS);
+box("hombro1", 6, 2, 6, 0, 14, 0, GLASS);
+box("hombro2", 5, 2, 5, 0, 16, 0, GLASS);
+box("cuello", 4, 6, 4, 0, 18, 0, GLASS);
+box("tapa", 6, 2, 6, 0, 24, 0, CAP);
+// reflejo del vidrio: una columna más clara en la esquina delantera izquierda
+box("brillo", 1, 11, 1, -3.5, 2, 4.02, HILITE);
 
-// tapa
-const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.108, 0.108, 0.1, SIDES), CAP);
-cap.name = "tapa";
-cap.position.y = 1.63;
-root.add(cap);
-
-// etiqueta: un rectángulo alargado (más alto que ancho) que rodea un cuarto del cuerpo, mirando al frente (+z)
-const arc = (Math.PI * 100) / 180;
-const label = new THREE.Mesh(new THREE.CylinderGeometry(0.207, 0.207, 0.52, 4, 1, true, -arc / 2, arc), LABEL);
-label.name = "etiqueta";
-label.position.y = 0.43;
-root.add(label);
-
-// la X de la etiqueta: dos barras cruzadas
-for (const [i, rot] of [Math.PI / 4, -Math.PI / 4].entries()) {
-  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.04, 0.012), INK);
-  bar.name = `x${i + 1}`;
-  bar.position.set(0, 0.43, 0.212);
-  bar.rotation.z = rot;
-  root.add(bar);
-}
+// etiqueta: rectángulo alargado (6×9) pegado al frente, con una X de 5×5 «píxeles» negros
+const FRONT = 4;
+box("etiqueta", 6, 9, 1, 0, 3, FRONT + 0.5, LABEL);
+for (let k = 0; k < 5; k++)
+  for (const col of k === 2 ? [k] : [k, 4 - k])
+    box(`x${k}${col}`, 1, 1, 0.5, col - 2, 5 + k, FRONT + 1.25, INK);
 
 const scene = new THREE.Scene();
 scene.add(root);
