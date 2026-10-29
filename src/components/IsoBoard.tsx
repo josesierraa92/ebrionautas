@@ -1,3 +1,4 @@
+import { gradientEnds } from "@/lib/shadeHex";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
@@ -370,7 +371,9 @@ function Token({ t, z, k, sheet, scale, current, winner, flying }: { t: TokenDat
             fontSize: (n > 8 ? 9 : n > 3 ? 10.5 : 13) * k,
             lineHeight: 1,
             letterSpacing: "-0.01em",
-            ["--c" as string]: p.color, // el nombre va en el color del jugador y la flechita de debajo en blanco (clase live-name)
+            ["--c" as string]: p.color, // el nombre va en el color del jugador (con degradado de neón a oscuro) y la flechita de debajo en blanco (clase live-name)
+            ["--c1" as string]: gradientEnds(p.color)[0],
+            ["--c2" as string]: gradientEnds(p.color)[1],
           }}
         >
           {p.name}

@@ -1,6 +1,7 @@
 // Tablero de la TV en 3D en vivo (como un videojuego): el mismo motor del editor (EditorScene en modo visor) dibuja el
 // diseño publicado a la resolución real de la pantalla, y aquí se añaden los jugadores como zombis 3D animados que
 // caminan de casilla en casilla mirando hacia donde van. La cámara sigue a la ficha que toca.
+import { gradientEnds } from "@/lib/shadeHex";
 import * as THREE from "three";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { loadAll, type Loaded } from "@/editor/characterSheet";
@@ -160,7 +161,10 @@ export class LiveBoard {
       t.settled = pos === p.pos;
       t.label.textContent = p.name;
       t.label.dataset.name = p.name;
-      t.label.style.setProperty("--c", p.color); // nombre en el color del jugador (el del cuadro de turno); la flechita, blanca
+      t.label.style.setProperty("--c", p.color); // nombre en el color del jugador (el del cuadro de turno), con degradado de neón a oscuro; la flechita, blanca
+      const [c1, c2] = gradientEnds(p.color);
+      t.label.style.setProperty("--c1", c1);
+      t.label.style.setProperty("--c2", c2);
     }
     // la cámara sigue a la ficha que toca (o al jugador de turno)
     const f = this.tokens.get(s.focus ?? s.current);

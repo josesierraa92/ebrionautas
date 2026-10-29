@@ -1,3 +1,4 @@
+import { shadeHex } from "@/lib/shadeHex";
 import { characterOf } from "@/game/characters";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
@@ -144,13 +145,6 @@ export function PhoneRuleCard({ game, n, playerId, cardKey, result, unit = "14px
  * Mientras la TV anima la tirada (`moving`, `rolling`) no se adelanta el resultado ni el turno siguiente.
  */
 // Solo quién tiene el turno: el dado ya se ve grande en el tablero y el número sale en el título de la jugada.
-/** Aclara (amount > 0) u oscurece (amount < 0) un color #rrggbb. */
-function shadeHex(hex: string, amount: number) {
-  const n = parseInt(hex.replace("#", "").padEnd(6, "0").slice(0, 6), 16);
-  const ch = (v: number) => Math.max(0, Math.min(255, Math.round(amount < 0 ? v * (1 + amount) : v + (255 - v) * amount)));
-  return `#${((ch((n >> 16) & 255) << 16) | (ch((n >> 8) & 255) << 8) | ch(n & 255)).toString(16).padStart(6, "0")}`;
-}
-
 export function TurnChip({ game, moving = false }: { game: GameState; moving?: boolean; rolling?: boolean }) {
   const roller = game.players.find((p) => p.id === game.lastRoller);
   const winner = game.players.find((p) => p.id === game.winner);
