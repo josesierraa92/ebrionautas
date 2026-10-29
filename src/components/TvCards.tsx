@@ -170,7 +170,7 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
           <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={62} character={characterOf(game.players, who.id)} />
         </div>
       </div>
-      <div className="relative overflow-hidden rounded-xl border-[4px] border-[#1a0b38] bg-[#2d1460]/95 py-2 pr-[26px] pl-[43px] shadow-[0_6px_12px_rgba(0,0,0,.45)]">
+      <div className="relative overflow-hidden rounded-xl border-[4px] border-[#1a0b38] bg-[#2d1460]/95 py-2 pr-[26px] pl-[47px] shadow-[0_6px_12px_rgba(0,0,0,.45)]">
         <div>
           <p className="relative top-[4px] font-display text-[1rem] leading-none tracking-wider uppercase" style={{ background: "linear-gradient(90deg, #c6ff4a 0%, #8be02c 50%, #3f9a2a 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
             {winner ? "¡Ganador!" : "Turno de"}
