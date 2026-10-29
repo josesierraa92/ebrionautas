@@ -141,7 +141,7 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
   const who = winner ?? (moving && roller ? roller : currentPlayer(game));
   const color = who.color;
   // Placa de HUD de videojuego: retrato enmarcado con el color del jugador que sobresale de una placa oscura ladeada,
-  // «Turno de» en texto morado, nombre con sombra dura azul muy oscuro, sin filete (todo en CSS, mismo estilo
+  // «Turno de» en el verde neón de las tarjetas (`#bffa58`) y 3 px más abajo, nombre con sombra dura azul muy oscuro, sin filete (todo en CSS, mismo estilo
   // grueso y plano que las tarjetas).
   return (
     <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center max-md:top-16 max-md:scale-90 max-md:origin-top-left">
@@ -153,7 +153,7 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
       </div>
       <div className="relative -skew-x-6 overflow-hidden rounded-xl border-[4px] border-[#1a0b38] bg-[#2d1460]/95 py-2 pr-7 pl-9 shadow-[0_6px_0_#1a0b38,0_10px_16px_rgba(0,0,0,.45)]">
         <div className="skew-x-6">
-          <p className="font-display text-sm leading-none tracking-wider text-btn-special uppercase">
+          <p className="relative top-[3px] font-display text-sm leading-none tracking-wider text-[#bffa58] uppercase">
             {winner ? "¡Ganador!" : "Turno de"}
           </p>
           <p className="mt-1 font-display text-4xl leading-none text-white uppercase" style={{ textShadow: "0 3px 0 #1a0b38, 0 5px 0 #1a0b38" }}>
