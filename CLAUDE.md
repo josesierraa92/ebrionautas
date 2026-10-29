@@ -284,3 +284,4 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - Trago de regalo: el título de serie ahora es «Trago de regalo» (antes «¡Ronda de mezcal!», que queda en `LEGACY`); `TILE_NAMES.A_BEBER` también.
 - Duelo de calaveras: la tarjeta dice «reta hasta a N» con N = mínimo entre el número de la casilla y los rivales que hay en la mesa (`tileVars`), igual que el motor; con 2 jugadores siempre «1 rival». La vista previa del editor usa 3 jugadores de ejemplo (2 rivales como máximo).
 - La tarjeta «Resultado del duelo» (TV y celular) lleva el icono vectorial de su casilla (`tileIcon` en `Landed.result`), no un emoji propio.
+- Celular (pedido del usuario): con la tarjeta arriba, los paneles de decisión (`DecisionPanel` con `compact`) NO repiten la explicación de la regla; solo muestran lo que hay que hacer (botones, rivales, cuántos vasos quedan). Sin `compact` (`/jugar`, que no tiene tarjeta) sí llevan título y texto.

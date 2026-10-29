@@ -19,13 +19,13 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
 
   switch (decision.kind) {
     case "DISTRIBUTE":
-      return <Distribute amount={decision.amount} players={players} onDone={(drinks) => onAction({ type: "DISTRIBUTE", drinks })} />;
+      return <Distribute amount={decision.amount} players={players} compact={compact} onDone={(drinks) => onAction({ type: "DISTRIBUTE", drinks })} />;
 
     case "DUEL":
       return (
         <PickPlayers
-          title={`Reta hasta a ${decision.amount}`}
-          text="Cada uno tira su dado en el celular, uno a uno: quien saque menos, bebe 1."
+          title={compact ? undefined : `Reta hasta a ${decision.amount}`}
+          text={compact ? `Elige a tus rivales (hasta ${decision.amount}):` : "Cada uno tira su dado en el celular, uno a uno: quien saque menos, bebe 1."}
           players={others}
           max={decision.amount}
           min={1}
@@ -40,7 +40,7 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
     case "SELECT_DRINKERS":
       return (
         <PickPlayers
-          title={compact ? "¿Quién bebe?" : decision.title}
+          title={compact ? undefined : decision.title}
           text={compact ? `Marca quiénes beben ${decision.drinks} ${decision.drinks === 1 ? "vaso" : "vasos"}:` : `${decision.text} Marca quiénes beben ${decision.drinks}.`}
           players={players}
           max={players.length}
@@ -52,7 +52,7 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
 
     case "OCA":
       return (
-        <Card title="¿Bebes para seguir?" text={decision.next ? `Bebe 1 vaso y vuela hasta la casilla ${decision.next}, y vuelve a tirar. O plántate aquí.` : "Es el último murciélago: bebe 1 vaso y vuelve a tirar, o plántate aquí."}>
+        <Card title={compact ? undefined : "¿Bebes para seguir?"} text={compact ? undefined : decision.next ? `Bebe 1 vaso y vuela hasta la casilla ${decision.next}, y vuelve a tirar. O plántate aquí.` : "Es el último murciélago: bebe 1 vaso y vuelve a tirar, o plántate aquí."}>
           <button onClick={() => onAction({ type: "OCA", choice: "fly" })} className="btn-game bg-btn-green py-3 text-lg text-white">
             🦇 SÍ, BEBO{decision.next ? ` Y VUELO A LA ${decision.next}` : " Y VUELVO A TIRAR"}
           </button>
@@ -64,7 +64,7 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
 
     case "PATINAZO":
       return (
-        <Card title="¿Qué eliges?" text="Para no caerte:">
+        <Card title={compact ? undefined : "¿Qué eliges?"} text={compact ? undefined : "Para no caerte:"}>
           <button onClick={() => onAction({ type: "PATINAZO", choice: "drink" })} className="btn-game bg-btn-green py-3 text-lg text-white">
             BEBER {decision.drinks} DE GOLPE
           </button>
@@ -75,11 +75,11 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
       );
 
     case "RULE":
-      return <RuleInput onDone={() => onAction({ type: "SET_RULE" })} />;
+      return <RuleInput compact={compact} onDone={() => onAction({ type: "SET_RULE" })} />;
 
     case "SLAVE":
       return (
-        <Card title="Elige a tu pactado" text="Elige con quién haces el pacto: beberá cada vez que tú bebas.">
+        <Card title={compact ? undefined : "Elige a tu pactado"} text={compact ? "¿Con quién haces el pacto?" : "Elige con quién haces el pacto: beberá cada vez que tú bebas."}>
           {others.map((p) => (
             <button key={p.id} onClick={() => onAction({ type: "CHOOSE_SLAVE", id: p.id })} className="btn-game py-2 text-lg text-white" style={{ background: p.color }}>
               {p.name}
@@ -90,24 +90,25 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
   }
 }
 
-function Card({ title, text, children }: { title: string; text: string; children: React.ReactNode }) {
+/** Título y texto opcionales: en el celular la tarjeta de arriba ya explica la regla, así que aquí solo va lo que hay que hacer. */
+function Card({ title, text, children }: { title?: string; text?: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="font-display text-2xl text-btn-yellow">{title}</h3>
-      <p className="text-white/85">{text}</p>
+      {title && <h3 className="font-display text-2xl text-btn-yellow">{title}</h3>}
+      {text && <p className="text-white/85">{text}</p>}
       {children}
     </div>
   );
 }
 
-function Distribute({ amount, players, onDone }: { amount: number; players: Player[]; onDone: (d: Record<string, number>) => void }) {
+function Distribute({ amount, players, compact, onDone }: { amount: number; players: Player[]; compact?: boolean; onDone: (d: Record<string, number>) => void }) {
   const [drinks, setDrinks] = useState<Record<string, number>>({});
   const used = Object.values(drinks).reduce((a, n) => a + n, 0);
   const left = amount - used;
   const change = (id: string, delta: number) => setDrinks({ ...drinks, [id]: Math.max(0, (drinks[id] ?? 0) + delta) });
 
   return (
-    <Card title={`Reparte ${amount} ${amount === 1 ? "vaso" : "vasos"}`} text={left === 0 ? "¡Listo! Confirma el reparto." : `Te ${left === 1 ? "queda" : "quedan"} ${left}.`}>
+    <Card title={compact ? undefined : `Reparte ${amount} ${amount === 1 ? "vaso" : "vasos"}`} text={left === 0 ? "¡Listo! Confirma el reparto." : `Te ${left === 1 ? "queda" : "quedan"} ${left} ${left === 1 ? "vaso" : "vasos"} por repartir.`}>
       {players.map((p) => (
         <div key={p.id} className="flex items-center gap-2">
           <span className="size-4 rounded-full border-2 border-ink" style={{ background: p.color }} />
@@ -181,8 +182,8 @@ function DuelRoll({ decision, me, players, onRoll }: { decision: Extract<Decisio
 }
 
 function PickPlayers(props: {
-  title: string;
-  text: string;
+  title?: string;
+  text?: string;
   players: Player[];
   min: number;
   max: number;
@@ -219,9 +220,9 @@ function PickPlayers(props: {
   );
 }
 
-function RuleInput({ onDone }: { onDone: () => void }) {
+function RuleInput({ compact, onDone }: { compact?: boolean; onDone: () => void }) {
   return (
-    <Card title="Dicta tu ley" text="Dicta tu ley en voz alta para todos. Dura hasta que alguien dicte otra. Quien la rompa, bebe.">
+    <Card title={compact ? undefined : "Dicta tu ley"} text={compact ? undefined : "Dicta tu ley en voz alta para todos. Dura hasta que alguien dicte otra. Quien la rompa, bebe."}>
       <button onClick={onDone} className="btn-game bg-btn-green py-3 text-lg text-white">
         YA LA DICTÉ
       </button>
