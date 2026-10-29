@@ -144,8 +144,14 @@ cualquier regla, texto, título, número o pantalla, comprueba SIEMPRE las dos p
   tengan personalidad): panel oscuro con el color de la casilla como acento (`TILE_ACCENT`), icono de la casilla en
   vector, «CASILLA N», título en Creepster (`.banner-title`), texto en la letra del juego y pastilla del color con lo
   que toca hacer en el celular. Se mide en `--u` (1cqw en la TV, 14px en el celular).
-- Purgatorio (cárcel; regla del usuario): en su turno el preso tira; con 1-3 bebe 2, con 4-6 bebe 4 (`jailBail`), sale
-  y vuelve a tirar para avanzar. No hay opción de esperar. La TV muestra la tarjeta "¡Sale del Purgatorio!" (`jailOutcome`).
+- Purgatorio (cárcel; regla del usuario): en su turno el preso tira; con 1-3 **debe** 2 vasos, con 4-6 debe 4 (`jailBail`) y elige en el celular
+  cuántos paga ya (decisión `JAIL_PAY` `{ owed, roll }`, acción `{ type: "JAIL_PAY", n }`, panel `JailPay` en `DecisionPanel`). Si paga todo,
+  sale y vuelve a tirar para avanzar (`extraRoll`); si paga menos **queda debiendo el resto** (`status.carcel.debt`) y pasa el turno. En su
+  siguiente turno ya no tira: el motor le abre `JAIL_PAY` con `roll: null` por la deuda, y así hasta pagarla (el marcador enseña «debe N»).
+  Cada pago deja `GameState.lastJail { seq, by, paid, left }`: la TV y el celular enseñan la tarjeta «¡Queda debiendo!» (`jailOwes`) o «¡Sale del
+  Purgatorio!» (`jail`, «pagó su penitencia») y un título grande (`jailPaidOutcome` en `rules.ts`, `useGameFx`, `DiceController`). Mientras elige,
+  la tarjeta (`jailPayCard`: «¡A pagar penitencia!» `jailRoll` o «Deuda del Purgatorio» `jailDebt`) sale de `cardContent`. Las 4 tarjetas del
+  Purgatorio son editables en «📝 Tarjetas» → Resultados; el texto viejo de la casilla y de «sale» está en `LEGACY`. No hay opción de esperar.
 - Toda casilla que diga "tira el dado" debe enseñar después una tarjeta con lo que pasó (TV y celular):
   niebla (`mazeOutcome`), purgatorio (`jailOutcome`) y duelo (`lastDuel` en el estado + `duelOutcome`).
 - Nombres de las casillas (`TILE_NAMES` en `board.ts`): Medianoche (salida), Tu Tumba (meta), El Murciélago (oca:
@@ -320,3 +326,5 @@ El usuario quiere diseñar él mismo el tablero, como en Los Sims o Photoshop, e
 - Comprobación de velocidad del 3D (`LiveBoard`): solo en los primeros ~30 s (6 ventanas de 4 s tras 6 s de calentamiento), no toda la partida. Si falla, esa carga pasa a imagen, pero la TV solo se queda en imagen 30 min (`ebrio:tablero-imagen`) si falla **dos cargas seguidas** (`ebrio:tablero-lento`; una carga que va bien lo borra). Antes, una racha lenta tras un F5 dejaba cada recarga en imagen: personajes quietos, otro encuadre, «se congela».
 - Retratos (`Marciano`): sin el círculo amarillo translúcido detrás del ganador («euforico»): sobre el fondo oscuro del marco se veía como una bola gris detrás del personaje (el usuario pidió quitarla).
 - Luz de velas y objetos bajos (`applyObjectLight` en `scene.ts`): el foco se **sube hasta ~1,3 sobre la base del modelo** (`lift`; el halo se queda en la llama). Con el foco pegado a la llama quedaba una mancha amarilla de borde duro sobre la losa y casi nada de luz alrededor (queja del usuario con `halloween/plaque_candles`); subido, reparte un charco suave. Los faroles altos no cambian (`lift` = 0). Se afecta igual a la TV (`collectViewerLamps` lee la posición del foco).
+- **Títulos de las tarjetas** (`GameCard.titleSize`): el tamaño cabe la **palabra más larga** (una palabra no se parte: «PURGATORIO» se salía de la tarjeta del celular) y el título entero en 2 renglones; ancho útil ~8,6 `--u`, letra ~0,52 de su tamaño. Comprobado en el editor: ningún `h3` de las 51 tarjetas tiene `scrollWidth > clientWidth`.
+- **Clasificatoria** (`src/components/Clasificatoria.tsx`, pedido del usuario): al ganar, el celular tiene el botón «VER CLASIFICATORIA» (`ranking` en `c/[code]/page.tsx`) que abre un cuadro grande al centro con el diseño de las tarjetas (panel morado, pastilla y cuadros verde biche) con todos los jugadores ordenados por tragos (`drunk`), el ganador marcado con 🏆 y una barra por jugador. Solo en el celular (la TV sigue con su mensaje de ganador).

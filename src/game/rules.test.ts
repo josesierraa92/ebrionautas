@@ -31,7 +31,7 @@ describe("textos de las tarjetas", () => {
     expect(tileRule(3, game, "p1")).toEqual({ title: "Cegatos", text: "Juicio de los vivos: beben 1 vaso quienes lleven gafas o lentillas." });
     expect(tileRule(12, game, "p1").text).toContain("por detrás de Ana. Esta vez, nadie.");
     expect(tileRule(15, game, "p1").text).toBe("Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos.");
-    expect(jailOutcome("Ana", 5).text).toContain("bebe 4 vasos");
+    expect(jailOutcome("Ana", 5).text).toContain("debe 4 vasos");
   });
 
   it("lo que cambia el admin sustituye al de serie y rellena los huecos", () => {
@@ -48,7 +48,7 @@ describe("textos de las tarjetas", () => {
     expect(keys).toContain("A_BEBER");
     expect(keys).toContain("RASGO:Machos");
     expect(cardCatalog().find((c) => c.key === "A_BEBER")?.tiles).toEqual([6, 14, 22, 30, 49, 59]);
-    expect(keys.filter((k) => k.startsWith("RESULTADO"))).toHaveLength(4);
+    expect(keys.filter((k) => k.startsWith("RESULTADO"))).toHaveLength(7);
   });
 });
 

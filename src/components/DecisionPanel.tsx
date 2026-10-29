@@ -75,6 +75,9 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
         </Card>
       );
 
+    case "JAIL_PAY":
+      return <JailPay owed={decision.owed} compact={compact} onPay={(n) => onAction({ type: "JAIL_PAY", n })} />;
+
     case "RULE":
       return <RuleInput compact={compact} onDone={() => onAction({ type: "SET_RULE" })} />;
 
@@ -92,6 +95,23 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
 }
 
 /** Título y texto opcionales: en el celular la tarjeta de arriba ya explica la regla, así que aquí solo va lo que hay que hacer. */
+/** Purgatorio: cuántos de los vasos que debe paga ahora (todos = sale; menos = queda debiendo el resto). */
+function JailPay({ owed, compact, onPay }: { owed: number; compact?: boolean; onPay: (n: number) => void }) {
+  const vasos = (n: number) => `${n} ${n === 1 ? "VASO" : "VASOS"}`;
+  return (
+    <Card title={compact ? undefined : "Paga tu penitencia"} text={`Debes ${owed} ${owed === 1 ? "vaso" : "vasos"}. ¿Cuántos pagas ahora?`}>
+      <button onClick={() => onPay(owed)} className="btn-game bg-btn-green py-3 text-lg text-white">
+        PAGAR LOS {owed} Y SALIR
+      </button>
+      {Array.from({ length: owed - 1 }, (_, i) => i + 1).map((n) => (
+        <button key={n} onClick={() => onPay(n)} className="btn-game bg-btn-yellow py-3 text-lg text-white">
+          PAGAR {vasos(n)} · DEBO {owed - n}
+        </button>
+      ))}
+    </Card>
+  );
+}
+
 function Card({ title, text, children }: { title?: string; text?: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-3">

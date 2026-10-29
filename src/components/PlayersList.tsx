@@ -37,7 +37,7 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
                 {p.status.inmune && <span title="Estación Abstemia: inmune">⛽</span>}
                 {p.status.hipnosis && <span title="Abducción mental">🌀</span>}
                 {p.status.laberinto && <span title="Perdido en el Panteón en Niebla">🌫️</span>}
-                {p.status.carcel && <span title="En el Purgatorio">🔥</span>}
+                {p.status.carcel && <span title="En el Purgatorio">🔥{p.status.carcel.debt ? <span className="font-display text-xs text-btn-red"> debe {p.status.carcel.debt}</span> : null}</span>}
                 {game.slave?.slave === p.id && <span title="Pacto de Sangre">🩸</span>}
               </p>
               <div className="mt-1 flex items-center gap-2">

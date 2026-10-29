@@ -13,6 +13,7 @@ const ACTION_TYPES = new Set<Action["type"]>([
   "SET_RULE",
   "SELECT_DRINKERS",
   "CHOOSE_SLAVE",
+  "JAIL_PAY",
   "DRANK",
   "PENALTY",
 ]);

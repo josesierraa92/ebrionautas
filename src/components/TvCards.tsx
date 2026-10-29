@@ -4,7 +4,7 @@ import { avatarOf, expressionFor } from "@/game/avatar";
 import { getTile, PATINAZO_DRINKS } from "@/game/board";
 import { currentPlayer, type Decision, type GameState } from "@/game/engine";
 import { cardKeyOf, cardTitle, hasCardOverride } from "@/game/cards";
-import { tileRule } from "@/game/rules";
+import { jailPayCard, tileRule } from "@/game/rules";
 import { useCardTexts } from "@/lib/useCardTexts";
 import GameCard from "@/components/GameCard";
 import { DEFAULT_ICON } from "@/editor/icons";
@@ -30,6 +30,8 @@ export function decisionText(decision: Decision, name: string): [string, string]
       return [cardTitle("REGLA"), `${name} dicta una ley para todos. Quien la rompa, bebe.`];
     case "SLAVE":
       return [cardTitle("ESCLAVO"), `${name} elige con quién hace el pacto: beberá cada vez que ${name} beba.`];
+    case "JAIL_PAY":
+      return [cardTitle("CARCEL"), `${name} debe ${decision.owed} ${decision.owed === 1 ? "vaso" : "vasos"} del Purgatorio y elige cuántos paga ahora.`];
   }
 }
 
@@ -57,6 +59,8 @@ function decisionPrompt(decision: Decision, name: string, game?: GameState): str
       return `${name} dicta su ley en voz alta y toca «Ya la dicté» en el celular.`;
     case "SLAVE":
       return `${name} elige en el celular con quién hace el Pacto de Sangre.`;
+    case "JAIL_PAY":
+      return `${name} elige en el celular cuántos vasos paga del Purgatorio.`;
   }
 }
 
@@ -84,14 +88,19 @@ export function cardContent(game: GameState, n: number, playerId: string, result
   const player = game.players.find((p) => p.id === playerId) ?? currentPlayer(game);
   // Resultado de una tirada sin moverse (niebla, purgatorio, duelo): verde si se salvó, rojo si bebe.
   const tile = getTile(n);
-  const style = result
-    ? { icon: result.icon ?? (result.good ? "✨" : result.drinks ? "🔓" : "🍷"), bg: result.good ? ["#8be86b", "#2fae4a"] : ["#ff8a8a", "#d62a3f"] }
-    : TILE_STYLE[tile.type];
   const decision = game.decision && currentPlayer(game).id === playerId ? game.decision : null;
+  // Purgatorio: mientras elige cuánto paga, la tarjeta dice cuánto debe (la tirada o la deuda de antes)
+  const jailPay = decision?.kind === "JAIL_PAY" ? jailPayCard(game) : null;
+  result = jailPay ?? result;
+  const style = result
+    ? { icon: result.icon ?? (result.good ? "✨" : result.drinks ? "🔥" : "🍷"), bg: result.good ? ["#8be86b", "#2fae4a"] : ["#ff8a8a", "#d62a3f"] }
+    : TILE_STYLE[tile.type];
   // Retos y exámenes llevan su texto concreto (categoría, trabalenguas…) en la decisión.
   const rule = result ?? (decision?.kind === "SELECT_DRINKERS" ? decisionRule(decision, n, game, playerId) : tileRule(n, game, playerId));
   const drinks =
-    decision?.kind === "SELECT_DRINKERS"
+    decision?.kind === "JAIL_PAY"
+      ? decision.owed
+      : decision?.kind === "SELECT_DRINKERS"
       ? decision.drinks
       : decision?.kind === "DISTRIBUTE"
         ? decision.amount

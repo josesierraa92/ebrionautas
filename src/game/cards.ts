@@ -18,7 +18,19 @@ export const cardKeyOf = (t: Tile) =>
   t.type === "RASGO" || t.type === "POSICION" || t.type === "RETO" ? `${t.type}:${t.title}` : t.type === "OCA" && !t.next ? "OCA:ultimo" : t.type;
 
 /** Tarjetas de resultado (al tirar sin moverse). */
-export const RESULT_KEYS = { mazeOk: "RESULTADO:niebla-salva", mazeNo: "RESULTADO:niebla-pierde", jail: "RESULTADO:purgatorio", duel: "RESULTADO:duelo" } as const;
+export const RESULT_KEYS = {
+  mazeOk: "RESULTADO:niebla-salva",
+  mazeNo: "RESULTADO:niebla-pierde",
+  /** Purgatorio: sacó el dado y ve cuánto debe (paga todo o una parte). */
+  jailRoll: "RESULTADO:purgatorio-tirada",
+  /** Purgatorio: turno de pagar lo que quedó debiendo. */
+  jailDebt: "RESULTADO:purgatorio-deuda",
+  /** Purgatorio: pagó una parte y queda debiendo el resto. */
+  jailOwes: "RESULTADO:purgatorio-debe",
+  /** Purgatorio: pagó todo y sale (la clave de antes, cuando siempre salía al tirar). */
+  jail: "RESULTADO:purgatorio",
+  duel: "RESULTADO:duelo",
+} as const;
 
 /**
  * Textos de serie ANTERIORES de las tarjetas que cambiaron de regla: si lo guardado en el editor es justo uno de ellos, no es una
@@ -34,6 +46,8 @@ const LEGACY: Record<string, { title?: string[]; text?: string[] }> = {
   },
   CULTURAL: { text: ["Sale una categoría. Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso."] },
   A_BEBER: { title: ["¡Ronda de mezcal!", "Ronda de mezcal"] },
+  CARCEL: { text: ["{nombre} cae al Purgatorio. En su próximo turno tira el dado para pagar sus pecados: con 1, 2 o 3 bebe 2 vasos; con 4, 5 o 6 bebe 4. Después vuelve a tirar para avanzar. Si otro jugador cae aquí antes, sale gratis."] },
+  "RESULTADO:purgatorio": { text: ["{nombre} saca {dado}: bebe {vasos} para pagar sus pecados y sale del Purgatorio. Ahora vuelve a tirar para avanzar."] },
   PATINAZO: {
     title: ["Tropiezo con la lápida"],
     text: [
@@ -66,7 +80,7 @@ const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?:
   HIPNOSIS: { vars: [NOMBRE], defaults: { title: TILE_NAMES.HIPNOSIS, text: "Un espíritu posee a {nombre}: hasta su próximo turno, se bebe la mitad de todo lo que beban los demás." } },
   CARCEL: {
     vars: [NOMBRE],
-    defaults: { title: TILE_NAMES.CARCEL, text: "{nombre} cae al Purgatorio. En su próximo turno tira el dado para pagar sus pecados: con 1, 2 o 3 bebe 2 vasos; con 4, 5 o 6 bebe 4. Después vuelve a tirar para avanzar. Si otro jugador cae aquí antes, sale gratis." },
+    defaults: { title: TILE_NAMES.CARCEL, text: "{nombre} cae al Purgatorio. En su próximo turno tira el dado para ver cuánto debe: con 1, 2 o 3 debe 2 vasos; con 4, 5 o 6 debe 4. Puede pagar solo una parte y deber el resto para su siguiente turno; cuando lo paga todo, sale y vuelve a tirar para avanzar. Si otro jugador cae aquí antes, sale gratis." },
   },
   MUERTE: { vars: [NOMBRE], defaults: { title: TILE_NAMES.MUERTE, text: "¡Qué mala suerte! {nombre} cae en La Fosa y tiene que volver a empezar desde medianoche (casilla 1)." } },
   PATINAZO: {
@@ -104,7 +118,10 @@ export function cardCatalog(): CardDef[] {
     { key: RESULT_KEYS.mazeOk, label: "Niebla: se salva", tiles: [], vars: [NOMBRE, { name: "dado", about: "lo que sacó" }], defaults: { title: "¡Se salvó!", text: "{nombre} saca {dado} y encuentra la salida del Panteón en Niebla. No bebe y en su próximo turno vuelve a avanzar." } },
     { key: RESULT_KEYS.mazeNo, label: "Niebla: sigue perdido", tiles: [], vars: [NOMBRE, { name: "dado", about: "lo que sacó" }], defaults: { title: "¡Sigue perdido!", text: "{nombre} saca {dado}: no es 5 ni 6. Bebe 1 vaso y sigue perdido entre las tumbas." } },
     { key: RESULT_KEYS.duel, label: "Duelo: resultado", tiles: [], vars: [{ name: "resultado", about: "una línea por rival: quién sacó cuánto y quién bebe" }], defaults: { title: "¡Resultado del duelo!", text: "{resultado}" } },
-    { key: RESULT_KEYS.jail, label: "Purgatorio: sale", tiles: [], vars: [NOMBRE, { name: "dado", about: "lo que sacó" }, VASOS], defaults: { title: "¡Sale del Purgatorio!", text: "{nombre} saca {dado}: bebe {vasos} para pagar sus pecados y sale del Purgatorio. Ahora vuelve a tirar para avanzar." } },
+    { key: RESULT_KEYS.jailRoll, label: "Purgatorio: tirada", tiles: [], vars: [NOMBRE, { name: "dado", about: "lo que sacó" }, { name: "vasos", about: "cuántos debe (2 o 4)" }], defaults: { title: "¡A pagar penitencia!", text: "{nombre} saca {dado}: debe {vasos} para salir del Purgatorio. Puede pagarlos todos ya o solo una parte y deber el resto para su próximo turno." } },
+    { key: RESULT_KEYS.jailDebt, label: "Purgatorio: paga su deuda", tiles: [], vars: [NOMBRE, { name: "vasos", about: "cuántos debe todavía" }], defaults: { title: "Deuda del Purgatorio", text: "{nombre} todavía debe {vasos} del Purgatorio. Si los paga todos, sale y vuelve a tirar; si paga solo una parte, sigue debiendo el resto." } },
+    { key: RESULT_KEYS.jailOwes, label: "Purgatorio: queda debiendo", tiles: [], vars: [NOMBRE, { name: "pagados", about: "cuántos pagó ahora" }, { name: "deuda", about: "cuántos sigue debiendo" }], defaults: { title: "¡Queda debiendo!", text: "{nombre} paga {pagados} y queda debiendo {deuda}. Sigue en el Purgatorio: en su próximo turno paga lo que debe." } },
+    { key: RESULT_KEYS.jail, label: "Purgatorio: sale", tiles: [], vars: [NOMBRE, { name: "pagados", about: "cuántos pagó ahora" }], defaults: { title: "¡Sale del Purgatorio!", text: "{nombre} paga {pagados} y cumple su penitencia. Sale del Purgatorio y vuelve a tirar para avanzar." } },
   ];
   return [...seen.values(), ...res];
 }
@@ -116,7 +133,7 @@ export const CARD_GROUPS = [
   { id: "decision", title: "Casillas con decisión", about: "quien cae decide o juega algo en el celular", types: ["OCA", "A_BEBER", "DUELO", "CULTURAL", "REGLA", "ESCLAVO", "PATINAZO"] },
   { id: "estados", title: "Estados y castigos", about: "se queda con un estado o lo mandan de vuelta", types: ["POSADA", "HIPNOSIS", "LABERINTO", "CARCEL", "MUERTE"] },
   { id: "extremos", title: "Inicio y meta", about: "la salida y la llegada", types: ["SALIDA", "META"] },
-  { id: "resultados", title: "Resultados al tirar", about: "salen después de tirar el dado sin moverse (niebla, purgatorio, duelo)", types: [] as string[] },
+  { id: "resultados", title: "Resultados al tirar", about: "salen después de tirar el dado sin moverse o de pagar (niebla, purgatorio, duelo)", types: [] as string[] },
 ] as const;
 export type CardGroupId = (typeof CARD_GROUPS)[number]["id"];
 

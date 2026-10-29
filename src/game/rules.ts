@@ -12,10 +12,31 @@ export function mazeOutcome(name: string, roll: number): { escaped: boolean; tit
   return { escaped, ...cardText(escaped ? RESULT_KEYS.mazeOk : RESULT_KEYS.mazeNo, { nombre: name, dado: roll }) };
 }
 
-/** Resultado de tirar estando en el Purgatorio: siempre sale, pero bebe 2 (1-3) o 4 (4-6). */
+/** Resultado de tirar estando en el Purgatorio: debe 2 (1-3) o 4 (4-6) y elige cuántos paga ya. */
 export function jailOutcome(name: string, roll: number): { drinks: number; title: string; text: string } {
   const drinks = jailBail(roll);
-  return { drinks, ...cardText(RESULT_KEYS.jail, { nombre: name, dado: roll, vasos: vasos(drinks) }) };
+  return { drinks, ...cardText(RESULT_KEYS.jailRoll, { nombre: name, dado: roll, vasos: vasos(drinks) }) };
+}
+
+/** Tarjeta mientras se decide cuánto paga en el Purgatorio (tras tirar, o en un turno de pagar deuda). */
+export function jailPayCard(game: GameState): { good: false; title: string; text: string; drinks: number; tileIcon: true } | null {
+  const d = game.decision;
+  if (d?.kind !== "JAIL_PAY") return null;
+  const name = game.players[game.turn]?.name ?? "";
+  const t = d.roll !== null ? jailOutcome(name, d.roll) : cardText(RESULT_KEYS.jailDebt, { nombre: name, vasos: vasos(d.owed) });
+  return { good: false, title: t.title, text: t.text, drinks: d.owed, tileIcon: true };
+}
+
+/** Lo que pasó al pagar en el Purgatorio: sale (pagó todo) o queda debiendo. */
+export function jailPaidOutcome(game: GameState): { free: boolean; title: string; text: string } | null {
+  const j = game.lastJail;
+  if (!j) return null;
+  const name = game.players.find((p) => p.id === j.by)?.name ?? "";
+  const free = j.left === 0;
+  const t = free
+    ? cardText(RESULT_KEYS.jail, { nombre: name, pagados: vasos(j.paid), vasos: vasos(j.paid), dado: game.lastRoll ?? "" })
+    : cardText(RESULT_KEYS.jailOwes, { nombre: name, pagados: vasos(j.paid), deuda: vasos(j.left) });
+  return { free, ...t };
 }
 
 /** Resultado de un duelo, una línea por rival: quién sacó cuánto y quién bebe. */
@@ -64,7 +85,7 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
 }
 
 /** Datos que cambian en cada partida (nombre del jugador, quiénes están en la mesa, lo que sale al azar…): nunca se escriben a mano. */
-const DYNAMIC_VARS = new Set(["nombre", "lista", "rivales", "categoria", "dado", "resultado", "casilla"]);
+const DYNAMIC_VARS = new Set(["nombre", "lista", "rivales", "categoria", "dado", "resultado", "casilla", "pagados", "deuda"]);
 
 /**
  * Huecos de una tarjeta que valen SIEMPRE lo mismo (por ejemplo «1 vaso» y «los hombres» en Machos): el editor los enseña ya escritos

@@ -8,6 +8,7 @@ import DiceController from "@/components/DiceController";
 import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
 import Setup from "@/components/Setup";
+import Clasificatoria from "@/components/Clasificatoria";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Action, type Gender } from "@/game/engine";
 import { api, controlKey, saved, sendAction, useRoom } from "@/lib/room-client";
@@ -19,6 +20,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
   const [secret, setSecret] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [ranking, setRanking] = useState(false); // clasificatoria al terminar la partida
   const [actionError, setActionError] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
 
@@ -122,6 +124,9 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
       {winner ? (
         <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
           <Winner winner={winner} players={game.players}>
+            <button onClick={() => setRanking(true)} className="btn-game bg-btn-blue py-3 text-xl text-white">
+              VER CLASIFICATORIA
+            </button>
             <button
               disabled={busy}
               onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret }))}
@@ -152,6 +157,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
       )}
       {actionError && <ErrorBox text={actionError} />}
       {error && <p className="text-sm text-btn-red">⚠️ {error}</p>}
+      {winner && ranking && <Clasificatoria game={game} onClose={() => setRanking(false)} />}
 
       {menu && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-space/95">

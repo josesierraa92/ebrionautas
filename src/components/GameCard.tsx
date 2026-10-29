@@ -109,10 +109,13 @@ function DiceIcon({ size, value }: { size: string; value?: number | null }) {
 }
 
 /**
- * Tamaño del título (en `--u`) para que quepa en dos renglones al lado del hexágono: el ancho útil es de unas 11 `--u` y en Lilita One
- * en mayúsculas cada letra ocupa ~0,6 de su tamaño; los títulos cortos van al tamaño máximo.
+ * Tamaño del título (en `--u`) para que no se salga de la tarjeta: el ancho útil al lado del icono es de unas 8,6 `--u` y en Lilita One
+ * en mayúsculas cada letra ocupa ~0,52 de su tamaño. Tiene que caber la palabra más larga (una palabra no se parte: «PURGATORIO» se
+ * salía de la tarjeta) y el título entero en 2 renglones; los títulos cortos van al tamaño máximo.
  */
 function titleSize(title: string) {
-  const perLine = Math.ceil(title.length / 2) + 1;
-  return Math.max(1.2, Math.min(2.2, 11 / (0.6 * perLine)));
+  const longest = Math.max(1, ...title.split(/\s+/).map((w) => w.length));
+  const byWord = 8.6 / (0.52 * longest);
+  const byLines = 17.2 / (0.52 * (title.length + 2));
+  return Math.max(1.2, Math.min(2.2, byWord, byLines));
 }

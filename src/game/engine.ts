@@ -11,7 +11,9 @@ export type PlayerStatus = {
   inmune: boolean; // Estación Abstemia: nadie le puede mandar beber
   hipnosis: boolean; // Abducción mental: absorbe la mitad de lo que beben los demás
   laberinto: boolean; // Panteón en Niebla: sale con 5 o 6
-  carcel: { at: number } | null; // en su turno tira: con 1-3 bebe 2 y sale, con 4-6 bebe 4 y sale
+  // en su turno tira: con 1-3 debe 2 vasos, con 4-6 debe 4; puede pagar una parte y deber el resto (`debt`) para su próximo turno.
+  // Sale cuando lo paga todo.
+  carcel: { at: number; debt?: number } | null;
 };
 
 export type Gender = "hombre" | "mujer";
@@ -41,6 +43,9 @@ export type Decision =
   // Quien controla la mesa marca quiénes beben.
   | { kind: "SELECT_DRINKERS"; drinks: number; title: string; text: string }
   | { kind: "SLAVE" }
+  // Purgatorio: cuántos de los vasos que debe (`owed`) paga ahora; el resto queda de deuda para su próximo turno.
+  // `roll`: lo que sacó al tirar (null si es un turno de pagar deuda, sin dado).
+  | { kind: "JAIL_PAY"; owed: number; roll: number | null }
 
 export type DuelRound = { rival: string; a: number; b: number; loser: string };
 
@@ -66,6 +71,8 @@ export type GameState = {
   extraRoll: boolean;
   /** Último duelo resuelto (los dados se tiran en el servidor): la TV y el celular enseñan el resultado. */
   lastDuel?: { seq: number; by: string; rounds: DuelRound[] } | null;
+  /** Último pago en el Purgatorio: cuánto pagó y cuánto le queda (0 = salió). La TV y el celular enseñan el resultado. */
+  lastJail?: { seq: number; by: string; paid: number; left: number } | null;
   winner: string | null;
   log: LogEntry[];
   logSeq: number;
@@ -82,6 +89,7 @@ export type Action =
   | { type: "SET_RULE" }
   | { type: "SELECT_DRINKERS"; ids: string[] }
   | { type: "CHOOSE_SLAVE"; id: string }
+  | { type: "JAIL_PAY"; n: number }
   | { type: "DRANK"; id: string }
   | { type: "PENALTY"; id: string };
 
@@ -194,25 +202,30 @@ function decide(s: GameState, decision: Decision) {
   s.decision = decision;
 }
 
-/** Salida del Purgatorio: con 1-3 se beben 2 vasos, con 4-6 se beben 4. */
+/** Penitencia del Purgatorio: con 1-3 se deben 2 vasos, con 4-6 se deben 4. */
 export function jailBail(roll: number): number {
   return roll <= 3 ? 2 : 4;
 }
 
 function roll(s: GameState, rng: Rng) {
   const p = currentPlayer(s);
+  // Purgatorio con deuda: este turno no se tira, se paga lo que debe (todo o una parte)
+  const debt = p.status.carcel?.debt ?? 0;
+  if (debt > 0) {
+    log(s, `🔥 ${p.name} debe ${debt} ${vasos(debt)} del Purgatorio.`);
+    decide(s, { kind: "JAIL_PAY", owed: debt, roll: null });
+    return;
+  }
   const r = d6(rng);
   s.lastRoll = r;
   s.lastRoller = p.id;
   s.rollSeq = (s.rollSeq ?? 0) + 1;
 
   if (p.status.carcel) {
-    // Fianza según el dado; al pagarla sale y vuelve a tirar para avanzar.
+    // Penitencia según el dado: elige cuántos vasos paga ya (JAIL_PAY); al pagarlo todo sale y vuelve a tirar para avanzar.
     const bail = jailBail(r);
-    p.status.carcel = null;
-    log(s, `🔓 ${p.name} saca ${r}: bebe ${bail} ${vasos(bail)} y sale del Purgatorio. Ahora tira para avanzar.`);
-    drink(s, p.id, bail, null);
-    s.phase = "ROLL";
+    log(s, `🔥 ${p.name} saca ${r}: debe ${bail} ${vasos(bail)} para salir del Purgatorio.`);
+    decide(s, { kind: "JAIL_PAY", owed: bail, roll: r });
     return;
   }
 
@@ -310,7 +323,7 @@ function landOn(s: GameState, p: Player, rng: Rng) {
         }
       }
       p.status.carcel = { at: tile.n };
-      log(s, `🔥 ${p.name} cae al Purgatorio. En su turno tira para ver cuánto bebe para salir.`);
+      log(s, `🔥 ${p.name} cae al Purgatorio. En su turno tira para ver cuánto debe beber para salir.`);
       return endTurn(s);
     }
 
@@ -459,6 +472,24 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
     const chosen = [...new Set(action.ids)];
     if (chosen.some((id) => !ids.has(id))) return false;
     resolveDrinkers(s, chosen);
+    return true;
+  }
+
+  if (d.kind === "JAIL_PAY" && action.type === "JAIL_PAY") {
+    const n = action.n;
+    if (!Number.isInteger(n) || n < 1 || n > d.owed || !p.status.carcel) return false;
+    const left = d.owed - n;
+    drink(s, p.id, n, null);
+    s.lastJail = { seq: (s.lastJail?.seq ?? 0) + 1, by: p.id, paid: n, left };
+    if (left === 0) {
+      p.status.carcel = null;
+      log(s, `🔓 ${p.name} paga su penitencia y sale del Purgatorio. Ahora tira para avanzar.`);
+      s.extraRoll = true;
+    } else {
+      p.status.carcel.debt = left;
+      log(s, `🔥 ${p.name} paga ${n} y queda debiendo ${left} ${vasos(left)}: sigue en el Purgatorio.`);
+    }
+    endTurn(s);
     return true;
   }
 

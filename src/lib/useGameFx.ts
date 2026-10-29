@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LAST_TILE, type GameState } from "@/game/engine";
 import { getTile, type Tile } from "@/game/board";
-import { duelOutcome, jailOutcome, mazeOutcome, tileRule } from "@/game/rules";
+import { duelOutcome, jailOutcome, jailPaidOutcome, mazeOutcome, tileRule } from "@/game/rules";
 import { DEFAULT_ICON, type IconName } from "@/editor/icons";
 import { sfx } from "./sfx";
 import { useCardTexts } from "./useCardTexts";
@@ -124,7 +124,7 @@ export function useGameFx(game: GameState | null) {
       const result = maze
         ? { good: maze.escaped, title: maze.title, text: maze.text }
         : jail
-          ? { good: false, title: jail.title, text: jail.text, drinks: jail.drinks }
+          ? { good: false, title: jail.title, text: jail.text, drinks: jail.drinks, tileIcon: true }
           : undefined;
       setLanded({ key, n, playerId: mover?.id ?? roller.id, result });
       setFocus(mover?.id ?? roller.id);
@@ -135,7 +135,7 @@ export function useGameFx(game: GameState | null) {
           setBanner(
             result.good
               ? { key: bkey, title: result.title, emoji: "✨", color: "#5cd23c" }
-              : { key: bkey, title: result.title, emoji: jail ? "🔓" : "🍷", color: "#ffc61a" },
+              : { key: bkey, title: result.title, emoji: jail ? "🔥" : "🍷", color: "#ffc61a" },
           );
           if (result.good) sfx.fly();
           else sfx.drink();
@@ -182,6 +182,22 @@ export function useGameFx(game: GameState | null) {
         setDice(null);
         setBanner({ key: bkey, title, emoji: "💀", color: "#ff6b7d" });
         sfx.zap();
+      });
+      later(t + BANNER_MS + 400, () => setBanner((b) => (b?.key === bkey ? null : b)));
+    }
+
+    // Pagó en el Purgatorio: sale (pagó todo) o queda debiendo; tarjeta y título grande con lo que pasó.
+    const paid = game.lastJail && game.lastJail.seq !== before.lastJail?.seq ? jailPaidOutcome(game) : null;
+    if (paid && game.lastJail) {
+      const by = game.players.find((p) => p.id === game.lastJail!.by)!;
+      const key = ++seq.current;
+      setLanded({ key, n: by.pos, playerId: by.id, result: { good: paid.free, tileIcon: true, title: paid.title, text: paid.text } });
+      const bkey = ++seq.current;
+      at(t, () => {
+        setDice(null);
+        setBanner(paid.free ? { key: bkey, title: paid.title, emoji: "✨", color: "#5cd23c" } : { key: bkey, title: paid.title, emoji: "🔥", color: "#ff6b3d" });
+        if (paid.free) sfx.fly();
+        else sfx.drink();
       });
       later(t + BANNER_MS + 400, () => setBanner((b) => (b?.key === bkey ? null : b)));
     }

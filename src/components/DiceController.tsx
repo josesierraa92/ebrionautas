@@ -7,7 +7,7 @@ import { Die } from "@/components/Fx";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { currentPlayer, jailBail, type GameState } from "@/game/engine";
-import { duelOutcome, jailOutcome, mazeOutcome } from "@/game/rules";
+import { duelOutcome, jailOutcome, jailPaidOutcome, mazeOutcome } from "@/game/rules";
 import { PhoneRuleCard } from "@/components/TvCards";
 import { stepPath, type Landed } from "@/lib/useGameFx";
 import { useShake } from "@/lib/useShake";
@@ -38,6 +38,7 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
   const rollerPos = useRef(me.pos);
   const seenRoll = useRef(game.rollSeq);
   const seenDuel = useRef(game.lastDuel?.seq);
+  const seenJail = useRef(game.lastJail?.seq);
   // La misma tarjeta que la TV (casilla donde cayó o resultado de la tirada); se queda hasta la siguiente tirada.
   const [card, setCard] = useState<Landed | null>(() => {
     const last = game.players.find((p) => p.id === game.lastRoller);
@@ -63,7 +64,7 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
   useEffect(() => {
     const was = prevPhase.current;
     prevPhase.current = game.phase;
-    if (was === "DECISION" && game.phase === "ROLL" && game.lastDuel?.seq === seenDuel.current) sendNext();
+    if (was === "DECISION" && game.phase === "ROLL" && game.lastDuel?.seq === seenDuel.current && game.lastJail?.seq === seenJail.current) sendNext();
   }, [game.phase]); // eslint-disable-line react-hooks/exhaustive-deps
   // el dado solo da vueltas si lo que se está enviando es una tirada (no el «Siguiente turno»)
   const [rolling, setRolling] = useState(false);
@@ -131,6 +132,17 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
     navigator.vibrate?.([40, 60, 40]);
   }, [game]);
 
+  // Pagó en el Purgatorio: la tarjeta dice si salió (pagó todo) o cuánto queda debiendo.
+  useEffect(() => {
+    if (game.lastJail?.seq === seenJail.current) return;
+    seenJail.current = game.lastJail?.seq;
+    const paid = jailPaidOutcome(game);
+    if (!paid || !game.lastJail) return;
+    const by = game.lastJail.by;
+    setCard({ key: -1_000_000 - game.lastJail.seq, n: game.players.find((p) => p.id === by)?.pos ?? 0, playerId: by, result: { good: paid.free, tileIcon: true, title: paid.title, text: paid.text } });
+    navigator.vibrate?.([40, 60, 40]);
+  }, [game]);
+
   const tap = () => {
     if (shake.state === "needs-permission") void shake.request();
     roll();
@@ -148,7 +160,7 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
           </p>
         )}
         {result.jailed && (
-          <p className="btn-game bg-btn-red px-5 py-2 text-2xl text-white">🔓 BEBE {jailBail(result.value)} Y SALE DEL PURGATORIO</p>
+          <p className="btn-game bg-btn-red px-5 py-2 text-2xl text-white">🔥 DEBE {jailBail(result.value)} VASOS</p>
         )}
       </div>
     );
@@ -233,7 +245,9 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
           {me.status.laberinto
             ? "🌫️ Saca 5 o 6 para salir de la niebla"
             : me.status.carcel
-              ? "🔥 Purgatorio: con 1-3 bebes 2, con 4-6 bebes 4 para salir"
+              ? me.status.carcel.debt
+                ? `🔥 Debes ${me.status.carcel.debt} ${me.status.carcel.debt === 1 ? "vaso" : "vasos"} del Purgatorio: toca el dado para pagar`
+                : "🔥 Purgatorio: con 1-3 debes 2, con 4-6 debes 4 para salir"
               : spin ? "Rodando…" : shake.state === "on" ? "📳 Agita el celular o toca el dado" : "👆 Toca el dado para tirar"}
         </p>
         {shake.state === "needs-permission" && (
