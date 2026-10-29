@@ -39,7 +39,6 @@ export default function Marciano({ avatar, expression = "normal", size = 64, cla
       <svg viewBox="-4 -14 108 128" width={size} height={size * (128 / 108)} className={className} role="img" aria-label={title ?? "Zombi"}>
         {title && <title>{title}</title>}
         <ellipse cx="50" cy="108" rx="30" ry="5" fill="#000" opacity=".25" />
-        {expression === "euforico" && <circle cx="50" cy="58" r="52" fill="#ffe066" opacity=".45" />}
         <svg x={-4} y={-14} width={108} height={124} viewBox={`${(cw - vw) / 2} ${character * ch + y0} ${vw} ${y1 - y0}`} preserveAspectRatio="xMidYMax meet" opacity={expression === "triste" ? 0.75 : 1}>
           <image href={image} width={cw * SHEET_COLS} height={ch * CHARACTERS.length} />
         </svg>
@@ -54,7 +53,6 @@ export default function Marciano({ avatar, expression = "normal", size = 64, cla
         {title && <title>{title}</title>}
         <ellipse cx="50" cy="108" rx="30" ry="5" fill="#000" opacity=".25" />
         {expression === "abducido" && <circle cx="50" cy="58" r="52" fill="#f15bb5" opacity=".25" />}
-        {expression === "euforico" && <circle cx="50" cy="58" r="52" fill="#ffe066" opacity=".45" />}
         <image href={art} x={-4} y={-14} width={108} height={124} preserveAspectRatio="xMidYMax meet" opacity={expression === "triste" ? 0.75 : 1} />
       </svg>
     );
@@ -80,7 +78,6 @@ export default function Marciano({ avatar, expression = "normal", size = 64, cla
 
       <ellipse cx="50" cy="108" rx="30" ry="5" fill="#000" opacity=".25" />
       {expression === "abducido" && <circle cx="50" cy="58" r="52" fill="#f15bb5" opacity=".25" />}
-      {expression === "euforico" && <circle cx="50" cy="58" r="52" fill="#ffe066" opacity=".45" />}
 
       {/* patas y brazos */}
       <ellipse cx="37" cy="100" rx="11" ry="7" fill={dark} stroke={INK} strokeWidth="4" />
