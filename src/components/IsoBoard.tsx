@@ -302,7 +302,7 @@ function Token({ t, z, k, sheet, scale, current, winner, flying }: { t: TokenDat
   const charH = size * CHARACTER_HEIGHT * scale;
   const h = charH * sheet.span;
   const w = (h * sheet.cw) / sheet.ch;
-  const top = sprite ? charH * 1.12 : size * 1.08; // dónde va el nombre, por encima de la cabeza
+  const top = sprite ? charH * 1.03 : size * 1.0; // dónde va el nombre, por encima de la cabeza
   return (
     <div
       className="pointer-events-none absolute top-0 left-0"

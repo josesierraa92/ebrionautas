@@ -263,7 +263,7 @@ export class LiveBoard {
     const w = this.labels.clientWidth || 1;
     const tilePx = w / this.layout.tvView.tiles; // ancho de una casilla en pantalla
     for (const t of this.tokens.values()) {
-      const p = this.scene.toScreen(t.group.position.clone().add(new THREE.Vector3(0, t.height * 1.15, 0)));
+      const p = this.scene.toScreen(t.group.position.clone().add(new THREE.Vector3(0, t.height * 1.04, 0)));
       t.label.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`;
       t.label.style.fontSize = `${Math.max(12, tilePx * 0.11)}px`;
     }
