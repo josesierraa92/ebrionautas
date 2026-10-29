@@ -167,7 +167,7 @@ describe("casillas", () => {
 
   it("Patinazo: beber de golpe o retroceder", () => {
     const s = rollFrom(game(), 40, 3); // 43
-    expect(act(s, { type: "PATINAZO", choice: "drink" }).players[0].drunk).toBe(4);
+    expect(act(s, { type: "PATINAZO", choice: "drink" }).players[0].drunk).toBe(2); // siempre 2 vasos
     expect(act(s, { type: "PATINAZO", choice: "back" }).players[0].pos).toBe(12);
   });
 

@@ -58,7 +58,7 @@ export const TILE_NAMES: Record<Tile["type"], string> = {
   HIPNOSIS: "Poseído",
   CARCEL: "Purgatorio",
   MUERTE: "La Fosa",
-  PATINAZO: "Tropiezo con la lápida",
+  PATINAZO: "Tropiezo de lápida",
   POSICION: "Juicio de los vivos",
   RASGO: "Juicio de los vivos",
   ESCLAVO: "Pacto de Sangre",
@@ -114,7 +114,7 @@ export const BOARD: Tile[] = [
   { n: 40, type: "RETO", title: "Corleone", text: "Quien tenga un pariente en la mesa bebe 3 vasos.", drinks: 3 },
   { n: 41, type: "REGLA" },
   { n: 42, type: "RETO", title: "Tardones", text: "Quien no tenga el vaso vacío se lo termina y bebe otro.", drinks: 1 },
-  { n: 43, type: "PATINAZO", drinks: 4, backTo: 12 },
+  { n: 43, type: "PATINAZO", drinks: 2, backTo: 12 },
   // TODO validar texto exacto de la casilla 44
   { n: 44, type: "RETO", title: "Descuido", text: "Quien no lleve condón encima bebe 1 vaso.", drinks: 1 },
   { n: 45, type: "CARCEL" },
@@ -130,7 +130,7 @@ export const BOARD: Tile[] = [
   { n: 54, type: "RASGO", traits: ["mascota"], drinks: 1, title: "Zoofílicos" },
   { n: 55, type: "POSADA" },
   // TODO validar bebida y destino de la casilla 56
-  { n: 56, type: "PATINAZO", drinks: 3, backTo: 31 },
+  { n: 56, type: "PATINAZO", drinks: 2, backTo: 31 },
   { n: 57, type: "HIPNOSIS" },
   { n: 58, type: "OCA", next: null },
   { n: 59, type: "A_BEBER", amount: 6 },

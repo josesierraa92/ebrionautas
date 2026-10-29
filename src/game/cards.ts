@@ -28,6 +28,14 @@ const LEGACY: Record<string, { title?: string[]; text?: string[] }> = {
   OCA: { text: ["{nombre} bebe 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!»; {destino} y vuelve a tirar."] },
   CULTURAL: { text: ["Sale una categoría. Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso."] },
   A_BEBER: { title: ["¡Ronda de mezcal!", "Ronda de mezcal"] },
+  PATINAZO: {
+    title: ["Tropiezo con la lápida"],
+    text: [
+      "{nombre} tropieza con una lápida. Para no caerse elige: bebe {vasos} de golpe o rueda hasta la casilla {casilla}.",
+      "{nombre} tropieza con una lápida. Para no caerse elige: bebe 3 vasos de golpe o vuelva hasta la casilla {casilla}.",
+      "{nombre} tropieza con una lápida. Para no caerse elige: bebe 3 vasos de golpe o rueda hasta la casilla {casilla}.",
+    ],
+  },
 };
 
 const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?: string }> = {
@@ -51,7 +59,7 @@ const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?:
   MUERTE: { vars: [NOMBRE], defaults: { title: TILE_NAMES.MUERTE, text: "¡Qué mala suerte! {nombre} cae en La Fosa y tiene que volver a empezar desde medianoche (casilla 1)." } },
   PATINAZO: {
     vars: [NOMBRE, VASOS, { name: "casilla", about: "a qué casilla rueda" }],
-    defaults: { title: TILE_NAMES.PATINAZO, text: "{nombre} tropieza con una lápida. Para no caerse elige: bebe {vasos} de golpe o rueda hasta la casilla {casilla}." },
+    defaults: { title: TILE_NAMES.PATINAZO, text: "{nombre} tropieza con una lápida. Para no caerse elige: bebe {vasos} seguidos o rueda hasta la casilla {casilla}." },
   },
   ESCLAVO: { vars: [NOMBRE], defaults: { title: TILE_NAMES.ESCLAVO, text: "{nombre} firma un Pacto de Sangre con otro jugador: cada vez que {nombre} beba, su pactado bebe lo mismo. Dura hasta que otro caiga en esta casilla." } },
 };

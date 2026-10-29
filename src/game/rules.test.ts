@@ -27,7 +27,7 @@ describe("textos de las tarjetas", () => {
     expect(tileRule(7, game, "p1").text).toBe("Ana reta hasta a 1 rival. Uno a uno tiran el dado: quien saque menos bebe 1 vaso. Si empatan, se repite.");
     expect(tileRule(8, game, "p1").text).toContain("volar hasta la casilla 18 y volver a tirar");
     expect(tileRule(58, game, "p1").text).toContain("volver a tirar (es el último murciélago)");
-    expect(tileRule(43, game, "p1").text).toContain("bebe 4 vasos de golpe o rueda hasta la casilla 12.");
+    expect(tileRule(43, game, "p1").text).toContain("bebe 2 vasos seguidos o rueda hasta la casilla 12.");
     expect(tileRule(3, game, "p1")).toEqual({ title: "Cegatos", text: "Juicio de los vivos: beben 1 vaso quienes lleven gafas o lentillas." });
     expect(tileRule(12, game, "p1").text).toContain("por detrás de Ana. Esta vez, nadie.");
     expect(tileRule(15, game, "p1").text).toBe("Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos.");
@@ -59,6 +59,8 @@ describe("textos viejos guardados en el editor", () => {
       A_BEBER: { title: "¡Ronda de mezcal!" },
     });
     expect(old).toEqual({});
+    // el texto del tropiezo con «3 vasos» que quedó guardado ya no cuenta: ahora son siempre 2
+    expect(parseCardOverrides({ PATINAZO: { text: "{nombre} tropieza con una lápida. Para no caerse elige: bebe 3 vasos de golpe o vuelva hasta la casilla {casilla}." } })).toEqual({});
     const edited = parseCardOverrides({ OCA: { text: "Mi texto propio {nombre}" } });
     expect(edited.OCA?.text).toBe("Mi texto propio {nombre}");
   });
@@ -73,4 +75,3 @@ describe("Duelo: a cuántos rivales se puede retar", () => {
     expect(tileRule(7, cuatro, "p1").text).toContain("reta hasta a 1 rival.");
   });
 });
-
