@@ -66,6 +66,7 @@ export class LiveBoard {
     this.scene = new EditorScene(container, { onStroke: () => undefined, onStrokeEnd: () => undefined, onSelect: () => undefined, onObjectsEdited: () => undefined, onStamp: () => undefined }, { viewer: true });
     this.scene.modelUrl = modelUrl;
     this.scene.onFrame = (dt) => this.frame(dt);
+    this.scene.onAfterFrame = () => this.placeLabels();
     // sombra suave bajo los pies (las sombras del escenario están congeladas: los zombis no las proyectan)
     const c = document.createElement("canvas");
     c.width = c.height = 64;
@@ -221,8 +222,6 @@ export class LiveBoard {
 
   private frame(dt: number) {
     this.frames++;
-    const w = this.labels.clientWidth || 1;
-    const tilePx = w / this.layout.tvView.tiles; // ancho de una casilla en pantalla
     for (const t of this.tokens.values()) {
       const moving = t.t < 1;
       if (moving) {
@@ -256,7 +255,14 @@ export class LiveBoard {
       t.yaw += d * (1 - Math.exp(-dt * 12));
       t.group.rotation.y = t.yaw;
       t.mixer.update(dt * (walking ? 1.4 : 1));
-      // nombre encima de la cabeza
+    }
+  }
+
+  /** Nombre encima de la cabeza, con la cámara ya colocada en este fotograma. */
+  private placeLabels() {
+    const w = this.labels.clientWidth || 1;
+    const tilePx = w / this.layout.tvView.tiles; // ancho de una casilla en pantalla
+    for (const t of this.tokens.values()) {
       const p = this.scene.toScreen(t.group.position.clone().add(new THREE.Vector3(0, t.height * 1.15, 0)));
       t.label.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`;
       t.label.style.fontSize = `${Math.max(12, tilePx * 0.11)}px`;

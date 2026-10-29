@@ -122,6 +122,8 @@ export class EditorScene {
   private lookGoal = new THREE.Vector3();
   /** Se llama en cada fotograma del visor con los segundos desde el anterior (para animar las fichas). */
   onFrame: ((dt: number) => void) | null = null;
+  /** Visor: después de dibujar, con la cámara ya colocada (para lo que se pone en HTML encima). */
+  onAfterFrame: (() => void) | null = null;
 
   constructor(
     private container: HTMLElement,
@@ -256,6 +258,9 @@ export class EditorScene {
         this.placeViewerCamera();
         this.updateViewerLights(dt);
         this.renderer.render(this.scene, this.camera);
+        // lo que va en HTML encima (los nombres) se coloca con la cámara de ESTE fotograma: antes iba con la del anterior y,
+        // mientras la cámara se desplazaba, el nombre se quedaba atrás del personaje y luego volvía
+        this.onAfterFrame?.();
       };
       this.frame = requestAnimationFrame(viewLoop);
       return;
@@ -283,6 +288,7 @@ export class EditorScene {
     this.resizeObs.disconnect();
     window.removeEventListener("pointerup", this.onPointerUp);
     this.onFrame = null;
+    this.onAfterFrame = null;
     this.gizmo.dispose();
     this.orbit.dispose();
     this.renderer.dispose();
