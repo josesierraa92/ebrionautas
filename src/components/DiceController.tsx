@@ -126,7 +126,7 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
     const duel = duelOutcome(game);
     if (!duel || !game.lastDuel) return;
     const by = game.lastDuel.by;
-    setCard({ key: -game.lastDuel.seq, n: game.players.find((p) => p.id === by)?.pos ?? 0, playerId: by, result: { good: false, icon: "🔫", ...duel } });
+    setCard({ key: -game.lastDuel.seq, n: game.players.find((p) => p.id === by)?.pos ?? 0, playerId: by, result: { good: false, tileIcon: true, ...duel } });
     navigator.vibrate?.([40, 60, 40]);
   }, [game]);
 

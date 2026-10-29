@@ -99,7 +99,7 @@ export function cardContent(game: GameState, n: number, playerId: string, result
           ? 1
           : decision?.kind === "PATINAZO"
           ? decision.drinks
-          : result && !result.good && !result.icon
+          : result && !result.good && !result.tileIcon
             ? (result.drinks ?? 1)
             : "drinks" in tile
               ? tile.drinks
@@ -109,7 +109,7 @@ export function cardContent(game: GameState, n: number, playerId: string, result
   // Encabezado claro (dado, gasolinera…): el texto pequeño va oscuro para que se lea.
   const light = !result && !TILE_STYLE[tile.type].dark;
   const accent = result ? (result.good ? "#5cd23c" : "#ffc61a") : TILE_ACCENT[tile.type];
-  const icon = result ? null : DEFAULT_ICON[tile.type];
+  const icon = result && !result.tileIcon ? null : DEFAULT_ICON[tile.type]; // el resultado del duelo lleva el icono de su casilla
   return { player, style, decision, rule, drinks, light, accent, icon, emoji: style.icon };
 }
 

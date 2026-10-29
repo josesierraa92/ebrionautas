@@ -23,7 +23,7 @@ export type DiceFx = { key: number; value: number; rolling: boolean; by?: string
  * hasta la siguiente tirada para que dé tiempo a leerla. `result`: lo que pasó al tirar
  * sin moverse (perdido en la niebla: se salvó o bebe; purgatorio: cuánto bebe para salir).
  */
-export type Landed = { key: number; n: number; playerId: string; result?: { good: boolean; title: string; text: string; drinks?: number; icon?: string } };
+export type Landed = { key: number; n: number; playerId: string; result?: { good: boolean; title: string; text: string; drinks?: number; icon?: string; /** Enseña el icono de la casilla (duelo) en vez de uno propio del resultado. */ tileIcon?: boolean } };
 
 /** Título grande y sonido según la casilla donde cae la ficha. */
 const EVENTS: Partial<Record<Tile["type"], { title: string; emoji: string; color: string; sound: keyof typeof sfx }>> = {
@@ -173,7 +173,7 @@ export function useGameFx(game: GameState | null) {
     const duel = game.lastDuel && game.lastDuel.seq !== before.lastDuel?.seq ? duelOutcome(game) : null;
     if (duel) {
       const key = ++seq.current;
-      setLanded({ key, n: game.players.find((p) => p.id === game.lastDuel!.by)!.pos, playerId: game.lastDuel!.by, result: { good: false, icon: "🔫", ...duel } });
+      setLanded({ key, n: game.players.find((p) => p.id === game.lastDuel!.by)!.pos, playerId: game.lastDuel!.by, result: { good: false, tileIcon: true, ...duel } });
       // y un título grande con quién pierde (y bebe), para que no se pierda en la tarjeta pequeña
       const names = [...new Set(game.lastDuel!.rounds.map((r) => game.players.find((q) => q.id === r.loser)?.name ?? "?"))];
       const bkey = ++seq.current;
