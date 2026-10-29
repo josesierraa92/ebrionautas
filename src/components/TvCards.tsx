@@ -156,11 +156,11 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
     <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center max-md:top-16 max-md:scale-90 max-md:origin-top-left">
       <div
         className="relative z-10 -mr-5 grid shrink-0 place-items-center overflow-hidden rounded-2xl border-[4px] border-ink"
-        style={{ width: 84, height: 84, background: "radial-gradient(circle at 50% 35%, #8a58e0, #4a2a94 60%, #2d1460)", boxShadow: `0 0 0 3px ${color}, 0 5px 0 3px ${color}, 0 8px 14px rgba(0,0,0,.45)` }}
+        style={{ width: 84, height: 84, background: "radial-gradient(circle at 50% 35%, #8a58e0, #4a2a94 60%, #2d1460)", boxShadow: `0 0 0 3px ${color}, 0 6px 12px rgba(0,0,0,.45)` }}
       >
         <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={62} character={characterOf(game.players, who.id)} />
       </div>
-      <div className="relative -skew-x-6 overflow-hidden rounded-xl border-[4px] border-[#1a0b38] bg-[#2d1460]/95 py-2 pr-7 pl-9 shadow-[0_6px_0_#1a0b38,0_10px_16px_rgba(0,0,0,.45)]">
+      <div className="relative -skew-x-6 overflow-hidden rounded-xl border-[4px] border-[#1a0b38] bg-[#2d1460]/95 py-2 pr-7 pl-9 shadow-[0_6px_12px_rgba(0,0,0,.45)]">
         <div className="skew-x-6">
           <p className="relative top-[3px] font-display text-sm leading-none tracking-wider text-[#bffa58] uppercase">
             {winner ? "¡Ganador!" : "Turno de"}
