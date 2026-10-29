@@ -156,7 +156,7 @@ export function TurnChip({ game, moving = false }: { game: GameState; moving?: b
     <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center max-md:top-16 max-md:scale-90 max-md:origin-top-left">
       <div
         className="relative z-10 -mr-5 grid shrink-0 place-items-center overflow-hidden rounded-2xl border-[4px] border-ink"
-        style={{ width: 84, height: 84, background: "radial-gradient(circle at 50% 35%, #8a58e0, #4a2a94 60%, #2d1460)", boxShadow: `0 0 0 5px ${color}, 0 6px 12px rgba(0,0,0,.45)` }}
+        style={{ width: 84, height: 84, background: "linear-gradient(180deg, #4a2a94 0%, #2d1460 55%, #1a0b38 100%)", boxShadow: `0 0 0 5px ${color}, 0 6px 12px rgba(0,0,0,.45)` }}
       >
         <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={62} character={characterOf(game.players, who.id)} />
       </div>
