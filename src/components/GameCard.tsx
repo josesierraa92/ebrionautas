@@ -49,7 +49,7 @@ export default function GameCard({
             <div className="shrink-0" style={{ width: u(4), aspectRatio: "1", borderRadius: u(1), background: "#1a0b38", padding: u(0.2) }}>
               <div className="grid h-full w-full place-items-center" style={{ borderRadius: u(0.8), background: GREEN }}>
                 {mask ? (
-                  <div style={{ width: "74%", aspectRatio: "1", background: "#14260a", ...maskStyle(mask) }} />
+                  <div style={{ width: "98%", aspectRatio: "1", background: "#14260a", ...maskStyle(mask) }} />
                 ) : (
                   <span className="leading-none" style={{ fontSize: u(2.2) }}>
                     {emoji === "🍷" ? <BeerIcon size="1em" /> : emoji}
@@ -78,7 +78,7 @@ export default function GameCard({
       </div>
       {/* pastilla «CASILLA N» arriba en el centro, montada sobre el borde */}
       <div className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-display uppercase" style={{ padding: `${u(0.2)} ${u(1)}`, borderRadius: u(9), background: GREEN, color: "#14260a", fontSize: u(0.95), letterSpacing: "0.04em", boxShadow: `0 0 0 ${u(0.18)} #1a0b38` }}>
-        {kicker}
+        <Kicker text={kicker} />
       </div>
     </div>
   );
@@ -115,3 +115,17 @@ function titleSize(title: string) {
   const perLine = Math.ceil(title.length / 2) + 1;
   return Math.max(1.2, Math.min(2.2, 11 / (0.6 * perLine)));
 }
+
+/** «Casilla 48 · Vane»: la palabra con el color de la pastilla y el número en blanco (con un filo oscuro para que se lea sobre el verde). */
+function Kicker({ text }: { text: string }) {
+  const m = /^(\D*?)(\d+)(.*)$/.exec(text);
+  if (!m) return <>{text}</>;
+  return (
+    <>
+      {m[1]}
+      <span style={{ color: "#fff", textShadow: "0 0 0.12em #14260a, 0 0.06em 0 #14260a, 0.06em 0 0 #14260a, -0.06em 0 0 #14260a, 0 -0.06em 0 #14260a" }}>{m[2]}</span>
+      {m[3]}
+    </>
+  );
+}
+
