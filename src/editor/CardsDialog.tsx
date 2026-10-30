@@ -122,6 +122,19 @@ export default function CardsDialog({ adminKey, onClose, onStatus: reportStatus 
     }
   };
 
+  // cartas de serie que no están en la lista (las borró el admin, o se guardó una lista mala): se enseñan y se pueden recuperar con un clic
+  const lineKey = (x: string) => x.replace(/\s+/g, " ").trim().toLowerCase();
+  const missingOf = (box: (typeof LIST_BOXES)[number]) => {
+    if (!savedLists) return []; // todavía cargando
+    const have = new Set(listsText[box.kind].split("\n").map(lineKey));
+    return box.defaults.filter((d) => !have.has(lineKey(d)));
+  };
+  const restoreMissing = (box: (typeof LIST_BOXES)[number]) => {
+    const missing = missingOf(box);
+    setListsText((t) => ({ ...t, [box.kind]: [...t[box.kind].split("\n").filter((l) => l.trim()), ...missing].join("\n") }));
+    onStatus(`Recuperé ${missing.length} carta(s) de serie en «${box.title.replace(/^\S+\s/, "")}». Pulsa «Guardar» para dejarlas.`);
+  };
+
   const changed = saved !== null && (JSON.stringify(parseCardOverrides(draft)) !== JSON.stringify(saved) || JSON.stringify(lists) !== JSON.stringify(savedLists));
   const set = (key: string, field: "title" | "text", value: string) => setDraft((d) => ({ ...d, [key]: { ...d[key], [field]: value } }));
   const reset = (key: string) =>
@@ -206,12 +219,17 @@ export default function CardsDialog({ adminKey, onClose, onStatus: reportStatus 
                   <span className="text-xs opacity-70">
                     {lists[box.kind].length} {box.unit} · {box.about}
                   </span>
+                  {missingOf(box).length > 0 && (
+                    <button className="ml-auto rounded-md bg-amber-400/20 px-2 py-0.5 text-xs text-amber-200 hover:bg-amber-400/30" onClick={() => restoreMissing(box)} title={missingOf(box).join("\n")}>
+                      ♻️ Faltan {missingOf(box).length} de serie · recuperar
+                    </button>
+                  )}
                   {box.kind === "retos" && (
-                    <button className="ml-auto text-xs text-emerald-300 underline" onClick={recoverOldRetos}>
+                    <button className={`${missingOf(box).length ? "" : "ml-auto "}text-xs text-emerald-300 underline`} onClick={recoverOldRetos}>
                       ♻️ Recuperar mis retos de antes
                     </button>
                   )}
-                  <button className={`${box.kind === "retos" ? "" : "ml-auto "}text-xs text-amber-300 underline`} onClick={() => setListsText((t) => ({ ...t, [box.kind]: box.defaults.join("\n") }))}>
+                  <button className={`${box.kind === "retos" || missingOf(box).length ? "" : "ml-auto "}text-xs text-amber-300 underline`} onClick={() => setListsText((t) => ({ ...t, [box.kind]: box.defaults.join("\n") }))}>
                     Volver a las de serie
                   </button>
                 </div>
