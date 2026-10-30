@@ -55,7 +55,13 @@ const LIST_BOXES: { kind: keyof ContentLists; title: string; unit: string; about
   { kind: "twisters", title: "👅 Trabalenguas de Lenguados", unit: "trabalenguas", about: "al caer en Lenguados sale uno al azar y se añade a la tarjeta", defaults: DEFAULT_TWISTERS, placeholder: "Un trabalenguas por línea", max: 240 },
 ];
 
-export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey: () => string; onClose: () => void; onStatus: (msg: string) => void }) {
+export default function CardsDialog({ adminKey, onClose, onStatus: reportStatus }: { adminKey: () => string; onClose: () => void; onStatus: (msg: string) => void }) {
+  // los avisos salen también DENTRO del diálogo: la barra de estado del editor queda detrás del fondo oscuro y no se veía
+  const [note, setNote] = useState<{ text: string; bad: boolean } | null>(null);
+  const onStatus = (msg: string) => {
+    setNote({ text: msg, bad: /no se pud|no encontr|error|falta/i.test(msg) });
+    reportStatus(msg);
+  };
   const [saved, setSaved] = useState<CardOverrides | null>(null);
   const [draft, setDraft] = useState<CardOverrides>({});
   const [search, setSearch] = useState("");
@@ -176,6 +182,14 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
             Cerrar
           </button>
         </div>
+        {note && (
+          <div className={`flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${note.bad ? "bg-rose-500/20 text-rose-200" : "bg-emerald-500/20 text-emerald-200"}`} role="status">
+            <span className="flex-1">{note.text}</span>
+            <button className="opacity-70 hover:opacity-100" onClick={() => setNote(null)} aria-label="Quitar aviso">
+              ✕
+            </button>
+          </div>
+        )}
         <p className="text-sm opacity-70">
           Aquí está cada tarjeta una sola vez (las casillas que comparten tarjeta salen juntas). Edita el título y el texto como quieras: es el
           mismo texto que sale en el juego. Lo único que va entre llaves, como <code className="rounded bg-white/10 px-1">{"{nombre}"}</code>,

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { newLayout } from "@/editor/layout";
-import { loadCardTexts, saveCardTexts, checkAdmin, loadDesign, loadDevImage, loadDevToken, loadPublished, loadPublishedLayout, publishBoard, saveDesign, unpublishBoard } from "./boardDesign";
-import { resetMemoryStore } from "./store";
+import { loadCardTexts, loadLegacyRetos, saveCardTexts, checkAdmin, loadDesign, loadDevImage, loadDevToken, loadPublished, loadPublishedLayout, publishBoard, saveDesign, unpublishBoard } from "./boardDesign";
+import { getStore, resetMemoryStore } from "./store";
 
 describe("diseño del tablero en el servidor", () => {
   beforeEach(() => {
@@ -101,5 +101,22 @@ describe("diseño del tablero en el servidor", () => {
     const shot = { image: "data:image/webp;base64,UklGRg==", width: 1000, height: 800, cell: 40, bg: "#112233", tiles };
     await expect(publishBoard(shot)).rejects.toThrow("62");
     await expect(publishBoard({ ...shot, tiles: [...tiles, { x: 1, y: 1 }], image: "javascript:alert(1)" })).rejects.toThrow("imagen");
+  });
+});
+
+describe("recuperar los textos de reto de antes de agruparlos", () => {
+  beforeEach(() => resetMemoryStore());
+
+  it("los encuentra en lo guardado y no los pierde al guardar de nuevo", async () => {
+    await getStore().set("cards:custom", JSON.stringify({ "RETO:Cómicos": { text: "Cuenta tu peor cita." }, "RETO:Corleone": { title: "Solo título" }, A_BEBER: { title: "¡Salud!" } }), 100);
+    expect(await loadLegacyRetos()).toEqual([{ title: "Cómicos", text: "Cuenta tu peor cita." }]);
+    // el admin guarda otra cosa en el editor: lo de antes se aparta y se puede seguir recuperando
+    await saveCardTexts({ A_BEBER: { title: "¡Salud!" } });
+    expect(await loadLegacyRetos()).toEqual([{ title: "Cómicos", text: "Cuenta tu peor cita." }]);
+    expect((await loadCardTexts()).A_BEBER?.title).toBe("¡Salud!");
+  });
+
+  it("sin nada guardado de antes devuelve una lista vacía", async () => {
+    expect(await loadLegacyRetos()).toEqual([]);
   });
 });
