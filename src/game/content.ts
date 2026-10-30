@@ -210,7 +210,7 @@ export const DEFAULT_RONDA = [
   "Por toda esta ronda, todos beben con la mano contraria a la que usan siempre. Quien lo olvide, bebe.",
   "Por toda esta ronda, nadie puede decir nombres propios: a todos se les llama «tú». Quien diga un nombre, bebe.",
   "Por toda esta ronda, nadie puede tocarse la cara. Quien lo haga, bebe.",
-  "Por toda esta ronda, nadie puede decir groserías. Quien lo haga, bebe.",
+  "Por toda esta ronda, quien diga una mala palabra bebe.",
   "Por toda esta ronda, todos hablan en tercera persona (por ejemplo: «Ana quiere un trago»). Quien hable en primera persona, bebe.",
   "Por toda esta ronda, cada vez que alguien beba, todos tienen que brindar. Quien no brinde, bebe.",
   "Por toda esta ronda, está prohibido usar el celular. Quien lo use, bebe.",
