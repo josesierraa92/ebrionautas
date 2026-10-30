@@ -38,7 +38,9 @@ async function load(kind: keyof ContentLists): Promise<string[]> {
     const data = JSON.parse(raw) as unknown;
     if (data && !Array.isArray(data) && (data as { v?: unknown }).v === SAVE_VERSION) {
       const { added, removed } = data as { added?: unknown; removed?: unknown };
-      return merge(kind, PARSE[kind](Array.isArray(added) ? added : []), Array.isArray(removed) ? (removed as string[]) : []);
+      // ojo: `PARSE` devuelve la lista de serie cuando queda vacía, y aquí «sin añadidos» es vacío de verdad
+      const add = Array.isArray(added) && added.length ? PARSE[kind](added) : [];
+      return merge(kind, add, Array.isArray(removed) ? (removed as string[]) : []);
     }
     // formato viejo: la lista entera. Lo que no está en la de hoy y fue alguna vez de serie era una carta quitada o movida: no cuenta como añadida.
     const items = PARSE[kind](Array.isArray(data) ? data : (data as { items?: unknown }).items);

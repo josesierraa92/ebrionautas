@@ -23,6 +23,17 @@ describe("listas editables guardadas como diferencia", () => {
     expect(raw).toMatchObject({ v: 4, added: ["Mi reto propio."], removed: [DEFAULT_RETOS[0]] });
   });
 
+  it("borrar sin añadir nada se queda borrado (antes volvía a aparecer)", async () => {
+    const sinUno = DEFAULT_RETOS.filter((x) => x !== DEFAULT_RETOS[3]);
+    await saveLists({ retos: sinUno });
+    const l = await loadLists();
+    expect(l.retos).toEqual(sinUno);
+    expect(l.retos).not.toContain(DEFAULT_RETOS[3]);
+    // y lo mismo si borra varias líneas de otra lista
+    await saveLists({ juicio: DEFAULT_JUICIO.slice(5) });
+    expect((await loadLists()).juicio).toEqual(DEFAULT_JUICIO.slice(5));
+  });
+
   it("guardar la lista de serie tal cual no deja nada fijado (los cambios del código siguen llegando)", async () => {
     await saveLists({ juicio: DEFAULT_JUICIO });
     const raw = JSON.parse((await getStore().get("cards:juicio"))!);
