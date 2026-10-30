@@ -225,7 +225,7 @@ function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { 
   const accent = first ? TILE_ACCENT[first.type] : def.key === RESULT_KEYS.mazeOk ? "#5cd23c" : "#ffc61a";
   const icon = first ? DEFAULT_ICON[first.type] : null;
   const emoji = first ? undefined : def.key === RESULT_KEYS.mazeOk ? "✨" : def.key === RESULT_KEYS.jail ? "🔓" : def.key.startsWith("RESULTADO:purgatorio") ? "🔥" : "🍷";
-  const kind = first && (first.type === "RASGO" ? "Rasgo" : first.type === "POSICION" ? "Posición" : first.type === "RETO" ? "Reto" : null);
+  const kind = first && (first.type === "RASGO" ? "Carta al azar" : first.type === "RETO" ? "Reto" : null);
   // vista previa: tal como sale en el juego, con los huecos rellenados con una partida de ejemplo
   const preview = (x: string) => fillCard(x, vars);
   return (

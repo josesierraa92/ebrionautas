@@ -19,7 +19,6 @@ export type Tile =
   | { n: number; type: "CARCEL" }
   | { n: number; type: "MUERTE" }
   | { n: number; type: "PATINAZO"; drinks: number; backTo: number }
-  | { n: number; type: "POSICION"; who: "detras" | "delante"; drinks: number; title: string }
   | { n: number; type: "RASGO" }
   | { n: number; type: "ESCLAVO" }
   | { n: number; type: "RETO"; title: string; text: string; drinks: number; twister?: boolean; nickname?: boolean };
@@ -43,7 +42,6 @@ export const TILE_NAMES: Record<Tile["type"], string> = {
   CARCEL: "Purgatorio",
   MUERTE: "La Fosa",
   PATINAZO: "Tropiezo de lápida",
-  POSICION: "Juicio de los vivos",
   RASGO: "Juicio de los vivos",
   ESCLAVO: "Pacto de Sangre",
   RETO: "Reto del Más Allá",
@@ -63,7 +61,7 @@ export const BOARD: Tile[] = [
   { n: 9, type: "LABERINTO" },
   { n: 10, type: "REGLA" },
   { n: 11, type: "RASGO" },
-  { n: 12, type: "POSICION", who: "detras", drinks: 1, title: "Pa' los de atrás" },
+  { n: 12, type: "RASGO" },
   { n: 13, type: "CULTURAL" },
   { n: 14, type: "RETO", title: "Nuevo apodo", text: "Desde ahora en esta ronda tu nombre es {apodo}. Si alguien se equivoca y te llama de otra forma, toma 1 vaso (se lo suma el celular con «+ Trago»).", drinks: 1, nickname: true },
   { n: 15, type: "RETO", title: "Cómicos", text: "Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos.", drinks: 2 },
@@ -84,7 +82,7 @@ export const BOARD: Tile[] = [
   { n: 28, type: "OCA", next: 38 },
   { n: 29, type: "YO_NUNCA" },
   { n: 30, type: "A_BEBER", amount: 4 },
-  { n: 31, type: "POSICION", who: "delante", drinks: 1, title: "Pa' los de alante" },
+  { n: 31, type: "RASGO" },
   // TODO validar texto exacto de la casilla 32
   { n: 32, type: "RASGO" },
   { n: 33, type: "CULTURAL" },

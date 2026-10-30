@@ -15,7 +15,7 @@ const VASOS: CardVar = { name: "vasos", about: "cuántos vasos (con «vaso»/«v
 
 /** Clave de la tarjeta de una casilla: el tipo, y además el título en las que cada una tiene el suyo. */
 export const cardKeyOf = (t: Tile) =>
-  t.type === "POSICION" || t.type === "RETO" ? `${t.type}:${t.title}` : t.type === "OCA" && !t.next ? "OCA:ultimo" : t.type;
+  t.type === "RETO" ? `${t.type}:${t.title}` : t.type === "OCA" && !t.next ? "OCA:ultimo" : t.type;
 
 /** Tarjetas de resultado (al tirar sin moverse). */
 export const RESULT_KEYS = {
@@ -96,7 +96,6 @@ const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?:
   ESCLAVO: { vars: [NOMBRE], defaults: { title: TILE_NAMES.ESCLAVO, text: "{nombre} firma un Pacto de Sangre con otro jugador: cada vez que {nombre} beba, su pactado bebe lo mismo. Dura una ronda." } },
 };
 
-const POSICION_VARS: CardVar[] = [NOMBRE, VASOS, { name: "lado", about: "«por detrás» o «por delante»" }, { name: "lista", about: "quiénes son («: Ana, Beto.») o «. Esta vez, nadie.»" }];
 
 /** Todas las tarjetas distintas (una por clave, con las casillas que la usan) en el orden del tablero, y las de resultado. */
 export function cardCatalog(): CardDef[] {
@@ -111,8 +110,6 @@ export function cardCatalog(): CardDef[] {
     const base = FIXED[key] ?? FIXED[t.type];
     let def: CardDef;
     if (base) def = { key, label: base.label ?? TILE_NAMES[t.type], tiles: [t.n], vars: base.vars, defaults: base.defaults };
-    else if (t.type === "POSICION")
-      def = { key, label: t.title, tiles: [t.n], vars: POSICION_VARS, defaults: { title: t.title, text: "Beben {vasos} todos los que van {lado} de {nombre}{lista}" } };
     else if (t.type === "RETO")
       def = { key, label: t.title, tiles: [t.n], vars: t.nickname ? [NOMBRE, { name: "apodo", about: "el apodo que salió al azar (la lista se edita arriba)" }] : [], defaults: { title: t.title, text: t.text } };
     else continue;
@@ -132,7 +129,7 @@ export function cardCatalog(): CardDef[] {
 
 /** Grupos con que el editor ordena las tarjetas para reconocerlas mejor (cada tipo de casilla nuevo debe caer en uno). */
 export const CARD_GROUPS = [
-  { id: "juicio", title: "Juicio de los vivos", about: "una carta al azar distinta cada vez (votaciones y «beben todos los que…») o los que van por detrás o por delante", types: ["RASGO", "POSICION"] },
+  { id: "juicio", title: "Juicio de los vivos", about: "una carta al azar distinta cada vez (votaciones y «beben todos los que…»)", types: ["RASGO"] },
   { id: "retos", title: "Retos del Más Allá", about: "retos y pruebas para todos", types: ["RETO"] },
   { id: "ronda", title: "Ronda", about: "efectos que no pasan en el mismo turno: duran toda la ronda (un apodo, una ley, un pacto, un estado…)", types: ["RONDA"] as string[] },
   { id: "decision", title: "Casillas con decisión", about: "quien cae decide o juega algo en el celular", types: ["OCA", "A_BEBER", "DUELO", "CULTURAL", "YO_NUNCA", "REGLA", "ESCLAVO", "PATINAZO"] },

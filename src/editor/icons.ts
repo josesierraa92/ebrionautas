@@ -178,7 +178,6 @@ export const DEFAULT_ICON: Record<TileType, IconName> = {
   CARCEL: "flame",
   MUERTE: "coffin",
   PATINAZO: "crack",
-  POSICION: "eye",
   RASGO: "eye",
   ESCLAVO: "drop",
   RETO: "speech",

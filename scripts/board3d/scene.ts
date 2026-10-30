@@ -190,12 +190,6 @@ function glyphTexture(type: Tile["type"], color: string, hole: string) {
       stroke("M-29 0 A29 9 0 1 0 29 0 A29 9 0 1 0 -29 0", 5);
       g.restore();
       break;
-    case "POSICION":
-      fill(circle(-14, 0, 12));
-      fill(circle(14, 0, 12));
-      fill(circle(-10, 2, 5), hole);
-      fill(circle(18, 2, 5), hole);
-      break;
     case "RASGO":
       stroke(circle(-5, -5, 14));
       stroke("M6 6 L22 22", 9);
@@ -236,7 +230,7 @@ const GLYPH_PLANE = new THREE.PlaneGeometry(0.56, 0.56).rotateX(-Math.PI / 2);
 function tile(type: Tile["type"], x: number, z: number) {
   const g = new THREE.Group();
   const s = TILE_STYLE[type];
-  const colored = !["RETO", "RASGO", "POSICION", "CULTURAL"].includes(type);
+  const colored = !["RETO", "RASGO", "CULTURAL"].includes(type);
   const top = colored ? new THREE.Color(s.bg[0]).lerp(new THREE.Color(s.bg[1]), 0.5) : new THREE.Color(C.cream);
   // símbolo blanco sobre losas de color; sobre las claras (crema, duelo), del color de la casilla o azul tinta
   const light = top.r * 0.3 + top.g * 0.59 + top.b * 0.11 > 0.8;

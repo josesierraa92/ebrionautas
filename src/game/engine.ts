@@ -392,13 +392,6 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       log(s, `🪦 ${p.name} tropieza con una lápida.`);
       return decide(s, { kind: "PATINAZO", drinks: PATINAZO_DRINKS, backTo: tile.backTo });
 
-    case "POSICION": {
-      const targets = others.filter((q) => (tile.who === "detras" ? q.pos < p.pos : q.pos > p.pos));
-      log(s, `👀 ${tile.title}: ${targets.length ? targets.map((q) => q.name).join(", ") : "nadie"} ${targets.length === 1 ? "bebe" : "beben"}.`);
-      for (const q of targets) drink(s, q.id, tile.drinks, p.id);
-      return endTurn(s);
-    }
-
     case "RASGO": {
       // Juicio de los vivos: sale una carta distinta cada vez (votaciones y «beben todos los que…»); quien controla la mesa marca quiénes beben
       const frase = pick(getJuicio(), rng);

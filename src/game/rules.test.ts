@@ -29,7 +29,7 @@ describe("textos de las tarjetas", () => {
     expect(tileRule(58, game, "p1").text).toContain("para volver a tirar: es el último murciélago");
     expect(tileRule(43, game, "p1").text).toContain("bebe 2 vasos seguidos o rueda hasta la casilla 12.");
     expect(tileRule(3, game, "p1").title).toBe("Juicio de los vivos");
-    expect(tileRule(12, game, "p1").text).toContain("por detrás de Ana. Esta vez, nadie.");
+    expect(tileRule(12, game, "p1").title).toBe("Juicio de los vivos");
     expect(tileRule(15, game, "p1").text).toBe("Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos.");
     expect(jailOutcome("Ana", 5).text).toContain("debe 4 vasos");
   });
@@ -47,7 +47,7 @@ describe("textos de las tarjetas", () => {
     expect(new Set(keys).size).toBe(keys.length);
     expect(keys).toContain("A_BEBER");
     expect(keys).toContain("RASGO");
-    expect(cardCatalog().find((c) => c.key === "RASGO")?.tiles).toHaveLength(9);
+    expect(cardCatalog().find((c) => c.key === "RASGO")?.tiles).toHaveLength(11);
     expect(cardCatalog().find((c) => c.key === "A_BEBER")?.tiles).toEqual([6, 30, 59]);
     expect(keys.filter((k) => k.startsWith("RESULTADO"))).toHaveLength(7);
   });
@@ -94,8 +94,6 @@ describe("editor: datos fijos dentro del texto", () => {
   const def = (key: string) => cardCatalog().find((c) => c.key === key)!;
   it("lo que siempre vale lo mismo se enseña escrito; lo que cambia en cada partida, entre llaves", () => {
     expect(staticCardVars(def("RASGO"))).toEqual({}); // la carta cambia en cada partida
-    expect(staticCardVars(def("POSICION:Pa' los de atrás"))).toMatchObject({ vasos: "1 vaso", lado: "por detrás" });
-    expect(Object.keys(staticCardVars(def("POSICION:Pa' los de atrás")))).not.toContain("nombre");
     expect(staticCardVars(def("OCA"))).toEqual({}); // el destino cambia según la casilla
     expect(staticCardVars(def("PATINAZO"))).toEqual({ vasos: "2 vasos" }); // la casilla a la que rueda cambia
     expect(staticCardVars(def("A_BEBER"))).toEqual({}); // los vasos son al azar

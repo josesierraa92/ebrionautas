@@ -66,15 +66,6 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
       return { nombre, casilla: tile.next ?? "", destino: tile.next ? `volar hasta la casilla ${tile.next} y volver a tirar` : "volver a tirar" };
     case "PATINAZO":
       return { nombre, vasos: vasos(tile.drinks), casilla: tile.backTo };
-    case "POSICION": {
-      const others = game.players.filter((q) => q.id !== playerId && (tile.who === "detras" ? q.pos < (p?.pos ?? 0) : q.pos > (p?.pos ?? 0)));
-      return {
-        nombre,
-        vasos: vasos(tile.drinks),
-        lado: tile.who === "detras" ? "por detrás" : "por delante",
-        lista: others.length ? `: ${others.map((q) => q.name).join(", ")}.` : ". Esta vez, nadie.",
-      };
-    }
     case "RASGO":
       return { nombre, frase: game.juicio ?? "…" };
     case "CULTURAL":

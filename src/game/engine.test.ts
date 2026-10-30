@@ -69,15 +69,6 @@ describe("casillas", () => {
     expect(s.turn).toBe(1);
   });
 
-  it("Pa' los de atrás: beben los que están detrás", () => {
-    let s = game();
-    s.players[1].pos = 5;
-    s.players[2].pos = 20;
-    s = rollFrom(s, 10, 2); // 12
-    expect(s.players[1].drunk).toBe(1);
-    expect(s.players[2].drunk).toBe(0);
-  });
-
   it("Trago de regalo: reparte de 1 a 3 vasos al azar, exactamente la cantidad", () => {
     for (const [die, amount] of [[1, 1], [3, 2], [6, 3]] as const) {
       const s = rollFrom(game(), 4, 2, die); // casilla 6
