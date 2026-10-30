@@ -421,14 +421,18 @@ describe("Yo nunca", () => {
     expect(BOARD.filter((t) => t.type === "DUELO").map((t) => t.n)).toEqual([19, 47]);
   });
 
-  it("al caer sale una frase de la lista vigente y beben los que la marquen", () => {
+  it("es individual: quien cae dice si lo hizo y solo él bebe", () => {
     setNunca(["Yo nunca he probado la frase de prueba."]);
     try {
-      let s = rollFrom(game(), 5, 2, 1); // 7
+      const s = rollFrom(game(), 5, 2, 1); // 7
       expect(s.nunca).toBe("Yo nunca he probado la frase de prueba.");
-      expect(s.decision).toMatchObject({ kind: "SELECT_DRINKERS", drinks: 1, text: expect.stringContaining("frase de prueba") });
-      s = act(s, { type: "SELECT_DRINKERS", ids: ["p1", "p3"] });
-      expect(s.players.map((p) => p.drunk)).toEqual([1, 0, 1]);
+      expect(s.decision).toEqual({ kind: "NUNCA" });
+      const si = act(s, { type: "NUNCA", did: true });
+      expect(si.players.map((p) => p.drunk)).toEqual([1, 0, 0]);
+      expect(si.turn).toBe(1);
+      const no = act(s, { type: "NUNCA", did: false });
+      expect(no.players.map((p) => p.drunk)).toEqual([0, 0, 0]);
+      expect(no.turn).toBe(1);
     } finally {
       setNunca(DEFAULT_NUNCA);
     }

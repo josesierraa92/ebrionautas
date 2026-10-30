@@ -51,6 +51,18 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
         />
       );
 
+    case "NUNCA":
+      return (
+        <Card title={compact ? undefined : "Yo nunca"} text={compact ? undefined : `${me.name}, ¿lo has hecho?`}>
+          <button onClick={() => onAction({ type: "NUNCA", did: true })} className="btn-game bg-btn-red py-3 text-lg text-white">
+            SÍ LO HE HECHO (BEBO 1)
+          </button>
+          <button onClick={() => onAction({ type: "NUNCA", did: false })} className="btn-game bg-btn-green py-3 text-lg text-white">
+            NUNCA LO HE HECHO
+          </button>
+        </Card>
+      );
+
     case "OCA":
       return (
         <Card title={compact ? undefined : "¿Bebes para seguir?"} text={compact ? undefined : decision.next ? `Bebe 1 vaso y vuela hasta la casilla ${decision.next}, y vuelve a tirar. O plántate aquí.` : "Es el último murciélago: bebe 1 vaso y vuelve a tirar, o plántate aquí."}>

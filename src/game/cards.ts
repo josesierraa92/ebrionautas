@@ -45,6 +45,7 @@ const LEGACY: Record<string, { title?: string[]; text?: string[] }> = {
     ],
   },
   CULTURAL: { text: ["Sale una categoría. Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso."] },
+  YO_NUNCA: { text: ["{frase} Beben 1 vaso todos los que sí lo hayan hecho."] },
   A_BEBER: { title: ["¡Ronda de mezcal!", "Ronda de mezcal"] },
   CARCEL: { text: ["{nombre} cae al Purgatorio. En su próximo turno tira el dado para pagar sus pecados: con 1, 2 o 3 bebe 2 vasos; con 4, 5 o 6 bebe 4. Después vuelve a tirar para avanzar. Si otro jugador cae aquí antes, sale gratis."] },
   "RESULTADO:purgatorio": { text: ["{nombre} saca {dado}: bebe {vasos} para pagar sus pecados y sale del Purgatorio. Ahora vuelve a tirar para avanzar."] },
@@ -77,7 +78,7 @@ const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?:
   LABERINTO: { vars: [NOMBRE], defaults: { title: TILE_NAMES.LABERINTO, text: "{nombre} se pierde entre las tumbas y la niebla. En sus turnos tira el dado: con 5 o 6 escapa; si no, bebe 1 vaso y sigue perdido." } },
   REGLA: { vars: [NOMBRE], defaults: { title: TILE_NAMES.REGLA, text: "{nombre} dicta una ley para todos (por ejemplo: prohibido decir «beber»). Dura hasta que alguien ponga otra. Quien la rompa, bebe 1 vaso." } },
   CULTURAL: { vars: [{ name: "categoria", about: "la categoría que salió (al azar entre las de «Categorías»)" }], defaults: { title: TILE_NAMES.CULTURAL, text: "Categoría: «{categoria}». Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso." } },
-  YO_NUNCA: { vars: [{ name: "frase", about: "la frase que salió (al azar entre las de «Frases de Yo nunca»)" }], defaults: { title: TILE_NAMES.YO_NUNCA, text: "{frase} Beben 1 vaso todos los que sí lo hayan hecho." } },
+  YO_NUNCA: { vars: [{ name: "frase", about: "la frase que salió (al azar entre las de «Frases de Yo nunca»)" }], defaults: { title: TILE_NAMES.YO_NUNCA, text: "{frase} Si lo has hecho, bebes 1 vaso." } },
   HIPNOSIS: { vars: [NOMBRE], defaults: { title: TILE_NAMES.HIPNOSIS, text: "Un espíritu posee a {nombre}: hasta su próximo turno, se bebe la mitad de todo lo que beban los demás." } },
   CARCEL: {
     vars: [NOMBRE],

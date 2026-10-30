@@ -40,6 +40,8 @@ export type Decision =
   // Murciélago: quien cae elige si bebe 1 vaso para volar al siguiente murciélago (`next`; null en el último) y volver a tirar, o se planta.
   | { kind: "OCA"; next: number | null }
   | { kind: "RULE" }
+  // Yo nunca (individual): quien cae dice si lo ha hecho; si sí, bebe 1 vaso.
+  | { kind: "NUNCA" }
   // Quien controla la mesa marca quiénes beben.
   | { kind: "SELECT_DRINKERS"; drinks: number; title: string; text: string }
   | { kind: "SLAVE" }
@@ -92,6 +94,7 @@ export type Action =
   | { type: "DUEL_ROLL" }
   | { type: "PATINAZO"; choice: "drink" | "back" }
   | { type: "OCA"; choice: "fly" | "stay" }
+  | { type: "NUNCA"; did: boolean }
   | { type: "SET_RULE" }
   | { type: "SELECT_DRINKERS"; ids: string[] }
   | { type: "CHOOSE_SLAVE"; id: string }
@@ -344,12 +347,7 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       const frase = pick(getNunca(), rng);
       s.nunca = frase; // la tarjeta de la casilla la enseña ({frase})
       log(s, `🤚 Yo nunca: ${frase}`);
-      return decide(s, {
-        kind: "SELECT_DRINKERS",
-        drinks: 1,
-        title: TILE_NAMES.YO_NUNCA,
-        text: `${frase} Beben 1 vaso todos los que sí lo hayan hecho (también ${p.name}).`,
-      });
+      return decide(s, { kind: "NUNCA" });
     }
 
     case "HIPNOSIS":
@@ -470,6 +468,17 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
       return true;
     }
     s.lastDuel = { seq: (s.lastDuel?.seq ?? 0) + 1, by: p.id, rounds: d.rounds };
+    endTurn(s);
+    return true;
+  }
+
+  if (d.kind === "NUNCA" && action.type === "NUNCA") {
+    if (action.did) {
+      log(s, `🤚 ${p.name} sí lo ha hecho y bebe 1 vaso.`);
+      drink(s, p.id, 1, null);
+    } else {
+      log(s, `🤚 ${p.name} nunca lo ha hecho: no bebe.`);
+    }
     endTurn(s);
     return true;
   }
