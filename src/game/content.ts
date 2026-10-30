@@ -200,20 +200,21 @@ export const parseJuicio = (raw: unknown) => cleanList(raw, DEFAULT_JUICIO, 200)
 
 /** Retos de ronda: un efecto que dura toda la ronda (no solo este turno); quien lo rompa bebe 1 vaso. */
 export const DEFAULT_RONDA = [
-  "Nadie puede decir «sí» ni «no».",
-  "Nadie puede señalar con el dedo.",
-  "Todos beben con la mano contraria a la que usan siempre.",
-  "Nadie puede decir nombres propios: a todos se les llama «tú».",
-  "Nadie puede reírse.",
-  "Todos hablan en susurros.",
-  "Nadie puede tocarse la cara.",
-  "Nadie puede decir groserías.",
-  "Todos hablan en tercera persona (por ejemplo: «Ana quiere un trago»).",
-  "Cada vez que alguien beba, todos tienen que brindar.",
-  "Prohibido usar el celular.",
-  "Nadie puede cruzar los brazos ni las piernas.",
-  "Todos tienen que terminar cada frase diciendo «¡salud!».",
-  "Nadie puede decir la palabra «beber» ni «tomar»."
+  "Por toda esta ronda, nadie puede decir la palabra «sí» o «no». Quien lo haga, bebe 1 vaso.",
+  "Por toda esta ronda, está prohibido apuntar con el dedo. Quien señale con el dedo, bebe 1 vaso.",
+  "Desde ahora, cada vez que bebas, tienes que decir «¡Salud amores míos!» o bebes doble.",
+  "Por toda esta ronda, nadie puede reírse. Quien se ría, bebe 1 vaso.",
+  "Por toda esta ronda, todos deben hablar en un tono de voz susurrado. Si hablas normal, bebe 1 vaso.",
+  "Queda prohibido cruzar las piernas o los brazos por el resto de la ronda. Quien lo haga, bebe 1 vaso.",
+  "Por toda esta ronda, todos beben con la mano contraria a la que usan siempre. Quien lo olvide, bebe 1 vaso.",
+  "Por toda esta ronda, nadie puede decir nombres propios: a todos se les llama «tú». Quien diga un nombre, bebe 1 vaso.",
+  "Por toda esta ronda, nadie puede tocarse la cara. Quien lo haga, bebe 1 vaso.",
+  "Por toda esta ronda, nadie puede decir groserías. Quien lo haga, bebe 1 vaso.",
+  "Por toda esta ronda, todos hablan en tercera persona (por ejemplo: «Ana quiere un trago»). Quien hable en primera persona, bebe 1 vaso.",
+  "Por toda esta ronda, cada vez que alguien beba, todos tienen que brindar. Quien no brinde, bebe 1 vaso.",
+  "Por toda esta ronda, está prohibido usar el celular. Quien lo use, bebe 1 vaso.",
+  "Por toda esta ronda, todos tienen que terminar cada frase diciendo «¡salud!». Quien se olvide, bebe 1 vaso.",
+  "Por toda esta ronda, nadie puede decir la palabra «beber» ni «tomar». Quien la diga, bebe 1 vaso.",
 ];
 let ronda: string[] = DEFAULT_RONDA;
 export const getRonda = () => ronda;

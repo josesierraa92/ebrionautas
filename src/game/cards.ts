@@ -44,6 +44,7 @@ const LEGACY: Record<string, { title?: string[]; text?: string[] }> = {
       "{nombre} puede beber 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» para {destino}. Si no quiere, se planta y se queda en esta casilla.",
     ],
   },
+  RONDA: { text: ["{frase} Dura una ronda: hasta que vuelva a tirar {nombre}. Quien lo rompa bebe 1 vaso (se lo suma el celular con «+ Trago»)."] },
   ESCLAVO: { text: ["{nombre} firma un Pacto de Sangre con otro jugador: cada vez que {nombre} beba, su pactado bebe lo mismo. Dura hasta que otro caiga en esta casilla."] },
   RASGO: { text: ["Juicio de los vivos: beben {vasos} {quienes}."] },
   CULTURAL: { text: ["Sale una categoría. Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso."] },
@@ -83,7 +84,7 @@ const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?:
   RETO: { vars: [NOMBRE, { name: "frase", about: "el reto que salió (al azar entre los de «Retos del Más Allá»)" }], defaults: { title: TILE_NAMES.RETO, text: "{frase}" } },
   "RETO:Nuevo apodo": { label: "Nuevo apodo", vars: [NOMBRE, { name: "apodo", about: "el apodo que salió al azar (la lista se edita arriba)" }], defaults: { title: "Nuevo apodo", text: NICKNAME_TEXT } },
   RASGO: { vars: [{ name: "frase", about: "la carta que salió (al azar entre las de «Cartas de Juicio de los vivos»)" }], defaults: { title: TILE_NAMES.RASGO, text: "{frase}" } },
-  RONDA: { vars: [NOMBRE, { name: "frase", about: "el reto que salió (al azar entre los de «Retos de ronda»)" }], defaults: { title: TILE_NAMES.RONDA, text: "{frase} Dura una ronda: hasta que vuelva a tirar {nombre}. Quien lo rompa bebe 1 vaso (se lo suma el celular con «+ Trago»)." } },
+  RONDA: { vars: [NOMBRE, { name: "frase", about: "el reto que salió (al azar entre los de «Retos de ronda»)" }], defaults: { title: TILE_NAMES.RONDA, text: "{frase} Dura una ronda: hasta que vuelva a tirar {nombre}. Los vasos se suman en el celular con «+ Trago»." } },
   YO_NUNCA: { vars: [{ name: "frase", about: "la frase que salió (al azar entre las de «Frases de Yo nunca»)" }], defaults: { title: TILE_NAMES.YO_NUNCA, text: "{frase} Si lo has hecho, bebes 1 vaso." } },
   HIPNOSIS: { vars: [NOMBRE], defaults: { title: TILE_NAMES.HIPNOSIS, text: "Un espíritu posee a {nombre}: hasta su próximo turno, se bebe la mitad de todo lo que beban los demás." } },
   CARCEL: {
