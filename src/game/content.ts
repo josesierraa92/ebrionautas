@@ -182,7 +182,15 @@ export const DEFAULT_JUICIO = [
   "Todos los que tengan un hermano o hermana mayor beben.",
   "Todos los que sean hijo único beben.",
   "Todos los que se llamen con un nombre que empiece por vocal beben.",
-  "Todos los que hayan nacido en un mes con la letra \"R\" (Enero, Febrero, Abril, Septiembre, Octubre, Noviembre, Diciembre) beben."
+  "Todos los que hayan nacido en un mes con la letra \"R\" (Enero, Febrero, Abril, Septiembre, Octubre, Noviembre, Diciembre) beben.",
+  "Todos los que tengan hermanos menores beben.",
+  "Todos los que hayan nacido en un mes par beben.",
+  "Todos los que usen gafas o lentes de contacto beben.",
+  "Todos los que se hayan tomado una taza de café hoy beben.",
+  "Todos los que tengan mascotas en su casa beben.",
+  "La persona que tenga los ojos de color más claro bebe.",
+  "La persona con la risa más contagiosa del grupo bebe.",
+  "La persona que haya llegado de última a la reunión bebe.",
 ];
 let juicio: string[] = DEFAULT_JUICIO;
 export const getJuicio = () => juicio;
@@ -208,6 +216,7 @@ export const DEFAULT_RONDA = [
   "Por toda esta ronda, está prohibido usar el celular. Quien lo use, bebe.",
   "Por toda esta ronda, todos tienen que terminar cada frase diciendo «¡salud!». Quien se olvide, bebe.",
   "Por toda esta ronda, nadie puede decir la palabra «beber» ni «tomar». Quien la diga, bebe.",
+  "Quítate los zapatos y pásalos a la persona de la derecha durante una ronda completa. Quien se los vuelva a poner antes de tiempo, bebe.",
   "Por toda esta ronda, cada vez que alguien diga tu nombre, debes ladrar como un perro. Quien no ladre, bebe.",
 ];
 let ronda: string[] = DEFAULT_RONDA;
@@ -226,6 +235,8 @@ export const DEFAULT_RETOS = [
   "Quien tenga un pariente en la mesa bebe.",
   "Pon un poco de licor en la mano del jugador de la derecha y bébelo como si fueras un perrito.",
   "Te bebes lo que les queda en el vaso a tus compañeros.",
+  "Haz tu mejor imitación de un famoso o de alguien conocido en la mesa. Si nadie adivina quién es en 10 segundos, bebes.",
+  "¡Ruleta rusa! Todos señalan a una persona al mismo tiempo al conteo de tres; el que reciba más dedos apuntándole bebe.",
   "Pon a girar una botella y, con la persona que te haya tocado, bebes.",
   "Deja que la persona a tu izquierda te dé una cachetada.",
   "Recita un trabalenguas: {trabalenguas} Quien no lo repita bien bebe."
@@ -334,7 +345,9 @@ export const DEFAULT_REFLEJOS = [
   "Quien lleve mucho dinero en la cartera bebe por cada billete de más.",
   "Quien no tenga el vaso vacío se lo termina y bebe otro.",
   "Quien no lleve condón encima bebe.",
-  "Si llevas ropa de cuadros, bebe."
+  "Si llevas ropa de cuadros, bebe.",
+  "Intercambia una prenda de ropa (gorra, chaqueta o accesorio) con la persona de tu derecha por el resto de la noche.",
+  "Las dos personas con los zapatos más limpios beben.",
 ];
 let reflejos: string[] = DEFAULT_REFLEJOS;
 export const getReflejos = () => reflejos;

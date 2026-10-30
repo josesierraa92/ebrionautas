@@ -12,8 +12,8 @@ const DEFAULTS = { categories: DEFAULT_CATEGORIES, twisters: DEFAULT_TWISTERS, n
  * (se mueven cartas de una a otra, p. ej. al crear «Reflejos y prendas»), se sube el mínimo de esa lista y lo que el admin había guardado
  * antes **se ignora** (queda en Redis hasta el siguiente «Guardar») y sale la lista del código, que es la correcta.
  */
-const SAVE_VERSION = 2;
-const MIN_VERSION: Record<keyof ContentLists, number> = { categories: 1, twisters: 1, nicknames: 1, nunca: 1, juicio: 2, ronda: 2, retos: 2, reflejos: 2 };
+const SAVE_VERSION = 3;
+const MIN_VERSION: Record<keyof ContentLists, number> = { categories: 1, twisters: 1, nicknames: 1, nunca: 1, juicio: 3, ronda: 3, retos: 3, reflejos: 3 };
 
 async function load(kind: keyof ContentLists): Promise<string[]> {
   const raw = await getStore().get(KEYS[kind]);
