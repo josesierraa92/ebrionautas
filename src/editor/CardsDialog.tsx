@@ -23,7 +23,7 @@ function sampleVars(def: CardDef): Record<string, string | number> {
   if (def.key === RESULT_KEYS.jailDebt) return { nombre: "Ana", vasos: "3 vasos" };
   if (def.key === RESULT_KEYS.jailOwes) return { nombre: "Ana", pagados: "1 vaso", deuda: "3 vasos" };
   if (def.key === RESULT_KEYS.jail) return { nombre: "Ana", pagados: "3 vasos", vasos: "3 vasos", dado: 5 };
-  if (def.tiles.length === 0) return { nombre: "Ana", dado: def.key === RESULT_KEYS.mazeOk ? 6 : 3 };
+  if (def.tiles.length === 0) return { nombre: "Ana", dado: 3 };
   const n = def.tiles[0];
   const game = createGame([
     { name: "Ana", color: "#00ff88", gender: "mujer" },
@@ -245,9 +245,9 @@ function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { 
   const changeText = (v: string) => onChange("text", v === fillFixed(def.defaults.text) ? def.defaults.text : v);
   const edited = (value?.title !== undefined && value.title !== def.defaults.title) || (value?.text !== undefined && value.text !== def.defaults.text);
   // casilla de la que toma icono y color: la primera que usa la tarjeta (el resultado del duelo, la de duelo)
-  // los resultados llevan el icono (negro, vectorial) de su casilla: duelo, niebla (laberinto) y purgatorio (cárcel)
-  const resultTile = def.key === RESULT_KEYS.duel ? "DUELO" : def.key.startsWith("RESULTADO:niebla") ? "LABERINTO" : def.key.startsWith("RESULTADO:purgatorio") ? "CARCEL" : null;
-  // el tipo se toma directamente (no de una casilla del tablero: el Panteón en Niebla ya no tiene casillas y el icono se perdía)
+  // los resultados llevan el icono (negro, vectorial) de su casilla: duelo y purgatorio (cárcel)
+  const resultTile = def.key === RESULT_KEYS.duel ? "DUELO" : def.key.startsWith("RESULTADO:purgatorio") ? "CARCEL" : null;
+  // el tipo se toma directamente (no de una casilla del tablero: si un tipo se queda sin casillas el icono no se pierde)
   const first = def.tiles[0] ? BOARD[def.tiles[0] - 1] : null;
   const type = first?.type ?? resultTile;
   const accent = type ? TILE_ACCENT[type] : "#ffc61a";

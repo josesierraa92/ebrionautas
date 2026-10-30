@@ -117,18 +117,6 @@ describe("casillas", () => {
     expect(act(s, { type: "DUEL", opponents: ["p2", "p3", "p4"] })).toBe(s);
   });
 
-  it("Laberinto: falla con menos de 5 y sale con 5 o 6", () => {
-    // ya no hay casillas de Panteón en Niebla en el tablero, pero el motor sigue entendiendo el estado
-    let s = game(1);
-    s.players[0].status.laberinto = true;
-    s.players[0].pos = 9;
-    s = act(s, { type: "ROLL" }, 3);
-    expect(s.players[0].drunk).toBe(1);
-    expect(s.players[0].pos).toBe(9);
-    s = act(s, { type: "ROLL" }, 5);
-    expect(s.players[0].status.laberinto).toBe(false);
-  });
-
   it("Cárcel: en su turno tira; con 1-3 debe 2, con 4-6 debe 4; si paga todo sale y vuelve a tirar", () => {
     let s = rollFrom(game(2), 22, 4); // Ana cae en 26
     expect(s.players[0].status.carcel).toEqual({ at: 26 });
@@ -467,10 +455,9 @@ describe("Reto de ronda", () => {
 });
 
 describe("Muerte Súbita", () => {
-  it("hay 3 casillas (9, 35 y 59) y quedan 2 de Trago de regalo y ninguna de Panteón en Niebla", () => {
+  it("hay 3 casillas (9, 35 y 59) y quedan 2 de Trago de regalo", () => {
     expect(BOARD.filter((t) => t.type === "REFLEJO").map((t) => t.n)).toEqual([9, 35, 59]);
     expect(BOARD.filter((t) => t.type === "A_BEBER").map((t) => t.n)).toEqual([6, 30]);
-    expect(BOARD.filter((t) => t.type === "LABERINTO")).toHaveLength(0);
   });
 
   it("al caer sale una carta de la lista y el celular marca quiénes beben", () => {

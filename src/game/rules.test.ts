@@ -2,19 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { DEFAULT_RETOS, recoverRetos } from "./content";
 import { CARD_GROUPS, cardCatalog, groupOf, parseCardOverrides, setCardOverrides } from "./cards";
 import { createGame } from "./engine";
-import { jailOutcome, mazeOutcome, staticCardVars, tileRule } from "./rules";
-
-describe("mazeOutcome", () => {
-  it("con 5 o 6 se salva y no bebe", () => {
-    expect(mazeOutcome("Ana", 5).escaped).toBe(true);
-    expect(mazeOutcome("Ana", 6).title).toBe("¡Se salvó!");
-  });
-  it("con menos de 5 sigue perdido y bebe", () => {
-    const r = mazeOutcome("Ana", 4);
-    expect(r.escaped).toBe(false);
-    expect(r.text).toContain("Bebe y sigue perdido");
-  });
-});
+import { jailOutcome, staticCardVars, tileRule } from "./rules";
 
 describe("textos de las tarjetas", () => {
   const game = createGame([
@@ -40,7 +28,6 @@ describe("textos de las tarjetas", () => {
     expect(tileRule(6, game, "p1")).toEqual({ title: "¡Salud!", text: "Ana manda beber 1 vaso." });
     expect(tileRule(30, game, "p2").text).toBe("Beto manda beber 3 vasos."); // otra casilla de la misma tarjeta (nunca más de 3)
     expect(tileRule(15, game, "p1").title).toBe("Chistosos");
-    expect(mazeOutcome("Ana", 6).title).toBe("¡Se salvó!");
   });
 
   it("hay una tarjeta por clase de casilla y las de resultado", () => {
@@ -50,7 +37,7 @@ describe("textos de las tarjetas", () => {
     expect(keys).toContain("RASGO");
     expect(cardCatalog().find((c) => c.key === "RASGO")?.tiles).toHaveLength(11);
     expect(cardCatalog().find((c) => c.key === "A_BEBER")?.tiles).toEqual([6, 30]);
-    expect(keys.filter((k) => k.startsWith("RESULTADO"))).toHaveLength(7);
+    expect(keys.filter((k) => k.startsWith("RESULTADO"))).toHaveLength(5);
   });
 });
 

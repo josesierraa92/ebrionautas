@@ -229,7 +229,6 @@ const VIVID: Partial<Record<TileType, string>> = {
   META: "#ffc61a", // amarillo: la meta
   OCA: "#9b5de5", // morado: el murciélago hace saltar
   POSADA: "#ffc61a",
-  LABERINTO: "#9b5de5",
   CARCEL: "#ff7a1a",
   MUERTE: "#7a2fd0",
   ESCLAVO: "#e8344a",

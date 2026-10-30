@@ -10,7 +10,6 @@ export const LAST_TILE = BOARD.length;
 export type PlayerStatus = {
   inmune: boolean; // Estación Abstemia: nadie le puede mandar beber
   hipnosis: boolean; // Abducción mental: absorbe la mitad de lo que beben los demás
-  laberinto: boolean; // Panteón en Niebla: sale con 5 o 6
   // en su turno tira: con 1-3 debe 2 vasos, con 4-6 debe 4; puede pagar una parte y deber el resto (`debt`) para su próximo turno.
   // Sale cuando lo paga todo.
   carcel: { at: number; debt?: number } | null;
@@ -129,7 +128,7 @@ export function createGame(players: { name: string; color: string; avatar?: Avat
       pos: 1,
       drunk: 0,
       pending: 0,
-      status: { inmune: false, hipnosis: false, laberinto: false, carcel: null },
+      status: { inmune: false, hipnosis: false, carcel: null },
     })),
     turn: 0,
     phase: "ROLL",
@@ -275,18 +274,6 @@ function roll(s: GameState, rng: Rng) {
     return;
   }
 
-  if (p.status.laberinto) {
-    if (r >= 5) {
-      p.status.laberinto = false;
-      log(s, `🌫️ ${p.name} saca ${r} y encuentra la salida del Panteón en Niebla.`);
-    } else {
-      log(s, `🌫️ ${p.name} saca ${r}: sigue perdido en la niebla.`);
-      drink(s, p.id, 1, null);
-    }
-    endTurn(s);
-    return;
-  }
-
   let to = p.pos + r;
   if (to > LAST_TILE) {
     to = LAST_TILE * 2 - to;
@@ -350,11 +337,6 @@ function landOn(s: GameState, p: Player, rng: Rng) {
     case "OCA":
       log(s, `🦇 ${p.name} cae en un murciélago: ¿bebe 1 vaso para seguir de murciélago en murciélago?`);
       return decide(s, { kind: "OCA", next: tile.next ?? null });
-
-    case "LABERINTO":
-      p.status.laberinto = true;
-      log(s, `🌫️ ${p.name} se pierde en el Panteón en Niebla. Sale sacando 5 o 6.`);
-      return endTurn(s);
 
     case "REGLA":
       log(s, `⚖️ ${p.name} dicta una nueva Ley del Más Allá.`);

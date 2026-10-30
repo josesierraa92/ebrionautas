@@ -10,7 +10,6 @@ export type Tile =
   | { n: number; type: "A_BEBER"; amount: number }
   | { n: number; type: "DUELO"; amount: number }
   | { n: number; type: "OCA"; next: number | null }
-  | { n: number; type: "LABERINTO" }
   | { n: number; type: "REGLA" }
   | { n: number; type: "CULTURAL" }
   | { n: number; type: "YO_NUNCA" }
@@ -37,7 +36,6 @@ export const TILE_NAMES: Record<Tile["type"], string> = {
   A_BEBER: "Trago de regalo",
   DUELO: "Duelo de calaveras",
   OCA: "El Murciélago",
-  LABERINTO: "Panteón en Niebla",
   REGLA: "Ley del Más Allá",
   CULTURAL: "La Ouija",
   YO_NUNCA: "Yo nunca",

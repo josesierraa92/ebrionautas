@@ -207,11 +207,6 @@ function glyphTexture(type: Tile["type"], color: string, hole: string) {
       fill("M-9 -19 A9 9 0 0 1 9 -19 V-7 A9 9 0 0 1 -9 -7 Z");
       stroke("M-16 -4 Q-16 14 0 14 Q16 14 16 -4 M0 14 V24 M-10 24 H10", 5);
       break;
-    case "LABERINTO":
-      fill(circle(-12, 8, 12));
-      fill(circle(13, 9, 10));
-      fill(circle(0, -13, 13));
-      break;
     case "META":
       break;
   }

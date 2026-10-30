@@ -41,7 +41,6 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
                 {p.gender && <span className={p.gender === "hombre" ? "text-btn-blue" : "text-btn-special"}>{p.gender === "hombre" ? "♂" : "♀"}</span>}{" "}
                 {p.status.inmune && <span title="Estación Abstemia: inmune">⛽</span>}
                 {p.status.hipnosis && <span title="Abducción mental">🌀</span>}
-                {p.status.laberinto && <span title="Perdido en el Panteón en Niebla">🌫️</span>}
                 {p.status.carcel && <span title="En el Purgatorio">🔥{p.status.carcel.debt ? <span className="font-display text-xs text-btn-red"> debe {p.status.carcel.debt}</span> : null}</span>}
                 {game.slave?.slave === p.id && <span title="Pacto de Sangre: bebe lo mismo que su pactado">🩸<span className="text-xs text-btn-red"> ← {game.players.find((q) => q.id === game.slave!.master)?.name}</span></span>}
                 {game.slave?.master === p.id && <span title="Pacto de Sangre: su pactado bebe lo mismo que él">🩸<span className="text-xs text-btn-red"> → {game.players.find((q) => q.id === game.slave!.slave)?.name}</span></span>}

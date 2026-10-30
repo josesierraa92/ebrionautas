@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LAST_TILE, type GameState } from "@/game/engine";
 import { getTile, type Tile } from "@/game/board";
-import { duelOutcome, jailOutcome, jailPaidOutcome, mazeOutcome, tileRule } from "@/game/rules";
+import { duelOutcome, jailOutcome, jailPaidOutcome, tileRule } from "@/game/rules";
 import { DEFAULT_ICON, type IconName } from "@/editor/icons";
 import { sfx } from "./sfx";
 import { useCardTexts } from "./useCardTexts";
@@ -21,7 +21,7 @@ export type DiceFx = { key: number; value: number; rolling: boolean; by?: string
 /**
  * Casilla donde acaba de caer alguien (para la tarjeta que explica la regla). Se queda
  * hasta la siguiente tirada para que dé tiempo a leerla. `result`: lo que pasó al tirar
- * sin moverse (perdido en la niebla: se salvó o bebe; purgatorio: cuánto bebe para salir).
+ * sin moverse (purgatorio: cuánto bebe para salir).
  */
 export type Landed = { key: number; n: number; playerId: string; result?: { good: boolean; title: string; text: string; drinks?: number; icon?: string; /** Enseña el icono de la casilla (duelo) en vez de uno propio del resultado. */ tileIcon?: boolean } };
 
@@ -31,7 +31,6 @@ const EVENTS: Partial<Record<Tile["type"], { title: string; emoji: string; color
   CARCEL: { title: "¡AL PURGATORIO!", emoji: "🔥", color: "#ff6b3d", sound: "jail" },
   MUERTE: { title: "¡A LA FOSA!", emoji: "⚰️", color: "#b07cff", sound: "blackhole" },
   PATINAZO: { title: "¡TROPIEZO!", emoji: "🪦", color: "#ff8a1f", sound: "slip" },
-  LABERINTO: { title: "¡PERDIDO EN LA NIEBLA!", emoji: "🌫️", color: "#c9b8ff", sound: "spooky" },
   HIPNOSIS: { title: "¡POSEÍDO!", emoji: "👻", color: "#f15bb5", sound: "spooky" },
   POSADA: { title: "¡A LA CAPILLA!", emoji: "⛪", color: "#ffd166", sound: "land" },
   A_BEBER: { title: "¡RONDA DE MEZCAL!", emoji: "🥃", color: "#ffc61a", sound: "drink" },
@@ -121,14 +120,9 @@ export function useGameFx(game: GameState | null) {
       const roller = before.players[before.turn];
       const key = ++seq.current;
       const n = mover ? (stepPath(startFrom[mover.id], game.lastRoll!).at(-1) ?? mover.pos) : roller.pos;
-      // Tirada sin moverse: perdido en la niebla (se salva o bebe) o salida del Purgatorio.
-      const maze = roller.status.laberinto ? mazeOutcome(roller.name, game.lastRoll!) : null;
+      // Tirada sin moverse: salida del Purgatorio.
       const jail = roller.status.carcel ? jailOutcome(roller.name, game.lastRoll!) : null;
-      const result = maze
-        ? { good: maze.escaped, title: maze.title, text: maze.text, tileIcon: true }
-        : jail
-          ? { good: false, title: jail.title, text: jail.text, drinks: jail.drinks, tileIcon: true }
-          : undefined;
+      const result = jail ? { good: false, title: jail.title, text: jail.text, drinks: jail.drinks, tileIcon: true } : undefined;
       setLanded({ key, n, playerId: mover?.id ?? roller.id, result });
       setFocus(mover?.id ?? roller.id);
       if (result) {

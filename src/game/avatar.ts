@@ -56,7 +56,7 @@ export function defaultAvatar(index: number, skin: string): AvatarConfig {
 /** Cara del Marciano según cómo le va en la partida. */
 export function expressionFor(p: Player, opts: { winner?: string | null; isTurn?: boolean } = {}): Expression {
   if (opts.winner === p.id) return "euforico";
-  if (p.status.carcel || p.status.laberinto) return "triste";
+  if (p.status.carcel) return "triste";
   if (p.status.hipnosis) return "abducido";
   if (p.status.inmune) return "chulo";
   if ((p.pending ?? 0) >= 5) return "mareado";

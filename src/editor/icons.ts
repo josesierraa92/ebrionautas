@@ -59,7 +59,7 @@ export const ICONS = {
     ["c", circle(29, 25, 1.8)],
     ["c", circle(35, 25, 1.8)],
   ],
-  /** Panteón en Niebla (laberinto): nube y rachas de niebla. */
+  /** Nube y rachas de niebla (disponible para casillas; el Panteón en Niebla ya no está en el tablero). */
   fog: [
     ["f", circle(20, 34, 9)],
     ["f", circle(32, 26, 13)],
@@ -179,7 +179,6 @@ export const DEFAULT_ICON: Record<TileType, IconName> = {
   A_BEBER: "bottle",
   DUELO: "skull",
   OCA: "bat",
-  LABERINTO: "fog",
   REGLA: "scales",
   CULTURAL: "planchette",
   YO_NUNCA: "hand",

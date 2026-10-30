@@ -6,12 +6,6 @@ import { createGame, jailBail, type GameState } from "./engine";
 
 const vasos = (n: number) => `${n} ${n === 1 ? "vaso" : "vasos"}`;
 
-/** Resultado de tirar estando perdido en el Panteón en Niebla: con 5 o 6 escapa, si no bebe. */
-export function mazeOutcome(name: string, roll: number): { escaped: boolean; title: string; text: string } {
-  const escaped = roll >= 5;
-  return { escaped, ...cardText(escaped ? RESULT_KEYS.mazeOk : RESULT_KEYS.mazeNo, { nombre: name, dado: roll }) };
-}
-
 /** Resultado de tirar estando en el Purgatorio: debe 2 (1-3) o 4 (4-6) y elige cuántos paga ya. */
 export function jailOutcome(name: string, roll: number): { drinks: number; title: string; text: string } {
   const drinks = jailBail(roll);

@@ -94,7 +94,7 @@ export default function JugarPage() {
               <TurnHeader game={game} />
               {game.phase === "ROLL" && (
                 <button onClick={() => act({ type: "ROLL" })} className="btn-game bg-btn-green py-5 text-3xl text-white">
-                  {me.status.laberinto ? "TIRAR (5 o 6 para salir)" : "🎲 TIRAR"}
+                  🎲 TIRAR
                 </button>
               )}
               {game.phase === "DECISION" && game.decision && (

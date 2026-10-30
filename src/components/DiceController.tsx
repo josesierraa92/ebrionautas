@@ -7,7 +7,7 @@ import { Die } from "@/components/Fx";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { currentPlayer, jailBail, type GameState } from "@/game/engine";
-import { duelOutcome, jailOutcome, jailPaidOutcome, mazeOutcome } from "@/game/rules";
+import { duelOutcome, jailOutcome, jailPaidOutcome } from "@/game/rules";
 import { PhoneRuleCard } from "@/components/TvCards";
 import { stepPath, type Landed } from "@/lib/useGameFx";
 import { useShake } from "@/lib/useShake";
@@ -31,9 +31,8 @@ type Props = {
 export default function DiceController({ game, busy, onRoll, onNext, decision }: Props) {
   const me = currentPlayer(game);
   const [face, setFace] = useState(1);
-  const [result, setResult] = useState<{ value: number; name: string; key: number; lost: boolean; jailed: boolean } | null>(null);
+  const [result, setResult] = useState<{ value: number; name: string; key: number; jailed: boolean } | null>(null);
   const roller = useRef(me.name);
-  const wasLost = useRef(false); // tiró estando perdido en el Panteón en Niebla
   const wasJailed = useRef(false); // tiró estando en el Purgatorio
   const rollerPos = useRef(me.pos);
   const seenRoll = useRef(game.rollSeq);
@@ -77,7 +76,6 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
     if (!canRoll) return;
     roller.current = me.name;
     rollerPos.current = me.pos;
-    wasLost.current = me.status.laberinto;
     wasJailed.current = !!me.status.carcel;
     navigator.vibrate?.(80);
     setRolling(true);
@@ -101,20 +99,19 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
     // tirada de un duelo (la hizo el panel de decisión, no el dado de turno): solo se enseña el dado de quien tiró
     const duelRoll = game.decision?.kind === "DUEL_ROLL" || (!!game.lastDuel && game.lastDuel.seq !== seenDuel.current);
     if (duelRoll) {
-      setResult({ value: r, name: game.players.find((p) => p.id === game.lastRoller)?.name ?? roller.current, key: game.rollSeq, lost: false, jailed: false });
+      setResult({ value: r, name: game.players.find((p) => p.id === game.lastRoller)?.name ?? roller.current, key: game.rollSeq, jailed: false });
       navigator.vibrate?.([40, 60, 40]);
       const t = setTimeout(() => setResult(null), RESULT_MS);
       return () => clearTimeout(t);
     }
-    setResult({ value: r, name: roller.current, key: game.rollSeq, lost: wasLost.current, jailed: wasJailed.current });
+    setResult({ value: r, name: roller.current, key: game.rollSeq, jailed: wasJailed.current });
     const by = game.lastRoller ?? "";
-    const outcome = wasLost.current ? mazeOutcome(roller.current, r) : wasJailed.current ? jailOutcome(roller.current, r) : null;
+    const outcome = wasJailed.current ? jailOutcome(roller.current, r) : null;
     setCard(
       outcome
-        ? { key: game.rollSeq, n: rollerPos.current, playerId: by, result: { good: "escaped" in outcome && outcome.escaped, tileIcon: true, title: outcome.title, text: outcome.text, drinks: "drinks" in outcome ? outcome.drinks : undefined } }
+        ? { key: game.rollSeq, n: rollerPos.current, playerId: by, result: { good: false, tileIcon: true, title: outcome.title, text: outcome.text, drinks: "drinks" in outcome ? outcome.drinks : undefined } }
         : { key: game.rollSeq, n: stepPath(rollerPos.current, r).at(-1) ?? rollerPos.current, playerId: by },
     );
-    wasLost.current = false;
     wasJailed.current = false;
     navigator.vibrate?.([40, 60, 40]);
     const t = setTimeout(() => setResult(null), RESULT_MS);
@@ -154,11 +151,6 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
         <p className="font-display text-2xl text-white/80">{result.name} sacó</p>
         <Die key={result.key} value={result.value} className="dice-land w-56" />
         <p className="title-game text-7xl">{result.value}</p>
-        {result.lost && (
-          <p className={`btn-game px-5 py-2 text-2xl text-white ${result.value >= 5 ? "bg-btn-green" : "bg-btn-red"}`}>
-            {result.value >= 5 ? "✨ ¡SE SALVÓ! NO BEBE" : <><BeerIcon /> SIGUE PERDIDO: BEBE</>}
-          </p>
-        )}
         {result.jailed && (
           <p className="btn-game bg-btn-red px-5 py-2 text-2xl text-white">🔥 DEBE {jailBail(result.value)} VASOS</p>
         )}
@@ -242,13 +234,11 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
 
       <div className="flex flex-col items-center gap-3">
         <p className="font-display text-xl">
-          {me.status.laberinto
-            ? "🌫️ Saca 5 o 6 para salir de la niebla"
-            : me.status.carcel
-              ? me.status.carcel.debt
-                ? `🔥 Debes ${me.status.carcel.debt} ${me.status.carcel.debt === 1 ? "vaso" : "vasos"} del Purgatorio: toca el dado para pagar`
-                : "🔥 Purgatorio: con 1-3 debes 2, con 4-6 debes 4 para salir"
-              : spin ? "Rodando…" : shake.state === "on" ? "📳 Agita el celular o toca el dado" : "👆 Toca el dado para tirar"}
+          {me.status.carcel
+            ? me.status.carcel.debt
+              ? `🔥 Debes ${me.status.carcel.debt} ${me.status.carcel.debt === 1 ? "vaso" : "vasos"} del Purgatorio: toca el dado para pagar`
+              : "🔥 Purgatorio: con 1-3 debes 2, con 4-6 debes 4 para salir"
+            : spin ? "Rodando…" : shake.state === "on" ? "📳 Agita el celular o toca el dado" : "👆 Toca el dado para tirar"}
         </p>
         {shake.state === "needs-permission" && (
           <button onClick={() => void shake.request()} className="btn-game bg-btn-blue px-4 py-2 text-white">
