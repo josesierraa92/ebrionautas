@@ -3,7 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { put } from "@vercel/blob";
 import { parseLayout, type BoardLayout } from "@/editor/layout";
 import { PLAYER_COLORS } from "@/game/tileStyle";
-import { parseCardOverrides, type CardOverrides } from "@/game/cards";
+import { cardCatalog, parseCardOverrides, type CardOverrides } from "@/game/cards";
 import { parsePublished, type PublishedBoard } from "@/game/publishedBoard";
 import { RoomError } from "./rooms";
 import { getStore } from "./store";
@@ -65,10 +65,43 @@ export async function loadCardTexts(): Promise<CardOverrides> {
   }
 }
 
+/** Textos de tarjetas que ya no existen en el catálogo (p. ej. «RETO:Cómicos», antes de agrupar los retos): se guardan aparte para no perderlos. */
+const LEGACY_CARDS_KEY = "cards:legacy";
+
+function orphanCards(raw: string | null): Record<string, unknown> {
+  if (!raw) return {};
+  try {
+    const known = new Set(cardCatalog().map((c) => c.key));
+    return Object.fromEntries(Object.entries(JSON.parse(raw) as Record<string, unknown>).filter(([k, v]) => !known.has(k) && v && typeof v === "object"));
+  } catch {
+    return {};
+  }
+}
+
 export async function saveCardTexts(raw: unknown): Promise<CardOverrides> {
+  const store = getStore();
   const cards = parseCardOverrides(raw);
-  await getStore().set(CARDS_KEY, JSON.stringify(cards), TEN_YEARS);
+  // lo que ya no tiene tarjeta no se borra: pasa a `cards:legacy` (así se pueden recuperar los textos de antes de agrupar)
+  const orphans = orphanCards(await store.get(CARDS_KEY));
+  if (Object.keys(orphans).length) {
+    const old = await store.get(LEGACY_CARDS_KEY);
+    await store.set(LEGACY_CARDS_KEY, JSON.stringify({ ...(old ? JSON.parse(old) : {}), ...orphans }), TEN_YEARS);
+  }
+  await store.set(CARDS_KEY, JSON.stringify(cards), TEN_YEARS);
   return cards;
+}
+
+/** Los textos que el admin escribió en los retos antes de agruparlos (de `cards:custom` si aún no se guardó nada, o de `cards:legacy`). */
+export async function loadLegacyRetos(): Promise<{ title: string; text: string }[]> {
+  const store = getStore();
+  const old = await store.get(LEGACY_CARDS_KEY);
+  const all: Record<string, unknown> = { ...orphanCards(await store.get(CARDS_KEY)), ...orphanCards(old) };
+  const out: { title: string; text: string }[] = [];
+  for (const [key, v] of Object.entries(all)) {
+    const text = (v as { text?: unknown }).text;
+    if (key.startsWith("RETO:") && typeof text === "string" && text.trim()) out.push({ title: key.slice(5), text });
+  }
+  return out;
 }
 
 /** Tablero que usa la TV (o null: la TV usa el tablero de serie). */

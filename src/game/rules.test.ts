@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { DEFAULT_RETOS, recoverRetos } from "./content";
 import { CARD_GROUPS, cardCatalog, groupOf, parseCardOverrides, setCardOverrides } from "./cards";
 import { createGame } from "./engine";
 import { jailOutcome, mazeOutcome, staticCardVars, tileRule } from "./rules";
@@ -101,3 +102,22 @@ describe("editor: datos fijos dentro del texto", () => {
   });
 });
 
+describe("recuperar los retos de antes de agruparlos", () => {
+  it("el texto propio sustituye al de serie de su tarjeta y los demás se quedan", () => {
+    const hoy = [...DEFAULT_RETOS];
+    const out = recoverRetos(hoy, [
+      { title: "Cómicos", text: "Cuenta tu peor cita." },
+      { title: "Corleone", text: "Quien tenga una cicatriz bebe 2 vasos." },
+      { title: "Chorizo", text: "se ignora" },
+    ]);
+    expect(out).toHaveLength(DEFAULT_RETOS.length);
+    expect(out[0]).toBe("Cuenta tu peor cita.");
+    expect(out).toContain("Quien tenga una cicatriz bebe 2 vasos.");
+    expect(out).not.toContain(DEFAULT_RETOS[0]);
+    expect(out).not.toContain("se ignora");
+    // sin el reto de serie en la lista (el admin ya lo había borrado), el texto se añade al final; y no se repite
+    const sin = hoy.filter((x) => x !== DEFAULT_RETOS[0]);
+    expect(recoverRetos(sin, [{ title: "Cómicos", text: "Cuenta tu peor cita." }]).at(-1)).toBe("Cuenta tu peor cita.");
+    expect(recoverRetos(out, [{ title: "Cómicos", text: "cuenta tu peor cita." }])).toEqual(out);
+  });
+});

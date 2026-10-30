@@ -12,7 +12,7 @@ import { TILE_ACCENT } from "@/game/tileStyle";
 import { DEFAULT_ICON } from "@/editor/icons";
 import GameCard from "@/components/GameCard";
 import { BOARD } from "@/game/board";
-import { DEFAULT_CATEGORIES, DEFAULT_JUICIO, DEFAULT_NICKNAMES, DEFAULT_NUNCA, DEFAULT_RETOS, DEFAULT_RONDA, DEFAULT_TWISTERS, getLists, parseCategories, parseJuicio, parseNicknames, parseNunca, parseRetos, parseRonda, parseTwisters, type ContentLists } from "@/game/content";
+import { DEFAULT_CATEGORIES, DEFAULT_JUICIO, DEFAULT_NICKNAMES, DEFAULT_NUNCA, DEFAULT_RETOS, DEFAULT_RONDA, recoverRetos, DEFAULT_TWISTERS, getLists, parseCategories, parseJuicio, parseNicknames, parseNunca, parseRetos, parseRonda, parseTwisters, type ContentLists } from "@/game/content";
 
 const CARDS = cardCatalog();
 
@@ -98,6 +98,21 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
       }).filter((g) => g.cards.length),
     [list],
   );
+  // Antes de agrupar los retos, cada uno tenía su tarjeta con el texto que el admin pudo cambiar: se piden al servidor y se ponen en la lista
+  const recoverOldRetos = async () => {
+    try {
+      const res = await fetch("/api/admin/cards", { headers: { "x-admin-key": adminKey() }, cache: "no-store" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) return onStatus(body.error ?? "No se pudieron pedir los retos anteriores.");
+      const legacy = (body.retos ?? []) as { title: string; text: string }[];
+      if (!legacy.length) return onStatus("No encontré retos guardados de antes de agruparlos.");
+      setListsText((t) => ({ ...t, retos: recoverRetos(t.retos.split("\n"), legacy).join("\n") }));
+      onStatus(`Recuperé ${legacy.length} reto(s) de antes. Revisa la lista y pulsa «Guardar».`);
+    } catch {
+      onStatus("No se pudieron pedir los retos anteriores (¿sin conexión?).");
+    }
+  };
+
   const changed = saved !== null && (JSON.stringify(parseCardOverrides(draft)) !== JSON.stringify(saved) || JSON.stringify(lists) !== JSON.stringify(savedLists));
   const set = (key: string, field: "title" | "text", value: string) => setDraft((d) => ({ ...d, [key]: { ...d[key], [field]: value } }));
   const reset = (key: string) =>
@@ -158,7 +173,12 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
                   <span className="text-xs opacity-70">
                     {lists[box.kind].length} {box.unit} · {box.about}
                   </span>
-                  <button className="ml-auto text-xs text-amber-300 underline" onClick={() => setListsText((t) => ({ ...t, [box.kind]: box.defaults.join("\n") }))}>
+                  {box.kind === "retos" && (
+                    <button className="ml-auto text-xs text-emerald-300 underline" onClick={recoverOldRetos}>
+                      ♻️ Recuperar mis retos de antes
+                    </button>
+                  )}
+                  <button className={`${box.kind === "retos" ? "" : "ml-auto "}text-xs text-amber-300 underline`} onClick={() => setListsText((t) => ({ ...t, [box.kind]: box.defaults.join("\n") }))}>
                     Volver a las de serie
                   </button>
                 </div>

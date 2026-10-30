@@ -245,6 +245,26 @@ export function setRetos(list: string[]) {
 }
 export const parseRetos = (raw: unknown) => cleanList(raw, DEFAULT_RETOS, 240);
 
+/** Títulos que tenían los 12 retos antes de agruparlos, en el mismo orden que `DEFAULT_RETOS` (las tarjetas guardadas por el admin se llamaban `RETO:<título>`). */
+export const RETO_TITLES = ["Cómicos", "Pastosos", "Borrachín", "Meones", "Guerra de sexos", "Corleone", "Tardones", "Descuido", "Muero de sed", "Escoceses", "Sedientos", "Lenguados"];
+
+/**
+ * Recupera los textos que el admin había escrito en las tarjetas de reto antes de agruparlas: cada texto propio sustituye al reto de serie
+ * de su tarjeta (si sigue en la lista) o, si no, se añade. Los títulos que no eran de los 12 (p. ej. el del apodo) se ignoran.
+ */
+export function recoverRetos(current: string[], legacy: { title: string; text: string }[]): string[] {
+  const out = [...current];
+  for (const { title, text } of legacy) {
+    const t = text.replace(/\s+/g, " ").trim();
+    const i = RETO_TITLES.indexOf(title);
+    if (!t || i < 0 || out.some((x) => x.toLowerCase() === t.toLowerCase())) continue;
+    const at = out.indexOf(DEFAULT_RETOS[i]);
+    if (at >= 0) out[at] = t;
+    else out.push(t);
+  }
+  return out;
+}
+
 /** Vasos que pide un reto escrito en texto libre: el primer «N vasos/chupitos/tragos»; si no dice, 1. */
 export function drinksIn(text: string): number {
   const m = /(\d+)\s+(?:vasos?|chupitos?|tragos?)/i.exec(text);
