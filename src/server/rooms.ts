@@ -145,10 +145,18 @@ export async function startRoom(code: string, who: string, players: NewPlayer[])
   });
 }
 
-/** Vuelve a la pantalla de jugadores para empezar otra partida en la misma mesa. */
-export async function resetRoom(code: string, who: string): Promise<void> {
+/**
+ * Otra partida en la misma mesa. Con `same` (REINICIAR) empieza ya con los mismos jugadores (nombre, género, color); sin `same`
+ * (SALIR) vuelve a la pantalla de jugadores. Solo se llama a mano desde el celular: nada reinicia la partida terminada por sí solo.
+ */
+export async function resetRoom(code: string, who: string, same = false): Promise<void> {
   await withRoom(code, (room) => {
     assertController(room, who);
+    if (same && room.game) {
+      room.game = createGame(room.game.players.map((p) => ({ name: p.name, gender: p.gender, color: p.color, avatar: p.avatar })));
+      room.status = "PLAYING";
+      return;
+    }
     room.game = null;
     room.status = "LOBBY";
   });

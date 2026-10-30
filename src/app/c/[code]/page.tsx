@@ -128,14 +128,18 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
             </button>
             <button
               disabled={busy}
-              onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret }))}
+              onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))}
               className="btn-game bg-btn-green py-3 text-xl text-white"
             >
-              OTRA PARTIDA
+              REINICIAR (MISMOS JUGADORES)
             </button>
-            <Link href="/" className="btn-game bg-btn-yellow py-2 text-white">
+            <button
+              disabled={busy}
+              onClick={() => run(async () => { await api(`/api/rooms/${code}/reset`, { secret }); window.location.href = "/"; })}
+              className="btn-game bg-btn-yellow py-2 text-white"
+            >
               SALIR
-            </Link>
+            </button>
           </Winner>
         </div>
       ) : (
