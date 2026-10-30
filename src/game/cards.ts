@@ -132,6 +132,7 @@ export function cardCatalog(): CardDef[] {
 export const CARD_GROUPS = [
   { id: "juicio", title: "Juicio de los vivos", about: "una carta al azar distinta cada vez (votaciones y «beben todos los que…») o los que van por detrás o por delante", types: ["RASGO", "POSICION"] },
   { id: "retos", title: "Retos del Más Allá", about: "retos y pruebas para todos", types: ["RETO"] },
+  { id: "ronda", title: "Ronda", about: "efectos que no pasan en el mismo turno: duran toda la ronda (un apodo, una ley, un pacto, un estado…)", types: [] as string[] },
   { id: "decision", title: "Casillas con decisión", about: "quien cae decide o juega algo en el celular", types: ["OCA", "A_BEBER", "DUELO", "CULTURAL", "YO_NUNCA", "REGLA", "ESCLAVO", "PATINAZO"] },
   { id: "estados", title: "Estados y castigos", about: "se queda con un estado o lo mandan de vuelta", types: ["POSADA", "HIPNOSIS", "LABERINTO", "CARCEL", "MUERTE"] },
   { id: "extremos", title: "Inicio y meta", about: "la salida y la llegada", types: ["SALIDA", "META"] },
@@ -139,9 +140,16 @@ export const CARD_GROUPS = [
 ] as const;
 export type CardGroupId = (typeof CARD_GROUPS)[number]["id"];
 
+/**
+ * Tarjetas cuyo efecto dura toda la ronda (no se resuelve en el mismo turno): el editor las junta en el grupo «Ronda». Cada una conserva
+ * su tipo de casilla en el grupo de siempre (así hay test de que todo tipo tiene grupo); aquí solo se reordenan.
+ */
+export const ROUND_CARDS: ReadonlySet<string> = new Set(["RETO:Nuevo apodo", "REGLA", "ESCLAVO", "HIPNOSIS", "POSADA"]);
+
 /** Grupo de una tarjeta del catálogo, según el tipo de su primera casilla (las de resultado van aparte). */
 export function groupOf(def: CardDef): CardGroupId {
   if (!def.tiles.length) return "resultados";
+  if (ROUND_CARDS.has(def.key)) return "ronda";
   const type = BOARD[def.tiles[0] - 1].type;
   return CARD_GROUPS.find((g) => (g.types as readonly string[]).includes(type))?.id ?? "decision";
 }

@@ -81,6 +81,9 @@ describe("grupos del editor de tarjetas", () => {
   it("cada tarjeta cae en un grupo y cada tipo de casilla está en uno", () => {
     const ids = new Set(CARD_GROUPS.map((g) => g.id));
     for (const c of cardCatalog()) expect(ids.has(groupOf(c))).toBe(true);
+    // las que duran toda la ronda van juntas en «Ronda»
+    const ronda = cardCatalog().filter((c) => groupOf(c) === "ronda").map((c) => c.key).sort();
+    expect(ronda).toEqual(["ESCLAVO", "HIPNOSIS", "POSADA", "REGLA", "RETO:Nuevo apodo"]);
     const tipos = new Set(cardCatalog().filter((c) => c.tiles.length).map((c) => c.key.split(":")[0]));
     const cubiertos = new Set(CARD_GROUPS.flatMap((g) => g.types as readonly string[]));
     for (const t of tipos) expect(cubiertos.has(t)).toBe(true);
