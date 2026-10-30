@@ -74,6 +74,8 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
       return { nombre, frase: game.nunca ?? "…" };
     case "RONDA":
       return { nombre, frase: game.ronda?.text ?? "…" };
+    case "REFLEJO":
+      return { nombre, frase: game.reflejo ?? "…" };
     case "RETO":
       return tile.nickname ? { nombre, apodo: game.nickname ?? "…" } : { nombre, frase: game.reto ?? "…" };
     default:

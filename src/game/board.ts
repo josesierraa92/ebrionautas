@@ -15,6 +15,7 @@ export type Tile =
   | { n: number; type: "CULTURAL" }
   | { n: number; type: "YO_NUNCA" }
   | { n: number; type: "RONDA" }
+  | { n: number; type: "REFLEJO" }
   | { n: number; type: "HIPNOSIS" }
   | { n: number; type: "CARCEL" }
   | { n: number; type: "MUERTE" }
@@ -41,6 +42,7 @@ export const TILE_NAMES: Record<Tile["type"], string> = {
   CULTURAL: "La Ouija",
   YO_NUNCA: "Yo nunca",
   RONDA: "Reto de ronda",
+  REFLEJO: "Reflejos y prendas",
   HIPNOSIS: "Poseído",
   CARCEL: "Purgatorio",
   MUERTE: "La Fosa",
@@ -61,7 +63,7 @@ export const BOARD: Tile[] = [
   { n: 6, type: "A_BEBER", amount: 1 },
   { n: 7, type: "YO_NUNCA" },
   { n: 8, type: "OCA", next: 18 },
-  { n: 9, type: "LABERINTO" },
+  { n: 9, type: "REFLEJO" },
   { n: 10, type: "REGLA" },
   { n: 11, type: "RASGO" },
   { n: 12, type: "RASGO" },
@@ -91,7 +93,7 @@ export const BOARD: Tile[] = [
   { n: 33, type: "CULTURAL" },
   // TODO validar texto exacto de la casilla 34
   { n: 34, type: "RETO" },
-  { n: 35, type: "LABERINTO" },
+  { n: 35, type: "REFLEJO" },
   { n: 36, type: "HIPNOSIS" },
   { n: 37, type: "YO_NUNCA" },
   { n: 38, type: "OCA", next: 48 },
@@ -118,7 +120,7 @@ export const BOARD: Tile[] = [
   { n: 56, type: "PATINAZO", drinks: 2, backTo: 31 },
   { n: 57, type: "HIPNOSIS" },
   { n: 58, type: "OCA", next: null },
-  { n: 59, type: "A_BEBER", amount: 6 },
+  { n: 59, type: "REFLEJO" },
   { n: 60, type: "MUERTE" },
   { n: 61, type: "RETO" },
   { n: 62, type: "META" },

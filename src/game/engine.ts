@@ -3,7 +3,7 @@
 
 import type { AvatarConfig } from "./avatar";
 import { BOARD, NICKNAME_TEXT, PATINAZO_DRINKS, TILE_NAMES, getTile } from "./board";
-import { drinksIn, getCategories, getJuicio, getNicknames, getNunca, getRetos, getRonda, getTwisters, pick } from "./content";
+import { drinksIn, getCategories, getJuicio, getNicknames, getNunca, getReflejos, getRetos, getRonda, getTwisters, pick } from "./content";
 
 export const LAST_TILE = BOARD.length;
 
@@ -79,6 +79,8 @@ export type GameState = {
   ronda?: { text: string; by: string } | null;
   /** Reto que salió en «Reto del Más Allá» (se queda hasta el siguiente). */
   reto?: string | null;
+  /** Carta que salió en «Reflejos y prendas» (se queda hasta la siguiente). */
+  reflejo?: string | null;
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
   /** Último duelo resuelto (los dados se tiran en el servidor): la TV y el celular enseñan el resultado. */
@@ -310,6 +312,14 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       s.decision = null;
       log(s, `🏆 ¡${p.name} vuelve a su tumba antes del amanecer! Borracho, pero a tiempo: Leyenda del Más Allá. Reparte el resto de bebida como quiera.`);
       return;
+
+    case "REFLEJO": {
+      // Reflejos y prendas: «la última persona en…» o «todos los que lleven…»; el celular marca quiénes beben
+      const frase = pick(getReflejos(), rng);
+      s.reflejo = frase; // la tarjeta de la casilla la enseña ({frase})
+      log(s, `⏱️ Reflejos y prendas: ${frase}`);
+      return decide(s, { kind: "SELECT_DRINKERS", drinks: 1, title: TILE_NAMES.REFLEJO, text: frase });
+    }
 
     case "RONDA": {
       const text = pick(getRonda(), rng);

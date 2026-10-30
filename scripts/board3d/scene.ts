@@ -174,6 +174,9 @@ function glyphTexture(type: Tile["type"], color: string, hole: string) {
     case "RONDA":
       text("⟳", 44);
       break;
+    case "REFLEJO":
+      text("¡YA!", 30);
+      break;
     case "REGLA":
       text("!");
       break;

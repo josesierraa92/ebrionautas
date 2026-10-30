@@ -152,24 +152,17 @@ export const DEFAULT_JUICIO = [
   "La persona mayor de la mesa bebe.",
   "La persona que tenga el cabello más largo bebe.",
   "La persona que tenga el cabello más corto bebe.",
-  "La persona que esté vestida con más color rojo bebe.",
-  "Todos los que tienen la batería del celular en menos del 20% beben.",
-  "Todos los que usen Android beben.",
   "Todos los que hayan subido una historia a Instagram hoy beben.",
   "La persona con más seguidores en Instagram bebe.",
   "Todos los que hayan bloqueado a un ex en redes sociales beben.",
   "Todos los que tengan más de 3 alarmas puestas para levantarse beben.",
-  "Todos los que tengan la pantalla del celular rota beben.",
   "Todos los que tengan al menos un tatuaje beben.",
   "Todos los que tengan piercings o perforaciones beben.",
   "Todos los que hayan ido al gimnasio esta semana beben.",
-  "Todos los que usen reloj puestos en este momento beben.",
   "Todos los que tengan un perro como mascota beben.",
   "Todos los que tengan un gato como mascota beben.",
   "Todos los que fumen o usen vaper beben.",
   "Todos los que sepan hablar más de un idioma beben.",
-  "Todos los que estén usando jeans o vaqueros beben.",
-  "Todos los que traigan calcetines / medias beben.",
   "Todos los que hayan vivido en otra ciudad o país beben.",
   "Todos los que tengan licencia de conducir beben.",
   "Todos los que sepan tocar un instrumento musical beben.",
@@ -215,6 +208,7 @@ export const DEFAULT_RONDA = [
   "Por toda esta ronda, está prohibido usar el celular. Quien lo use, bebe.",
   "Por toda esta ronda, todos tienen que terminar cada frase diciendo «¡salud!». Quien se olvide, bebe.",
   "Por toda esta ronda, nadie puede decir la palabra «beber» ni «tomar». Quien la diga, bebe.",
+  "Por toda esta ronda, cada vez que alguien diga tu nombre, debes ladrar como un perro. Quien no ladre, bebe.",
 ];
 let ronda: string[] = DEFAULT_RONDA;
 export const getRonda = () => ronda;
@@ -226,16 +220,14 @@ export const parseRonda = (raw: unknown) => cleanList(raw, DEFAULT_RONDA, 200);
 /** Retos del Más Allá: cada vez sale uno al azar. `{trabalenguas}` se cambia por un trabalenguas de su lista; el número de vasos sale del texto («bebe 2 vasos»; si no dice, 1). */
 export const DEFAULT_RETOS = [
   "Cuenta un chiste. Si a nadie le hace gracia, bebes.",
-  "Quien lleve mucho dinero en la cartera bebe por cada billete de más.",
   "Todos beben, excepto el más ebrio (entre todos lo eligen).",
   "Quien haya ido al baño bebe.",
   "Reto por equipos: el equipo perdedor bebe.",
   "Quien tenga un pariente en la mesa bebe.",
-  "Quien no tenga el vaso vacío se lo termina y bebe otro.",
-  "Quien no lleve condón encima bebe.",
   "Pon un poco de licor en la mano del jugador de la derecha y bébelo como si fueras un perrito.",
-  "Si llevas ropa de cuadros, bebe.",
   "Te bebes lo que les queda en el vaso a tus compañeros.",
+  "Pon a girar una botella y, con la persona que te haya tocado, bebes.",
+  "Deja que la persona a tu izquierda te dé una cachetada.",
   "Recita un trabalenguas: {trabalenguas} Quien no lo repita bien bebe."
 ];
 let retos: string[] = DEFAULT_RETOS;
@@ -245,8 +237,53 @@ export function setRetos(list: string[]) {
 }
 export const parseRetos = (raw: unknown) => cleanList(raw, DEFAULT_RETOS, 240);
 
-/** Títulos que tenían los 12 retos antes de agruparlos, en el mismo orden que `DEFAULT_RETOS` (las tarjetas guardadas por el admin se llamaban `RETO:<título>`). */
-export const RETO_TITLES = ["Cómicos", "Pastosos", "Borrachín", "Meones", "Guerra de sexos", "Corleone", "Tardones", "Descuido", "Muero de sed", "Escoceses", "Sedientos", "Lenguados"];
+/** Los 12 retos de antes de agruparlos, por el título que tenían (`RETO:<título>`), con los textos de serie que pudo haber guardado la lista. */
+export const RETO_ORIGINALS: Record<string, string[]> = {
+  "Cómicos": [
+    "Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos.",
+    "Cuenta un chiste. Si a nadie le hace gracia, bebes."
+  ],
+  "Pastosos": [
+    "Quien lleve mucho dinero en la cartera bebe por cada billete de más."
+  ],
+  "Borrachín": [
+    "Todos los jugadores toman un trago, excepto el más ebrio (entre todos lo eligen).",
+    "Todos beben, excepto el más ebrio (entre todos lo eligen)."
+  ],
+  "Meones": [
+    "Quien haya ido al baño bebe 2 vasos.",
+    "Quien haya ido al baño bebe."
+  ],
+  "Guerra de sexos": [
+    "Reto por equipos: el equipo perdedor bebe."
+  ],
+  "Corleone": [
+    "Quien tenga un pariente en la mesa bebe 3 vasos.",
+    "Quien tenga un pariente en la mesa bebe."
+  ],
+  "Tardones": [
+    "Quien no tenga el vaso vacío se lo termina y bebe otro."
+  ],
+  "Descuido": [
+    "Quien no lleve condón encima bebe 1 vaso.",
+    "Quien no lleve condón encima bebe."
+  ],
+  "Muero de sed": [
+    "Pon un poco de licor en la mano del jugador de la derecha y bébelo como si fueras un perrito."
+  ],
+  "Escoceses": [
+    "Si llevas ropa de cuadros, bebe 1 chupito.",
+    "Si llevas ropa de cuadros, bebe."
+  ],
+  "Sedientos": [
+    "Te bebes lo que les queda en el vaso a tus compañeros."
+  ],
+  "Lenguados": [
+    "Recita un trabalenguas. Quien no lo repita bien bebe 2 vasos.",
+    "Recita un trabalenguas: {trabalenguas} Quien no lo repita bien bebe 2 vasos.",
+    "Recita un trabalenguas: {trabalenguas} Quien no lo repita bien bebe."
+  ]
+};
 
 /**
  * Recupera los textos que el admin había escrito en las tarjetas de reto antes de agruparlas: cada texto propio sustituye al reto de serie
@@ -256,9 +293,9 @@ export function recoverRetos(current: string[], legacy: { title: string; text: s
   const out = [...current];
   for (const { title, text } of legacy) {
     const t = text.replace(/\s+/g, " ").trim();
-    const i = RETO_TITLES.indexOf(title);
-    if (!t || i < 0 || out.some((x) => x.toLowerCase() === t.toLowerCase())) continue;
-    const at = out.indexOf(DEFAULT_RETOS[i]);
+    const originals = RETO_ORIGINALS[title];
+    if (!t || !originals || out.some((x) => x.toLowerCase() === t.toLowerCase())) continue;
+    const at = out.findIndex((x) => originals.includes(x));
     if (at >= 0) out[at] = t;
     else out.push(t);
   }
@@ -271,9 +308,44 @@ export function drinksIn(text: string): number {
   return m ? Math.min(5, Math.max(1, Number(m[1]))) : 1;
 }
 
+/** Reflejos y prendas: cartas de acción rápida («la última persona en…») o de un objeto o prenda que se lleva puesto («todos los que lleven…»). */
+export const DEFAULT_REFLEJOS = [
+  "La última persona en aplaudir bebe.",
+  "La última persona en levantar las manos bebe.",
+  "La última persona en gritar «¡Salud!» bebe.",
+  "La última persona en tocar el suelo con la mano bebe.",
+  "La última persona en tocar el hombro de su compañero de la derecha bebe.",
+  "Todos los que lleven un anillo puesto beben.",
+  "Todos los que lleven llaves en el bolsillo en este momento beben.",
+  "Todos los que lleven cordones en los zapatos beben.",
+  "Todos los que lleven un reloj puesto beben.",
+  "Todos los que tengan el celular en la mano en este momento beben.",
+  "Todos los que tengan calcetines blancos beben.",
+  "Todos los que lleven un collar o cadena beben.",
+  "Todos los que tengan alguna prenda con letras o texto beben.",
+  "Todos los que lleven pantalones cortos o faldas beben.",
+  "Todos los que tengan la hebilla del cinturón visible beben.",
+  "La persona que esté vestida con más color rojo bebe.",
+  "Todos los que tengan la pantalla del celular rota beben.",
+  "Todos los que tengan la batería del celular en menos del 20% beben.",
+  "Todos los que usen Android beben.",
+  "Todos los que estén usando jeans o vaqueros beben.",
+  "Todos los que traigan calcetines / medias beben.",
+  "Quien lleve mucho dinero en la cartera bebe por cada billete de más.",
+  "Quien no tenga el vaso vacío se lo termina y bebe otro.",
+  "Quien no lleve condón encima bebe.",
+  "Si llevas ropa de cuadros, bebe."
+];
+let reflejos: string[] = DEFAULT_REFLEJOS;
+export const getReflejos = () => reflejos;
+export function setReflejos(list: string[]) {
+  reflejos = list.length ? list : DEFAULT_REFLEJOS;
+}
+export const parseReflejos = (raw: unknown) => cleanList(raw, DEFAULT_REFLEJOS, 200);
+
 /** Todas las listas editables juntas (así viajan entre el editor, el servidor y el juego). */
-export type ContentLists = { categories: string[]; twisters: string[]; nicknames: string[]; nunca: string[]; juicio: string[]; ronda: string[]; retos: string[] };
-export const getLists = (): ContentLists => ({ categories, twisters, nicknames, nunca, juicio, ronda, retos });
+export type ContentLists = { categories: string[]; twisters: string[]; nicknames: string[]; nunca: string[]; juicio: string[]; ronda: string[]; retos: string[]; reflejos: string[] };
+export const getLists = (): ContentLists => ({ categories, twisters, nicknames, nunca, juicio, ronda, retos, reflejos });
 export function setLists(raw: Partial<Record<keyof ContentLists, unknown>> | null | undefined) {
   if (raw?.categories) setCategories(parseCategories(raw.categories));
   if (raw?.twisters) setTwisters(parseTwisters(raw.twisters));
@@ -282,6 +354,7 @@ export function setLists(raw: Partial<Record<keyof ContentLists, unknown>> | nul
   if (raw?.juicio) setJuicio(parseJuicio(raw.juicio));
   if (raw?.ronda) setRonda(parseRonda(raw.ronda));
   if (raw?.retos) setRetos(parseRetos(raw.retos));
+  if (raw?.reflejos) setReflejos(parseReflejos(raw.reflejos));
 }
 
 export function pick<T>(list: T[], rng: () => number): T {

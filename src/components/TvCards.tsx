@@ -82,7 +82,7 @@ type Props = { game: GameState; n: number; playerId: string; cardKey: number; re
 function decisionRule(decision: Extract<NonNullable<GameState["decision"]>, { kind: "SELECT_DRINKERS" }>, n: number, game: GameState, playerId: string) {
   const tile = getTile(n);
   // La Ouija: siempre la tarjeta, con la categoría que salió. Retos y exámenes: su texto propio salvo que el admin lo cambiara.
-  if (tile.type !== "CULTURAL" && tile.type !== "YO_NUNCA" && tile.type !== "RASGO" && !(tile.type === "RETO" && !tile.nickname) && !hasCardOverride(cardKeyOf(tile))) return { title: decision.title, text: decision.text };
+  if (tile.type !== "CULTURAL" && tile.type !== "YO_NUNCA" && tile.type !== "RASGO" && tile.type !== "REFLEJO" && !(tile.type === "RETO" && !tile.nickname) && !hasCardOverride(cardKeyOf(tile))) return { title: decision.title, text: decision.text };
   const rule = tileRule(n, game, playerId);
   return rule;
 }

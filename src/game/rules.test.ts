@@ -49,7 +49,7 @@ describe("textos de las tarjetas", () => {
     expect(keys).toContain("A_BEBER");
     expect(keys).toContain("RASGO");
     expect(cardCatalog().find((c) => c.key === "RASGO")?.tiles).toHaveLength(11);
-    expect(cardCatalog().find((c) => c.key === "A_BEBER")?.tiles).toEqual([6, 30, 59]);
+    expect(cardCatalog().find((c) => c.key === "A_BEBER")?.tiles).toEqual([6, 30]);
     expect(keys.filter((k) => k.startsWith("RESULTADO"))).toHaveLength(7);
   });
 });
@@ -110,13 +110,13 @@ describe("recuperar los retos de antes de agruparlos", () => {
       { title: "Corleone", text: "Quien tenga una cicatriz bebe 2 vasos." },
       { title: "Chorizo", text: "se ignora" },
     ]);
-    expect(out).toHaveLength(DEFAULT_RETOS.length);
-    expect(out[0]).toBe("Cuenta tu peor cita.");
+    expect(out).toHaveLength(hoy.length);
+    expect(out).toContain("Cuenta tu peor cita.");
     expect(out).toContain("Quien tenga una cicatriz bebe 2 vasos.");
-    expect(out).not.toContain(DEFAULT_RETOS[0]);
+    expect(out).not.toContain("Cuenta un chiste. Si a nadie le hace gracia, bebes.");
     expect(out).not.toContain("se ignora");
     // sin el reto de serie en la lista (el admin ya lo había borrado), el texto se añade al final; y no se repite
-    const sin = hoy.filter((x) => x !== DEFAULT_RETOS[0]);
+    const sin = DEFAULT_RETOS.filter((x) => !x.startsWith("Cuenta un chiste"));
     expect(recoverRetos(sin, [{ title: "Cómicos", text: "Cuenta tu peor cita." }]).at(-1)).toBe("Cuenta tu peor cita.");
     expect(recoverRetos(out, [{ title: "Cómicos", text: "cuenta tu peor cita." }])).toEqual(out);
   });

@@ -122,6 +122,15 @@ export const ICONS = {
     ["f", rect(42, 11, 7, 30, 3.5)],
     ["f", "M18 46L5 36a3.6 3.6 0 0 1 5-5.2L24 41z"],
   ],
+  /** Reflejos y prendas: cronómetro. */
+  stopwatch: [
+    ["f", rect(26, 4, 12, 6, 3)],
+    ["f", rect(30, 9, 4, 8, 1)],
+    ["f", circle(32, 37, 22)],
+    ["c", circle(32, 37, 16)],
+    ["f", "M30 37V24h4v10l8 6-2.4 3.2z"],
+    ["f", "M47 14l4 4-4 4-4-4z"],
+  ],
   /** Reto de ronda: reloj de arena. */
   hourglass: [
     ["f", rect(12, 6, 40, 6, 3)],
@@ -159,6 +168,7 @@ export const ICON_LABELS: Record<IconName, string> = {
   speech: "Reto",
   hand: "Yo nunca",
   hourglass: "Ronda",
+  stopwatch: "Cronómetro",
 };
 
 /** Icono de serie de cada tipo de casilla. */
@@ -174,6 +184,7 @@ export const DEFAULT_ICON: Record<TileType, IconName> = {
   CULTURAL: "planchette",
   YO_NUNCA: "hand",
   RONDA: "hourglass",
+  REFLEJO: "stopwatch",
   HIPNOSIS: "ghost",
   CARCEL: "flame",
   MUERTE: "coffin",

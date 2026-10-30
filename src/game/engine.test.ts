@@ -1,7 +1,7 @@
 import { BOARD } from "./board";
 import { describe, expect, it } from "vitest";
 import { applyAction, createGame, type Action, type GameState, type Rng } from "./engine";
-import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS, setNunca, DEFAULT_NUNCA, setJuicio, DEFAULT_JUICIO, setRonda, DEFAULT_RONDA, setRetos, DEFAULT_RETOS } from "./content";
+import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS, setNunca, DEFAULT_NUNCA, setJuicio, DEFAULT_JUICIO, setRonda, DEFAULT_RONDA, setRetos, DEFAULT_RETOS, setReflejos, DEFAULT_REFLEJOS } from "./content";
 import { tileRule } from "./rules";
 
 /** Rng que produce exactamente los dados indicados (1-6), en orden. */
@@ -118,9 +118,10 @@ describe("casillas", () => {
   });
 
   it("Laberinto: falla con menos de 5 y sale con 5 o 6", () => {
+    // ya no hay casillas de Panteón en Niebla en el tablero, pero el motor sigue entendiendo el estado
     let s = game(1);
-    s = rollFrom(s, 5, 4); // 9
-    expect(s.players[0].status.laberinto).toBe(true);
+    s.players[0].status.laberinto = true;
+    s.players[0].pos = 9;
     s = act(s, { type: "ROLL" }, 3);
     expect(s.players[0].drunk).toBe(1);
     expect(s.players[0].pos).toBe(9);
@@ -461,6 +462,27 @@ describe("Reto de ronda", () => {
       expect(s.ronda).toBeNull();
     } finally {
       setRonda(DEFAULT_RONDA);
+    }
+  });
+});
+
+describe("Reflejos y prendas", () => {
+  it("hay 3 casillas (9, 35 y 59) y quedan 2 de Trago de regalo y ninguna de Panteón en Niebla", () => {
+    expect(BOARD.filter((t) => t.type === "REFLEJO").map((t) => t.n)).toEqual([9, 35, 59]);
+    expect(BOARD.filter((t) => t.type === "A_BEBER").map((t) => t.n)).toEqual([6, 30]);
+    expect(BOARD.filter((t) => t.type === "LABERINTO")).toHaveLength(0);
+  });
+
+  it("al caer sale una carta de la lista y el celular marca quiénes beben", () => {
+    setReflejos(["La última persona en aplaudir bebe.", "Todos los que lleven un anillo puesto beben."]);
+    try {
+      let s = rollFrom(game(), 7, 2, 4); // 9 -> segunda carta
+      expect(s.reflejo).toBe("Todos los que lleven un anillo puesto beben.");
+      expect(s.decision).toMatchObject({ kind: "SELECT_DRINKERS", title: "Reflejos y prendas", drinks: 1 });
+      s = act(s, { type: "SELECT_DRINKERS", ids: ["p2"] });
+      expect(s.players.map((p) => p.drunk)).toEqual([0, 1, 0]);
+    } finally {
+      setReflejos(DEFAULT_REFLEJOS);
     }
   });
 });
