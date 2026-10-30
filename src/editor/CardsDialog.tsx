@@ -12,7 +12,7 @@ import { TILE_ACCENT } from "@/game/tileStyle";
 import { DEFAULT_ICON } from "@/editor/icons";
 import GameCard from "@/components/GameCard";
 import { BOARD } from "@/game/board";
-import { DEFAULT_CATEGORIES, DEFAULT_NICKNAMES, DEFAULT_NUNCA, DEFAULT_TWISTERS, getLists, parseCategories, parseNicknames, parseNunca, parseTwisters, type ContentLists } from "@/game/content";
+import { DEFAULT_CATEGORIES, DEFAULT_JUICIO, DEFAULT_NICKNAMES, DEFAULT_NUNCA, DEFAULT_TWISTERS, getLists, parseCategories, parseJuicio, parseNicknames, parseNunca, parseTwisters, type ContentLists } from "@/game/content";
 
 const CARDS = cardCatalog();
 
@@ -35,6 +35,7 @@ function sampleVars(def: CardDef): Record<string, string | number> {
   game.category = "frutas"; // La Ouija: categoría de ejemplo
   game.nickname = "Pelón"; // Nuevo apodo: apodo de ejemplo
   game.nunca = "Yo nunca me he quedado dormido en el cine."; // Yo nunca: frase de ejemplo
+  game.juicio = "Todos los que usen Android beben."; // Juicio de los vivos: carta de ejemplo
   game.players[1].pos = Math.max(1, n - 3);
   game.players[2].pos = n + 3;
   return { ...tileVars(n, game, game.players[0].id), categoria: "Animales" };
@@ -43,6 +44,7 @@ function sampleVars(def: CardDef): Record<string, string | number> {
 const LIST_BOXES: { kind: keyof ContentLists; title: string; unit: string; about: string; defaults: string[]; placeholder: string; max: number }[] = [
   { kind: "categories", title: "🔮 Categorías de La Ouija", unit: "categorías", about: "en cada Ouija sale una al azar y aparece en la tarjeta", defaults: DEFAULT_CATEGORIES, placeholder: "Una categoría por línea (por ejemplo: frutas)", max: 60 },
   { kind: "nicknames", title: "🏷️ Apodos de «Nuevo apodo»", unit: "apodos", about: "al caer en la casilla 14 sale uno al azar donde dice {apodo}", defaults: DEFAULT_NICKNAMES, placeholder: "Un apodo por línea (por ejemplo: Chorizo)", max: 30 },
+  { kind: "juicio", title: "👁️ Cartas de Juicio de los vivos", unit: "cartas", about: "cada vez que alguien cae en un ojito sale una al azar", defaults: DEFAULT_JUICIO, placeholder: "Una carta por línea (por ejemplo: Todos los solteros beben.)", max: 200 },
   { kind: "nunca", title: "🤚 Frases de «Yo nunca»", unit: "frases", about: "al caer en Yo nunca sale una al azar; beben los que sí lo hayan hecho", defaults: DEFAULT_NUNCA, placeholder: "Una frase por línea (por ejemplo: Yo nunca he …)", max: 200 },
   { kind: "twisters", title: "👅 Trabalenguas de Lenguados", unit: "trabalenguas", about: "al caer en Lenguados sale uno al azar y se añade a la tarjeta", defaults: DEFAULT_TWISTERS, placeholder: "Un trabalenguas por línea", max: 240 },
 ];
@@ -53,9 +55,9 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   // listas editables (una por línea): categorías de La Ouija, trabalenguas de Lenguados y apodos de «Nuevo apodo»
-  const [listsText, setListsText] = useState<Record<keyof ContentLists, string>>({ categories: "", twisters: "", nicknames: "", nunca: "" });
+  const [listsText, setListsText] = useState<Record<keyof ContentLists, string>>({ categories: "", twisters: "", nicknames: "", nunca: "", juicio: "" });
   const [savedLists, setSavedLists] = useState<ContentLists | null>(null);
-  const showLists = (l: ContentLists) => (setSavedLists(l), setListsText({ categories: l.categories.join("\n"), twisters: l.twisters.join("\n"), nicknames: l.nicknames.join("\n"), nunca: l.nunca.join("\n") }));
+  const showLists = (l: ContentLists) => (setSavedLists(l), setListsText({ categories: l.categories.join("\n"), twisters: l.twisters.join("\n"), nicknames: l.nicknames.join("\n"), nunca: l.nunca.join("\n"), juicio: l.juicio.join("\n") }));
 
   useEffect(() => {
     void fetchCardTexts(true).then((o) => {
@@ -70,6 +72,7 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
       twisters: parseTwisters(listsText.twisters.split("\n")),
       nicknames: parseNicknames(listsText.nicknames.split("\n")),
       nunca: parseNunca(listsText.nunca.split("\n")),
+      juicio: parseJuicio(listsText.juicio.split("\n")),
     }),
     [listsText],
   );
@@ -107,7 +110,7 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
       const o = parseCardOverrides(body.cards);
       setSaved(o);
       setDraft(o);
-      showLists({ categories: parseCategories(body.categories ?? lists.categories), twisters: parseTwisters(body.twisters ?? lists.twisters), nicknames: parseNicknames(body.nicknames ?? lists.nicknames), nunca: parseNunca(body.nunca ?? lists.nunca) });
+      showLists({ categories: parseCategories(body.categories ?? lists.categories), twisters: parseTwisters(body.twisters ?? lists.twisters), nicknames: parseNicknames(body.nicknames ?? lists.nicknames), nunca: parseNunca(body.nunca ?? lists.nunca), juicio: parseJuicio(body.juicio ?? lists.juicio) });
       await fetchCardTexts(true);
       onStatus("Tarjetas guardadas. La TV y los celulares las verán al recargar la página.");
     } catch {

@@ -1,6 +1,6 @@
 // Explicación de cada casilla para la tarjeta grande de la TV: qué es y cuál es la regla.
 
-import { TRAIT_LABELS, getTile } from "./board";
+import { getTile } from "./board";
 import { RESULT_KEYS, cardKeyOf, cardText } from "./cards";
 import { createGame, jailBail, type GameState } from "./engine";
 
@@ -76,7 +76,7 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
       };
     }
     case "RASGO":
-      return { vasos: vasos(tile.drinks), quienes: tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ") };
+      return { nombre, frase: game.juicio ?? "…" };
     case "CULTURAL":
       return { nombre, categoria: game.category ?? "…" };
     case "YO_NUNCA":

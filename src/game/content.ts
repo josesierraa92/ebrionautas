@@ -133,14 +133,80 @@ export function setNunca(list: string[]) {
 }
 export const parseNunca = (raw: unknown) => cleanList(raw, DEFAULT_NUNCA, 200);
 
+/** Juicio de los vivos: cada vez sale una de estas cartas al azar (votaciones y «beben todos los que…»). */
+export const DEFAULT_JUICIO = [
+  "Votad por la persona más dramática del grupo; esa persona bebe.",
+  "Votad por la persona que siempre llega tarde; esa persona bebe.",
+  "Votad por la persona que más tiempo pasa en el celular; esa persona bebe.",
+  "Votad por la persona que mejor baila del grupo; esa persona bebe.",
+  "Votad por la persona que se emborracha más rápido; esa persona bebe.",
+  "Votad por la persona mas chistosa; esa persona bebe.",
+  "Votad por la persona que más gasta dinero en tonterías; esa persona bebe.",
+  "Votad por la persona más malhablada del grupo; esa persona bebe.",
+  "Votad por la persona que sería la primera en morir en un apocalipsis zombi; esa persona bebe.",
+  "Votad por la persona que peor maneja / conduce; esa persona bebe.",
+  "Votad por la persona más enamoradiza del grupo; esa persona bebe.",
+  "Votad por la persona que tiene peor dormir o ronca más duro; esa persona bebe.",
+  "Votad por la persona que se viste mejor; esa persona bebe.",
+  "La persona más joven de la mesa bebe.",
+  "La persona mayor de la mesa bebe.",
+  "La persona que tenga el cabello más largo bebe.",
+  "La persona que tenga el cabello más corto bebe.",
+  "La persona que esté vestida con más color rojo bebe.",
+  "Todos los que tienen la batería del celular en menos del 20% beben.",
+  "Todos los que usen Android beben.",
+  "Todos los que hayan subido una historia a Instagram hoy beben.",
+  "La persona con más seguidores en Instagram bebe.",
+  "Todos los que hayan bloqueado a un ex en redes sociales beben.",
+  "Todos los que tengan más de 3 alarmas puestas para levantarse beben.",
+  "Todos los que tengan la pantalla del celular rota beben.",
+  "Todos los que tengan al menos un tatuaje beben.",
+  "Todos los que tengan piercings o perforaciones beben.",
+  "Todos los que hayan ido al gimnasio esta semana beben.",
+  "Todos los que usen reloj puestos en este momento beben.",
+  "Todos los que tengan un perro como mascota beben.",
+  "Todos los que tengan un gato como mascota beben.",
+  "Todos los que fumen o usen vaper beben.",
+  "Todos los que sepan hablar más de un idioma beben.",
+  "Todos los que estén usando jeans o vaqueros beben.",
+  "Todos los que traigan calcetines / medias beben.",
+  "Todos los que hayan vivido en otra ciudad o país beben.",
+  "Todos los que tengan licencia de conducir beben.",
+  "Todos los que sepan tocar un instrumento musical beben.",
+  "Todos los que hayan tenido un hueso roto alguna vez beben.",
+  "Todos los solteros beben.",
+  "Todos los que lleven más de 5 años con su pareja beben.",
+  "Todos los que hayan vuelto alguna vez con un ex beben.",
+  "Todos los que se hayan besado con alguien de esta mesa alguna vez beben.",
+  "Todos los que hayan hecho trampa en un examen beben.",
+  "Todos los que hayan mentido en su currículum o hoja de vida beben.",
+  "Todos los que hayan tenido relaciones en un auto beben.",
+  "Todos los que hayan salido a la calle sin ropa interior beben.",
+  "Todos los que hayan nadado desnudos en el mar o en una piscina beben.",
+  "Todos los que hayan robado algo de un hotel o restaurante (como una toalla o un vaso) beben.",
+  "Todos los que tengan un juguete sexual en su casa beben.",
+  "Todos los fieles beben.",
+  "Todos los que tengan un hermano o hermana mayor beben.",
+  "Todos los que sean hijo único beben.",
+  "Todos los que se llamen con un nombre que empiece por vocal beben.",
+  "Todos los que hayan nacido en un mes con la letra \"R\" (Enero, Febrero, Abril, Septiembre, Octubre, Noviembre, Diciembre) beben."
+];
+let juicio: string[] = DEFAULT_JUICIO;
+export const getJuicio = () => juicio;
+export function setJuicio(list: string[]) {
+  juicio = list.length ? list : DEFAULT_JUICIO;
+}
+export const parseJuicio = (raw: unknown) => cleanList(raw, DEFAULT_JUICIO, 200);
+
 /** Todas las listas editables juntas (así viajan entre el editor, el servidor y el juego). */
-export type ContentLists = { categories: string[]; twisters: string[]; nicknames: string[]; nunca: string[] };
-export const getLists = (): ContentLists => ({ categories, twisters, nicknames, nunca });
+export type ContentLists = { categories: string[]; twisters: string[]; nicknames: string[]; nunca: string[]; juicio: string[] };
+export const getLists = (): ContentLists => ({ categories, twisters, nicknames, nunca, juicio });
 export function setLists(raw: Partial<Record<keyof ContentLists, unknown>> | null | undefined) {
   if (raw?.categories) setCategories(parseCategories(raw.categories));
   if (raw?.twisters) setTwisters(parseTwisters(raw.twisters));
   if (raw?.nicknames) setNicknames(parseNicknames(raw.nicknames));
   if (raw?.nunca) setNunca(parseNunca(raw.nunca));
+  if (raw?.juicio) setJuicio(parseJuicio(raw.juicio));
 }
 
 export function pick<T>(list: T[], rng: () => number): T {

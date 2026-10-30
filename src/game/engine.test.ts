@@ -1,7 +1,7 @@
 import { BOARD } from "./board";
 import { describe, expect, it } from "vitest";
 import { applyAction, createGame, type Action, type GameState, type Rng } from "./engine";
-import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS, setNunca, DEFAULT_NUNCA } from "./content";
+import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS, setNunca, DEFAULT_NUNCA, setJuicio, DEFAULT_JUICIO } from "./content";
 import { tileRule } from "./rules";
 
 /** Rng que produce exactamente los dados indicados (1-6), en orden. */
@@ -30,7 +30,7 @@ const act = (s: GameState, a: Action, ...d: number[]) => applyAction(s, a, dice(
 
 describe("movimiento", () => {
   it("avanza y pasa el turno en una casilla sin efecto", () => {
-    const s = rollFrom(game(), 1, 2); // 3 = Cegatos -> decisión
+    const s = rollFrom(game(), 1, 2, 1); // 3 = Juicio de los vivos -> decisión
     expect(s.players[0].pos).toBe(3);
     expect(s.decision?.kind).toBe("SELECT_DRINKERS");
   });
@@ -141,7 +141,7 @@ describe("casillas", () => {
     let s = rollFrom(game(2), 22, 4); // Ana cae en 26
     expect(s.players[0].status.carcel).toEqual({ at: 26 });
     expect(s.turn).toBe(1);
-    s = rollFrom(s, 1, 1); // Beto 2
+    s = rollFrom(s, 1, 1, 1); // Beto 2 (Juicio de los vivos)
     s = act(s, { type: "SELECT_DRINKERS", ids: [] });
     expect(s.phase).toBe("ROLL");
     s = act(s, { type: "ROLL" }, 3); // Ana saca 3: debe 2
@@ -163,7 +163,7 @@ describe("casillas", () => {
     s = rollFrom(s, 20, 6); // Beto también 26: Ana libre
     expect(s.players[0].status.carcel).toBeNull();
     expect(s.players[1].status.carcel).toEqual({ at: 26 });
-    s = rollFrom(s, 1, 1); // Ana 2
+    s = rollFrom(s, 1, 1, 1); // Ana 2 (Juicio de los vivos)
     s = act(s, { type: "SELECT_DRINKERS", ids: [] });
     s = act(s, { type: "ROLL" }, 5); // Beto saca 5: debe 4
     s = act(s, { type: "JAIL_PAY", n: 4 });
@@ -173,7 +173,7 @@ describe("casillas", () => {
 
   it("Cárcel: puede pagar solo una parte y queda debiendo el resto para su próximo turno", () => {
     let s = rollFrom(game(2), 22, 4); // Ana 26
-    s = rollFrom(s, 1, 1); // Beto 2
+    s = rollFrom(s, 1, 1, 1); // Beto 2 (Juicio de los vivos)
     s = act(s, { type: "SELECT_DRINKERS", ids: [] });
     s = act(s, { type: "ROLL" }, 6); // Ana debe 4
     expect(s.decision).toEqual({ kind: "JAIL_PAY", owed: 4, roll: 6 });
@@ -184,7 +184,7 @@ describe("casillas", () => {
     expect(s.players[0].status.carcel).toEqual({ at: 26, debt: 3 });
     expect(s.lastJail).toMatchObject({ paid: 1, left: 3 });
     expect(s.turn).toBe(1); // pasa el turno
-    s = rollFrom(s, 2, 1); // Beto 3
+    s = rollFrom(s, 2, 1, 1); // Beto 3 (Juicio de los vivos)
     s = act(s, { type: "SELECT_DRINKERS", ids: [] });
     // su siguiente turno ya no tira: paga lo que debe
     s = act(s, { type: "ROLL" }, 4);
@@ -234,7 +234,7 @@ describe("estados", () => {
 
   it("La inmunidad termina al empezar su siguiente turno", () => {
     let s = rollFrom(game(2), 1, 3); // Ana en 4
-    s = rollFrom(s, 1, 1); // Beto 2 -> Machos
+    s = rollFrom(s, 1, 1, 1); // Beto 2 -> Juicio de los vivos
     s = act(s, { type: "SELECT_DRINKERS", ids: [] });
     expect(s.players[0].status.inmune).toBe(false);
   });
@@ -264,19 +264,17 @@ describe("retos, género y deudas", () => {
       { name: "Caro", color: "#fff", gender: "mujer" },
     ]);
 
-  it("Machos y Hembras se resuelven solos con el género de cada jugador", () => {
-    const machos = rollFrom(withGender(), 1, 1); // 2 Machos
-    expect(machos.players.map((p) => p.drunk)).toEqual([0, 1, 0]);
-    expect(machos.turn).toBe(1);
-    const hembras = rollFrom(withGender(), 9, 2); // 11 Hembras: 2 vasos
-    expect(hembras.players.map((p) => p.drunk)).toEqual([2, 0, 2]);
-  });
-
-  it("los demás rasgos los decide quien controla la mesa", () => {
-    let s = rollFrom(withGender(), 1, 2); // 3 Cegatos
-    expect(s.decision).toMatchObject({ kind: "SELECT_DRINKERS", title: "Cegatos" });
-    s = act(s, { type: "SELECT_DRINKERS", ids: ["p2", "p3"] });
-    expect(s.players.map((p) => p.drunk)).toEqual([0, 1, 1]);
+  it("Juicio de los vivos saca una carta distinta de la lista y quien controla la mesa marca quiénes beben", () => {
+    setJuicio(["Todos los de prueba beben.", "Votad por el más chistoso; esa persona bebe."]);
+    try {
+      let s = rollFrom(withGender(), 1, 2, 4); // 3 -> sale la segunda carta
+      expect(s.juicio).toBe("Votad por el más chistoso; esa persona bebe.");
+      expect(s.decision).toMatchObject({ kind: "SELECT_DRINKERS", title: "Juicio de los vivos", drinks: 1, text: "Votad por el más chistoso; esa persona bebe." });
+      s = act(s, { type: "SELECT_DRINKERS", ids: ["p2", "p3"] });
+      expect(s.players.map((p) => p.drunk)).toEqual([0, 1, 1]);
+    } finally {
+      setJuicio(DEFAULT_JUICIO);
+    }
   });
 
   it("el Examen de Humanología propone una categoría y Lenguados un trabalenguas", () => {
@@ -342,7 +340,7 @@ describe("Siguiente turno", () => {
   it("tirar también libera la espera", () => {
     let s = rollFrom(game(), 1, 3);
     expect(s.waiting).toBe(true);
-    s = act(s, { type: "ROLL" }, 1); // tira sin esperar el botón
+    s = act(s, { type: "ROLL" }, 1, 1); // tira sin esperar el botón
     expect(s.waiting).toBe(false);
   });
 

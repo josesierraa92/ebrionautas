@@ -2,8 +2,8 @@
 // No toca la UI ni la red; la Fase 2 lo ejecutará en el servidor.
 
 import type { AvatarConfig } from "./avatar";
-import { BOARD, PATINAZO_DRINKS, TILE_NAMES, TRAIT_LABELS, getTile } from "./board";
-import { getCategories, getNicknames, getNunca, getTwisters, pick } from "./content";
+import { BOARD, PATINAZO_DRINKS, TILE_NAMES, getTile } from "./board";
+import { getCategories, getJuicio, getNicknames, getNunca, getTwisters, pick } from "./content";
 
 export const LAST_TILE = BOARD.length;
 
@@ -73,6 +73,8 @@ export type GameState = {
   nickname?: string | null;
   /** Frase que salió en «Yo nunca» (se queda hasta la siguiente). */
   nunca?: string | null;
+  /** Carta que salió en «Juicio de los vivos» (se queda hasta la siguiente). */
+  juicio?: string | null;
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
   /** Último duelo resuelto (los dados se tiran en el servidor): la TV y el celular enseñan el resultado. */
@@ -384,17 +386,11 @@ function landOn(s: GameState, p: Player, rng: Rng) {
     }
 
     case "RASGO": {
-      const text = `Juicio de los vivos: beben ${tile.drinks} ${vasos(tile.drinks)} ${tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ")}.`;
-      // Machos / Hembras: el género de cada jugador ya se conoce, no hace falta preguntar.
-      const byGender = tile.traits.every((t) => t === "hombre" || t === "mujer");
-      if (byGender && s.players.every((q) => q.gender)) {
-        const targets = s.players.filter((q) => tile.traits.includes(q.gender!));
-        log(s, `💀 ${tile.title}: ${text.replace("Juicio de los vivos: ", "")}`);
-        if (targets.length === 0) log(s, `${tile.title}: esta vez nadie bebe.`);
-        for (const q of targets) drink(s, q.id, tile.drinks, q.id === p.id ? null : p.id);
-        return endTurn(s);
-      }
-      return decide(s, { kind: "SELECT_DRINKERS", drinks: tile.drinks, title: tile.title, text });
+      // Juicio de los vivos: sale una carta distinta cada vez (votaciones y «beben todos los que…»); quien controla la mesa marca quiénes beben
+      const frase = pick(getJuicio(), rng);
+      s.juicio = frase; // la tarjeta de la casilla la enseña ({frase})
+      log(s, `💀 Juicio de los vivos: ${frase}`);
+      return decide(s, { kind: "SELECT_DRINKERS", drinks: 1, title: TILE_NAMES.RASGO, text: frase });
     }
 
     case "RETO": {
