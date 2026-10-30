@@ -24,6 +24,7 @@ export type Tile =
   | { n: number; type: "LABERINTO" }
   | { n: number; type: "REGLA" }
   | { n: number; type: "CULTURAL" }
+  | { n: number; type: "YO_NUNCA" }
   | { n: number; type: "HIPNOSIS" }
   | { n: number; type: "CARCEL" }
   | { n: number; type: "MUERTE" }
@@ -58,6 +59,7 @@ export const TILE_NAMES: Record<Tile["type"], string> = {
   LABERINTO: "Panteón en Niebla",
   REGLA: "Ley del Más Allá",
   CULTURAL: "La Ouija",
+  YO_NUNCA: "Yo nunca",
   HIPNOSIS: "Poseído",
   CARCEL: "Purgatorio",
   MUERTE: "La Fosa",
@@ -77,7 +79,7 @@ export const BOARD: Tile[] = [
   { n: 4, type: "POSADA" },
   { n: 5, type: "RASGO", traits: ["melena_gomina"], drinks: 1, title: "Travoltas" },
   { n: 6, type: "A_BEBER", amount: 1 },
-  { n: 7, type: "DUELO", amount: 1 },
+  { n: 7, type: "YO_NUNCA" },
   { n: 8, type: "OCA", next: 18 },
   { n: 9, type: "LABERINTO" },
   { n: 10, type: "REGLA" },
@@ -101,7 +103,7 @@ export const BOARD: Tile[] = [
   { n: 26, type: "CARCEL" },
   { n: 27, type: "RETO", title: "Meones", text: "Quien haya ido al baño bebe 2 vasos.", drinks: 2 },
   { n: 28, type: "OCA", next: 38 },
-  { n: 29, type: "DUELO", amount: 3 },
+  { n: 29, type: "YO_NUNCA" },
   { n: 30, type: "A_BEBER", amount: 4 },
   { n: 31, type: "POSICION", who: "delante", drinks: 1, title: "Pa' los de alante" },
   // TODO validar texto exacto de la casilla 32
@@ -111,7 +113,7 @@ export const BOARD: Tile[] = [
   { n: 34, type: "RETO", title: "Guerra de sexos", text: "Reto por equipos: el equipo perdedor bebe.", drinks: 1 },
   { n: 35, type: "LABERINTO" },
   { n: 36, type: "HIPNOSIS" },
-  { n: 37, type: "DUELO", amount: 4 },
+  { n: 37, type: "YO_NUNCA" },
   { n: 38, type: "OCA", next: 48 },
   { n: 39, type: "CULTURAL" },
   { n: 40, type: "RETO", title: "Corleone", text: "Quien tenga un pariente en la mesa bebe 3 vasos.", drinks: 3 },

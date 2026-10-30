@@ -71,13 +71,76 @@ export function setNicknames(list: string[]) {
 }
 export const parseNicknames = (raw: unknown) => cleanList(raw, DEFAULT_NICKNAMES, 30);
 
+/** Frases de «Yo nunca»: al caer sale una al azar y beben los que sí lo hayan hecho. */
+export const DEFAULT_NUNCA = [
+  "Yo nunca he hecho algo ilegal.",
+  "Yo nunca me he roto un hueso.",
+  "Yo nunca he salido con alguien de una app de citas.",
+  "Yo nunca he mandado un mensaje de texto a la persona equivocada.",
+  "Yo nunca me he quedado dormido en el cine.",
+  "Yo nunca he espiado el teléfono de mi pareja.",
+  "Yo nunca he mentido sobre mi edad.",
+  "Yo nunca he fingido estar enfermo para no ir a trabajar o estudiar.",
+  "Yo nunca me he tragado un chicle por accidente.",
+  "Yo nunca he entrado a un baño público y me he dado cuenta de que no hay papel higiénico cuando ya es tarde.",
+  "Yo nunca he stalkeado tanto a alguien en redes sociales que terminé dándole \"like\" a una foto de hace años por error.",
+  "Yo nunca he olvidado por completo el nombre de una persona justo después de que se acaba de presentar.",
+  "Yo nunca he probado la comida de mi mascota por curiosidad.",
+  "Yo nunca he llorado viendo una película animada.",
+  "Yo nunca he guardado un secreto que me prometí no contar y terminé contándolo.",
+  "Yo nunca he fingido que me gusta un regalo que en realidad odiaba.",
+  "Yo nunca me he tropezado en la calle con total elegancia fingiendo que no pasó nada.",
+  "Yo nunca he tenido un sueño tan real que al despertar me he enojado de verdad con esa persona.",
+  "Yo nunca he puesto una excusa inventada solo para cancelar un plan y quedarme en casa durmiendo.",
+  "Yo nunca he intentado descifrar una contraseña tantas veces que terminé bloqueando la cuenta.",
+  "Yo nunca me he reído en el peor momento posible, como en un funeral o una situación seria.",
+  "Yo nunca he dejado la alarma sonando por más de diez minutos molestando a todos en la casa.",
+  "Yo nunca he intentado hacer una receta de cocina viendo un video y ha terminado siendo un desastre total.",
+  "Yo nunca he perdido un vuelo, un autobús o una cita importante por confiarme demasiado con el tiempo.",
+  "Yo nunca he dicho \"en cinco minutos estoy listo\" cuando ni siquiera me he bañado.",
+  "Yo nunca he intentado abrir una puerta que decía \"empujar\" tirando de ella con fuerza.",
+  "Yo nunca he guardado una caja vacía \"por si acaso algún día sirve para algo\".",
+  "Yo nunca he aplaudido cuando el avión aterriza.",
+  "Yo nunca he culpado al perro (o a la mascota) de un gas que solté yo.",
+  "Yo nunca he dicho \"no tengo preferencia, elige tú dónde cenar\" y luego le he dicho que no a todas sus opciones.",
+  "Yo nunca he intentado culpar a mi pareja de algo que hice mal yo, solo por ganar la discusión.",
+  "Yo nunca le he robado la cobija o la sábana a mi pareja en plena madrugada dejándola sin nada.",
+  "Yo nunca he escondido una compra nueva para que mi pareja no se entere de cuánto costó.",
+  "Yo nunca he mirado el plato de mi pareja con ojos de águila esperando a que me ofrezca de su comida.",
+  "Yo nunca he hecho una mueca o gesto gracioso mientras mi pareja está tomándonos una foto \"seria\".",
+  "Yo nunca he intentado buscar una serie para ver juntos, pasar una hora solo buscando.",
+  "Yo nunca he puesto una excusa ridícula para evitar ir a una reunión familiar que no me apetecía.",
+  "Yo nunca he intentado adivinar la contraseña del celular de mi pareja por pura curiosidad.",
+  "Yo nunca he comprado un regalo de aniversario o cumpleaños el mismo día, corriendo a última hora.",
+  "Yo nunca me he quedado dormido en pleno acto.",
+  "Yo nunca he usado un juguete sexual con mi pareja.",
+  "Yo nunca he dicho el nombre equivocado en un momento de pasión.",
+  "Yo nunca he tenido relaciones en un lugar público o arriesgado.",
+  "Yo nunca he fingido un orgasmo para terminar más rápido.",
+  "Yo nunca me he reído a carcajadas por un ruido gracioso e inesperado en la cama.",
+  "Yo nunca he probado el juego de roles o disfraces en la intimidad.",
+  "Yo nunca he enviado o recibido una foto o video subido de tono (nudes).",
+  "Yo nunca he probado comida (crema, chocolate, etc.) en el cuerpo de mi pareja.",
+  "Yo nunca he sido atrapado o interrumpido por un familiar, amigo o mascota en pleno momento picoso.",
+  "Yo nunca he tenido relaciones en la ducha.",
+  "Yo nunca he dejado una marca o \"chupón\" visible por accidente.",
+  "Yo nunca he empezado el momento íntimo solo porque tenía frío y quería calentar la cama."
+];
+let nunca: string[] = DEFAULT_NUNCA;
+export const getNunca = () => nunca;
+export function setNunca(list: string[]) {
+  nunca = list.length ? list : DEFAULT_NUNCA;
+}
+export const parseNunca = (raw: unknown) => cleanList(raw, DEFAULT_NUNCA, 200);
+
 /** Todas las listas editables juntas (así viajan entre el editor, el servidor y el juego). */
-export type ContentLists = { categories: string[]; twisters: string[]; nicknames: string[] };
-export const getLists = (): ContentLists => ({ categories, twisters, nicknames });
+export type ContentLists = { categories: string[]; twisters: string[]; nicknames: string[]; nunca: string[] };
+export const getLists = (): ContentLists => ({ categories, twisters, nicknames, nunca });
 export function setLists(raw: Partial<Record<keyof ContentLists, unknown>> | null | undefined) {
   if (raw?.categories) setCategories(parseCategories(raw.categories));
   if (raw?.twisters) setTwisters(parseTwisters(raw.twisters));
   if (raw?.nicknames) setNicknames(parseNicknames(raw.nicknames));
+  if (raw?.nunca) setNunca(parseNunca(raw.nunca));
 }
 
 export function pick<T>(list: T[], rng: () => number): T {

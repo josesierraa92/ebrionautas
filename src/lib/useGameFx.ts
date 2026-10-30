@@ -38,6 +38,7 @@ const EVENTS: Partial<Record<Tile["type"], { title: string; emoji: string; color
   DUELO: { title: "¡DUELO!", emoji: "💀", color: "#ffffff", sound: "zap" },
   REGLA: { title: "¡NUEVA LEY!", emoji: "⚖️", color: "#b98bf0", sound: "gavel" },
   CULTURAL: { title: "¡LA OUIJA!", emoji: "🔮", color: "#ff6b7d", sound: "land" },
+  YO_NUNCA: { title: "¡YO NUNCA!", emoji: "🤚", color: "#7aa2ff", sound: "land" },
   ESCLAVO: { title: "¡PACTO DE SANGRE!", emoji: "🩸", color: "#ff4f6b", sound: "gavel" },
 };
 

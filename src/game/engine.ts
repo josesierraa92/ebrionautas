@@ -3,7 +3,7 @@
 
 import type { AvatarConfig } from "./avatar";
 import { BOARD, PATINAZO_DRINKS, TILE_NAMES, TRAIT_LABELS, getTile } from "./board";
-import { getCategories, getNicknames, getTwisters, pick } from "./content";
+import { getCategories, getNicknames, getNunca, getTwisters, pick } from "./content";
 
 export const LAST_TILE = BOARD.length;
 
@@ -69,6 +69,8 @@ export type GameState = {
   category?: string | null;
   /** Apodo que salió en la casilla «Nuevo apodo» (se queda hasta el siguiente): quien se equivoque al llamarlo bebe. */
   nickname?: string | null;
+  /** Frase que salió en «Yo nunca» (se queda hasta la siguiente). */
+  nunca?: string | null;
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
   /** Último duelo resuelto (los dados se tiran en el servidor): la TV y el celular enseñan el resultado. */
@@ -335,6 +337,18 @@ function landOn(s: GameState, p: Player, rng: Rng) {
         drinks: 1,
         title: TILE_NAMES.CULTURAL,
         text: `Categoría: "${category}" (o ${p.name} elige otra). Por turnos decís una cada uno; quien se quede en blanco o repita, bebe.`,
+      });
+    }
+
+    case "YO_NUNCA": {
+      const frase = pick(getNunca(), rng);
+      s.nunca = frase; // la tarjeta de la casilla la enseña ({frase})
+      log(s, `🤚 Yo nunca: ${frase}`);
+      return decide(s, {
+        kind: "SELECT_DRINKERS",
+        drinks: 1,
+        title: TILE_NAMES.YO_NUNCA,
+        text: `${frase} Beben 1 vaso todos los que sí lo hayan hecho (también ${p.name}).`,
       });
     }
 

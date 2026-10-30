@@ -113,6 +113,15 @@ export const ICONS = {
     ["f", "M32 4C40 18 51 28 51 41a19 19 0 0 1-38 0C13 28 24 18 32 4z"],
     ["c", "M22 41c0 6 3 10 8 12-6 0-12-4-8-12z"],
   ],
+  /** Yo nunca: una mano levantada (palma abierta). */
+  hand: [
+    ["f", rect(15, 28, 34, 30, 11)],
+    ["f", rect(15, 11, 7, 30, 3.5)],
+    ["f", rect(24, 5, 7, 36, 3.5)],
+    ["f", rect(33, 5, 7, 36, 3.5)],
+    ["f", rect(42, 11, 7, 30, 3.5)],
+    ["f", "M18 46L5 36a3.6 3.6 0 0 1 5-5.2L24 41z"],
+  ],
   /** Reto del Más Allá: globo de diálogo con admiración. */
   speech: [
     ["f", "M12 7h40a6 6 0 0 1 6 6v26a6 6 0 0 1-6 6H31L18 57V45h-6a6 6 0 0 1-6-6V13a6 6 0 0 1 6-6z"],
@@ -141,6 +150,7 @@ export const ICON_LABELS: Record<IconName, string> = {
   eye: "Ojo",
   drop: "Sangre",
   speech: "Reto",
+  hand: "Yo nunca",
 };
 
 /** Icono de serie de cada tipo de casilla. */
@@ -154,6 +164,7 @@ export const DEFAULT_ICON: Record<TileType, IconName> = {
   LABERINTO: "fog",
   REGLA: "scales",
   CULTURAL: "planchette",
+  YO_NUNCA: "hand",
   HIPNOSIS: "ghost",
   CARCEL: "flame",
   MUERTE: "coffin",

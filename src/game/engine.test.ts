@@ -1,6 +1,7 @@
+import { BOARD } from "./board";
 import { describe, expect, it } from "vitest";
 import { applyAction, createGame, type Action, type GameState, type Rng } from "./engine";
-import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS } from "./content";
+import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS, setNunca, DEFAULT_NUNCA } from "./content";
 import { tileRule } from "./rules";
 
 /** Rng que produce exactamente los dados indicados (1-6), en orden. */
@@ -91,7 +92,7 @@ describe("casillas", () => {
   });
 
   it("Duelo: cada dado se tira a mano, el que saca menos bebe y los empates se repiten", () => {
-    let s = rollFrom(game(), 5, 2); // 7, x1
+    let s = rollFrom(game(), 17, 2); // 19, hasta 2 rivales
     s = act(s, { type: "DUEL", opponents: ["p2"] });
     expect(s.decision).toMatchObject({ kind: "DUEL_ROLL", i: 0, a: null, b: null });
     expect(s.turn).toBe(0); // no se resuelve solo
@@ -121,8 +122,8 @@ describe("casillas", () => {
   });
 
   it("Duelo: no puede retar a más rivales de los permitidos", () => {
-    const s = rollFrom(game(), 5, 2);
-    expect(act(s, { type: "DUEL", opponents: ["p2", "p3"] })).toBe(s);
+    const s = rollFrom(game(4), 17, 2); // 19: como mucho 2 rivales
+    expect(act(s, { type: "DUEL", opponents: ["p2", "p3", "p4"] })).toBe(s);
   });
 
   it("Laberinto: falla con menos de 5 y sale con 5 o 6", () => {
@@ -414,3 +415,22 @@ describe("Pacto de Sangre", () => {
   });
 });
 
+describe("Yo nunca", () => {
+  it("hay 3 casillas de Yo nunca y quedan 2 duelos", () => {
+    expect(BOARD.filter((t) => t.type === "YO_NUNCA").map((t) => t.n)).toEqual([7, 29, 37]);
+    expect(BOARD.filter((t) => t.type === "DUELO").map((t) => t.n)).toEqual([19, 47]);
+  });
+
+  it("al caer sale una frase de la lista vigente y beben los que la marquen", () => {
+    setNunca(["Yo nunca he probado la frase de prueba."]);
+    try {
+      let s = rollFrom(game(), 5, 2, 1); // 7
+      expect(s.nunca).toBe("Yo nunca he probado la frase de prueba.");
+      expect(s.decision).toMatchObject({ kind: "SELECT_DRINKERS", drinks: 1, text: expect.stringContaining("frase de prueba") });
+      s = act(s, { type: "SELECT_DRINKERS", ids: ["p1", "p3"] });
+      expect(s.players.map((p) => p.drunk)).toEqual([1, 0, 1]);
+    } finally {
+      setNunca(DEFAULT_NUNCA);
+    }
+  });
+});

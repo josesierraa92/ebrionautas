@@ -24,7 +24,7 @@ describe("textos de las tarjetas", () => {
 
   it("los de serie dicen lo de siempre", () => {
     expect(tileRule(6, game, "p1")).toEqual({ title: "Trago de regalo", text: "Ana reparte 1 vaso entre quien quiera (también se los puede quedar)." });
-    expect(tileRule(7, game, "p1").text).toBe("Ana reta hasta a 1 rival. Uno a uno tiran el dado: quien saque menos bebe 1 vaso. Si empatan, se repite.");
+    expect(tileRule(19, game, "p1").text).toBe("Ana reta hasta a 1 rival. Uno a uno tiran el dado: quien saque menos bebe 1 vaso. Si empatan, se repite.");
     expect(tileRule(8, game, "p1").text).toContain("volar hasta la casilla 18 y volver a tirar");
     expect(tileRule(58, game, "p1").text).toContain("para volver a tirar: es el último murciélago");
     expect(tileRule(43, game, "p1").text).toContain("bebe 2 vasos seguidos o rueda hasta la casilla 12.");
@@ -69,10 +69,10 @@ describe("textos viejos guardados en el editor", () => {
 describe("Duelo: a cuántos rivales se puede retar", () => {
   it("nunca más que los rivales que hay en la mesa", () => {
     const dos = createGame([{ name: "Ana", color: "#fff" }, { name: "Beto", color: "#000" }]);
-    expect(tileRule(37, dos, "p1").text).toContain("reta hasta a 1 rival.");
+    expect(tileRule(47, dos, "p1").text).toContain("reta hasta a 1 rival.");
     const cuatro = createGame(["A", "B", "C", "D", "E"].map((name) => ({ name, color: "#fff" })));
-    expect(tileRule(37, cuatro, "p1").text).toContain("reta hasta a 4 rivales.");
-    expect(tileRule(7, cuatro, "p1").text).toContain("reta hasta a 1 rival.");
+    expect(tileRule(47, cuatro, "p1").text).toContain("reta hasta a 4 rivales.");
+    expect(tileRule(19, cuatro, "p1").text).toContain("reta hasta a 2 rivales.");
   });
 });
 
