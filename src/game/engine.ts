@@ -3,7 +3,7 @@
 
 import type { AvatarConfig } from "./avatar";
 import { BOARD, PATINAZO_DRINKS, TILE_NAMES, TRAIT_LABELS, getTile } from "./board";
-import { TONGUE_TWISTERS, getCategories, pick } from "./content";
+import { getCategories, getNicknames, getTwisters, pick } from "./content";
 
 export const LAST_TILE = BOARD.length;
 
@@ -67,6 +67,8 @@ export type GameState = {
   waiting?: boolean;
   /** Categoría que salió en La Ouija (se queda hasta la siguiente). */
   category?: string | null;
+  /** Apodo que salió en la casilla «Nuevo apodo» (se queda hasta el siguiente): quien se equivoque al llamarlo bebe. */
+  nickname?: string | null;
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
   /** Último duelo resuelto (los dados se tiran en el servidor): la TV y el celular enseñan el resultado. */
@@ -94,6 +96,7 @@ export type Action =
   | { type: "JAIL_PAY"; n: number }
   | { type: "RANKING"; on: boolean }
   | { type: "DRANK"; id: string }
+  | { type: "ADD_DRINK"; id: string; n?: number }
   | { type: "PENALTY"; id: string };
 
 export type Rng = () => number;
@@ -145,6 +148,17 @@ export function applyAction(state: GameState, action: Action, rng: Rng = Math.ra
     const p = s.players.find((q) => q.id === action.id)!;
     log(s, `✅ ${p.name} se bebió ${p.pending} ${vasos(p.pending)}.`);
     p.pending = 0;
+    return s;
+  }
+
+  // «+ Trago» del celular: suma vasos a quien sea y cuando sea (p. ej. el apodo de la casilla «Nuevo apodo»), sin tocar el turno
+  if (action.type === "ADD_DRINK") {
+    if (state.phase === "FINISHED" || !state.players.some((p) => p.id === action.id)) return state;
+    const n = Math.min(3, Math.max(1, Math.floor(action.n ?? 1)));
+    const s = structuredClone(state);
+    const who = s.players.find((p) => p.id === action.id)!;
+    log(s, `➕ ${who.name} suma ${n} ${vasos(n)} a mano.`);
+    drink(s, action.id, n, null);
     return s;
   }
 
@@ -366,13 +380,15 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       return decide(s, { kind: "SELECT_DRINKERS", drinks: tile.drinks, title: tile.title, text });
     }
 
-    case "RETO":
-      return decide(s, {
-        kind: "SELECT_DRINKERS",
-        drinks: tile.drinks,
-        title: tile.title,
-        text: tile.twister ? `${tile.text} «${pick(TONGUE_TWISTERS, rng)}»` : tile.text,
-      });
+    case "RETO": {
+      let text = tile.twister ? `${tile.text} «${pick(getTwisters(), rng)}»` : tile.text;
+      if (tile.nickname) {
+        const apodo = pick(getNicknames(), rng);
+        s.nickname = apodo; // la tarjeta de la casilla lo enseña ({apodo})
+        text = text.replace(/\{apodo\}/g, apodo);
+      }
+      return decide(s, { kind: "SELECT_DRINKERS", drinks: tile.drinks, title: tile.title, text });
+    }
 
     case "ESCLAVO":
       if (others.length === 0) return endTurn(s);

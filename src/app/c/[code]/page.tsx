@@ -22,6 +22,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
+  const [addDrink, setAddDrink] = useState(false); // «+ Trago»: sumar un vaso a mano a cualquier jugador
 
   useEffect(() => {
     setSecret(saved.get<string>(controlKey(code)));
@@ -115,9 +116,16 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 py-4">
       <div className="flex items-center justify-between">
         <span className="title-game text-xl">MUERTOS DE SED</span>
-        <button onClick={() => setMenu(true)} className="btn-game bg-btn-blue px-3 py-1 text-white" aria-label="Marcador e historial">
-          ☰ MARCADOR
-        </button>
+        <div className="flex items-center gap-2">
+          {!winner && (
+            <button onClick={() => setAddDrink(true)} className="btn-game bg-btn-red px-3 py-1 text-white" aria-label="Agregar un trago a un jugador">
+              + TRAGO
+            </button>
+          )}
+          <button onClick={() => setMenu(true)} className="btn-game bg-btn-blue px-3 py-1 text-white" aria-label="Marcador e historial">
+            ☰ MARCADOR
+          </button>
+        </div>
       </div>
 
       {winner && game.ranking ? null : winner ? (
@@ -161,6 +169,31 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
       {actionError && <ErrorBox text={actionError} />}
       {error && <p className="text-sm text-btn-red">⚠️ {error}</p>}
       {winner && game.ranking && <Clasificatoria game={game} onClose={() => act({ type: "RANKING", on: false })} />}
+
+      {addDrink && !winner && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-space/95" role="dialog" aria-modal="true" aria-label="Agregar trago">
+          <div className="mx-auto flex max-w-md flex-col gap-3 px-4 py-4">
+            <div className="flex items-center justify-between">
+              <span className="font-display text-2xl">+ Trago</span>
+              <button onClick={() => setAddDrink(false)} className="btn-game bg-btn-yellow px-4 py-1 text-white">
+                ✕ LISTO
+              </button>
+            </div>
+            <p className="text-sm text-white/70">Toca a quien debe beber 1 vaso (por ejemplo, si se equivocó con el apodo). No cambia el turno.</p>
+            <ul className="flex flex-col gap-2">
+              {game.players.map((p) => (
+                <li key={p.id}>
+                  <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game flex w-full items-center justify-between bg-btn-red px-4 py-3 text-xl text-white disabled:opacity-60">
+                    <span className="truncate uppercase">{p.name}</span>
+                    <span className="shrink-0">+1 · lleva {p.drunk}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {actionError && <ErrorBox text={actionError} />}
+          </div>
+        </div>
+      )}
 
       {menu && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-space/95">

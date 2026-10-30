@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyAction, createGame, type Action, type GameState, type Rng } from "./engine";
-import { setCategories, DEFAULT_CATEGORIES } from "./content";
+import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS } from "./content";
 import { tileRule } from "./rules";
 
 /** Rng que produce exactamente los dados indicados (1-6), en orden. */
@@ -353,5 +353,37 @@ describe("Siguiente turno", () => {
     expect(s.ranking).toBe(true);
     s = act(s, { type: "RANKING", on: false });
     expect(s.ranking).toBe(false);
+  });
+});
+
+describe("+ Trago, apodos y trabalenguas editables", () => {
+  it("ADD_DRINK suma vasos a cualquier jugador sin cambiar el turno", () => {
+    const g = game();
+    const s = act(g, { type: "ADD_DRINK", id: "p2" });
+    expect(s.players[1].drunk).toBe(1);
+    expect(s.players[1].pending).toBe(1);
+    expect(s.turn).toBe(g.turn);
+    expect(s.phase).toBe(g.phase);
+    expect(act(g, { type: "ADD_DRINK", id: "nadie" })).toBe(g);
+  });
+
+  it("la casilla Nuevo apodo saca uno de la lista vigente y lo pone en la decisión", () => {
+    setNicknames(["Pelusa"]);
+    try {
+      const s = rollFrom(game(), 12, 2, 1); // 14
+      expect(s.nickname).toBe("Pelusa");
+      expect(s.decision).toMatchObject({ kind: "SELECT_DRINKERS", text: expect.stringContaining("Pelusa") });
+    } finally {
+      setNicknames(DEFAULT_NICKNAMES);
+    }
+  });
+
+  it("Lenguados usa los trabalenguas vigentes", () => {
+    setTwisters(["Mi trabalenguas propio"]);
+    try {
+      expect(rollFrom(game(), 56, 5, 1).decision).toMatchObject({ text: expect.stringContaining("Mi trabalenguas propio") });
+    } finally {
+      setTwisters(DEFAULT_TWISTERS);
+    }
   });
 });

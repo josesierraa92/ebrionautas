@@ -31,7 +31,7 @@ export type Tile =
   | { n: number; type: "POSICION"; who: "detras" | "delante"; drinks: number; title: string }
   | { n: number; type: "RASGO"; traits: Trait[]; drinks: number; title: string }
   | { n: number; type: "ESCLAVO" }
-  | { n: number; type: "RETO"; title: string; text: string; drinks: number; twister?: boolean };
+  | { n: number; type: "RETO"; title: string; text: string; drinks: number; twister?: boolean; nickname?: boolean };
 
 export const TRAIT_LABELS: Record<Trait, string> = {
   hombre: "los hombres",
@@ -84,7 +84,7 @@ export const BOARD: Tile[] = [
   { n: 11, type: "RASGO", traits: ["mujer"], drinks: 2, title: "Hembras" },
   { n: 12, type: "POSICION", who: "detras", drinks: 1, title: "Pa' los de atrás" },
   { n: 13, type: "CULTURAL" },
-  { n: 14, type: "RETO", title: "Chorizo", text: "Desde ahora tu nombre es Chorizo. Si alguien se equivoca y te llama de otra forma, toma 1 vaso.", drinks: 1 },
+  { n: 14, type: "RETO", title: "Nuevo apodo", text: "Desde ahora en esta ronda tu nombre es {apodo}. Si alguien se equivoca y te llama de otra forma, toma 1 vaso (se lo suma el celular con «+ Trago»).", drinks: 1, nickname: true },
   { n: 15, type: "RETO", title: "Cómicos", text: "Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos.", drinks: 2 },
   { n: 16, type: "RETO", title: "Pastosos", text: "Quien lleve mucho dinero en la cartera bebe por cada billete de más.", drinks: 1 },
   { n: 17, type: "HIPNOSIS" },

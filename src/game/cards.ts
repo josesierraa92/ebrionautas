@@ -110,7 +110,8 @@ export function cardCatalog(): CardDef[] {
       def = { key, label: t.title, tiles: [t.n], vars: POSICION_VARS, defaults: { title: t.title, text: "Beben {vasos} todos los que van {lado} de {nombre}{lista}" } };
     else if (t.type === "RASGO")
       def = { key, label: t.title, tiles: [t.n], vars: RASGO_VARS, defaults: { title: t.title, text: "Juicio de los vivos: beben {vasos} {quienes}." } };
-    else if (t.type === "RETO") def = { key, label: t.title, tiles: [t.n], vars: [], defaults: { title: t.title, text: t.text } };
+    else if (t.type === "RETO")
+      def = { key, label: t.title, tiles: [t.n], vars: t.nickname ? [NOMBRE, { name: "apodo", about: "el apodo que salió al azar (la lista se edita arriba)" }] : [], defaults: { title: t.title, text: t.text } };
     else continue;
     seen.set(key, def);
   }

@@ -79,13 +79,15 @@ export function tileVars(n: number, game: GameState, playerId: string): Record<s
       return { vasos: vasos(tile.drinks), quienes: tile.traits.map((t) => TRAIT_LABELS[t]).join(" y ") };
     case "CULTURAL":
       return { nombre, categoria: game.category ?? "…" };
+    case "RETO":
+      return tile.nickname ? { nombre, apodo: game.nickname ?? "…" } : { nombre };
     default:
       return { nombre };
   }
 }
 
 /** Datos que cambian en cada partida (nombre del jugador, quiénes están en la mesa, lo que sale al azar…): nunca se escriben a mano. */
-const DYNAMIC_VARS = new Set(["nombre", "lista", "rivales", "categoria", "dado", "resultado", "casilla", "pagados", "deuda"]);
+const DYNAMIC_VARS = new Set(["nombre", "lista", "rivales", "categoria", "apodo", "dado", "resultado", "casilla", "pagados", "deuda"]);
 
 /**
  * Huecos de una tarjeta que valen SIEMPRE lo mismo (por ejemplo «1 vaso» y «los hombres» en Machos): el editor los enseña ya escritos

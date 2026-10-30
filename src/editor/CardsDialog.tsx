@@ -12,7 +12,7 @@ import { TILE_ACCENT } from "@/game/tileStyle";
 import { DEFAULT_ICON } from "@/editor/icons";
 import GameCard from "@/components/GameCard";
 import { BOARD } from "@/game/board";
-import { DEFAULT_CATEGORIES, getCategories, parseCategories } from "@/game/content";
+import { DEFAULT_CATEGORIES, DEFAULT_NICKNAMES, DEFAULT_TWISTERS, getLists, parseCategories, parseNicknames, parseTwisters, type ContentLists } from "@/game/content";
 
 const CARDS = cardCatalog();
 
@@ -33,29 +33,43 @@ function sampleVars(def: CardDef): Record<string, string | number> {
   game.players[0].pos = n;
   game.giftAmount = 2; // trago de regalo: de ejemplo, 2 vasos
   game.category = "frutas"; // La Ouija: categoría de ejemplo
+  game.nickname = "Pelón"; // Nuevo apodo: apodo de ejemplo
   game.players[1].pos = Math.max(1, n - 3);
   game.players[2].pos = n + 3;
   return { ...tileVars(n, game, game.players[0].id), categoria: "Animales" };
 }
+
+const LIST_BOXES: { kind: keyof ContentLists; title: string; unit: string; about: string; defaults: string[]; placeholder: string; max: number }[] = [
+  { kind: "categories", title: "🔮 Categorías de La Ouija", unit: "categorías", about: "en cada Ouija sale una al azar y aparece en la tarjeta", defaults: DEFAULT_CATEGORIES, placeholder: "Una categoría por línea (por ejemplo: frutas)", max: 60 },
+  { kind: "nicknames", title: "🏷️ Apodos de «Nuevo apodo»", unit: "apodos", about: "al caer en la casilla 14 sale uno al azar donde dice {apodo}", defaults: DEFAULT_NICKNAMES, placeholder: "Un apodo por línea (por ejemplo: Chorizo)", max: 30 },
+  { kind: "twisters", title: "👅 Trabalenguas de Lenguados", unit: "trabalenguas", about: "al caer en Lenguados sale uno al azar y se añade a la tarjeta", defaults: DEFAULT_TWISTERS, placeholder: "Un trabalenguas por línea", max: 240 },
+];
 
 export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey: () => string; onClose: () => void; onStatus: (msg: string) => void }) {
   const [saved, setSaved] = useState<CardOverrides | null>(null);
   const [draft, setDraft] = useState<CardOverrides>({});
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
-  // categorías de La Ouija: una por línea
-  const [savedCats, setSavedCats] = useState<string[] | null>(null);
-  const [catsText, setCatsText] = useState("");
+  // listas editables (una por línea): categorías de La Ouija, trabalenguas de Lenguados y apodos de «Nuevo apodo»
+  const [listsText, setListsText] = useState<Record<keyof ContentLists, string>>({ categories: "", twisters: "", nicknames: "" });
+  const [savedLists, setSavedLists] = useState<ContentLists | null>(null);
+  const showLists = (l: ContentLists) => (setSavedLists(l), setListsText({ categories: l.categories.join("\n"), twisters: l.twisters.join("\n"), nicknames: l.nicknames.join("\n") }));
 
   useEffect(() => {
     void fetchCardTexts(true).then((o) => {
       setSaved(o);
       setDraft(o);
-      setSavedCats(getCategories());
-      setCatsText(getCategories().join("\n"));
+      showLists(getLists());
     });
   }, []);
-  const cats = useMemo(() => parseCategories(catsText.split("\n")), [catsText]);
+  const lists = useMemo<ContentLists>(
+    () => ({
+      categories: parseCategories(listsText.categories.split("\n")),
+      twisters: parseTwisters(listsText.twisters.split("\n")),
+      nicknames: parseNicknames(listsText.nicknames.split("\n")),
+    }),
+    [listsText],
+  );
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -72,7 +86,7 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
       }).filter((g) => g.cards.length),
     [list],
   );
-  const changed = saved !== null && (JSON.stringify(parseCardOverrides(draft)) !== JSON.stringify(saved) || JSON.stringify(cats) !== JSON.stringify(savedCats));
+  const changed = saved !== null && (JSON.stringify(parseCardOverrides(draft)) !== JSON.stringify(saved) || JSON.stringify(lists) !== JSON.stringify(savedLists));
   const set = (key: string, field: "title" | "text", value: string) => setDraft((d) => ({ ...d, [key]: { ...d[key], [field]: value } }));
   const reset = (key: string) =>
     setDraft((d) => {
@@ -84,15 +98,13 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
   const save = async () => {
     setBusy(true);
     try {
-      const res = await fetch("/api/admin/cards", { method: "PUT", headers: { "content-type": "application/json", "x-admin-key": adminKey() }, body: JSON.stringify({ cards: parseCardOverrides(draft), categories: cats }) });
+      const res = await fetch("/api/admin/cards", { method: "PUT", headers: { "content-type": "application/json", "x-admin-key": adminKey() }, body: JSON.stringify({ cards: parseCardOverrides(draft), ...lists }) });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) return onStatus(body.error ?? "No se pudieron guardar las tarjetas.");
       const o = parseCardOverrides(body.cards);
       setSaved(o);
       setDraft(o);
-      const c = parseCategories(body.categories ?? cats);
-      setSavedCats(c);
-      setCatsText(c.join("\n"));
+      showLists({ categories: parseCategories(body.categories ?? lists.categories), twisters: parseTwisters(body.twisters ?? lists.twisters), nicknames: parseNicknames(body.nicknames ?? lists.nicknames) });
       await fetchCardTexts(true);
       onStatus("Tarjetas guardadas. La TV y los celulares las verán al recargar la página.");
     } catch {
@@ -126,26 +138,29 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
         </p>
 
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
-          {!search.trim() && (
-            <div className="grid gap-1.5 rounded-xl bg-white/5 p-3">
-              <div className="flex items-center gap-2">
-                <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs">🔮 Categorías de La Ouija</span>
-                <span className="text-xs opacity-70">{cats.length} categorías · en cada Ouija sale una al azar y aparece en la tarjeta</span>
-                <button className="ml-auto text-xs text-amber-300 underline" onClick={() => setCatsText(DEFAULT_CATEGORIES.join("\n"))}>
-                  Volver a las de serie
-                </button>
+          {!search.trim() &&
+            LIST_BOXES.map((box) => (
+              <div key={box.kind} className="grid gap-1.5 rounded-xl bg-white/5 p-3">
+                <div className="flex items-center gap-2">
+                  <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs">{box.title}</span>
+                  <span className="text-xs opacity-70">
+                    {lists[box.kind].length} {box.unit} · {box.about}
+                  </span>
+                  <button className="ml-auto text-xs text-amber-300 underline" onClick={() => setListsText((t) => ({ ...t, [box.kind]: box.defaults.join("\n") }))}>
+                    Volver a las de serie
+                  </button>
+                </div>
+                <textarea
+                  className="min-h-40 rounded-md bg-white/10 px-2 py-1.5 text-sm"
+                  rows={8}
+                  value={listsText[box.kind]}
+                  onChange={(e) => setListsText((t) => ({ ...t, [box.kind]: e.target.value }))}
+                  placeholder={box.placeholder}
+                  aria-label={box.title}
+                />
+                <p className="text-[11px] opacity-70">Una por línea: cambia, borra o añade las que quieras (se guardan con «Guardar»). Máximo {box.max} letras cada una.</p>
               </div>
-              <textarea
-                className="min-h-40 rounded-md bg-white/10 px-2 py-1.5 text-sm"
-                rows={8}
-                value={catsText}
-                onChange={(e) => setCatsText(e.target.value)}
-                placeholder="Una categoría por línea (por ejemplo: frutas)"
-                aria-label="Categorías de La Ouija"
-              />
-              <p className="text-[11px] opacity-70">Una por línea: cambia, borra o añade las que quieras (se guardan con «Guardar»). Máximo 60 letras cada una.</p>
-            </div>
-          )}
+            ))}
           {/* resumen: cuántas tarjetas distintas hay y cuántas casillas cubre cada grupo (tocar un grupo salta a él) */}
           {!search.trim() && (
             <div className="grid gap-2 rounded-xl bg-white/5 p-3">
