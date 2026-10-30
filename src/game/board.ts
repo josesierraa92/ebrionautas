@@ -14,6 +14,7 @@ export type Tile =
   | { n: number; type: "REGLA" }
   | { n: number; type: "CULTURAL" }
   | { n: number; type: "YO_NUNCA" }
+  | { n: number; type: "RONDA" }
   | { n: number; type: "HIPNOSIS" }
   | { n: number; type: "CARCEL" }
   | { n: number; type: "MUERTE" }
@@ -37,6 +38,7 @@ export const TILE_NAMES: Record<Tile["type"], string> = {
   REGLA: "Ley del Más Allá",
   CULTURAL: "La Ouija",
   YO_NUNCA: "Yo nunca",
+  RONDA: "Reto de ronda",
   HIPNOSIS: "Poseído",
   CARCEL: "Purgatorio",
   MUERTE: "La Fosa",
@@ -76,7 +78,7 @@ export const BOARD: Tile[] = [
   { n: 23, type: "REGLA" },
   // TODO validar texto exacto de la casilla 24
   { n: 24, type: "ESCLAVO" },
-  { n: 25, type: "CULTURAL" },
+  { n: 25, type: "RONDA" },
   { n: 26, type: "CARCEL" },
   { n: 27, type: "RETO", title: "Meones", text: "Quien haya ido al baño bebe 2 vasos.", drinks: 2 },
   { n: 28, type: "OCA", next: 38 },
@@ -106,7 +108,7 @@ export const BOARD: Tile[] = [
   { n: 49, type: "RETO", title: "Muero de sed", text: "Pon un poco de licor en la mano del jugador de la derecha y bébelo como si fueras un perrito.", drinks: 1 },
   { n: 50, type: "RETO", title: "Escoceses", text: "Si llevas ropa de cuadros, bebe 1 chupito.", drinks: 1 },
   { n: 51, type: "RASGO" },
-  { n: 52, type: "CULTURAL" },
+  { n: 52, type: "RONDA" },
   // TODO validar texto exacto de la casilla 53
   { n: 53, type: "RETO", title: "Sedientos", text: "Te bebes lo que les queda en el vaso a tus compañeros.", drinks: 1 },
   { n: 54, type: "RASGO" },

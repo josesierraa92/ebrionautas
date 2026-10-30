@@ -3,7 +3,7 @@
 
 import type { AvatarConfig } from "./avatar";
 import { BOARD, PATINAZO_DRINKS, TILE_NAMES, getTile } from "./board";
-import { getCategories, getJuicio, getNicknames, getNunca, getTwisters, pick } from "./content";
+import { getCategories, getJuicio, getNicknames, getNunca, getRonda, getTwisters, pick } from "./content";
 
 export const LAST_TILE = BOARD.length;
 
@@ -75,6 +75,8 @@ export type GameState = {
   nunca?: string | null;
   /** Carta que salió en «Juicio de los vivos» (se queda hasta la siguiente). */
   juicio?: string | null;
+  /** Reto de ronda en marcha (casilla «Reto de ronda»): dura hasta que el turno vuelve a quien lo sacó. */
+  ronda?: { text: string; by: string } | null;
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
   /** Último duelo resuelto (los dados se tiran en el servidor): la TV y el celular enseñan el resultado. */
@@ -223,6 +225,11 @@ function endTurn(s: GameState) {
     return;
   }
   s.turn = (s.turn + 1) % s.players.length;
+  // el reto de ronda dura una ronda: termina cuando el turno vuelve a quien lo sacó
+  if (s.ronda && s.players[s.turn].id === s.ronda.by) {
+    log(s, `⏳ El reto de ronda de ${s.players[s.turn].name} terminó.`);
+    s.ronda = null;
+  }
   // el Pacto de Sangre dura una ronda: termina cuando el turno vuelve a quien lo firmó
   if (s.slave && s.players[s.turn].id === s.slave.master) {
     log(s, `🩸 El Pacto de Sangre de ${s.players[s.turn].name} terminó (duró una ronda).`);
@@ -301,6 +308,13 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       s.decision = null;
       log(s, `🏆 ¡${p.name} vuelve a su tumba antes del amanecer! Borracho, pero a tiempo: Leyenda del Más Allá. Reparte el resto de bebida como quiera.`);
       return;
+
+    case "RONDA": {
+      const text = pick(getRonda(), rng);
+      s.ronda = { text, by: p.id }; // la tarjeta lo enseña ({frase}) y el marcador lo recuerda hasta que acabe la ronda
+      log(s, `⏳ Reto de ronda de ${p.name}: ${text}`);
+      return endTurn(s);
+    }
 
     case "POSADA":
       p.status.inmune = true;

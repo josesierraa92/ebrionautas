@@ -198,15 +198,40 @@ export function setJuicio(list: string[]) {
 }
 export const parseJuicio = (raw: unknown) => cleanList(raw, DEFAULT_JUICIO, 200);
 
+/** Retos de ronda: un efecto que dura toda la ronda (no solo este turno); quien lo rompa bebe 1 vaso. */
+export const DEFAULT_RONDA = [
+  "Nadie puede decir «sí» ni «no».",
+  "Nadie puede señalar con el dedo.",
+  "Todos beben con la mano contraria a la que usan siempre.",
+  "Nadie puede decir nombres propios: a todos se les llama «tú».",
+  "Nadie puede reírse.",
+  "Todos hablan en susurros.",
+  "Nadie puede tocarse la cara.",
+  "Nadie puede decir groserías.",
+  "Todos hablan en tercera persona (por ejemplo: «Ana quiere un trago»).",
+  "Cada vez que alguien beba, todos tienen que brindar.",
+  "Prohibido usar el celular.",
+  "Nadie puede cruzar los brazos ni las piernas.",
+  "Todos tienen que terminar cada frase diciendo «¡salud!».",
+  "Nadie puede decir la palabra «beber» ni «tomar»."
+];
+let ronda: string[] = DEFAULT_RONDA;
+export const getRonda = () => ronda;
+export function setRonda(list: string[]) {
+  ronda = list.length ? list : DEFAULT_RONDA;
+}
+export const parseRonda = (raw: unknown) => cleanList(raw, DEFAULT_RONDA, 200);
+
 /** Todas las listas editables juntas (así viajan entre el editor, el servidor y el juego). */
-export type ContentLists = { categories: string[]; twisters: string[]; nicknames: string[]; nunca: string[]; juicio: string[] };
-export const getLists = (): ContentLists => ({ categories, twisters, nicknames, nunca, juicio });
+export type ContentLists = { categories: string[]; twisters: string[]; nicknames: string[]; nunca: string[]; juicio: string[]; ronda: string[] };
+export const getLists = (): ContentLists => ({ categories, twisters, nicknames, nunca, juicio, ronda });
 export function setLists(raw: Partial<Record<keyof ContentLists, unknown>> | null | undefined) {
   if (raw?.categories) setCategories(parseCategories(raw.categories));
   if (raw?.twisters) setTwisters(parseTwisters(raw.twisters));
   if (raw?.nicknames) setNicknames(parseNicknames(raw.nicknames));
   if (raw?.nunca) setNunca(parseNunca(raw.nunca));
   if (raw?.juicio) setJuicio(parseJuicio(raw.juicio));
+  if (raw?.ronda) setRonda(parseRonda(raw.ronda));
 }
 
 export function pick<T>(list: T[], rng: () => number): T {

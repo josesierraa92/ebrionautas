@@ -44,6 +44,7 @@ const LEGACY: Record<string, { title?: string[]; text?: string[] }> = {
       "{nombre} puede beber 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» para {destino}. Si no quiere, se planta y se queda en esta casilla.",
     ],
   },
+  ESCLAVO: { text: ["{nombre} firma un Pacto de Sangre con otro jugador: cada vez que {nombre} beba, su pactado bebe lo mismo. Dura hasta que otro caiga en esta casilla."] },
   RASGO: { text: ["Juicio de los vivos: beben {vasos} {quienes}."] },
   CULTURAL: { text: ["Sale una categoría. Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso."] },
   YO_NUNCA: { text: ["{frase} Beben 1 vaso todos los que sí lo hayan hecho."] },
@@ -80,6 +81,7 @@ const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?:
   REGLA: { vars: [NOMBRE], defaults: { title: TILE_NAMES.REGLA, text: "{nombre} dicta una ley para todos (por ejemplo: prohibido decir «beber»). Dura hasta que alguien ponga otra. Quien la rompa, bebe 1 vaso." } },
   CULTURAL: { vars: [{ name: "categoria", about: "la categoría que salió (al azar entre las de «Categorías»)" }], defaults: { title: TILE_NAMES.CULTURAL, text: "Categoría: «{categoria}». Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso." } },
   RASGO: { vars: [{ name: "frase", about: "la carta que salió (al azar entre las de «Cartas de Juicio de los vivos»)" }], defaults: { title: TILE_NAMES.RASGO, text: "{frase}" } },
+  RONDA: { vars: [NOMBRE, { name: "frase", about: "el reto que salió (al azar entre los de «Retos de ronda»)" }], defaults: { title: TILE_NAMES.RONDA, text: "{frase} Dura una ronda: hasta que vuelva a tirar {nombre}. Quien lo rompa bebe 1 vaso (se lo suma el celular con «+ Trago»)." } },
   YO_NUNCA: { vars: [{ name: "frase", about: "la frase que salió (al azar entre las de «Frases de Yo nunca»)" }], defaults: { title: TILE_NAMES.YO_NUNCA, text: "{frase} Si lo has hecho, bebes 1 vaso." } },
   HIPNOSIS: { vars: [NOMBRE], defaults: { title: TILE_NAMES.HIPNOSIS, text: "Un espíritu posee a {nombre}: hasta su próximo turno, se bebe la mitad de todo lo que beban los demás." } },
   CARCEL: {
@@ -91,7 +93,7 @@ const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?:
     vars: [NOMBRE, VASOS, { name: "casilla", about: "a qué casilla rueda" }],
     defaults: { title: TILE_NAMES.PATINAZO, text: "{nombre} tropieza con una lápida. Para no caerse elige: bebe {vasos} seguidos o rueda hasta la casilla {casilla}." },
   },
-  ESCLAVO: { vars: [NOMBRE], defaults: { title: TILE_NAMES.ESCLAVO, text: "{nombre} firma un Pacto de Sangre con otro jugador: cada vez que {nombre} beba, su pactado bebe lo mismo. Dura hasta que otro caiga en esta casilla." } },
+  ESCLAVO: { vars: [NOMBRE], defaults: { title: TILE_NAMES.ESCLAVO, text: "{nombre} firma un Pacto de Sangre con otro jugador: cada vez que {nombre} beba, su pactado bebe lo mismo. Dura una ronda." } },
 };
 
 const POSICION_VARS: CardVar[] = [NOMBRE, VASOS, { name: "lado", about: "«por detrás» o «por delante»" }, { name: "lista", about: "quiénes son («: Ana, Beto.») o «. Esta vez, nadie.»" }];
@@ -132,7 +134,7 @@ export function cardCatalog(): CardDef[] {
 export const CARD_GROUPS = [
   { id: "juicio", title: "Juicio de los vivos", about: "una carta al azar distinta cada vez (votaciones y «beben todos los que…») o los que van por detrás o por delante", types: ["RASGO", "POSICION"] },
   { id: "retos", title: "Retos del Más Allá", about: "retos y pruebas para todos", types: ["RETO"] },
-  { id: "ronda", title: "Ronda", about: "efectos que no pasan en el mismo turno: duran toda la ronda (un apodo, una ley, un pacto, un estado…)", types: [] as string[] },
+  { id: "ronda", title: "Ronda", about: "efectos que no pasan en el mismo turno: duran toda la ronda (un apodo, una ley, un pacto, un estado…)", types: ["RONDA"] as string[] },
   { id: "decision", title: "Casillas con decisión", about: "quien cae decide o juega algo en el celular", types: ["OCA", "A_BEBER", "DUELO", "CULTURAL", "YO_NUNCA", "REGLA", "ESCLAVO", "PATINAZO"] },
   { id: "estados", title: "Estados y castigos", about: "se queda con un estado o lo mandan de vuelta", types: ["POSADA", "HIPNOSIS", "LABERINTO", "CARCEL", "MUERTE"] },
   { id: "extremos", title: "Inicio y meta", about: "la salida y la llegada", types: ["SALIDA", "META"] },
@@ -144,7 +146,7 @@ export type CardGroupId = (typeof CARD_GROUPS)[number]["id"];
  * Tarjetas cuyo efecto dura toda la ronda (no se resuelve en el mismo turno): el editor las junta en el grupo «Ronda». Cada una conserva
  * su tipo de casilla en el grupo de siempre (así hay test de que todo tipo tiene grupo); aquí solo se reordenan.
  */
-export const ROUND_CARDS: ReadonlySet<string> = new Set(["RETO:Nuevo apodo", "REGLA", "ESCLAVO", "HIPNOSIS", "POSADA"]);
+export const ROUND_CARDS: ReadonlySet<string> = new Set(["RETO:Nuevo apodo", "REGLA", "ESCLAVO", "HIPNOSIS", "POSADA", "RONDA"]);
 
 /** Grupo de una tarjeta del catálogo, según el tipo de su primera casilla (las de resultado van aparte). */
 export function groupOf(def: CardDef): CardGroupId {

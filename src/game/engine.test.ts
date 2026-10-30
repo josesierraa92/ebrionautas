@@ -1,7 +1,7 @@
 import { BOARD } from "./board";
 import { describe, expect, it } from "vitest";
 import { applyAction, createGame, type Action, type GameState, type Rng } from "./engine";
-import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS, setNunca, DEFAULT_NUNCA, setJuicio, DEFAULT_JUICIO } from "./content";
+import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS, setNunca, DEFAULT_NUNCA, setJuicio, DEFAULT_JUICIO, setRonda, DEFAULT_RONDA } from "./content";
 import { tileRule } from "./rules";
 
 /** Rng que produce exactamente los dados indicados (1-6), en orden. */
@@ -433,6 +433,29 @@ describe("Yo nunca", () => {
       expect(no.turn).toBe(1);
     } finally {
       setNunca(DEFAULT_NUNCA);
+    }
+  });
+});
+
+describe("Reto de ronda", () => {
+  it("hay 2 casillas de Reto de ronda (25 y 52) y quedan 3 Ouijas", () => {
+    expect(BOARD.filter((t) => t.type === "RONDA").map((t) => t.n)).toEqual([25, 52]);
+    expect(BOARD.filter((t) => t.type === "CULTURAL").map((t) => t.n)).toEqual([13, 33, 39]);
+  });
+
+  it("al caer sale un reto, pasa el turno y dura hasta que el turno vuelve a quien lo sacó", () => {
+    setRonda(["Nadie puede señalar con el dedo."]);
+    try {
+      let s = rollFrom(game(), 23, 2, 1); // p1 cae en 25
+      expect(s.ronda).toEqual({ text: "Nadie puede señalar con el dedo.", by: "p1" });
+      expect(s.turn).toBe(1);
+      s = rollFrom(s, 15, 2); // p2 termina su turno en 17 (Poseído)
+      expect(s.ronda).not.toBeNull();
+      s = rollFrom(s, 15, 2); // p3 también: vuelve a p1
+      expect(s.turn).toBe(0);
+      expect(s.ronda).toBeNull();
+    } finally {
+      setRonda(DEFAULT_RONDA);
     }
   });
 });

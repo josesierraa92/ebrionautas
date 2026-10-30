@@ -20,6 +20,11 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
   return (
     <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-3">
       <h3 className={`mb-2 font-display ${big ? "text-2xl" : "text-lg"}`}>Marcador</h3>
+      {game.ronda && !game.winner && (
+        <p className={`mb-2 rounded-xl bg-[#5fb21f]/25 px-2 py-1 ${big ? "text-base" : "text-xs"}`} title="Reto de ronda en marcha">
+          ⏳ <b>Ronda de {game.players.find((q) => q.id === game.ronda!.by)?.name}:</b> {game.ronda.text}
+        </p>
+      )}
       <ul className="flex flex-col gap-2">
         {game.players.map((p) => (
           <li key={p.id} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 ${p.id === current && !game.winner ? "bg-white/10 ring-2 ring-btn-yellow" : ""}`}>
