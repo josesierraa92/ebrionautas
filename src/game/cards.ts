@@ -98,7 +98,7 @@ const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?:
   "RETO:Nuevo apodo": { label: "Nuevo apodo", vars: [NOMBRE, { name: "apodo", about: "el apodo que salió al azar (la lista se edita arriba)" }], defaults: { title: "Nuevo apodo", text: NICKNAME_TEXT } },
   RASGO: { vars: [{ name: "frase", about: "la carta que salió (al azar entre las de «Cartas de Juicio de los vivos»)" }], defaults: { title: TILE_NAMES.RASGO, text: "{frase}" } },
   RONDA: { vars: [NOMBRE, { name: "frase", about: "el reto que salió (al azar entre los de «Retos de ronda»)" }], defaults: { title: TILE_NAMES.RONDA, text: "{frase} Dura una ronda: hasta que vuelva a tirar {nombre}. Los vasos se suman en el celular con «+ Trago»." } },
-  REFLEJO: { vars: [{ name: "frase", about: "la carta que salió (al azar entre las de «Cartas de Reflejos y prendas»)" }], defaults: { title: TILE_NAMES.REFLEJO, text: "{frase}" } },
+  REFLEJO: { vars: [{ name: "frase", about: "la carta que salió (al azar entre las de «Cartas de Muerte Súbita»)" }], defaults: { title: TILE_NAMES.REFLEJO, text: "{frase}" } },
   YO_NUNCA: { vars: [{ name: "frase", about: "la frase que salió (al azar entre las de «Frases de Yo nunca»)" }], defaults: { title: TILE_NAMES.YO_NUNCA, text: "{frase} Si lo has hecho, bebes." } },
   HIPNOSIS: { vars: [NOMBRE], defaults: { title: TILE_NAMES.HIPNOSIS, text: "Un espíritu posee a {nombre}: hasta su próximo turno, se bebe la mitad de todo lo que beban los demás." } },
   CARCEL: {
@@ -146,7 +146,7 @@ export function cardCatalog(): CardDef[] {
 export const CARD_GROUPS = [
   { id: "juicio", title: "Juicio de los vivos", about: "una carta al azar distinta cada vez (votaciones y «beben todos los que…»)", types: ["RASGO"] },
   { id: "retos", title: "Retos del Más Allá", about: "retos y pruebas para todos", types: ["RETO"] },
-  { id: "reflejos", title: "Reflejos y prendas", about: "acciones rápidas («la última persona en…») y cosas que se llevan puestas («todos los que lleven…»)", types: ["REFLEJO"] },
+  { id: "reflejos", title: "Muerte Súbita", about: "acciones rápidas («la última persona en…») y cosas que se llevan puestas («todos los que lleven…»)", types: ["REFLEJO"] },
   { id: "ronda", title: "Ronda", about: "efectos que no pasan en el mismo turno: duran toda la ronda (un apodo, una ley, un pacto, un estado…)", types: ["RONDA"] as string[] },
   { id: "decision", title: "Casillas con decisión", about: "quien cae decide o juega algo en el celular", types: ["OCA", "A_BEBER", "DUELO", "CULTURAL", "YO_NUNCA", "REGLA", "ESCLAVO", "PATINAZO"] },
   { id: "estados", title: "Estados y castigos", about: "se queda con un estado o lo mandan de vuelta", types: ["POSADA", "HIPNOSIS", "LABERINTO", "CARCEL", "MUERTE"] },

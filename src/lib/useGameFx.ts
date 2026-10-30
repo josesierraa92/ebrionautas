@@ -38,7 +38,7 @@ const EVENTS: Partial<Record<Tile["type"], { title: string; emoji: string; color
   DUELO: { title: "¡DUELO!", emoji: "💀", color: "#ffffff", sound: "zap" },
   REGLA: { title: "¡NUEVA LEY!", emoji: "⚖️", color: "#b98bf0", sound: "gavel" },
   CULTURAL: { title: "¡LA OUIJA!", emoji: "🔮", color: "#ff6b7d", sound: "land" },
-  REFLEJO: { title: "¡REFLEJOS!", emoji: "⏱️", color: "#ff7ac0", sound: "zap" },
+  REFLEJO: { title: "¡MUERTE SÚBITA!", emoji: "⏱️", color: "#ff7ac0", sound: "zap" },
   RONDA: { title: "¡RETO DE RONDA!", emoji: "⏳", color: "#b6e55a", sound: "gavel" },
   YO_NUNCA: { title: "¡YO NUNCA!", emoji: "🤚", color: "#7aa2ff", sound: "land" },
   ESCLAVO: { title: "¡PACTO DE SANGRE!", emoji: "🩸", color: "#ff4f6b", sound: "gavel" },

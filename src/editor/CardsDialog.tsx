@@ -35,7 +35,7 @@ function sampleVars(def: CardDef): Record<string, string | number> {
   game.category = "frutas"; // La Ouija: categoría de ejemplo
   game.nickname = "Pelón"; // Nuevo apodo: apodo de ejemplo
   game.reto = "Quien haya ido al baño bebe."; // Reto del Más Allá: ejemplo
-  game.reflejo = "Todos los que lleven un reloj puesto beben."; // Reflejos y prendas: ejemplo
+  game.reflejo = "Todos los que lleven un reloj puesto beben."; // Muerte Súbita: ejemplo
   game.nunca = "Yo nunca me he quedado dormido en el cine."; // Yo nunca: frase de ejemplo
   game.juicio = "Todos los que usen Android beben."; // Juicio de los vivos: carta de ejemplo
   game.ronda = { text: "Nadie puede señalar con el dedo.", by: "p1" }; // Reto de ronda: ejemplo
@@ -49,7 +49,7 @@ const LIST_BOXES: { kind: keyof ContentLists; title: string; unit: string; about
   { kind: "nicknames", title: "🏷️ Apodos de «Nuevo apodo»", unit: "apodos", about: "al caer en la casilla 14 sale uno al azar donde dice {apodo}", defaults: DEFAULT_NICKNAMES, placeholder: "Un apodo por línea (por ejemplo: Chorizo)", max: 30 },
   { kind: "juicio", title: "👁️ Cartas de Juicio de los vivos", unit: "cartas", about: "cada vez que alguien cae en un ojito sale una al azar", defaults: DEFAULT_JUICIO, placeholder: "Una carta por línea (por ejemplo: Todos los solteros beben.)", max: 200 },
   { kind: "retos", title: "🎤 Retos del Más Allá", unit: "retos", about: "cada vez sale uno al azar; «{trabalenguas}» pone uno de la lista de abajo y «bebe N vasos» fija los vasos", defaults: DEFAULT_RETOS, placeholder: "Un reto por línea (por ejemplo: Quien haya ido al baño bebe 2 vasos.)", max: 240 },
-  { kind: "reflejos", title: "⏱️ Cartas de Reflejos y prendas", unit: "cartas", about: "al caer sale una al azar (la última persona en…, todos los que lleven…)", defaults: DEFAULT_REFLEJOS, placeholder: "Una carta por línea (por ejemplo: Todos los que lleven un anillo beben.)", max: 200 },
+  { kind: "reflejos", title: "⏱️ Cartas de Muerte Súbita", unit: "cartas", about: "al caer sale una al azar (la última persona en…, todos los que lleven…)", defaults: DEFAULT_REFLEJOS, placeholder: "Una carta por línea (por ejemplo: Todos los que lleven un anillo beben.)", max: 200 },
   { kind: "ronda", title: "⏳ Retos de ronda", unit: "retos", about: "al caer en «Reto de ronda» sale uno al azar y dura toda la ronda", defaults: DEFAULT_RONDA, placeholder: "Un reto por línea (por ejemplo: Nadie puede señalar con el dedo.)", max: 200 },
   { kind: "nunca", title: "🤚 Frases de «Yo nunca»", unit: "frases", about: "al caer en Yo nunca sale una al azar; beben los que sí lo hayan hecho", defaults: DEFAULT_NUNCA, placeholder: "Una frase por línea (por ejemplo: Yo nunca he …)", max: 200 },
   { kind: "twisters", title: "👅 Trabalenguas de Lenguados", unit: "trabalenguas", about: "al caer en Lenguados sale uno al azar y se añade a la tarjeta", defaults: DEFAULT_TWISTERS, placeholder: "Un trabalenguas por línea", max: 240 },
@@ -247,10 +247,12 @@ function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { 
   // casilla de la que toma icono y color: la primera que usa la tarjeta (el resultado del duelo, la de duelo)
   // los resultados llevan el icono (negro, vectorial) de su casilla: duelo, niebla (laberinto) y purgatorio (cárcel)
   const resultTile = def.key === RESULT_KEYS.duel ? "DUELO" : def.key.startsWith("RESULTADO:niebla") ? "LABERINTO" : def.key.startsWith("RESULTADO:purgatorio") ? "CARCEL" : null;
-  const first = def.tiles[0] ? BOARD[def.tiles[0] - 1] : resultTile ? BOARD.find((t) => t.type === resultTile) ?? null : null;
-  const accent = first ? TILE_ACCENT[first.type] : def.key === RESULT_KEYS.mazeOk ? "#5cd23c" : "#ffc61a";
-  const icon = first ? DEFAULT_ICON[first.type] : null;
-  const emoji = first ? undefined : def.key === RESULT_KEYS.mazeOk ? "✨" : def.key === RESULT_KEYS.jail ? "🔓" : def.key.startsWith("RESULTADO:purgatorio") ? "🔥" : "🍷";
+  // el tipo se toma directamente (no de una casilla del tablero: el Panteón en Niebla ya no tiene casillas y el icono se perdía)
+  const first = def.tiles[0] ? BOARD[def.tiles[0] - 1] : null;
+  const type = first?.type ?? resultTile;
+  const accent = type ? TILE_ACCENT[type] : "#ffc61a";
+  const icon = type ? DEFAULT_ICON[type] : null;
+  const emoji = type ? undefined : def.key === RESULT_KEYS.jail ? "🔓" : "🍷";
   const kind = first && (first.type === "RASGO" ? "Carta al azar" : first.type === "RETO" ? "Reto" : null);
   // vista previa: tal como sale en el juego, con los huecos rellenados con una partida de ejemplo
   const preview = (x: string) => fillCard(x, vars);

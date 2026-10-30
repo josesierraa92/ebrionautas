@@ -122,7 +122,7 @@ export const ICONS = {
     ["f", rect(42, 11, 7, 30, 3.5)],
     ["f", "M18 46L5 36a3.6 3.6 0 0 1 5-5.2L24 41z"],
   ],
-  /** Reflejos y prendas: cronómetro. */
+  /** Muerte Súbita: cronómetro. */
   stopwatch: [
     ["f", rect(26, 4, 12, 6, 3)],
     ["f", rect(30, 9, 4, 8, 1)],

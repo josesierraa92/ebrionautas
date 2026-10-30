@@ -466,7 +466,7 @@ describe("Reto de ronda", () => {
   });
 });
 
-describe("Reflejos y prendas", () => {
+describe("Muerte Súbita", () => {
   it("hay 3 casillas (9, 35 y 59) y quedan 2 de Trago de regalo y ninguna de Panteón en Niebla", () => {
     expect(BOARD.filter((t) => t.type === "REFLEJO").map((t) => t.n)).toEqual([9, 35, 59]);
     expect(BOARD.filter((t) => t.type === "A_BEBER").map((t) => t.n)).toEqual([6, 30]);
@@ -478,7 +478,7 @@ describe("Reflejos y prendas", () => {
     try {
       let s = rollFrom(game(), 7, 2, 4); // 9 -> segunda carta
       expect(s.reflejo).toBe("Todos los que lleven un anillo puesto beben.");
-      expect(s.decision).toMatchObject({ kind: "SELECT_DRINKERS", title: "Reflejos y prendas", drinks: 1 });
+      expect(s.decision).toMatchObject({ kind: "SELECT_DRINKERS", title: "Muerte Súbita", drinks: 1 });
       s = act(s, { type: "SELECT_DRINKERS", ids: ["p2"] });
       expect(s.players.map((p) => p.drunk)).toEqual([0, 1, 0]);
     } finally {

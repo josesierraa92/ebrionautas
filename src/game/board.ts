@@ -42,7 +42,7 @@ export const TILE_NAMES: Record<Tile["type"], string> = {
   CULTURAL: "La Ouija",
   YO_NUNCA: "Yo nunca",
   RONDA: "Reto de ronda",
-  REFLEJO: "Reflejos y prendas",
+  REFLEJO: "Muerte Súbita",
   HIPNOSIS: "Poseído",
   CARCEL: "Purgatorio",
   MUERTE: "La Fosa",

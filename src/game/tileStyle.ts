@@ -12,7 +12,7 @@ export const TILE_STYLE: Record<Tile["type"], { icon: string; bg: [string, strin
   LABERINTO: { icon: "🌫️", bg: ["#b8b2d8", "#7d74b0"], dark: true, label: "Niebla" },
   REGLA: { icon: "⚖️", bg: ["#b98bf0", "#7a3fd0"], dark: true, label: "Ley" },
   CULTURAL: { icon: "🔮", bg: ["#ff5d8f", "#c2185b"], dark: true, label: "Ouija" },
-  REFLEJO: { icon: "⏱️", bg: ["#ff9ccf", "#e0449b"], dark: false, label: "Reflejos" },
+  REFLEJO: { icon: "⏱️", bg: ["#ff9ccf", "#e0449b"], dark: false, label: "Muerte súbita" },
   RONDA: { icon: "⏳", bg: ["#c6f26a", "#5fb21f"], dark: false, label: "Ronda" },
   YO_NUNCA: { icon: "🤚", bg: ["#8fb0ff", "#3b5bdb"], dark: true, label: "Yo nunca" },
   HIPNOSIS: { icon: "👻", bg: ["#7ff0e0", "#20b2a0"], dark: true, label: "Poseído" },

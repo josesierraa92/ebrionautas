@@ -79,7 +79,7 @@ export type GameState = {
   ronda?: { text: string; by: string } | null;
   /** Reto que salió en «Reto del Más Allá» (se queda hasta el siguiente). */
   reto?: string | null;
-  /** Carta que salió en «Reflejos y prendas» (se queda hasta la siguiente). */
+  /** Carta que salió en «Muerte Súbita» (se queda hasta la siguiente). */
   reflejo?: string | null;
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
@@ -314,10 +314,10 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       return;
 
     case "REFLEJO": {
-      // Reflejos y prendas: «la última persona en…» o «todos los que lleven…»; el celular marca quiénes beben
+      // Muerte Súbita: «la última persona en…» o «todos los que lleven…»; el celular marca quiénes beben
       const frase = pick(getReflejos(), rng);
       s.reflejo = frase; // la tarjeta de la casilla la enseña ({frase})
-      log(s, `⏱️ Reflejos y prendas: ${frase}`);
+      log(s, `⏱️ Muerte Súbita: ${frase}`);
       return decide(s, { kind: "SELECT_DRINKERS", drinks: 1, title: TILE_NAMES.REFLEJO, text: frase });
     }
 

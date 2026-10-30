@@ -319,7 +319,7 @@ export function drinksIn(text: string): number {
   return m ? Math.min(5, Math.max(1, Number(m[1]))) : 1;
 }
 
-/** Reflejos y prendas: cartas de acción rápida («la última persona en…») o de un objeto o prenda que se lleva puesto («todos los que lleven…»). */
+/** Muerte Súbita: cartas de acción rápida («la última persona en…») o de un objeto o prenda que se lleva puesto («todos los que lleven…»). */
 export const DEFAULT_REFLEJOS = [
   "La última persona en aplaudir bebe.",
   "La última persona en levantar las manos bebe.",
