@@ -34,6 +34,14 @@ describe("listas editables guardadas como diferencia", () => {
     expect((await loadLists()).juicio).toEqual(DEFAULT_JUICIO.slice(5));
   });
 
+  it("una lista dañada (casi toda la serie «borrada») se repara sola", async () => {
+    await getStore().set("cards:ronda", JSON.stringify({ v: 4, added: [], removed: DEFAULT_RONDA.slice(2) }), 100);
+    expect((await loadLists()).ronda).toEqual(DEFAULT_RONDA);
+    // borrar unas pocas a propósito sigue valiendo
+    await getStore().set("cards:ronda", JSON.stringify({ v: 4, added: [], removed: DEFAULT_RONDA.slice(0, 3) }), 100);
+    expect((await loadLists()).ronda).toEqual(DEFAULT_RONDA.slice(3));
+  });
+
   it("guardar la lista de serie tal cual no deja nada fijado (los cambios del código siguen llegando)", async () => {
     await saveLists({ juicio: DEFAULT_JUICIO });
     const raw = JSON.parse((await getStore().get("cards:juicio"))!);
