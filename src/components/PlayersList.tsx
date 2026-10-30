@@ -70,7 +70,7 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
             </span>
             {onPenalty && game.rule && !game.winner && (
               <button
-                title="Rompió la ley: bebe 1"
+                title="Rompió la ley: bebe"
                 aria-label={`${p.name} rompió la ley`}
                 onClick={() => onPenalty(p.id)}
                 className="btn-game bg-btn-special px-2 text-xs text-white"

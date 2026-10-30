@@ -62,30 +62,43 @@ const LEGACY: Record<string, { title?: string[]; text?: string[] }> = {
   },
 };
 
+/** Textos de serie de antes de dejar los avisos de bebida en un simple «bebe» (sin «1 vaso», «un trago»…): si el admin tiene guardado el viejo tal cual, no cuenta como edición. */
+const LEGACY_WORDING: Record<string, string[]> = {
+  "YO_NUNCA": ["{frase} Si lo has hecho, bebes 1 vaso."],
+  "OCA": ["{nombre} puede beber 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» para volar hasta la casilla {casilla} y volver a tirar. Si no quiere, se planta y se queda en esta casilla."],
+  "LABERINTO": ["{nombre} se pierde entre las tumbas y la niebla. En sus turnos tira el dado: con 5 o 6 escapa; si no, bebe 1 vaso y sigue perdido."],
+  "REGLA": ["{nombre} dicta una ley para todos (por ejemplo: prohibido decir «beber»). Dura hasta que alguien ponga otra. Quien la rompa, bebe 1 vaso."],
+  "CULTURAL": ["Categoría: «{categoria}». Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso."],
+  "RETO:Nuevo apodo": ["Desde ahora en esta ronda tu nombre es {apodo}. Si alguien se equivoca y te llama de otra forma, toma 1 vaso (se lo suma el celular con «+ Trago»)."],
+  "DUELO": ["{nombre} reta hasta a {rivales}. Uno a uno tiran el dado: quien saque menos bebe 1 vaso. Si empatan, se repite."],
+  "OCA:ultimo": ["{nombre} puede beber 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» para volver a tirar: es el último murciélago. Si no quiere, se planta y se queda en esta casilla."],
+  "RESULTADO:niebla-pierde": ["{nombre} saca {dado}: no es 5 ni 6. Bebe 1 vaso y sigue perdido entre las tumbas."],
+};
+
 const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?: string }> = {
   SALIDA: { vars: [], defaults: { title: TILE_NAMES.SALIDA, text: "Es medianoche del Día de Muertos: los muertos salen de sus tumbas para su única noche de fiesta. Deben volver antes de que salga el sol… aunque lleguen borrachos." } },
   META: { vars: [], defaults: { title: TILE_NAMES.META, text: "¡Antes del amanecer! El primero en volver a su tumba gana (como pueda tenerse en pie) y reparte el resto de la bebida como quiera." } },
   POSADA: { vars: [NOMBRE], defaults: { title: TILE_NAMES.POSADA, text: "{nombre} se refugia en La Capilla: es suelo sagrado y nadie le puede mandar beber hasta su próximo turno." } },
   A_BEBER: { vars: [NOMBRE, VASOS], defaults: { title: "Trago de regalo", text: "{nombre} reparte {vasos} entre quien quiera (también se los puede quedar)." } },
-  DUELO: { vars: [NOMBRE, { name: "rivales", about: "a cuántos rivales reta («1 rival», «2 rivales»)" }], defaults: { title: TILE_NAMES.DUELO, text: "{nombre} reta hasta a {rivales}. Uno a uno tiran el dado: quien saque menos bebe 1 vaso. Si empatan, se repite." } },
+  DUELO: { vars: [NOMBRE, { name: "rivales", about: "a cuántos rivales reta («1 rival», «2 rivales»)" }], defaults: { title: TILE_NAMES.DUELO, text: "{nombre} reta hasta a {rivales}. Uno a uno tiran el dado: quien saque menos bebe. Si empatan, se repite." } },
   OCA: {
     vars: [NOMBRE, { name: "casilla", about: "a qué casilla vuela (el siguiente murciélago)" }],
-    defaults: { title: "¡De murciélago en murciélago!", text: "{nombre} puede beber 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» para volar hasta la casilla {casilla} y volver a tirar. Si no quiere, se planta y se queda en esta casilla." },
+    defaults: { title: "¡De murciélago en murciélago!", text: "{nombre} puede beber diciendo «¡De murciélago en murciélago y bebo porque me toca!» para volar hasta la casilla {casilla} y volver a tirar. Si no quiere, se planta y se queda en esta casilla." },
   },
   // el último murciélago (casilla 58) no tiene a dónde volar: su propia tarjeta
   "OCA:ultimo": {
     label: "El Murciélago (el último)",
     vars: [NOMBRE],
-    defaults: { title: "¡De murciélago en murciélago!", text: "{nombre} puede beber 1 vaso diciendo «¡De murciélago en murciélago y bebo porque me toca!» para volver a tirar: es el último murciélago. Si no quiere, se planta y se queda en esta casilla." },
+    defaults: { title: "¡De murciélago en murciélago!", text: "{nombre} puede beber diciendo «¡De murciélago en murciélago y bebo porque me toca!» para volver a tirar: es el último murciélago. Si no quiere, se planta y se queda en esta casilla." },
   },
-  LABERINTO: { vars: [NOMBRE], defaults: { title: TILE_NAMES.LABERINTO, text: "{nombre} se pierde entre las tumbas y la niebla. En sus turnos tira el dado: con 5 o 6 escapa; si no, bebe 1 vaso y sigue perdido." } },
-  REGLA: { vars: [NOMBRE], defaults: { title: TILE_NAMES.REGLA, text: "{nombre} dicta una ley para todos (por ejemplo: prohibido decir «beber»). Dura hasta que alguien ponga otra. Quien la rompa, bebe 1 vaso." } },
-  CULTURAL: { vars: [{ name: "categoria", about: "la categoría que salió (al azar entre las de «Categorías»)" }], defaults: { title: TILE_NAMES.CULTURAL, text: "Categoría: «{categoria}». Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso." } },
+  LABERINTO: { vars: [NOMBRE], defaults: { title: TILE_NAMES.LABERINTO, text: "{nombre} se pierde entre las tumbas y la niebla. En sus turnos tira el dado: con 5 o 6 escapa; si no, bebe y sigue perdido." } },
+  REGLA: { vars: [NOMBRE], defaults: { title: TILE_NAMES.REGLA, text: "{nombre} dicta una ley para todos (por ejemplo: prohibido decir «beber»). Dura hasta que alguien ponga otra. Quien la rompa, bebe." } },
+  CULTURAL: { vars: [{ name: "categoria", about: "la categoría que salió (al azar entre las de «Categorías»)" }], defaults: { title: TILE_NAMES.CULTURAL, text: "Categoría: «{categoria}». Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe." } },
   RETO: { vars: [NOMBRE, { name: "frase", about: "el reto que salió (al azar entre los de «Retos del Más Allá»)" }], defaults: { title: TILE_NAMES.RETO, text: "{frase}" } },
   "RETO:Nuevo apodo": { label: "Nuevo apodo", vars: [NOMBRE, { name: "apodo", about: "el apodo que salió al azar (la lista se edita arriba)" }], defaults: { title: "Nuevo apodo", text: NICKNAME_TEXT } },
   RASGO: { vars: [{ name: "frase", about: "la carta que salió (al azar entre las de «Cartas de Juicio de los vivos»)" }], defaults: { title: TILE_NAMES.RASGO, text: "{frase}" } },
   RONDA: { vars: [NOMBRE, { name: "frase", about: "el reto que salió (al azar entre los de «Retos de ronda»)" }], defaults: { title: TILE_NAMES.RONDA, text: "{frase} Dura una ronda: hasta que vuelva a tirar {nombre}. Los vasos se suman en el celular con «+ Trago»." } },
-  YO_NUNCA: { vars: [{ name: "frase", about: "la frase que salió (al azar entre las de «Frases de Yo nunca»)" }], defaults: { title: TILE_NAMES.YO_NUNCA, text: "{frase} Si lo has hecho, bebes 1 vaso." } },
+  YO_NUNCA: { vars: [{ name: "frase", about: "la frase que salió (al azar entre las de «Frases de Yo nunca»)" }], defaults: { title: TILE_NAMES.YO_NUNCA, text: "{frase} Si lo has hecho, bebes." } },
   HIPNOSIS: { vars: [NOMBRE], defaults: { title: TILE_NAMES.HIPNOSIS, text: "Un espíritu posee a {nombre}: hasta su próximo turno, se bebe la mitad de todo lo que beban los demás." } },
   CARCEL: {
     vars: [NOMBRE],
@@ -118,7 +131,7 @@ export function cardCatalog(): CardDef[] {
   }
   const res: CardDef[] = [
     { key: RESULT_KEYS.mazeOk, label: "Niebla: se salva", tiles: [], vars: [NOMBRE, { name: "dado", about: "lo que sacó" }], defaults: { title: "¡Se salvó!", text: "{nombre} saca {dado} y encuentra la salida del Panteón en Niebla. No bebe y en su próximo turno vuelve a avanzar." } },
-    { key: RESULT_KEYS.mazeNo, label: "Niebla: sigue perdido", tiles: [], vars: [NOMBRE, { name: "dado", about: "lo que sacó" }], defaults: { title: "¡Sigue perdido!", text: "{nombre} saca {dado}: no es 5 ni 6. Bebe 1 vaso y sigue perdido entre las tumbas." } },
+    { key: RESULT_KEYS.mazeNo, label: "Niebla: sigue perdido", tiles: [], vars: [NOMBRE, { name: "dado", about: "lo que sacó" }], defaults: { title: "¡Sigue perdido!", text: "{nombre} saca {dado}: no es 5 ni 6. Bebe y sigue perdido entre las tumbas." } },
     { key: RESULT_KEYS.duel, label: "Duelo: resultado", tiles: [], vars: [{ name: "resultado", about: "una línea por rival: quién sacó cuánto y quién bebe" }], defaults: { title: "¡Resultado del duelo!", text: "{resultado}" } },
     { key: RESULT_KEYS.jailRoll, label: "Purgatorio: tirada", tiles: [], vars: [NOMBRE, { name: "dado", about: "lo que sacó" }, { name: "vasos", about: "cuántos debe (2 o 4)" }], defaults: { title: "¡A pagar penitencia!", text: "{nombre} saca {dado}: debe {vasos} para salir del Purgatorio. Puede pagarlos todos ya o solo una parte y deber el resto para su próximo turno." } },
     { key: RESULT_KEYS.jailDebt, label: "Purgatorio: paga su deuda", tiles: [], vars: [NOMBRE, { name: "vasos", about: "cuántos debe todavía" }], defaults: { title: "Deuda del Purgatorio", text: "{nombre} todavía debe {vasos} del Purgatorio. Si los paga todos, sale y vuelve a tirar; si paga solo una parte, sigue debiendo el resto." } },
@@ -193,7 +206,7 @@ export function parseCardOverrides(raw: unknown): CardOverrides {
     const text = clean(r.text, 600);
     const o: Partial<CardText> = {};
     if (title && title !== d.defaults.title && !LEGACY[key]?.title?.includes(title)) o.title = title;
-    if (text && text !== d.defaults.text && !LEGACY[key]?.text?.includes(text)) o.text = text;
+    if (text && text !== d.defaults.text && !LEGACY[key]?.text?.includes(text) && !LEGACY_WORDING[key]?.includes(text)) o.text = text;
     if (o.title || o.text) out[key] = o;
   }
   return out;

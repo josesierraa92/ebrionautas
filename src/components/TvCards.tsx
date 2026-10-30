@@ -24,9 +24,9 @@ export function decisionText(decision: Decision, name: string): [string, string]
     case "SELECT_DRINKERS":
       return [decision.title, decision.text];
     case "NUNCA":
-      return [cardTitle("YO_NUNCA"), `${name} dice en el celular si lo ha hecho: si sí, bebe 1 vaso.`];
+      return [cardTitle("YO_NUNCA"), `${name} dice en el celular si lo ha hecho: si sí, bebe.`];
     case "OCA":
-      return [cardTitle("OCA"), `${name} decide si bebe 1 vaso para ${decision.next ? `volar hasta la casilla ${decision.next}` : "volver a tirar"} o se planta.`];
+      return [cardTitle("OCA"), `${name} decide si bebe para ${decision.next ? `volar hasta la casilla ${decision.next}` : "volver a tirar"} o se planta.`];
     case "PATINAZO":
       return [cardTitle("PATINAZO"), `${name}: bebe ${PATINAZO_DRINKS} de golpe o rueda hasta la casilla ${decision.backTo}.`];
     case "RULE":

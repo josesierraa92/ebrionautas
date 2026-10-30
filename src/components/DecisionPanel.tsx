@@ -26,7 +26,7 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
       return (
         <PickPlayers
           title={compact ? undefined : `Reta hasta a ${decision.amount}`}
-          text={compact ? `Elige a tus rivales (hasta ${decision.amount}):` : "Cada uno tira su dado en el celular, uno a uno: quien saque menos, bebe 1."}
+          text={compact ? `Elige a tus rivales (hasta ${decision.amount}):` : "Cada uno tira su dado en el celular, uno a uno: quien saque menos, bebe."}
           players={others}
           max={decision.amount}
           min={1}
@@ -42,7 +42,7 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
       return (
         <PickPlayers
           title={compact ? undefined : decision.title}
-          text={compact ? `Marca quiénes beben ${decision.drinks} ${decision.drinks === 1 ? "vaso" : "vasos"}:` : `${decision.text} Marca quiénes beben ${decision.drinks}.`}
+          text={compact ? "Marca quiénes beben:" : `${decision.text} Marca quiénes beben.`}
           players={players}
           max={players.length}
           min={0}
@@ -55,7 +55,7 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
       return (
         <Card title={compact ? undefined : "Yo nunca"} text={compact ? undefined : `${me.name}, ¿lo has hecho?`}>
           <button onClick={() => onAction({ type: "NUNCA", did: true })} className="btn-game bg-btn-red py-3 text-lg text-white">
-            SÍ LO HE HECHO (BEBO 1)
+            SÍ LO HE HECHO (BEBO)
           </button>
           <button onClick={() => onAction({ type: "NUNCA", did: false })} className="btn-game bg-btn-green py-3 text-lg text-white">
             NUNCA LO HE HECHO
@@ -65,7 +65,7 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
 
     case "OCA":
       return (
-        <Card title={compact ? undefined : "¿Bebes para seguir?"} text={compact ? undefined : decision.next ? `Bebe 1 vaso y vuela hasta la casilla ${decision.next}, y vuelve a tirar. O plántate aquí.` : "Es el último murciélago: bebe 1 vaso y vuelve a tirar, o plántate aquí."}>
+        <Card title={compact ? undefined : "¿Bebes para seguir?"} text={compact ? undefined : decision.next ? `Bebe y vuela hasta la casilla ${decision.next}, y vuelve a tirar. O plántate aquí.` : "Es el último murciélago: bebe y vuelve a tirar, o plántate aquí."}>
           <button onClick={() => onAction({ type: "OCA", choice: "fly" })} className="btn-game bg-btn-green py-3 text-lg text-white">
             SÍ, BEBO{decision.next ? ` Y VUELO A LA ${decision.next}` : " Y VUELVO A TIRAR"}
           </button>

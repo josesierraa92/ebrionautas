@@ -24,7 +24,7 @@ export type Tile =
   | { n: number; type: "RETO"; nickname?: boolean; title?: string };
 
 /** Texto de la casilla «Nuevo apodo» (`{apodo}` es el que sale al azar). */
-export const NICKNAME_TEXT = "Desde ahora en esta ronda tu nombre es {apodo}. Si alguien se equivoca y te llama de otra forma, toma 1 vaso (se lo suma el celular con «+ Trago»).";
+export const NICKNAME_TEXT = "Desde ahora en esta ronda tu nombre es {apodo}. Si alguien se equivoca y te llama de otra forma, bebe (se lo suma el celular con «+ Trago»).";
 
 /** Tropiezo de lápida: siempre 2 vasos (también para una decisión que ya estuviera guardada con otro número). */
 export const PATINAZO_DRINKS = 2;

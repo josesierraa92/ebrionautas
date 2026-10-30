@@ -12,7 +12,7 @@ describe("mazeOutcome", () => {
   it("con menos de 5 sigue perdido y bebe", () => {
     const r = mazeOutcome("Ana", 4);
     expect(r.escaped).toBe(false);
-    expect(r.text).toContain("Bebe 1 vaso");
+    expect(r.text).toContain("Bebe y sigue perdido");
   });
 });
 
@@ -25,7 +25,7 @@ describe("textos de las tarjetas", () => {
 
   it("los de serie dicen lo de siempre", () => {
     expect(tileRule(6, game, "p1")).toEqual({ title: "Trago de regalo", text: "Ana reparte 1 vaso entre quien quiera (también se los puede quedar)." });
-    expect(tileRule(19, game, "p1").text).toBe("Ana reta hasta a 1 rival. Uno a uno tiran el dado: quien saque menos bebe 1 vaso. Si empatan, se repite.");
+    expect(tileRule(19, game, "p1").text).toBe("Ana reta hasta a 1 rival. Uno a uno tiran el dado: quien saque menos bebe. Si empatan, se repite.");
     expect(tileRule(8, game, "p1").text).toContain("volar hasta la casilla 18 y volver a tirar");
     expect(tileRule(58, game, "p1").text).toContain("para volver a tirar: es el último murciélago");
     expect(tileRule(43, game, "p1").text).toContain("bebe 2 vasos seguidos o rueda hasta la casilla 12.");

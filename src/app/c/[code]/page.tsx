@@ -179,7 +179,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
                 ✕ LISTO
               </button>
             </div>
-            <p className="text-sm text-white/70">Toca a quien debe beber 1 vaso (por ejemplo, si se equivocó con el apodo). No cambia el turno.</p>
+            <p className="text-sm text-white/70">Toca a quien debe beber (por ejemplo, si se equivocó con el apodo). No cambia el turno.</p>
             <ul className="flex flex-col gap-2">
               {game.players.map((p) => (
                 <li key={p.id}>

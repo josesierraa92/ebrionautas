@@ -200,21 +200,21 @@ export const parseJuicio = (raw: unknown) => cleanList(raw, DEFAULT_JUICIO, 200)
 
 /** Retos de ronda: un efecto que dura toda la ronda (no solo este turno); quien lo rompa bebe 1 vaso. */
 export const DEFAULT_RONDA = [
-  "Por toda esta ronda, nadie puede decir la palabra «sí» o «no». Quien lo haga, bebe 1 vaso.",
-  "Por toda esta ronda, está prohibido apuntar con el dedo. Quien señale con el dedo, bebe 1 vaso.",
+  "Por toda esta ronda, nadie puede decir la palabra «sí» o «no». Quien lo haga, bebe.",
+  "Por toda esta ronda, está prohibido apuntar con el dedo. Quien señale con el dedo, bebe.",
   "Desde ahora, cada vez que bebas, tienes que decir «¡Salud amores míos!» o bebes doble.",
-  "Por toda esta ronda, nadie puede reírse. Quien se ría, bebe 1 vaso.",
-  "Por toda esta ronda, todos deben hablar en un tono de voz susurrado. Si hablas normal, bebe 1 vaso.",
-  "Queda prohibido cruzar las piernas o los brazos por el resto de la ronda. Quien lo haga, bebe 1 vaso.",
-  "Por toda esta ronda, todos beben con la mano contraria a la que usan siempre. Quien lo olvide, bebe 1 vaso.",
-  "Por toda esta ronda, nadie puede decir nombres propios: a todos se les llama «tú». Quien diga un nombre, bebe 1 vaso.",
-  "Por toda esta ronda, nadie puede tocarse la cara. Quien lo haga, bebe 1 vaso.",
-  "Por toda esta ronda, nadie puede decir groserías. Quien lo haga, bebe 1 vaso.",
-  "Por toda esta ronda, todos hablan en tercera persona (por ejemplo: «Ana quiere un trago»). Quien hable en primera persona, bebe 1 vaso.",
-  "Por toda esta ronda, cada vez que alguien beba, todos tienen que brindar. Quien no brinde, bebe 1 vaso.",
-  "Por toda esta ronda, está prohibido usar el celular. Quien lo use, bebe 1 vaso.",
-  "Por toda esta ronda, todos tienen que terminar cada frase diciendo «¡salud!». Quien se olvide, bebe 1 vaso.",
-  "Por toda esta ronda, nadie puede decir la palabra «beber» ni «tomar». Quien la diga, bebe 1 vaso.",
+  "Por toda esta ronda, nadie puede reírse. Quien se ría, bebe.",
+  "Por toda esta ronda, todos deben hablar en un tono de voz susurrado. Si hablas normal, bebe.",
+  "Queda prohibido cruzar las piernas o los brazos por el resto de la ronda. Quien lo haga, bebe.",
+  "Por toda esta ronda, todos beben con la mano contraria a la que usan siempre. Quien lo olvide, bebe.",
+  "Por toda esta ronda, nadie puede decir nombres propios: a todos se les llama «tú». Quien diga un nombre, bebe.",
+  "Por toda esta ronda, nadie puede tocarse la cara. Quien lo haga, bebe.",
+  "Por toda esta ronda, nadie puede decir groserías. Quien lo haga, bebe.",
+  "Por toda esta ronda, todos hablan en tercera persona (por ejemplo: «Ana quiere un trago»). Quien hable en primera persona, bebe.",
+  "Por toda esta ronda, cada vez que alguien beba, todos tienen que brindar. Quien no brinde, bebe.",
+  "Por toda esta ronda, está prohibido usar el celular. Quien lo use, bebe.",
+  "Por toda esta ronda, todos tienen que terminar cada frase diciendo «¡salud!». Quien se olvide, bebe.",
+  "Por toda esta ronda, nadie puede decir la palabra «beber» ni «tomar». Quien la diga, bebe.",
 ];
 let ronda: string[] = DEFAULT_RONDA;
 export const getRonda = () => ronda;
@@ -225,18 +225,18 @@ export const parseRonda = (raw: unknown) => cleanList(raw, DEFAULT_RONDA, 200);
 
 /** Retos del Más Allá: cada vez sale uno al azar. `{trabalenguas}` se cambia por un trabalenguas de su lista; el número de vasos sale del texto («bebe 2 vasos»; si no dice, 1). */
 export const DEFAULT_RETOS = [
-  "Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos.",
+  "Cuenta un chiste. Si a nadie le hace gracia, bebes.",
   "Quien lleve mucho dinero en la cartera bebe por cada billete de más.",
-  "Todos los jugadores toman un trago, excepto el más ebrio (entre todos lo eligen).",
-  "Quien haya ido al baño bebe 2 vasos.",
+  "Todos beben, excepto el más ebrio (entre todos lo eligen).",
+  "Quien haya ido al baño bebe.",
   "Reto por equipos: el equipo perdedor bebe.",
-  "Quien tenga un pariente en la mesa bebe 3 vasos.",
+  "Quien tenga un pariente en la mesa bebe.",
   "Quien no tenga el vaso vacío se lo termina y bebe otro.",
-  "Quien no lleve condón encima bebe 1 vaso.",
+  "Quien no lleve condón encima bebe.",
   "Pon un poco de licor en la mano del jugador de la derecha y bébelo como si fueras un perrito.",
-  "Si llevas ropa de cuadros, bebe 1 chupito.",
+  "Si llevas ropa de cuadros, bebe.",
   "Te bebes lo que les queda en el vaso a tus compañeros.",
-  "Recita un trabalenguas: {trabalenguas} Quien no lo repita bien bebe 2 vasos."
+  "Recita un trabalenguas: {trabalenguas} Quien no lo repita bien bebe."
 ];
 let retos: string[] = DEFAULT_RETOS;
 export const getRetos = () => retos;

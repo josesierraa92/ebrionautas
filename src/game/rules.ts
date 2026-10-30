@@ -44,7 +44,7 @@ export function duelOutcome(game: GameState): { title: string; text: string } | 
   const d = game.lastDuel;
   if (!d) return null;
   const name = (id: string) => game.players.find((q) => q.id === id)?.name ?? "?";
-  const lines = d.rounds.map((r) => `${name(d.by)} ${r.a} – ${name(r.rival)} ${r.b}: bebe ${name(r.loser)} 1 vaso.`);
+  const lines = d.rounds.map((r) => `${name(d.by)} ${r.a} – ${name(r.rival)} ${r.b}: bebe ${name(r.loser)}.`);
   return cardText(RESULT_KEYS.duel, { resultado: lines.join("\n") });
 }
 

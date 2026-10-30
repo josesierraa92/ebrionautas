@@ -18,7 +18,7 @@ const CARDS = cardCatalog();
 
 /** Con qué se rellenan los huecos en la vista previa: una partida de ejemplo (Ana juega; Beto va detrás y Carla delante). */
 function sampleVars(def: CardDef): Record<string, string | number> {
-  if (def.key === RESULT_KEYS.duel) return { resultado: "Ana 5 – Beto 2: bebe Beto 1 vaso." };
+  if (def.key === RESULT_KEYS.duel) return { resultado: "Ana 5 – Beto 2: bebe Beto." };
   if (def.key === RESULT_KEYS.jailRoll) return { nombre: "Ana", dado: 5, vasos: "4 vasos" };
   if (def.key === RESULT_KEYS.jailDebt) return { nombre: "Ana", vasos: "3 vasos" };
   if (def.key === RESULT_KEYS.jailOwes) return { nombre: "Ana", pagados: "1 vaso", deuda: "3 vasos" };
@@ -34,7 +34,7 @@ function sampleVars(def: CardDef): Record<string, string | number> {
   game.giftAmount = 2; // trago de regalo: de ejemplo, 2 vasos
   game.category = "frutas"; // La Ouija: categoría de ejemplo
   game.nickname = "Pelón"; // Nuevo apodo: apodo de ejemplo
-  game.reto = "Quien haya ido al baño bebe 2 vasos."; // Reto del Más Allá: ejemplo
+  game.reto = "Quien haya ido al baño bebe."; // Reto del Más Allá: ejemplo
   game.nunca = "Yo nunca me he quedado dormido en el cine."; // Yo nunca: frase de ejemplo
   game.juicio = "Todos los que usen Android beben."; // Juicio de los vivos: carta de ejemplo
   game.ronda = { text: "Nadie puede señalar con el dedo.", by: "p1" }; // Reto de ronda: ejemplo
