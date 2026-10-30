@@ -38,7 +38,8 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
                 {p.status.hipnosis && <span title="Abducción mental">🌀</span>}
                 {p.status.laberinto && <span title="Perdido en el Panteón en Niebla">🌫️</span>}
                 {p.status.carcel && <span title="En el Purgatorio">🔥{p.status.carcel.debt ? <span className="font-display text-xs text-btn-red"> debe {p.status.carcel.debt}</span> : null}</span>}
-                {game.slave?.slave === p.id && <span title="Pacto de Sangre">🩸</span>}
+                {game.slave?.slave === p.id && <span title="Pacto de Sangre: bebe lo mismo que su pactado">🩸<span className="text-xs text-btn-red"> ← {game.players.find((q) => q.id === game.slave!.master)?.name}</span></span>}
+                {game.slave?.master === p.id && <span title="Pacto de Sangre: su pactado bebe lo mismo que él">🩸<span className="text-xs text-btn-red"> → {game.players.find((q) => q.id === game.slave!.slave)?.name}</span></span>}
               </p>
               <div className="mt-1 flex items-center gap-2">
                 <div className="h-2 flex-1 overflow-hidden rounded-full border border-ink bg-space" title={`Casilla ${p.pos} de ${LAST_TILE}`}>

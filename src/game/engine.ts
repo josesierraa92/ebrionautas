@@ -216,6 +216,11 @@ function endTurn(s: GameState) {
     return;
   }
   s.turn = (s.turn + 1) % s.players.length;
+  // el Pacto de Sangre dura una ronda: termina cuando el turno vuelve a quien lo firmó
+  if (s.slave && s.players[s.turn].id === s.slave.master) {
+    log(s, `🩸 El Pacto de Sangre de ${s.players[s.turn].name} terminó (duró una ronda).`);
+    s.slave = null;
+  }
   startTurn(s);
 }
 
@@ -557,17 +562,22 @@ function drink(s: GameState, targetId: string, n: number, sourceId: string | nul
     own = n - half;
     addDrinks(hypnotized, half);
     log(s, `👻 ${hypnotized.name} (poseído) absorbe ${half} ${vasos(half)} de ${target.name}.`);
+    bloodPact(s, hypnotized.id, half);
   }
   if (own > 0) {
     addDrinks(target, own);
     log(s, `🍷 ${target.name} bebe ${own} ${vasos(own)}.`);
+    bloodPact(s, target.id, own);
   }
+}
 
-  if (s.slave?.master === targetId) {
-    const slave = s.players.find((q) => q.id === s.slave!.slave)!;
-    addDrinks(slave, n);
-    log(s, `🩸 ${slave.name}, por el Pacto de Sangre, bebe ${n} ${vasos(n)}.`);
-  }
+/** Pacto de Sangre: lo que bebe quien lo firmó (por la razón que sea) también lo bebe su pactado y se le cuenta en su marcador. */
+function bloodPact(s: GameState, drinkerId: string, n: number) {
+  if (!s.slave || s.slave.master !== drinkerId || n <= 0) return;
+  const slave = s.players.find((q) => q.id === s.slave!.slave);
+  if (!slave) return;
+  addDrinks(slave, n);
+  log(s, `🩸 ${slave.name}, por el Pacto de Sangre, bebe ${n} ${vasos(n)} (los mismos que ${s.players.find((q) => q.id === drinkerId)!.name}).`);
 }
 
 function addDrinks(p: Player, n: number) {

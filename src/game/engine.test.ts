@@ -387,3 +387,30 @@ describe("+ Trago, apodos y trabalenguas editables", () => {
     }
   });
 });
+
+describe("Pacto de Sangre", () => {
+  it("lo que bebe quien firma lo bebe también su pactado (se cuenta en su marcador) y dura una ronda", () => {
+    let g = game();
+    g.slave = { master: "p1", slave: "p2" };
+    let s = act(g, { type: "ADD_DRINK", id: "p1" });
+    expect(s.players.map((p) => p.drunk)).toEqual([1, 1, 0]);
+    expect(s.players[1].pending).toBe(1);
+    // quien no firmó bebe solo
+    s = act(s, { type: "ADD_DRINK", id: "p3" });
+    expect(s.players.map((p) => p.drunk)).toEqual([1, 1, 1]);
+    // el pactado no arrastra al que firmó
+    s = act(s, { type: "ADD_DRINK", id: "p2" });
+    expect(s.players.map((p) => p.drunk)).toEqual([1, 2, 1]);
+    // el pacto dura una ronda: sigue mientras juegan los demás y termina cuando el turno vuelve a quien lo firmó
+    g = game();
+    g.slave = { master: "p1", slave: "p2" };
+    g.turn = 1;
+    let t = rollFrom(g, 15, 2); // p2 cae en Poseído (17) y pasa el turno a p3
+    expect(t.turn).toBe(2);
+    expect(t.slave).not.toBeNull();
+    t = rollFrom(t, 15, 2); // p3 también termina su turno: vuelve a p1
+    expect(t.turn).toBe(0);
+    expect(t.slave).toBeNull();
+  });
+});
+
