@@ -3,7 +3,7 @@
 // Ventana para ver y cambiar el texto de TODAS las tarjetas del juego (la que sale en la TV y en el celular al caer en
 // una casilla). Las casillas que comparten tarjeta (p. ej. las 6 «Ronda de mezcal») se muestran una sola vez, con los
 // números de casilla que la usan. Se guardan aparte del tablero y valen para todas las mesas (`/api/admin/cards`).
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { CARD_GROUPS, cardCatalog, fillCard, groupOf, parseCardOverrides, RESULT_KEYS, type CardDef, type CardOverrides } from "@/game/cards";
 import { createGame } from "@/game/engine";
 import { staticCardVars, tileVars } from "@/game/rules";
@@ -147,8 +147,24 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
   const btn = "rounded-lg px-2.5 py-1.5 text-sm font-semibold transition-colors";
   const off = "bg-white/10 hover:bg-white/20";
 
+  // Cerrar: con cambios sin guardar se pregunta; y un clic en el fondo solo cierra si empezó Y terminó en el fondo (arrastrar para seleccionar
+  // texto y soltar fuera del panel cerraba el diálogo «de la nada» y se perdía lo escrito).
+  const downOnBackdrop = useRef(false);
+  const requestClose = () => {
+    if (changed && !confirm("Tienes cambios sin guardar. ¿Cerrar sin guardar?")) return;
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-6" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-6"
+      onMouseDown={(e) => (downOnBackdrop.current = e.target === e.currentTarget)}
+      onClick={(e) => {
+        const fromBackdrop = downOnBackdrop.current && e.target === e.currentTarget;
+        downOnBackdrop.current = false;
+        if (fromBackdrop) requestClose();
+      }}
+    >
       <div className="flex max-h-full w-full max-w-4xl flex-col gap-3 overflow-hidden rounded-2xl bg-[#1c1f27] p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2">
           <h2 className="font-display text-xl text-amber-400">📝 Tarjetas del juego</h2>
@@ -156,7 +172,7 @@ export default function CardsDialog({ adminKey, onClose, onStatus }: { adminKey:
           <button className={`${btn} bg-emerald-500 text-black ${changed && !busy ? "" : "opacity-40"}`} disabled={!changed || busy} onClick={save}>
             {busy ? "Guardando…" : "💾 Guardar"}
           </button>
-          <button className={`${btn} ${off}`} onClick={onClose}>
+          <button className={`${btn} ${off}`} onClick={requestClose}>
             Cerrar
           </button>
         </div>

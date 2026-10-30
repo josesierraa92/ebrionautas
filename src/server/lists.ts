@@ -42,10 +42,11 @@ async function load(kind: keyof ContentLists): Promise<string[]> {
       const add = Array.isArray(added) && added.length ? PARSE[kind](added) : [];
       return merge(kind, add, Array.isArray(removed) ? (removed as string[]) : []);
     }
-    // formato viejo: la lista entera. Lo que no está en la de hoy y fue alguna vez de serie era una carta quitada o movida: no cuenta como añadida.
+    // formato viejo: la lista entera. Solo se rescatan las cartas que el admin **añadió** (lo que no está en la de hoy y nunca fue de serie).
+    // NO se deduce qué borró: si la redacción de serie cambió desde que se guardó, casi toda la lista vieja parecería «borrada» y se perdía
+    // la lista (pasó: quedaban 2 retos de ronda). Mejor que reaparezca algo borrado que se pierda la lista.
     const items = PARSE[kind](Array.isArray(data) ? data : (data as { items?: unknown }).items);
-    const d = diff(kind, items);
-    return merge(kind, d.added.filter((x) => !HISTORIC_DEFAULTS.has(norm(x))), d.removed);
+    return merge(kind, diff(kind, items).added.filter((x) => !HISTORIC_DEFAULTS.has(norm(x))), []);
   } catch {
     return DEFAULTS[kind];
   }

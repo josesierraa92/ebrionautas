@@ -3,7 +3,7 @@
 // Ventana de las fichas: arriba, los personajes zombi que usa el juego (hombres para los hombres, mujeres para las
 // mujeres) dibujados con el ángulo de la TV y su tamaño en el tablero; abajo, el modelo propio de cada color de
 // jugador (la que no se cambia sigue siendo el personaje zombi). Al publicar, todo se dibuja con la cámara de la TV.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { CHARACTER_HEIGHT, CHARACTERS, FEMALE, MALE, SHEET_COLS, TOKEN_TO_TILE } from "@/game/characters";
 import { PLAYER_COLORS } from "@/game/tileStyle";
 import type { Catalog } from "./catalogTypes";
@@ -193,8 +193,17 @@ export default function TokensDialog({
   const on = "bg-amber-400 text-black";
   const off = "bg-white/10 hover:bg-white/20";
 
+  const downOnBackdrop = useRef(false); // el fondo solo cierra si el clic empezó y terminó en él (seleccionar texto y soltar fuera no cierra)
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-6" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-6"
+      onMouseDown={(e) => (downOnBackdrop.current = e.target === e.currentTarget)}
+      onClick={(e) => {
+        const fromBackdrop = downOnBackdrop.current && e.target === e.currentTarget;
+        downOnBackdrop.current = false;
+        if (fromBackdrop) onClose();
+      }}
+    >
       <div className="flex max-h-full w-full max-w-5xl flex-col gap-3 overflow-hidden rounded-2xl bg-[#1c1f27] p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="font-display text-xl text-amber-400">🧟 Fichas de los jugadores</h2>

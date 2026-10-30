@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_CATEGORIES, DEFAULT_JUICIO, DEFAULT_RETOS } from "@/game/content";
+import { DEFAULT_CATEGORIES, DEFAULT_JUICIO, DEFAULT_RETOS, DEFAULT_RONDA, RETO_ORIGINALS } from "@/game/content";
 import { loadLists, saveLists } from "./lists";
 import { getStore, resetMemoryStore } from "./store";
 
@@ -40,13 +40,18 @@ describe("listas editables guardadas como diferencia", () => {
     expect(raw).toMatchObject({ added: [], removed: [] });
   });
 
-  it("formato viejo (lista entera): se conservan sus añadidos y borrados, pero no las cartas de serie que ya se quitaron del código", async () => {
-    const vieja = DEFAULT_RETOS.slice(2).concat("Quien tenga un pariente en la mesa bebe 3 vasos.", "Reto que escribió el admin.");
+  it("formato viejo (lista entera): se rescatan los añadidos del admin y no se pierde la lista aunque la redacción de serie haya cambiado", async () => {
+    // una lista vieja con la redacción de antes (textos que fueron de serie) y un reto que escribió el admin
+    const vieja = [...RETO_ORIGINALS["Cómicos"], ...RETO_ORIGINALS["Corleone"], "Reto que escribió el admin."];
     await getStore().set("cards:retos", JSON.stringify(vieja), 100);
     const l = await loadLists();
     expect(l.retos).toContain("Reto que escribió el admin.");
-    expect(l.retos).not.toContain("Quien tenga un pariente en la mesa bebe 3 vasos."); // era de serie (texto viejo)
-    expect(l.retos).not.toContain(DEFAULT_RETOS[0]); // lo había borrado
-    expect(l.retos).not.toContain(DEFAULT_RETOS[1]);
+    expect(l.retos).toEqual(expect.arrayContaining(DEFAULT_RETOS)); // las de serie siguen todas
+    expect(l.retos.length).toBe(DEFAULT_RETOS.length + 1);
+  });
+
+  it("una lista vieja de solo 2 líneas no deja la lista en 2", async () => {
+    await getStore().set("cards:ronda", JSON.stringify(DEFAULT_RONDA.slice(0, 2)), 100);
+    expect((await loadLists()).ronda).toHaveLength(DEFAULT_RONDA.length);
   });
 });
