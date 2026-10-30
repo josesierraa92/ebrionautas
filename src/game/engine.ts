@@ -2,8 +2,8 @@
 // No toca la UI ni la red; la Fase 2 lo ejecutará en el servidor.
 
 import type { AvatarConfig } from "./avatar";
-import { BOARD, PATINAZO_DRINKS, TILE_NAMES, getTile } from "./board";
-import { getCategories, getJuicio, getNicknames, getNunca, getRonda, getTwisters, pick } from "./content";
+import { BOARD, NICKNAME_TEXT, PATINAZO_DRINKS, TILE_NAMES, getTile } from "./board";
+import { drinksIn, getCategories, getJuicio, getNicknames, getNunca, getRetos, getRonda, getTwisters, pick } from "./content";
 
 export const LAST_TILE = BOARD.length;
 
@@ -77,6 +77,8 @@ export type GameState = {
   juicio?: string | null;
   /** Reto de ronda en marcha (casilla «Reto de ronda»): dura hasta que el turno vuelve a quien lo sacó. */
   ronda?: { text: string; by: string } | null;
+  /** Reto que salió en «Reto del Más Allá» (se queda hasta el siguiente). */
+  reto?: string | null;
   rollSeq: number; // sube con cada tirada (aunque salga el mismo número): la TV anima el dado
   extraRoll: boolean;
   /** Último duelo resuelto (los dados se tiran en el servidor): la TV y el celular enseñan el resultado. */
@@ -401,13 +403,17 @@ function landOn(s: GameState, p: Player, rng: Rng) {
     }
 
     case "RETO": {
-      let text = tile.twister ? `${tile.text} «${pick(getTwisters(), rng)}»` : tile.text;
       if (tile.nickname) {
         const apodo = pick(getNicknames(), rng);
         s.nickname = apodo; // la tarjeta de la casilla lo enseña ({apodo})
-        text = text.replace(/\{apodo\}/g, apodo);
+        return decide(s, { kind: "SELECT_DRINKERS", drinks: 1, title: tile.title ?? TILE_NAMES.RETO, text: NICKNAME_TEXT.replace(/\{apodo\}/g, apodo) });
       }
-      return decide(s, { kind: "SELECT_DRINKERS", drinks: tile.drinks, title: tile.title, text });
+      // Reto del Más Allá: sale uno distinto de la lista; el celular marca quiénes beben (los vasos salen del propio texto)
+      let text = pick(getRetos(), rng);
+      if (text.includes("{trabalenguas}")) text = text.replace(/\{trabalenguas\}/g, `«${pick(getTwisters(), rng)}»`);
+      s.reto = text;
+      log(s, `🎤 Reto del Más Allá: ${text}`);
+      return decide(s, { kind: "SELECT_DRINKERS", drinks: drinksIn(text), title: TILE_NAMES.RETO, text });
     }
 
     case "ESCLAVO":

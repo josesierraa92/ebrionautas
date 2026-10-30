@@ -21,7 +21,10 @@ export type Tile =
   | { n: number; type: "PATINAZO"; drinks: number; backTo: number }
   | { n: number; type: "RASGO" }
   | { n: number; type: "ESCLAVO" }
-  | { n: number; type: "RETO"; title: string; text: string; drinks: number; twister?: boolean; nickname?: boolean };
+  | { n: number; type: "RETO"; nickname?: boolean; title?: string };
+
+/** Texto de la casilla «Nuevo apodo» (`{apodo}` es el que sale al azar). */
+export const NICKNAME_TEXT = "Desde ahora en esta ronda tu nombre es {apodo}. Si alguien se equivoca y te llama de otra forma, toma 1 vaso (se lo suma el celular con «+ Trago»).";
 
 /** Tropiezo de lápida: siempre 2 vasos (también para una decisión que ya estuviera guardada con otro número). */
 export const PATINAZO_DRINKS = 2;
@@ -63,22 +66,22 @@ export const BOARD: Tile[] = [
   { n: 11, type: "RASGO" },
   { n: 12, type: "RASGO" },
   { n: 13, type: "CULTURAL" },
-  { n: 14, type: "RETO", title: "Nuevo apodo", text: "Desde ahora en esta ronda tu nombre es {apodo}. Si alguien se equivoca y te llama de otra forma, toma 1 vaso (se lo suma el celular con «+ Trago»).", drinks: 1, nickname: true },
-  { n: 15, type: "RETO", title: "Cómicos", text: "Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos.", drinks: 2 },
-  { n: 16, type: "RETO", title: "Pastosos", text: "Quien lleve mucho dinero en la cartera bebe por cada billete de más.", drinks: 1 },
+  { n: 14, type: "RETO", title: "Nuevo apodo", nickname: true },
+  { n: 15, type: "RETO" },
+  { n: 16, type: "RETO" },
   { n: 17, type: "HIPNOSIS" },
   { n: 18, type: "OCA", next: 28 },
   { n: 19, type: "DUELO", amount: 2 },
   { n: 20, type: "POSADA" },
   // TODO validar texto exacto de la casilla 21
   { n: 21, type: "RASGO" },
-  { n: 22, type: "RETO", title: "Borrachín", text: "Todos los jugadores toman un trago, excepto el más ebrio (entre todos lo eligen).", drinks: 1 },
+  { n: 22, type: "RETO" },
   { n: 23, type: "REGLA" },
   // TODO validar texto exacto de la casilla 24
   { n: 24, type: "ESCLAVO" },
   { n: 25, type: "RONDA" },
   { n: 26, type: "CARCEL" },
-  { n: 27, type: "RETO", title: "Meones", text: "Quien haya ido al baño bebe 2 vasos.", drinks: 2 },
+  { n: 27, type: "RETO" },
   { n: 28, type: "OCA", next: 38 },
   { n: 29, type: "YO_NUNCA" },
   { n: 30, type: "A_BEBER", amount: 4 },
@@ -87,28 +90,28 @@ export const BOARD: Tile[] = [
   { n: 32, type: "RASGO" },
   { n: 33, type: "CULTURAL" },
   // TODO validar texto exacto de la casilla 34
-  { n: 34, type: "RETO", title: "Guerra de sexos", text: "Reto por equipos: el equipo perdedor bebe.", drinks: 1 },
+  { n: 34, type: "RETO" },
   { n: 35, type: "LABERINTO" },
   { n: 36, type: "HIPNOSIS" },
   { n: 37, type: "YO_NUNCA" },
   { n: 38, type: "OCA", next: 48 },
   { n: 39, type: "CULTURAL" },
-  { n: 40, type: "RETO", title: "Corleone", text: "Quien tenga un pariente en la mesa bebe 3 vasos.", drinks: 3 },
+  { n: 40, type: "RETO" },
   { n: 41, type: "REGLA" },
-  { n: 42, type: "RETO", title: "Tardones", text: "Quien no tenga el vaso vacío se lo termina y bebe otro.", drinks: 1 },
+  { n: 42, type: "RETO" },
   { n: 43, type: "PATINAZO", drinks: 2, backTo: 12 },
   // TODO validar texto exacto de la casilla 44
-  { n: 44, type: "RETO", title: "Descuido", text: "Quien no lleve condón encima bebe 1 vaso.", drinks: 1 },
+  { n: 44, type: "RETO" },
   { n: 45, type: "CARCEL" },
   { n: 46, type: "RASGO" },
   { n: 47, type: "DUELO", amount: 5 },
   { n: 48, type: "OCA", next: 58 },
-  { n: 49, type: "RETO", title: "Muero de sed", text: "Pon un poco de licor en la mano del jugador de la derecha y bébelo como si fueras un perrito.", drinks: 1 },
-  { n: 50, type: "RETO", title: "Escoceses", text: "Si llevas ropa de cuadros, bebe 1 chupito.", drinks: 1 },
+  { n: 49, type: "RETO" },
+  { n: 50, type: "RETO" },
   { n: 51, type: "RASGO" },
   { n: 52, type: "RONDA" },
   // TODO validar texto exacto de la casilla 53
-  { n: 53, type: "RETO", title: "Sedientos", text: "Te bebes lo que les queda en el vaso a tus compañeros.", drinks: 1 },
+  { n: 53, type: "RETO" },
   { n: 54, type: "RASGO" },
   { n: 55, type: "POSADA" },
   // TODO validar bebida y destino de la casilla 56
@@ -117,7 +120,7 @@ export const BOARD: Tile[] = [
   { n: 58, type: "OCA", next: null },
   { n: 59, type: "A_BEBER", amount: 6 },
   { n: 60, type: "MUERTE" },
-  { n: 61, type: "RETO", title: "Lenguados", text: "Recita un trabalenguas. Quien no lo repita bien bebe 2 vasos.", drinks: 2, twister: true },
+  { n: 61, type: "RETO" },
   { n: 62, type: "META" },
 ];
 

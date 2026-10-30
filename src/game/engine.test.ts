@@ -1,7 +1,7 @@
 import { BOARD } from "./board";
 import { describe, expect, it } from "vitest";
 import { applyAction, createGame, type Action, type GameState, type Rng } from "./engine";
-import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS, setNunca, DEFAULT_NUNCA, setJuicio, DEFAULT_JUICIO, setRonda, DEFAULT_RONDA } from "./content";
+import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS, setNunca, DEFAULT_NUNCA, setJuicio, DEFAULT_JUICIO, setRonda, DEFAULT_RONDA, setRetos, DEFAULT_RETOS } from "./content";
 import { tileRule } from "./rules";
 
 /** Rng que produce exactamente los dados indicados (1-6), en orden. */
@@ -145,7 +145,7 @@ describe("casillas", () => {
     expect(s.players[0].pos).toBe(26);
     expect(s.turn).toBe(0);
     expect(s.phase).toBe("ROLL");
-    s = act(s, { type: "ROLL" }, 1); // ahora avanza
+    s = act(s, { type: "ROLL" }, 1, 1); // ahora avanza (cae en un reto)
     expect(s.players[0].pos).toBe(27);
   });
 
@@ -268,11 +268,9 @@ describe("retos, género y deudas", () => {
     }
   });
 
-  it("el Examen de Humanología propone una categoría y Lenguados un trabalenguas", () => {
+  it("el Examen de Humanología propone una categoría", () => {
     const cultural = rollFrom(game(), 11, 2, 1); // 13
     expect(cultural.decision).toMatchObject({ text: expect.stringContaining("Categoría:") });
-    const lenguados = rollFrom(game(), 56, 5, 1); // 61
-    expect(lenguados.decision).toMatchObject({ text: expect.stringContaining("«") });
   });
 
   it("lo bebido queda como deuda hasta confirmar ¡Bebido!", () => {
@@ -368,12 +366,28 @@ describe("+ Trago, apodos y trabalenguas editables", () => {
     }
   });
 
-  it("Lenguados usa los trabalenguas vigentes", () => {
+  it("un reto con {trabalenguas} usa los trabalenguas vigentes", () => {
     setTwisters(["Mi trabalenguas propio"]);
+    setRetos(["Recita: {trabalenguas} Quien falle bebe 2 vasos."]);
     try {
-      expect(rollFrom(game(), 56, 5, 1).decision).toMatchObject({ text: expect.stringContaining("Mi trabalenguas propio") });
+      const s = rollFrom(game(), 56, 5, 1, 1); // 61
+      expect(s.decision).toMatchObject({ kind: "SELECT_DRINKERS", drinks: 2, text: "Recita: «Mi trabalenguas propio» Quien falle bebe 2 vasos." });
     } finally {
       setTwisters(DEFAULT_TWISTERS);
+      setRetos(DEFAULT_RETOS);
+    }
+  });
+
+  it("Reto del Más Allá: sale uno de la lista y los vasos salen de su texto", () => {
+    setRetos(["Todos tocan el piso.", "Quien haya ido al baño bebe 3 vasos."]);
+    try {
+      const sin = rollFrom(game(), 13, 2, 1); // 15 -> primer reto
+      expect(sin.reto).toBe("Todos tocan el piso.");
+      expect(sin.decision).toMatchObject({ drinks: 1, title: "Reto del Más Allá" });
+      const con = rollFrom(game(), 13, 2, 4); // segundo reto
+      expect(con.decision).toMatchObject({ drinks: 3, text: "Quien haya ido al baño bebe 3 vasos." });
+    } finally {
+      setRetos(DEFAULT_RETOS);
     }
   });
 });

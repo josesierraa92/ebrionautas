@@ -52,7 +52,7 @@ export function tileArt(type: Tile["type"]): string {
 
 /** Nombre corto para mostrar en la casilla. */
 export function tileLabel(tile: Tile): string {
-  return "title" in tile ? tile.title : TILE_STYLE[tile.type].label;
+  return "title" in tile && tile.title ? tile.title : TILE_STYLE[tile.type].label;
 }
 
 export const PLAYER_COLORS = [

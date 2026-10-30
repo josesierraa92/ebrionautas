@@ -1,7 +1,7 @@
 // Tarjetas de las casillas (la que sale en la TV y en el celular al caer en una): título y texto de cada una, con los
 // de serie y los que el admin cambió desde el editor (se guardan aparte del tablero y valen para todas las mesas).
 // Los textos llevan huecos entre llaves ({nombre}, {vasos}…) que se rellenan con los datos de la partida.
-import { BOARD, TILE_NAMES, type Tile } from "./board";
+import { BOARD, NICKNAME_TEXT, TILE_NAMES, type Tile } from "./board";
 
 export type CardText = { title: string; text: string };
 /** Lo que el admin cambió: por clave de tarjeta, solo los campos que tocó. */
@@ -15,7 +15,7 @@ const VASOS: CardVar = { name: "vasos", about: "cuántos vasos (con «vaso»/«v
 
 /** Clave de la tarjeta de una casilla: el tipo, y además el título en las que cada una tiene el suyo. */
 export const cardKeyOf = (t: Tile) =>
-  t.type === "RETO" ? `${t.type}:${t.title}` : t.type === "OCA" && !t.next ? "OCA:ultimo" : t.type;
+  t.type === "RETO" && t.nickname ? "RETO:Nuevo apodo" : t.type === "OCA" && !t.next ? "OCA:ultimo" : t.type;
 
 /** Tarjetas de resultado (al tirar sin moverse). */
 export const RESULT_KEYS = {
@@ -80,6 +80,8 @@ const FIXED: Record<string, Omit<CardDef, "key" | "tiles" | "label"> & { label?:
   LABERINTO: { vars: [NOMBRE], defaults: { title: TILE_NAMES.LABERINTO, text: "{nombre} se pierde entre las tumbas y la niebla. En sus turnos tira el dado: con 5 o 6 escapa; si no, bebe 1 vaso y sigue perdido." } },
   REGLA: { vars: [NOMBRE], defaults: { title: TILE_NAMES.REGLA, text: "{nombre} dicta una ley para todos (por ejemplo: prohibido decir «beber»). Dura hasta que alguien ponga otra. Quien la rompa, bebe 1 vaso." } },
   CULTURAL: { vars: [{ name: "categoria", about: "la categoría que salió (al azar entre las de «Categorías»)" }], defaults: { title: TILE_NAMES.CULTURAL, text: "Categoría: «{categoria}». Por turnos, cada uno dice una respuesta rápido; quien se quede en blanco o repita, bebe 1 vaso." } },
+  RETO: { vars: [NOMBRE, { name: "frase", about: "el reto que salió (al azar entre los de «Retos del Más Allá»)" }], defaults: { title: TILE_NAMES.RETO, text: "{frase}" } },
+  "RETO:Nuevo apodo": { label: "Nuevo apodo", vars: [NOMBRE, { name: "apodo", about: "el apodo que salió al azar (la lista se edita arriba)" }], defaults: { title: "Nuevo apodo", text: NICKNAME_TEXT } },
   RASGO: { vars: [{ name: "frase", about: "la carta que salió (al azar entre las de «Cartas de Juicio de los vivos»)" }], defaults: { title: TILE_NAMES.RASGO, text: "{frase}" } },
   RONDA: { vars: [NOMBRE, { name: "frase", about: "el reto que salió (al azar entre los de «Retos de ronda»)" }], defaults: { title: TILE_NAMES.RONDA, text: "{frase} Dura una ronda: hasta que vuelva a tirar {nombre}. Quien lo rompa bebe 1 vaso (se lo suma el celular con «+ Trago»)." } },
   YO_NUNCA: { vars: [{ name: "frase", about: "la frase que salió (al azar entre las de «Frases de Yo nunca»)" }], defaults: { title: TILE_NAMES.YO_NUNCA, text: "{frase} Si lo has hecho, bebes 1 vaso." } },
@@ -110,8 +112,6 @@ export function cardCatalog(): CardDef[] {
     const base = FIXED[key] ?? FIXED[t.type];
     let def: CardDef;
     if (base) def = { key, label: base.label ?? TILE_NAMES[t.type], tiles: [t.n], vars: base.vars, defaults: base.defaults };
-    else if (t.type === "RETO")
-      def = { key, label: t.title, tiles: [t.n], vars: t.nickname ? [NOMBRE, { name: "apodo", about: "el apodo que salió al azar (la lista se edita arriba)" }] : [], defaults: { title: t.title, text: t.text } };
     else continue;
     seen.set(key, def);
   }

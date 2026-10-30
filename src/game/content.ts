@@ -222,9 +222,37 @@ export function setRonda(list: string[]) {
 }
 export const parseRonda = (raw: unknown) => cleanList(raw, DEFAULT_RONDA, 200);
 
+/** Retos del Más Allá: cada vez sale uno al azar. `{trabalenguas}` se cambia por un trabalenguas de su lista; el número de vasos sale del texto («bebe 2 vasos»; si no dice, 1). */
+export const DEFAULT_RETOS = [
+  "Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos.",
+  "Quien lleve mucho dinero en la cartera bebe por cada billete de más.",
+  "Todos los jugadores toman un trago, excepto el más ebrio (entre todos lo eligen).",
+  "Quien haya ido al baño bebe 2 vasos.",
+  "Reto por equipos: el equipo perdedor bebe.",
+  "Quien tenga un pariente en la mesa bebe 3 vasos.",
+  "Quien no tenga el vaso vacío se lo termina y bebe otro.",
+  "Quien no lleve condón encima bebe 1 vaso.",
+  "Pon un poco de licor en la mano del jugador de la derecha y bébelo como si fueras un perrito.",
+  "Si llevas ropa de cuadros, bebe 1 chupito.",
+  "Te bebes lo que les queda en el vaso a tus compañeros.",
+  "Recita un trabalenguas: {trabalenguas} Quien no lo repita bien bebe 2 vasos."
+];
+let retos: string[] = DEFAULT_RETOS;
+export const getRetos = () => retos;
+export function setRetos(list: string[]) {
+  retos = list.length ? list : DEFAULT_RETOS;
+}
+export const parseRetos = (raw: unknown) => cleanList(raw, DEFAULT_RETOS, 240);
+
+/** Vasos que pide un reto escrito en texto libre: el primer «N vasos/chupitos/tragos»; si no dice, 1. */
+export function drinksIn(text: string): number {
+  const m = /(\d+)\s+(?:vasos?|chupitos?|tragos?)/i.exec(text);
+  return m ? Math.min(5, Math.max(1, Number(m[1]))) : 1;
+}
+
 /** Todas las listas editables juntas (así viajan entre el editor, el servidor y el juego). */
-export type ContentLists = { categories: string[]; twisters: string[]; nicknames: string[]; nunca: string[]; juicio: string[]; ronda: string[] };
-export const getLists = (): ContentLists => ({ categories, twisters, nicknames, nunca, juicio, ronda });
+export type ContentLists = { categories: string[]; twisters: string[]; nicknames: string[]; nunca: string[]; juicio: string[]; ronda: string[]; retos: string[] };
+export const getLists = (): ContentLists => ({ categories, twisters, nicknames, nunca, juicio, ronda, retos });
 export function setLists(raw: Partial<Record<keyof ContentLists, unknown>> | null | undefined) {
   if (raw?.categories) setCategories(parseCategories(raw.categories));
   if (raw?.twisters) setTwisters(parseTwisters(raw.twisters));
@@ -232,6 +260,7 @@ export function setLists(raw: Partial<Record<keyof ContentLists, unknown>> | nul
   if (raw?.nunca) setNunca(parseNunca(raw.nunca));
   if (raw?.juicio) setJuicio(parseJuicio(raw.juicio));
   if (raw?.ronda) setRonda(parseRonda(raw.ronda));
+  if (raw?.retos) setRetos(parseRetos(raw.retos));
 }
 
 export function pick<T>(list: T[], rng: () => number): T {

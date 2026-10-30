@@ -30,15 +30,15 @@ describe("textos de las tarjetas", () => {
     expect(tileRule(43, game, "p1").text).toContain("bebe 2 vasos seguidos o rueda hasta la casilla 12.");
     expect(tileRule(3, game, "p1").title).toBe("Juicio de los vivos");
     expect(tileRule(12, game, "p1").title).toBe("Juicio de los vivos");
-    expect(tileRule(15, game, "p1").text).toBe("Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos.");
+    expect(tileRule(15, game, "p1").title).toBe("Reto del Más Allá");
     expect(jailOutcome("Ana", 5).text).toContain("debe 4 vasos");
   });
 
   it("lo que cambia el admin sustituye al de serie y rellena los huecos", () => {
-    setCardOverrides({ A_BEBER: { title: "¡Salud!", text: "{nombre} manda beber {vasos}." }, "RETO:Cómicos": { title: "Chistosos" } });
+    setCardOverrides({ A_BEBER: { title: "¡Salud!", text: "{nombre} manda beber {vasos}." }, RETO: { title: "Chistosos" } });
     expect(tileRule(6, game, "p1")).toEqual({ title: "¡Salud!", text: "Ana manda beber 1 vaso." });
     expect(tileRule(30, game, "p2").text).toBe("Beto manda beber 3 vasos."); // otra casilla de la misma tarjeta (nunca más de 3)
-    expect(tileRule(15, game, "p1")).toEqual({ title: "Chistosos", text: "Cuenta un chiste. Si a nadie le hace gracia, bebes 2 vasos." });
+    expect(tileRule(15, game, "p1").title).toBe("Chistosos");
     expect(mazeOutcome("Ana", 6).title).toBe("¡Se salvó!");
   });
 
