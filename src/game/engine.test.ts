@@ -1,6 +1,6 @@
 import { BOARD } from "./board";
 import { describe, expect, it } from "vitest";
-import { applyAction, createGame, matchOver, type Action, type GameState, type Rng } from "./engine";
+import { applyAction, createGame, matchOver, trophiesOf, type Action, type GameState, type Rng } from "./engine";
 import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS, setNunca, DEFAULT_NUNCA, setJuicio, DEFAULT_JUICIO, setRonda, DEFAULT_RONDA, setRetos, DEFAULT_RETOS, setReflejos, DEFAULT_REFLEJOS } from "./content";
 import { tileRule } from "./rules";
 
@@ -486,6 +486,16 @@ describe("copas", () => {
     s.players[0].cups = undefined;
     delete s.cupsGoal;
     expect(matchOver(s)).toBe(true);
+  });
+
+  it("estrella por ronda ganada y copa solo para quien gana la partida entera", () => {
+    const base = createGame([{ name: "Ana", color: "#fff" }, { name: "Beto", color: "#000" }], 2);
+    const r1 = rollFrom(base, 58, 4);
+    expect(trophiesOf(r1, r1.players[0])).toEqual({ stars: 1, trophy: false }); // solo ganó la ronda: estrella
+    const next = createGame(r1.players.map((p) => ({ name: p.name, color: p.color, cups: p.cups })), 2);
+    const r2 = rollFrom(next, 58, 4);
+    expect(trophiesOf(r2, r2.players[0])).toEqual({ stars: 1, trophy: true }); // ganó la partida: la copa (y la estrella de la ronda anterior)
+    expect(trophiesOf(rollFrom(game(), 58, 4), rollFrom(game(), 58, 4).players[0])).toEqual({ stars: 0, trophy: true }); // 1 copa: solo la copa
   });
 
   it("con 2 copas, la primera meta solo gana la ronda y la copa se conserva en la siguiente", () => {

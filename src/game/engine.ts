@@ -132,6 +132,16 @@ export function matchOver(state: GameState): boolean {
   return (state.cupsGoal ?? 1) <= 1 || (w.cups ?? 0) >= (state.cupsGoal ?? 1);
 }
 
+/**
+ * Qué enseña un jugador junto a su retrato: una **estrella** por cada ronda ganada y, si ganó la partida entera, la **copa** (que ocupa el
+ * lugar de la última estrella: con 1 copa por ganar solo hay copa; con 3, una ganadora lleva 2 estrellas y la copa).
+ */
+export function trophiesOf(state: GameState, p: Player): { stars: number; trophy: boolean } {
+  const cup = state.winner === p.id && matchOver(state);
+  const rounds = p.cups ?? 0;
+  return { stars: cup ? Math.max(0, rounds - 1) : rounds, trophy: cup };
+}
+
 export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender; cups?: number; drunk?: number }[], cupsGoal = 1, seen?: Record<string, string[]>): GameState {
   const state: GameState = {
     players: players.map((p, i) => ({

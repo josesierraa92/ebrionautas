@@ -64,6 +64,7 @@ export default function TrophyIcon({
   outline = OUTLINE,
   stroke = 44,
   icon = "copa",
+  style,
 }: {
   size?: number | string;
   className?: string;
@@ -71,12 +72,13 @@ export default function TrophyIcon({
   outline?: string;
   stroke?: number;
   icon?: TrophyId;
+  style?: React.CSSProperties;
 }) {
   const def = TROPHIES[icon] ?? TROPHIES.copa;
   const round = def.round ?? 0;
   const pad = 24; // fijo: un contorno muy grueso sobresale de la caja (overflow visible) en vez de achicar la figura
   return (
-    <svg viewBox={`${-pad} ${-pad} ${512 + 2 * pad} ${512 + 2 * pad}`} width={size} height={size} className={className} aria-hidden focusable="false" style={{ display: "inline-block", verticalAlign: "middle", overflow: "visible" }}>
+    <svg viewBox={`${-pad} ${-pad} ${512 + 2 * pad} ${512 + 2 * pad}`} width={size} height={size} className={className} aria-hidden focusable="false" style={{ display: "inline-block", verticalAlign: "middle", overflow: "visible", ...style }}>
       <g fillRule="evenodd" strokeLinejoin="round">
         {stroke > 0 &&
           def.parts.map((d, i) => <path key={`o${i}`} d={d} fill={outline} stroke={outline} strokeWidth={stroke + round} />)}

@@ -6,7 +6,7 @@ import { Cups } from "@/components/Winner";
 import type { TrophyId } from "@/components/TrophyIcon";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { getTile, PATINAZO_DRINKS } from "@/game/board";
-import { currentPlayer, matchOver, type Decision, type GameState } from "@/game/engine";
+import { currentPlayer, matchOver, trophiesOf, type Decision, type GameState } from "@/game/engine";
 import { cardKeyOf, cardTitle, hasCardOverride } from "@/game/cards";
 import { duelRollCard, jailPayCard, tileRule } from "@/game/rules";
 import { useCardTexts } from "@/lib/useCardTexts";
@@ -172,9 +172,12 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
           <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={Math.round(62 * chip.zombie / 100)} character={characterOf(game.players, who.id)} />
         </div>
         <Cups
-          n={who.cups}
+          {...trophiesOf(game, who)}
+          gap={chip.gap}
           size={`${(chip.cupSize / 100) * 1.3}em`}
-          cup={{ fill: chip.cupColor, outline: chip.outlineColor, stroke: chip.outline, icon: chip.icon as TrophyId }}
+          cup={{ fill: chip.cupColor, outline: chip.outlineColor, stroke: chip.outline, }}
+          starIcon={chip.icon as TrophyId}
+          trophyIcon={chip.winIcon as TrophyId}
           className="absolute z-20 text-2xl"
           style={{ top: `${chip.cupY}%`, left: `${chip.cupX}%` }}
         />

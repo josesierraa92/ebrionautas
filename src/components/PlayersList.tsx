@@ -3,7 +3,7 @@ import { characterOf } from "@/game/characters";
 import Marciano from "@/components/Marciano";
 import { Cups } from "@/components/Winner";
 import { avatarOf, expressionFor } from "@/game/avatar";
-import { LAST_TILE, type GameState } from "@/game/engine";
+import { LAST_TILE, trophiesOf, type GameState } from "@/game/engine";
 
 type Props = {
   game: GameState;
@@ -36,7 +36,7 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
                 size={big ? 48 : 34}
                 character={characterOf(game.players, p.id)}
               />
-              <Cups n={p.cups} className={`absolute -top-1.5 -left-1.5 ${big ? "text-lg" : "text-sm"}`} />
+              <Cups {...trophiesOf(game, p)} className={`absolute -top-1.5 -left-1.5 ${big ? "text-lg" : "text-sm"}`} />
             </span>
             <div className="min-w-0 flex-1">
               <p className={`truncate ${big ? "text-xl" : ""}`}>

@@ -8,7 +8,7 @@ import TrophyIcon from "@/components/TrophyIcon";
 import { Cups } from "@/components/Winner";
 import { avatarOf } from "@/game/avatar";
 import { characterOf } from "@/game/characters";
-import type { GameState } from "@/game/engine";
+import { trophiesOf, type GameState } from "@/game/engine";
 
 const GREEN_LIGHT = "#bffa58";
 const GREEN = `linear-gradient(160deg, ${GREEN_LIGHT}, #5fc34a)`;
@@ -56,7 +56,7 @@ export default function Clasificatoria({ game, onClose, unit = "17px" }: { game:
                       <p className="truncate font-display leading-none text-white uppercase" style={{ fontSize: u(1.25) }}>
                         {p.name}
                         {won && <TrophyIcon size={u(1.3)} className="ml-1" />}
-                        {(game.cupsGoal ?? 1) > 1 && <Cups n={p.cups} className="ml-1" />}
+                        {(game.cupsGoal ?? 1) > 1 && <Cups {...trophiesOf(game, p)} className="ml-1" />}
                       </p>
                       {/* barrita proporcional a lo que bebió */}
                       <div className="overflow-hidden" style={{ marginTop: u(0.45), height: u(0.45), borderRadius: u(0.3), background: "rgba(0,0,0,.35)" }}>
