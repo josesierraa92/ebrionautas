@@ -1,9 +1,10 @@
 import { shadeHex } from "@/lib/shadeHex";
 import { characterOf } from "@/game/characters";
 import Marciano from "@/components/Marciano";
+import { Cups } from "@/components/Winner";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { getTile, PATINAZO_DRINKS } from "@/game/board";
-import { currentPlayer, type Decision, type GameState } from "@/game/engine";
+import { currentPlayer, matchOver, type Decision, type GameState } from "@/game/engine";
 import { cardKeyOf, cardTitle, hasCardOverride } from "@/game/cards";
 import { duelRollCard, jailPayCard, tileRule } from "@/game/rules";
 import { useCardTexts } from "@/lib/useCardTexts";
@@ -166,11 +167,12 @@ export function TurnChip({ game, moving = false, scale = 1 }: { game: GameState;
         >
           <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={62} character={characterOf(game.players, who.id)} />
         </div>
+        <Cups n={who.cups} className="absolute top-0 left-0 z-20 text-2xl" />
       </div>
       <div className="relative overflow-hidden rounded-2xl border-[5px] border-[#452b8e] py-1 pr-[26px] pl-[47px] shadow-[0_6px_12px_rgba(0,0,0,.45)]" style={{ background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
         <div>
           <p className="relative top-[4px] font-display text-[1rem] leading-none tracking-wider text-[#bffa58] uppercase">
-            {winner ? "¡Ganador!" : "Turno de"}
+            {winner ? (matchOver(game) ? "¡Ganador!" : "¡Gana la ronda!") : "Turno de"}
           </p>
           <p className="mt-1 font-display text-[2.6rem] leading-none text-white uppercase" style={{ textShadow: "0 2px 0 #1a0b38, 0 3px 0 #1a0b38" }}>
             {who.name}

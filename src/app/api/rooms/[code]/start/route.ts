@@ -5,5 +5,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ code: s
   const { code } = await params;
   const body = await readJson(req);
   const players = Array.isArray(body.players) ? (body.players as NewPlayer[]) : [];
-  return handle(() => startRoom(code, String(body.secret ?? ""), players));
+  return handle(() => startRoom(code, String(body.secret ?? ""), players, Number(body.cups) || 1));
 }

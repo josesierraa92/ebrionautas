@@ -10,7 +10,7 @@ import PlayersList from "@/components/PlayersList";
 import Setup from "@/components/Setup";
 import Clasificatoria from "@/components/Clasificatoria";
 import Winner from "@/components/Winner";
-import { currentPlayer, type Action, type Gender } from "@/game/engine";
+import { currentPlayer, matchOver, type Action, type Gender } from "@/game/engine";
 import { api, controlKey, saved, sendAction, useRoom } from "@/lib/room-client";
 
 /** El único celular que controla la mesa: agrega jugadores, tira el dado y decide. */
@@ -95,7 +95,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
         <Setup
           busy={busy}
           hint={`Mesa ${code} · el tablero se verá en la TV`}
-          onStart={(players: { name: string; gender: Gender }[]) => run(() => api(`/api/rooms/${code}/start`, { secret, players }))}
+          onStart={(players: { name: string; gender: Gender }[], cups: number) => run(() => api(`/api/rooms/${code}/start`, { secret, players, cups }))}
         />
         {actionError && (
           <div className="mx-auto max-w-md px-4 pb-6">
@@ -131,17 +131,28 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
 
       {winner && game.ranking ? null : winner ? (
         <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
-          <Winner winner={winner} players={game.players}>
+          <Winner winner={winner} players={game.players} goal={game.cupsGoal ?? 1}>
             <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game bg-btn-blue py-3 text-xl text-white">
               VER CLASIFICATORIA
             </button>
-            <button
-              disabled={busy}
-              onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))}
-              className="btn-game bg-btn-green py-3 text-xl text-white"
-            >
-              REINICIAR (MISMOS JUGADORES)
-            </button>
+            {!matchOver(game) && (
+              <button
+                disabled={busy}
+                onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true, next: true }))}
+                className="btn-game bg-btn-green py-3 text-xl text-white"
+              >
+                SIGUIENTE RONDA ▶
+              </button>
+            )}
+            {matchOver(game) && (
+              <button
+                disabled={busy}
+                onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))}
+                className="btn-game bg-btn-green py-3 text-xl text-white"
+              >
+                REINICIAR (MISMOS JUGADORES)
+              </button>
+            )}
             <button
               disabled={busy}
               onClick={() => run(async () => { await api(`/api/rooms/${code}/reset`, { secret }); window.location.href = "/"; })}

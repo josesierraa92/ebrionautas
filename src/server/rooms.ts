@@ -126,7 +126,8 @@ export async function releaseControl(code: string, hostSecret: string): Promise<
   });
 }
 
-export async function startRoom(code: string, who: string, players: NewPlayer[]): Promise<void> {
+export async function startRoom(code: string, who: string, players: NewPlayer[], cups = 1): Promise<void> {
+  const goal = [1, 2, 3].includes(cups) ? cups : 1;
   const clean = players
     .map((p) => ({ name: String(p?.name ?? "").trim().slice(0, 16), gender: p?.gender }))
     .filter((p) => p.name);
@@ -140,6 +141,7 @@ export async function startRoom(code: string, who: string, players: NewPlayer[])
     if (room.status !== "LOBBY") throw new RoomError("La partida ya empezó.", 409);
     room.game = createGame(
       clean.map((p, i) => ({ name: p.name, gender: p.gender, color: PLAYER_COLORS[i], avatar: defaultAvatar(i, PLAYER_COLORS[i]) })),
+      goal,
     );
     room.status = "PLAYING";
   });
@@ -149,11 +151,15 @@ export async function startRoom(code: string, who: string, players: NewPlayer[])
  * Otra partida en la misma mesa. Con `same` (REINICIAR) empieza ya con los mismos jugadores (nombre, género, color); sin `same`
  * (SALIR) vuelve a la pantalla de jugadores. Solo se llama a mano desde el celular: nada reinicia la partida terminada por sí solo.
  */
-export async function resetRoom(code: string, who: string, same = false): Promise<void> {
+export async function resetRoom(code: string, who: string, same = false, nextRound = false): Promise<void> {
   await withRoom(code, (room) => {
     assertController(room, who);
     if (same && room.game) {
-      room.game = createGame(room.game.players.map((p) => ({ name: p.name, gender: p.gender, color: p.color, avatar: p.avatar })));
+      // siguiente ronda (modo de varias copas): mismos jugadores con sus copas y lo bebido; si no, partida nueva con las mismas copas por ganar
+      room.game = createGame(
+        room.game.players.map((p) => ({ name: p.name, gender: p.gender, color: p.color, avatar: p.avatar, ...(nextRound ? { cups: p.cups, drunk: p.drunk } : {}) })),
+        room.game.cupsGoal ?? 1,
+      );
       room.status = "PLAYING";
       return;
     }

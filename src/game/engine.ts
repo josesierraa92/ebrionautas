@@ -26,6 +26,8 @@ export type Player = {
   pos: number;
   drunk: number; // total bebido en la partida
   pending: number; // vasos que debe y aún no ha confirmado con "¡Bebido!"
+  /** Copas ganadas en las rondas de esta partida (modo «jugar a N copas»). */
+  cups?: number;
   status: PlayerStatus;
 };
 
@@ -88,6 +90,9 @@ export type GameState = {
   lastJail?: { seq: number; by: string; paid: number; left: number } | null;
   /** Terminada la partida: el celular abrió la clasificatoria, que se ve también en la TV en lugar del mensaje de ganador. */
   ranking?: boolean;
+  /** Copas que hay que ganar para llevarse la partida (1, 2 o 3). Con 1, el primero que llega a la meta gana. */
+  cupsGoal?: number;
+  /** Quien llegó a la meta en esta ronda (si le faltan copas, la partida sigue con otra ronda; ver `matchOver`). */
   winner: string | null;
   log: LogEntry[];
   logSeq: number;
@@ -117,7 +122,13 @@ const MAX_LOG = 60;
 
 const d6 = (rng: Rng) => Math.floor(rng() * 6) + 1;
 
-export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender }[]): GameState {
+/** ¿La partida entera terminó? (el que llegó a la meta ya tiene todas las copas); si no, solo terminó la ronda. */
+export function matchOver(state: GameState): boolean {
+  const w = state.players.find((p) => p.id === state.winner);
+  return !!w && (w.cups ?? 0) >= (state.cupsGoal ?? 1);
+}
+
+export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender; cups?: number; drunk?: number }[], cupsGoal = 1): GameState {
   const state: GameState = {
     players: players.map((p, i) => ({
       id: `p${i + 1}`,
@@ -126,7 +137,8 @@ export function createGame(players: { name: string; color: string; avatar?: Avat
       avatar: p.avatar,
       gender: p.gender,
       pos: 1,
-      drunk: 0,
+      drunk: p.drunk ?? 0,
+      cups: p.cups ?? 0,
       pending: 0,
       status: { inmune: false, hipnosis: false, carcel: null },
     })),
@@ -140,6 +152,7 @@ export function createGame(players: { name: string; color: string; avatar?: Avat
     lastRoller: null,
     rollSeq: 0,
     extraRoll: false,
+    cupsGoal,
     winner: null,
     log: [],
     logSeq: 0,
@@ -297,7 +310,9 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       s.winner = p.id;
       s.phase = "FINISHED";
       s.decision = null;
-      log(s, `🏆 ¡${p.name} vuelve a su tumba antes del amanecer! Borracho, pero a tiempo: Leyenda del Más Allá. Reparte el resto de bebida como quiera.`);
+      p.cups = (p.cups ?? 0) + 1;
+      if (p.cups >= (s.cupsGoal ?? 1)) log(s, `🏆 ¡${p.name} vuelve a su tumba antes del amanecer! Borracho, pero a tiempo: Leyenda del Más Allá. Reparte el resto de bebida como quiera.`);
+      else log(s, `🏆 ¡${p.name} gana la ronda y se lleva una copa (${p.cups} de ${s.cupsGoal})!`);
       return;
 
     case "REFLEJO": {

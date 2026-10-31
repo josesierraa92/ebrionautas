@@ -1,6 +1,6 @@
 import { BOARD } from "./board";
 import { describe, expect, it } from "vitest";
-import { applyAction, createGame, type Action, type GameState, type Rng } from "./engine";
+import { applyAction, createGame, matchOver, type Action, type GameState, type Rng } from "./engine";
 import { setCategories, DEFAULT_CATEGORIES, setNicknames, DEFAULT_NICKNAMES, setTwisters, DEFAULT_TWISTERS, setNunca, DEFAULT_NUNCA, setJuicio, DEFAULT_JUICIO, setRonda, DEFAULT_RONDA, setRetos, DEFAULT_RETOS, setReflejos, DEFAULT_REFLEJOS } from "./content";
 import { tileRule } from "./rules";
 
@@ -471,5 +471,30 @@ describe("Muerte Súbita", () => {
     } finally {
       setReflejos(DEFAULT_REFLEJOS);
     }
+  });
+});
+
+describe("copas", () => {
+  it("con 1 copa, llegar a la meta gana la partida", () => {
+    const s = rollFrom(game(), 58, 4);
+    expect(s.players[0].cups).toBe(1);
+    expect(matchOver(s)).toBe(true);
+  });
+
+  it("con 2 copas, la primera meta solo gana la ronda y la copa se conserva en la siguiente", () => {
+    const base = createGame([{ name: "Ana", color: "#fff" }, { name: "Beto", color: "#000" }], 2);
+    const r1 = rollFrom(base, 58, 4);
+    expect(r1.winner).toBe("p1");
+    expect(r1.players[0].cups).toBe(1);
+    expect(matchOver(r1)).toBe(false);
+    // siguiente ronda: mismos jugadores, copas y tragos; posiciones desde cero
+    const next = createGame(r1.players.map((p) => ({ name: p.name, color: p.color, cups: p.cups, drunk: p.drunk })), r1.cupsGoal);
+    expect(next.winner).toBeNull();
+    expect(next.players[0].cups).toBe(1);
+    expect(next.players[0].pos).toBe(1);
+    // gana otro: dos jugadores con una copa y no hay campeón todavía
+    const r2 = rollFrom(next, 58, 4);
+    expect(r2.players.map((p) => p.cups)).toEqual([2, 0]);
+    expect(matchOver(r2)).toBe(true);
   });
 });

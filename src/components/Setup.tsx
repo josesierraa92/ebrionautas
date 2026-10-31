@@ -9,18 +9,21 @@ import { PLAYER_COLORS } from "@/game/tileStyle";
 
 type Draft = { name: string; gender: Gender | null };
 type Props = {
-  onStart: (players: { name: string; gender: Gender }[]) => void;
+  onStart: (players: { name: string; gender: Gender }[], cups: number) => void;
   busy?: boolean;
   /** Texto bajo el título (ej. dónde se verá el tablero). */
   hint?: string;
+  /** Enseñar la elección de copas (el modo local `/jugar` no tiene rondas). */
+  copas?: boolean;
 };
 
 /** Alta de participantes: nombre y hombre/mujer (se usa en las casillas Machos y Hembras). */
-export default function Setup({ onStart, busy = false, hint }: Props) {
+export default function Setup({ onStart, busy = false, hint, copas = true }: Props) {
   const [players, setPlayers] = useState<Draft[]>([
     { name: "", gender: null },
     { name: "", gender: null },
   ]);
+  const [cups, setCups] = useState(1);
   const set = (i: number, patch: Partial<Draft>) => setPlayers(players.map((p, j) => (j === i ? { ...p, ...patch } : p)));
 
   const filled = players.filter((p) => p.name.trim());
@@ -81,9 +84,24 @@ export default function Setup({ onStart, busy = false, hint }: Props) {
         </button>
       )}
 
+      {copas && (
+      <div role="group" aria-label="Copas para ganar" className="rounded-2xl border-[3px] border-ink bg-ink/70 p-3 text-center">
+        <p className="font-display text-lg">¿A CUÁNTAS COPAS?</p>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {[1, 2, 3].map((n) => (
+            <button key={n} aria-pressed={cups === n} onClick={() => setCups(n)} className={`rounded-xl border-2 border-ink py-2 font-display text-xl ${cups === n ? "bg-btn-yellow text-white" : "bg-space text-white/60"}`}>
+              {"🏆".repeat(n)}
+              <span className="block text-sm">{n === 1 ? "1 copa" : `${n} copas`}</span>
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-sm text-white/70">{cups === 1 ? "El primero que llegue a la meta gana." : `Gana quien consiga ${cups} copas: cada ronda se juega hasta la meta y se reinicia.`}</p>
+      </div>
+      )}
+
       <button
         disabled={!ready || busy}
-        onClick={() => onStart(filled.map((p) => ({ name: p.name.trim(), gender: p.gender! })))}
+        onClick={() => onStart(filled.map((p) => ({ name: p.name.trim(), gender: p.gender! })), copas ? cups : 1)}
         className="btn-game bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey"
       >
         {busy ? "LEVANTÁNDOSE…" : "¡A LEVANTARSE!"}

@@ -1,6 +1,7 @@
 import BeerIcon from "@/components/BeerIcon";
 import { characterOf } from "@/game/characters";
 import Marciano from "@/components/Marciano";
+import { Cups } from "@/components/Winner";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { LAST_TILE, type GameState } from "@/game/engine";
 
@@ -28,13 +29,15 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
       <ul className="flex flex-col gap-2">
         {game.players.map((p) => (
           <li key={p.id} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 ${p.id === current && !game.winner ? "bg-white/10 ring-2 ring-btn-yellow" : ""}`}>
-            <Marciano
-              avatar={avatarOf(p)}
-              expression={expressionFor(p, { winner: game.winner, isTurn: p.id === current })}
-              size={big ? 48 : 34}
-              className="shrink-0"
-              character={characterOf(game.players, p.id)}
-            />
+            <span className="relative shrink-0">
+              <Marciano
+                avatar={avatarOf(p)}
+                expression={expressionFor(p, { winner: game.winner, isTurn: p.id === current })}
+                size={big ? 48 : 34}
+                character={characterOf(game.players, p.id)}
+              />
+              <Cups n={p.cups} className={`absolute -top-1.5 -left-1.5 ${big ? "text-lg" : "text-sm"}`} />
+            </span>
             <div className="min-w-0 flex-1">
               <p className={`truncate ${big ? "text-xl" : ""}`}>
                 <span className="font-display">{p.name}</span>{" "}

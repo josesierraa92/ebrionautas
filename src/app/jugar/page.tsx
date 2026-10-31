@@ -46,6 +46,7 @@ export default function JugarPage() {
     return (
       <Setup
         hint="Sin TV: el tablero se ve en esta misma pantalla."
+        copas={false}
         onStart={(players) =>
           setGame(createGame(players.map((p, i) => ({ ...p, color: PLAYER_COLORS[i], avatar: defaultAvatar(i, PLAYER_COLORS[i]) }))))
         }
