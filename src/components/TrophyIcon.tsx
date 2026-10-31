@@ -57,6 +57,20 @@ export const TROPHIES: Record<TrophyId, { label: string; parts: string[]; round?
 };
 export const TROPHY_IDS = Object.keys(TROPHIES) as TrophyId[];
 
+/** `drop-shadow` en capas (como la flecha del nombre): `strength` en % (de 100 a 200 se suma una segunda capa) y `reach` en % del tamaño del dibujo. */
+export function glowFilter(size: number | string, glow?: { color: string; strength: number; reach: number }): string | undefined {
+  if (!glow || glow.strength <= 0) return undefined;
+  const hex = glow.color.replace("#", "");
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const a = Math.min(1, glow.strength / 100);
+  const px = typeof size === "number" ? `${size}px` : size;
+  const k = glow.reach / 100;
+  const layer = (rad: number, al: number) => `drop-shadow(0 0 calc(${px} * ${(rad * k).toFixed(3)}) rgba(${r}, ${g}, ${b}, ${al.toFixed(2)}))`;
+  const layers = [layer(0.08, a), layer(0.2, a), layer(0.4, a * 0.9), layer(0.75, a * 0.7)];
+  if (glow.strength > 100) layers.push(layer(0.08, glow.strength / 200 - 0.5 + 0.5), layer(0.25, (glow.strength - 100) / 100));
+  return layers.join(" ");
+}
+
 export default function TrophyIcon({
   size = 24,
   className = "",
@@ -65,6 +79,7 @@ export default function TrophyIcon({
   stroke = 44,
   icon = "copa",
   style,
+  glow,
 }: {
   size?: number | string;
   className?: string;
@@ -73,12 +88,13 @@ export default function TrophyIcon({
   stroke?: number;
   icon?: TrophyId;
   style?: React.CSSProperties;
+  glow?: { color: string; strength: number; reach: number };
 }) {
   const def = TROPHIES[icon] ?? TROPHIES.copa;
   const round = def.round ?? 0;
   const pad = 24; // fijo: un contorno muy grueso sobresale de la caja (overflow visible) en vez de achicar la figura
   return (
-    <svg viewBox={`${-pad} ${-pad} ${512 + 2 * pad} ${512 + 2 * pad}`} width={size} height={size} className={className} aria-hidden focusable="false" style={{ display: "inline-block", verticalAlign: "middle", overflow: "visible", ...style }}>
+    <svg viewBox={`${-pad} ${-pad} ${512 + 2 * pad} ${512 + 2 * pad}`} width={size} height={size} className={className} aria-hidden focusable="false" style={{ display: "inline-block", verticalAlign: "middle", overflow: "visible", filter: glowFilter(size, glow), ...style }}>
       <g fillRule="evenodd" strokeLinejoin="round">
         {stroke > 0 &&
           def.parts.map((d, i) => <path key={`o${i}`} d={d} fill={outline} stroke={outline} strokeWidth={stroke + round} />)}

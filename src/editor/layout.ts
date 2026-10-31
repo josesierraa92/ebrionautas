@@ -121,10 +121,12 @@ export function parseUi(raw: unknown): UiSize {
  */
 export type ChipStyle = {
   /** icono de cada ronda ganada (estrella) y de la partida ganada (copa) */ icon: string; winIcon: string; gap: number; cupSize: number; cupX: number; cupY: number; outline: number; cupColor: string; outlineColor: string;
+  /** resplandor de la estrella/copa: fuerza (%), alcance (%) y color */ glow: number; reach: number; glowColor: string;
   zombie: number; font: NumberFont; nameSize: number; nameColor: string; labelColor: string;
 };
 export const DEFAULT_CHIP: ChipStyle = {
   icon: "estrellaGordaRedonda", winIcon: "copa", gap: -13, cupSize: 100, cupX: 0, cupY: 0, outline: 44, cupColor: "#ffc82e", outlineColor: "#2a0f5c",
+  glow: 70, reach: 100, glowColor: "#ffd84a",
   zombie: 100, font: "lilita", nameSize: 100, nameColor: "#ffffff", labelColor: "#bffa58",
 };
 export const CHIP_LIMITS = {
@@ -133,6 +135,8 @@ export const CHIP_LIMITS = {
   cupX: { min: -150, max: 250 },
   cupY: { min: -150, max: 250 },
   outline: { min: 0, max: 240 },
+  glow: { min: 0, max: 200 }, // fuerza del resplandor
+  reach: { min: 20, max: 300 }, // hasta dónde llega
   zombie: { min: 60, max: 160 },
   nameSize: { min: 60, max: 150 },
 };
@@ -150,6 +154,9 @@ export function parseChip(raw: unknown): ChipStyle {
     outline: lim(n.outline, DEFAULT_CHIP.outline, CHIP_LIMITS.outline),
     cupColor: hex(n.cupColor, DEFAULT_CHIP.cupColor),
     outlineColor: hex(n.outlineColor, DEFAULT_CHIP.outlineColor),
+    glow: lim(n.glow, DEFAULT_CHIP.glow, CHIP_LIMITS.glow),
+    reach: lim(n.reach, DEFAULT_CHIP.reach, CHIP_LIMITS.reach),
+    glowColor: hex(n.glowColor, DEFAULT_CHIP.glowColor),
     zombie: lim(n.zombie, DEFAULT_CHIP.zombie, CHIP_LIMITS.zombie),
     font: typeof n.font === "string" && n.font in NUMBER_FONTS ? (n.font as NumberFont) : DEFAULT_CHIP.font,
     nameSize: lim(n.nameSize, DEFAULT_CHIP.nameSize, CHIP_LIMITS.nameSize),

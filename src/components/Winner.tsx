@@ -17,6 +17,7 @@ export function Cups({
   starIcon = "estrellaGordaRedonda",
   trophyIcon = "copa",
   cup,
+  glow,
   style,
 }: {
   stars?: number;
@@ -29,6 +30,7 @@ export function Cups({
   starIcon?: TrophyId;
   trophyIcon?: TrophyId;
   cup?: { fill: string; outline: string; stroke: number };
+  glow?: { color: string; strength: number; reach: number };
 }) {
   const items: TrophyId[] = [...(trophy ? [trophyIcon] : []), ...Array.from({ length: Math.min(stars, 3) }, () => starIcon)];
   if (items.length === 0) return null;
@@ -36,7 +38,7 @@ export function Cups({
   return (
     <span className={`inline-flex ${className}`} style={style} title={label} aria-label={label}>
       {items.map((icon, i) => (
-        <TrophyIcon key={i} size={size} {...cup} icon={icon} className="drop-shadow-[0_1px_1px_rgba(0,0,0,.5)]" style={i ? { marginLeft: `calc(${size} * ${gap / 100})` } : undefined} />
+        <TrophyIcon key={i} size={size} {...cup} glow={glow} icon={icon} className="drop-shadow-[0_1px_1px_rgba(0,0,0,.5)]" style={i ? { marginLeft: `calc(${size} * ${gap / 100})` } : undefined} />
       ))}
     </span>
   );

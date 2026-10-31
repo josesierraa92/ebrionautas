@@ -174,6 +174,7 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
         <Cups
           {...trophiesOf(game, who)}
           gap={chip.gap}
+          glow={{ color: chip.glowColor, strength: chip.glow, reach: chip.reach }}
           size={`${(chip.cupSize / 100) * 1.3}em`}
           cup={{ fill: chip.cupColor, outline: chip.outlineColor, stroke: chip.outline, }}
           starIcon={chip.icon as TrophyId}

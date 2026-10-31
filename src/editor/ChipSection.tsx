@@ -28,7 +28,7 @@ export default function ChipSection({ chip, onLive, onStart, onEnd }: Props) {
   }, [preview]);
   const set = (patch: Partial<ChipStyle>) => onLive({ ...chip, ...patch });
 
-  const slider = (label: string, key: "gap" | "cupSize" | "cupX" | "cupY" | "outline" | "zombie" | "nameSize", suffix: string, step = 1) => (
+  const slider = (label: string, key: "glow" | "reach" | "gap" | "cupSize" | "cupX" | "cupY" | "outline" | "zombie" | "nameSize", suffix: string, step = 1) => (
     <label className="grid gap-0.5 text-sm">
       <span className="flex justify-between">
         {label} <b>{chip[key]}{suffix}</b>
@@ -64,7 +64,7 @@ export default function ChipSection({ chip, onLive, onStart, onEnd }: Props) {
       </div>
     </div>
   );
-  const color = (label: string, key: "cupColor" | "outlineColor" | "nameColor" | "labelColor") => (
+  const color = (label: string, key: "cupColor" | "outlineColor" | "glowColor" | "nameColor" | "labelColor") => (
     <label className="flex items-center justify-between gap-2 text-sm">
       {label}
       <input type="color" value={chip[key]} onChange={(e) => set({ [key]: e.target.value })} onPointerDown={onStart} onBlur={onEnd} className="h-7 w-12 cursor-pointer rounded border-0 bg-transparent" />
@@ -97,6 +97,10 @@ export default function ChipSection({ chip, onLive, onStart, onEnd }: Props) {
       {slider("Grosor del contorno", "outline", "", 4)}
       {color("Color de la copa", "cupColor")}
       {color("Color del contorno", "outlineColor")}
+      <p className="mt-1 text-[11px] font-bold opacity-80">Resplandor (luz)</p>
+      {slider("Fuerza de la luz", "glow", " %", 5)}
+      {slider("Alcance de la luz", "reach", " %", 5)}
+      {color("Color de la luz", "glowColor")}
       <p className="mt-1 text-[11px] font-bold opacity-80">Zombi y texto</p>
       {slider("Tamaño del zombi", "zombie", " %", 5)}
       <label className="grid gap-0.5 text-sm">

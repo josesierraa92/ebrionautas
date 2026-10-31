@@ -246,7 +246,7 @@ describe("tarjeta de usuario (chip)", () => {
     expect(back?.chip.cupColor).toBe("#ff0000");
   });
   it("valida rangos, colores y letra; un diseño viejo sin `chip` queda de serie", () => {
-    expect(parseChip({ cupSize: 9999, outline: -5, cupColor: "rojo", icon: "mal nombre!", font: "inventada", zombie: 100.4 })).toMatchObject({ icon: DEFAULT_CHIP.icon, gap: DEFAULT_CHIP.gap, cupSize: 250, outline: 0, cupColor: DEFAULT_CHIP.cupColor, font: "lilita", zombie: 100 });
+    expect(parseChip({ cupSize: 9999, outline: -5, cupColor: "rojo", icon: "mal nombre!", font: "inventada", zombie: 100.4 })).toMatchObject({ icon: DEFAULT_CHIP.icon, gap: DEFAULT_CHIP.gap, cupSize: 250, glow: DEFAULT_CHIP.glow, outline: 0, cupColor: DEFAULT_CHIP.cupColor, font: "lilita", zombie: 100 });
     const l = newLayout(10, 8) as unknown as Record<string, unknown>;
     delete l.chip;
     expect(parseLayout(JSON.parse(JSON.stringify(l)))?.chip).toEqual(DEFAULT_CHIP);
