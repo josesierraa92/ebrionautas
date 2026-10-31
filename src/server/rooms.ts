@@ -159,6 +159,7 @@ export async function resetRoom(code: string, who: string, same = false, nextRou
       room.game = createGame(
         room.game.players.map((p) => ({ name: p.name, gender: p.gender, color: p.color, avatar: p.avatar, ...(nextRound ? { cups: p.cups, drunk: p.drunk } : {}) })),
         room.game.cupsGoal ?? 1,
+        nextRound ? room.game.seen : undefined, // entre rondas no se repiten las cartas que ya salieron
       );
       room.status = "PLAYING";
       return;

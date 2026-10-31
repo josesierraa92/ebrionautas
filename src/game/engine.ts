@@ -92,6 +92,8 @@ export type GameState = {
   ranking?: boolean;
   /** Copas que hay que ganar para llevarse la partida (1, 2 o 3). Con 1, el primero que llega a la meta gana. */
   cupsGoal?: number;
+  /** Cartas de cada lista editable que ya salieron (por nombre de lista): no se repiten hasta agotar la lista, también entre rondas. */
+  seen?: Record<string, string[]>;
   /** Quien llegó a la meta en esta ronda (si le faltan copas, la partida sigue con otra ronda; ver `matchOver`). */
   winner: string | null;
   log: LogEntry[];
@@ -130,7 +132,7 @@ export function matchOver(state: GameState): boolean {
   return (state.cupsGoal ?? 1) <= 1 || (w.cups ?? 0) >= (state.cupsGoal ?? 1);
 }
 
-export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender; cups?: number; drunk?: number }[], cupsGoal = 1): GameState {
+export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender; cups?: number; drunk?: number }[], cupsGoal = 1, seen?: Record<string, string[]>): GameState {
   const state: GameState = {
     players: players.map((p, i) => ({
       id: `p${i + 1}`,
@@ -155,6 +157,7 @@ export function createGame(players: { name: string; color: string; avatar?: Avat
     rollSeq: 0,
     extraRoll: false,
     cupsGoal,
+    ...(seen ? { seen: structuredClone(seen) } : {}),
     winner: null,
     log: [],
     logSeq: 0,
@@ -300,6 +303,23 @@ function roll(s: GameState, rng: Rng) {
   landOn(s, p, rng);
 }
 
+/**
+ * Saca una carta al azar sin repetir: solo entre las que aún no han salido en esta partida (`GameState.seen`, que pasa de una ronda a la
+ * siguiente). Cuando ya salieron todas, la lista vuelve a empezar, otra vez sin repetir (y sin que salga primero la última que salió).
+ */
+function pickFresh(s: GameState, key: string, list: string[], rng: Rng): string {
+  const seen = ((s.seen ??= {})[key] ??= []);
+  let pool = list.filter((x) => !seen.includes(x));
+  if (pool.length === 0) {
+    const last = seen[seen.length - 1];
+    seen.length = 0;
+    pool = list.length > 1 ? list.filter((x) => x !== last) : list;
+  }
+  const chosen = pick(pool, rng);
+  seen.push(chosen);
+  return chosen;
+}
+
 function landOn(s: GameState, p: Player, rng: Rng) {
   const tile = getTile(p.pos);
   const others = s.players.filter((q) => q.id !== p.id);
@@ -319,14 +339,14 @@ function landOn(s: GameState, p: Player, rng: Rng) {
 
     case "REFLEJO": {
       // Muerte Súbita: «la última persona en…» o «todos los que lleven…»; el celular marca quiénes beben
-      const frase = pick(getReflejos(), rng);
+      const frase = pickFresh(s, "reflejos", getReflejos(), rng);
       s.reflejo = frase; // la tarjeta de la casilla la enseña ({frase})
       log(s, `⏱️ Muerte Súbita: ${frase}`);
       return decide(s, { kind: "SELECT_DRINKERS", drinks: 1, title: TILE_NAMES.REFLEJO, text: frase });
     }
 
     case "RONDA": {
-      const text = pick(getRonda(), rng);
+      const text = pickFresh(s, "ronda", getRonda(), rng);
       s.ronda = { text, by: p.id }; // la tarjeta lo enseña ({frase}) y el marcador lo recuerda hasta que acabe la ronda
       log(s, `⏳ Reto de ronda de ${p.name}: ${text}`);
       return endTurn(s);
@@ -360,7 +380,7 @@ function landOn(s: GameState, p: Player, rng: Rng) {
       return decide(s, { kind: "RULE" });
 
     case "CULTURAL": {
-      const category = pick(getCategories(), rng);
+      const category = pickFresh(s, "categories", getCategories(), rng);
       s.category = category; // la tarjeta de la casilla la enseña ({categoria})
       return decide(s, {
         kind: "SELECT_DRINKERS",
@@ -371,7 +391,7 @@ function landOn(s: GameState, p: Player, rng: Rng) {
     }
 
     case "YO_NUNCA": {
-      const frase = pick(getNunca(), rng);
+      const frase = pickFresh(s, "nunca", getNunca(), rng);
       s.nunca = frase; // la tarjeta de la casilla la enseña ({frase})
       log(s, `🤚 Yo nunca: ${frase}`);
       return decide(s, { kind: "NUNCA" });
@@ -405,7 +425,7 @@ function landOn(s: GameState, p: Player, rng: Rng) {
 
     case "RASGO": {
       // Juicio de los vivos: sale una carta distinta cada vez (votaciones y «beben todos los que…»); quien controla la mesa marca quiénes beben
-      const frase = pick(getJuicio(), rng);
+      const frase = pickFresh(s, "juicio", getJuicio(), rng);
       s.juicio = frase; // la tarjeta de la casilla la enseña ({frase})
       log(s, `💀 Juicio de los vivos: ${frase}`);
       return decide(s, { kind: "SELECT_DRINKERS", drinks: 1, title: TILE_NAMES.RASGO, text: frase });
@@ -413,13 +433,13 @@ function landOn(s: GameState, p: Player, rng: Rng) {
 
     case "RETO": {
       if (tile.nickname) {
-        const apodo = pick(getNicknames(), rng);
+        const apodo = pickFresh(s, "nicknames", getNicknames(), rng);
         s.nickname = apodo; // la tarjeta de la casilla lo enseña ({apodo})
         return decide(s, { kind: "SELECT_DRINKERS", drinks: 1, title: tile.title ?? TILE_NAMES.RETO, text: NICKNAME_TEXT.replace(/\{apodo\}/g, apodo) });
       }
       // Reto del Más Allá: sale uno distinto de la lista; el celular marca quiénes beben (los vasos salen del propio texto)
-      let text = pick(getRetos(), rng);
-      if (text.includes("{trabalenguas}")) text = text.replace(/\{trabalenguas\}/g, `«${pick(getTwisters(), rng)}»`);
+      let text = pickFresh(s, "retos", getRetos(), rng);
+      if (text.includes("{trabalenguas}")) text = text.replace(/\{trabalenguas\}/g, `«${pickFresh(s, "twisters", getTwisters(), rng)}»`);
       s.reto = text;
       log(s, `🎤 Reto del Más Allá: ${text}`);
       return decide(s, { kind: "SELECT_DRINKERS", drinks: drinksIn(text), title: TILE_NAMES.RETO, text });

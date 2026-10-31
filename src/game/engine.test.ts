@@ -505,3 +505,21 @@ describe("copas", () => {
     expect(matchOver(r2)).toBe(true);
   });
 });
+
+describe("cartas sin repetir", () => {
+  it("no repite cartas hasta agotar la lista y luego vuelve a empezar", () => {
+    setNunca(["a", "b", "c"]);
+    const salidas: string[] = [];
+    let s = game(2);
+    for (let i = 0; i < 6; i++) {
+      s.decision = null;
+      // cae en una casilla «Yo nunca» (la 7) y tira siempre el mismo dado: sin la regla saldría siempre la misma carta
+      const t = rollFrom(s, 5, 2, 1);
+      salidas.push(t.nunca!);
+      s = { ...s, seen: t.seen };
+    }
+    expect(new Set(salidas.slice(0, 3)).size).toBe(3);
+    expect(new Set(salidas.slice(3, 6)).size).toBe(3);
+    setNunca(DEFAULT_NUNCA);
+  });
+});
