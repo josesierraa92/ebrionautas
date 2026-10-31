@@ -16,7 +16,7 @@ export function Cups({ n, className = "" }: { n?: number; className?: string }) 
 }
 
 export default function Winner({ winner, players, goal = 1, children }: { winner: Player; players?: Player[]; goal?: number; children?: React.ReactNode }) {
-  const roundOnly = (winner.cups ?? 0) < goal; // le faltan copas: solo ganó la ronda
+  const roundOnly = goal > 1 && (winner.cups ?? 0) < goal; // le faltan copas: solo ganó la ronda
   return (
     <div className="flex flex-col gap-3 text-center">
       <div className="flex items-end justify-center gap-2">

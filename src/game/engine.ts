@@ -125,7 +125,9 @@ const d6 = (rng: Rng) => Math.floor(rng() * 6) + 1;
 /** ¿La partida entera terminó? (el que llegó a la meta ya tiene todas las copas); si no, solo terminó la ronda. */
 export function matchOver(state: GameState): boolean {
   const w = state.players.find((p) => p.id === state.winner);
-  return !!w && (w.cups ?? 0) >= (state.cupsGoal ?? 1);
+  if (!w) return false;
+  // con 1 copa (o una partida de antes de este modo, sin `cupsGoal`) quien llega a la meta gana siempre, tenga o no `cups` anotado
+  return (state.cupsGoal ?? 1) <= 1 || (w.cups ?? 0) >= (state.cupsGoal ?? 1);
 }
 
 export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender; cups?: number; drunk?: number }[], cupsGoal = 1): GameState {

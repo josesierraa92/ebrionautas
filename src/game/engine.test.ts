@@ -481,6 +481,13 @@ describe("copas", () => {
     expect(matchOver(s)).toBe(true);
   });
 
+  it("una partida sin copas anotadas (de antes del modo) o de 1 copa siempre termina al llegar a la meta", () => {
+    const s = rollFrom(game(), 58, 4);
+    s.players[0].cups = undefined;
+    delete s.cupsGoal;
+    expect(matchOver(s)).toBe(true);
+  });
+
   it("con 2 copas, la primera meta solo gana la ronda y la copa se conserva en la siguiente", () => {
     const base = createGame([{ name: "Ana", color: "#fff" }, { name: "Beto", color: "#000" }], 2);
     const r1 = rollFrom(base, 58, 4);
