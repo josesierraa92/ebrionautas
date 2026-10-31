@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { History } from "./history";
-import { brushCells, DEFAULT_TV_VIEW, expand, flatten, groundAt, lightOf, lookOf, MAX_LEVEL, MAX_SIZE, newLayout, paint, parseLayout, raise, resize, TILE_COUNT, tileAnchor, tileTypeOf, toggleTile, tvDirection } from "./layout";
+import { brushCells, DEFAULT_CHIP, DEFAULT_TV_VIEW, parseChip, expand, flatten, groundAt, lightOf, lookOf, MAX_LEVEL, MAX_SIZE, newLayout, paint, parseLayout, raise, resize, TILE_COUNT, tileAnchor, tileTypeOf, toggleTile, tvDirection } from "./layout";
 
 describe("diseño del tablero", () => {
   it("el pincel pinta un cuadrado y no se sale del mundo", () => {
@@ -234,5 +234,21 @@ describe("deshacer", () => {
     expect(h.redo(1)).toBe(2);
     h.push(2);
     expect(h.canRedo).toBe(false);
+  });
+});
+
+describe("tarjeta de usuario (chip)", () => {
+  it("de serie vale lo de siempre y se guarda con el diseño", () => {
+    const l = newLayout(10, 8);
+    expect(l.chip).toEqual(DEFAULT_CHIP);
+    const back = parseLayout(JSON.parse(JSON.stringify({ ...l, chip: { ...l.chip, cupSize: 150, cupColor: "#ff0000" } })));
+    expect(back?.chip.cupSize).toBe(150);
+    expect(back?.chip.cupColor).toBe("#ff0000");
+  });
+  it("valida rangos, colores y letra; un diseño viejo sin `chip` queda de serie", () => {
+    expect(parseChip({ cupSize: 9999, outline: -5, cupColor: "rojo", font: "inventada", zombie: 100.4 })).toMatchObject({ cupSize: 250, outline: 0, cupColor: DEFAULT_CHIP.cupColor, font: "lilita", zombie: 100 });
+    const l = newLayout(10, 8) as unknown as Record<string, unknown>;
+    delete l.chip;
+    expect(parseLayout(JSON.parse(JSON.stringify(l)))?.chip).toEqual(DEFAULT_CHIP);
   });
 });

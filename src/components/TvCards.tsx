@@ -1,4 +1,5 @@
 import { shadeHex } from "@/lib/shadeHex";
+import { DEFAULT_CHIP, NUMBER_FONTS, type ChipStyle } from "@/editor/layout";
 import { characterOf } from "@/game/characters";
 import Marciano from "@/components/Marciano";
 import { Cups } from "@/components/Winner";
@@ -149,7 +150,9 @@ export function PhoneRuleCard({ game, n, playerId, cardKey, result, unit = "14px
  * Mientras la TV anima la tirada (`moving`, `rolling`) no se adelanta el resultado ni el turno siguiente.
  */
 // Solo quién tiene el turno: el dado ya se ve grande en el tablero y el número sale en el título de la jugada.
-export function TurnChip({ game, moving = false, scale = 1 }: { game: GameState; moving?: boolean; rolling?: boolean; scale?: number }) {
+export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP, inline = false }: { game: GameState; moving?: boolean; rolling?: boolean; scale?: number; /** ajustes de la tarjeta (editor «Tarjeta de usuario») */ chip?: ChipStyle; /** sin colocarla en la esquina (vista previa del editor) */ inline?: boolean }) {
+  const f = NUMBER_FONTS[chip.font];
+  const fontFamily = chip.font === DEFAULT_CHIP.font ? undefined : `var(${f.cssVar}), ${f.fallback}`;
   const roller = game.players.find((p) => p.id === game.lastRoller);
   const winner = game.players.find((p) => p.id === game.winner);
   const who = winner ?? (moving && roller ? roller : currentPlayer(game));
@@ -158,23 +161,29 @@ export function TurnChip({ game, moving = false, scale = 1 }: { game: GameState;
   // «Turno de» en el verde neón de las tarjetas (`#bffa58`) y 3 px más abajo, nombre con sombra dura azul muy oscuro, sin filete (todo en CSS, mismo estilo
   // grueso y plano que las tarjetas).
   return (
-    <div className="pointer-events-none absolute top-[2%] left-[2%] z-30 flex items-center max-md:top-16 max-md:scale-90 max-md:origin-top-left" style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "top left" } : undefined}>
+    <div className={`pointer-events-none z-30 flex items-center ${inline ? "relative" : "absolute top-[2%] left-[2%] max-md:top-16 max-md:scale-90 max-md:origin-top-left"}`} style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "top left" } : undefined}>
       {/* anillo de color del jugador con degradado (más claro arriba a la izquierda, más oscuro abajo a la derecha) */}
       <div className="relative z-10 -mr-[30px] -ml-[5px] shrink-0" style={{ padding: 5, borderRadius: 21, background: `linear-gradient(150deg, ${shadeHex(color, 0.12)} 0%, ${color} 35%, ${shadeHex(color, -0.38)} 100%)`, boxShadow: "0 6px 12px rgba(0,0,0,.45)" }}>
         <div
           className="grid place-items-center overflow-hidden rounded-2xl border-[4px] border-[#1b0a40]"
           style={{ width: 84, height: 84, background: "radial-gradient(circle at 50% 50%, #5a31ad 0%, #3a1d7a 50%, #1a0b38 100%)" }}
         >
-          <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={62} character={characterOf(game.players, who.id)} />
+          <Marciano avatar={avatarOf(who)} expression={expressionFor(who, { winner: game.winner, isTurn: true })} size={Math.round(62 * chip.zombie / 100)} character={characterOf(game.players, who.id)} />
         </div>
-        <Cups n={who.cups} className="absolute top-0 left-0 z-20 text-2xl" />
+        <Cups
+          n={who.cups}
+          size={`${(chip.cupSize / 100) * 1.3}em`}
+          cup={{ fill: chip.cupColor, outline: chip.outlineColor, stroke: chip.outline }}
+          className="absolute z-20 text-2xl"
+          style={{ top: `${chip.cupY}%`, left: `${chip.cupX}%` }}
+        />
       </div>
       <div className="relative overflow-hidden rounded-2xl border-[5px] border-[#452b8e] py-1 pr-[26px] pl-[47px] shadow-[0_6px_12px_rgba(0,0,0,.45)]" style={{ background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
         <div>
-          <p className="relative top-[4px] font-display text-[1rem] leading-none tracking-wider text-[#bffa58] uppercase">
+          <p className="relative top-[4px] font-display text-[1rem] leading-none tracking-wider uppercase" style={{ color: chip.labelColor, fontFamily }}>
             {winner ? (matchOver(game) ? "¡Ganador!" : "¡Gana la ronda!") : "Turno de"}
           </p>
-          <p className="mt-1 font-display text-[2.6rem] leading-none text-white uppercase" style={{ textShadow: "0 2px 0 #1a0b38, 0 3px 0 #1a0b38" }}>
+          <p className="mt-1 font-display leading-none uppercase" style={{ fontSize: `${2.6 * chip.nameSize / 100}rem`, color: chip.nameColor, fontFamily, textShadow: "0 2px 0 #1a0b38, 0 3px 0 #1a0b38" }}>
             {who.name}
           </p>
         </div>

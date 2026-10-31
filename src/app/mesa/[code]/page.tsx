@@ -110,7 +110,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
 
   const overlays = (
     <>
-      <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} scale={ui.chip / 100} />
+      <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} scale={ui.chip / 100} chip={published?.chip} />
       {card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} scale={ui.card / 100} />}
     </>
   );

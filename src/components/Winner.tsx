@@ -5,12 +5,12 @@ import TrophyIcon from "@/components/TrophyIcon";
 import type { Player } from "@/game/engine";
 
 /** Copitas amarillas de un jugador (una por ronda ganada). */
-export function Cups({ n, className = "" }: { n?: number; className?: string }) {
+export function Cups({ n, className = "", size = "1.3em", cup, style }: { n?: number; className?: string; style?: React.CSSProperties; size?: string; cup?: { fill: string; outline: string; stroke: number } }) {
   if (!n) return null;
   return (
-    <span className={`inline-flex ${className}`} title={`${n} ${n === 1 ? "copa" : "copas"}`} aria-label={`${n} ${n === 1 ? "copa" : "copas"}`}>
+    <span className={`inline-flex ${className}`} style={style} title={`${n} ${n === 1 ? "copa" : "copas"}`} aria-label={`${n} ${n === 1 ? "copa" : "copas"}`}>
       {Array.from({ length: Math.min(n, 3) }, (_, i) => (
-        <TrophyIcon key={i} size="1.3em" className="-ml-1 first:ml-0 drop-shadow-[0_1px_1px_rgba(0,0,0,.5)]" />
+        <TrophyIcon key={i} size={size} {...cup} className="-ml-1 first:ml-0 drop-shadow-[0_1px_1px_rgba(0,0,0,.5)]" />
       ))}
     </span>
   );

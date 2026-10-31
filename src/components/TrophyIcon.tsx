@@ -15,15 +15,16 @@ const PARTS = [
   "M152 428H360V512H152Z",
 ];
 
-export default function TrophyIcon({ size = 24, className = "" }: { size?: number | string; className?: string }) {
+export default function TrophyIcon({ size = 24, className = "", fill = YELLOW, outline = OUTLINE, stroke = 44 }: { size?: number | string; className?: string; fill?: string; outline?: string; stroke?: number }) {
+  const pad = Math.max(24, stroke / 2 + 2);
   return (
-    <svg viewBox="-24 -24 560 560" width={size} height={size} className={className} aria-hidden focusable="false" style={{ display: "inline-block", verticalAlign: "middle" }}>
+    <svg viewBox={`${-pad} ${-pad} ${512 + 2 * pad} ${512 + 2 * pad}`} width={size} height={size} className={className} aria-hidden focusable="false" style={{ display: "inline-block", verticalAlign: "middle" }}>
       <g fillRule="evenodd" strokeLinejoin="round">
-        {PARTS.map((d, i) => (
-          <path key={`o${i}`} d={d} fill={OUTLINE} stroke={OUTLINE} strokeWidth="44" />
+        {stroke > 0 && PARTS.map((d, i) => (
+          <path key={`o${i}`} d={d} fill={outline} stroke={outline} strokeWidth={stroke} />
         ))}
         {PARTS.map((d, i) => (
-          <path key={`f${i}`} d={d} fill={YELLOW} />
+          <path key={`f${i}`} d={d} fill={fill} />
         ))}
       </g>
     </svg>

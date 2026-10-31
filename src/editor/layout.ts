@@ -101,6 +101,8 @@ export type BoardLayout = {
   names: NameStyle;
   /** Tamaño de lo que se dibuja encima del tablero en la TV. */
   ui: UiSize;
+  /** Cómo se ve la tarjeta de usuario (cuadro del turno) de la TV: copita, zombi y letra. */
+  chip: ChipStyle;
 };
 
 /** Tamaño (en %) de la tarjeta de la casilla (esquina de abajo a la derecha) y del cuadro del turno (esquina de arriba a la izquierda). 100 = el de serie. */
@@ -111,6 +113,45 @@ export function parseUi(raw: unknown): UiSize {
   const n = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const lim = (v: unknown, d: number) => Math.round(Math.max(UI_SIZE_LIMITS.min, Math.min(UI_SIZE_LIMITS.max, num(v, d))));
   return { card: lim(n.card, DEFAULT_UI.card), chip: lim(n.chip, DEFAULT_UI.chip) };
+}
+
+/**
+ * Tarjeta de usuario (`TurnChip`, arriba a la izquierda en la TV). Tamaños en %, posición de la copita en % de su tamaño (0 = el sitio de serie),
+ * `outline` = grosor del borde de la copa (unidades del dibujo, 0 = sin borde), `font` de `NUMBER_FONTS`, colores en `#rrggbb`.
+ */
+export type ChipStyle = {
+  cupSize: number; cupX: number; cupY: number; outline: number; cupColor: string; outlineColor: string;
+  zombie: number; font: NumberFont; nameSize: number; nameColor: string; labelColor: string;
+};
+export const DEFAULT_CHIP: ChipStyle = {
+  cupSize: 100, cupX: 0, cupY: 0, outline: 44, cupColor: "#ffc82e", outlineColor: "#2a0f5c",
+  zombie: 100, font: "lilita", nameSize: 100, nameColor: "#ffffff", labelColor: "#bffa58",
+};
+export const CHIP_LIMITS = {
+  cupSize: { min: 40, max: 250 },
+  cupX: { min: -150, max: 250 },
+  cupY: { min: -150, max: 250 },
+  outline: { min: 0, max: 90 },
+  zombie: { min: 60, max: 160 },
+  nameSize: { min: 60, max: 150 },
+};
+export function parseChip(raw: unknown): ChipStyle {
+  const n = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const lim = (v: unknown, d: number, { min, max }: { min: number; max: number }) => Math.round(Math.max(min, Math.min(max, num(v, d))));
+  const hex = (v: unknown, d: string) => (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : d);
+  return {
+    cupSize: lim(n.cupSize, DEFAULT_CHIP.cupSize, CHIP_LIMITS.cupSize),
+    cupX: lim(n.cupX, DEFAULT_CHIP.cupX, CHIP_LIMITS.cupX),
+    cupY: lim(n.cupY, DEFAULT_CHIP.cupY, CHIP_LIMITS.cupY),
+    outline: lim(n.outline, DEFAULT_CHIP.outline, CHIP_LIMITS.outline),
+    cupColor: hex(n.cupColor, DEFAULT_CHIP.cupColor),
+    outlineColor: hex(n.outlineColor, DEFAULT_CHIP.outlineColor),
+    zombie: lim(n.zombie, DEFAULT_CHIP.zombie, CHIP_LIMITS.zombie),
+    font: typeof n.font === "string" && n.font in NUMBER_FONTS ? (n.font as NumberFont) : DEFAULT_CHIP.font,
+    nameSize: lim(n.nameSize, DEFAULT_CHIP.nameSize, CHIP_LIMITS.nameSize),
+    nameColor: hex(n.nameColor, DEFAULT_CHIP.nameColor),
+    labelColor: hex(n.labelColor, DEFAULT_CHIP.labelColor),
+  };
 }
 
 /**
@@ -260,6 +301,7 @@ export function newLayout(w = 32, h = 24): BoardLayout {
     characterSize: CHARACTER_SIZE.default,
     names: DEFAULT_NAMES,
     ui: DEFAULT_UI,
+    chip: DEFAULT_CHIP,
   };
 }
 
@@ -455,7 +497,7 @@ export function parseLayout(raw: unknown): BoardLayout | null {
       base: typeof t.base === "boolean" ? t.base : DEFAULT_TOKEN.base,
     };
   });
-  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers, tokens, tvView: parseTvView(r.tvView), characterSize, names: parseNames(r.names), ui: parseUi(r.ui) };
+  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers, tokens, tvView: parseTvView(r.tvView), characterSize, names: parseNames(r.names), ui: parseUi(r.ui), chip: parseChip(r.chip) };
 }
 
 /** Un emoji/texto corto o una imagen pequeña subida desde el editor. */

@@ -3,6 +3,7 @@
 // Editor del tablero para el admin: pintar el terreno, subir/bajar el suelo y arrastrar modelos 3D.
 // El diseño es un BoardLayout inmutable: cada cambio crea uno nuevo (así funciona deshacer).
 
+import ChipSection from "./ChipSection";
 import { upload } from "@vercel/blob/client";
 import { CHARACTERS, SHEET_COLS, type CharacterSheet } from "@/game/characters";
 import { renderCharacterSheet } from "./characterSheet";
@@ -88,6 +89,7 @@ export default function BoardEditor() {
   const flattenLevel = useRef(0);
   const shadowBefore = useRef<BoardLayout | null>(null);
   const uiBefore = useRef<BoardLayout | null>(null);
+  const chipBefore = useRef<BoardLayout | null>(null);
   // zoom e inclinación de la TV: se ven al momento en «Vista TV»; deshacer guarda el valor de antes de arrastrar
   const viewBefore = useRef<BoardLayout | null>(null);
   const setTvView = (v: Partial<TvView>) => {
@@ -977,6 +979,16 @@ export default function BoardEditor() {
               Volver al 100 %
             </button>
           </section>
+          <ChipSection
+            chip={layout.chip}
+            onStart={() => (chipBefore.current ??= layoutRef.current)}
+            onLive={(c) => setLayout({ ...layoutRef.current, chip: c })}
+            onEnd={() => {
+              if (chipBefore.current && chipBefore.current !== layoutRef.current) history.current.push(chipBefore.current);
+              chipBefore.current = null;
+              setTick((t) => t + 1);
+            }}
+          />
           <section className="grid gap-2 rounded-xl bg-white/5 p-2.5">
             <h3 className="font-display text-sm text-amber-400">🌙 Sombras y neblina</h3>
         <label className="flex items-center gap-2 text-sm" title="Qué tan oscuras son las sombras">
