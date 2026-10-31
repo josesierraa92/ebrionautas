@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_CATEGORIES, DEFAULT_JUICIO, DEFAULT_RETOS, DEFAULT_RONDA, RETO_ORIGINALS } from "@/game/content";
+import { DEFAULT_CATEGORIES, DEFAULT_JUICIO, DEFAULT_NICKNAMES, DEFAULT_RETOS, DEFAULT_RONDA, RETO_ORIGINALS } from "@/game/content";
 import { loadLists, saveLists } from "./lists";
 import { getStore, resetMemoryStore } from "./store";
 
@@ -34,12 +34,16 @@ describe("listas editables guardadas como diferencia", () => {
     expect((await loadLists()).juicio).toEqual(DEFAULT_JUICIO.slice(5));
   });
 
-  it("una lista dañada (casi toda la serie «borrada») se repara sola", async () => {
-    await getStore().set("cards:ronda", JSON.stringify({ v: 4, added: [], removed: DEFAULT_RONDA.slice(2) }), 100);
-    expect((await loadLists()).ronda).toEqual(DEFAULT_RONDA);
-    // borrar unas pocas a propósito sigue valiendo
-    await getStore().set("cards:ronda", JSON.stringify({ v: 4, added: [], removed: DEFAULT_RONDA.slice(0, 3) }), 100);
-    expect((await loadLists()).ronda).toEqual(DEFAULT_RONDA.slice(3));
+  it("borrar más de la mitad de la serie y añadir uno propio se respeta (apodos)", async () => {
+    const mine = [...DEFAULT_NICKNAMES.slice(8), "Pepe"];
+    await saveLists({ nicknames: mine });
+    expect((await loadLists()).nicknames).toEqual(mine);
+    await saveLists({ nicknames: [...mine, "Lalo"] });
+    expect((await loadLists()).nicknames).toEqual([...mine, "Lalo"]);
+    await saveLists({ nicknames: ["Solo"] });
+    expect((await loadLists()).nicknames).toEqual(["Solo"]);
+    await saveLists({ ronda: [...DEFAULT_RONDA.slice(12), "Mío"] });
+    expect((await loadLists()).ronda).toEqual([...DEFAULT_RONDA.slice(12), "Mío"]);
   });
 
   it("guardar la lista de serie tal cual no deja nada fijado (los cambios del código siguen llegando)", async () => {

@@ -40,11 +40,8 @@ async function load(kind: keyof ContentLists): Promise<string[]> {
       const { added, removed } = data as { added?: unknown; removed?: unknown };
       // ojo: `PARSE` devuelve la lista de serie cuando queda vacía, y aquí «sin añadidos» es vacío de verdad
       const add = Array.isArray(added) && added.length ? PARSE[kind](added) : [];
-      let gone = Array.isArray(removed) ? (removed as string[]) : [];
-      // Una lista guardada con el error de la migración dejó casi toda la serie «borrada» (en el editor quedaban 2 retos de ronda). Nadie borra a
-      // propósito más de la mitad de una lista de 8 o más: se toma como dañado y se ignora (el siguiente «Guardar» lo escribe bien).
-      const base = DEFAULTS[kind];
-      if (base.length >= 8 && gone.filter((g) => base.some((d) => norm(d) === norm(g))).length > base.length / 2) gone = [];
+      const gone = Array.isArray(removed) ? (removed as string[]) : [];
+      // Lo guardado manda tal cual: borrar muchas de serie y añadir las tuyas es una edición legítima (no se «repara» nada).
       return merge(kind, add, gone);
     }
     // formato viejo: la lista entera. Solo se rescatan las cartas que el admin **añadió** (lo que no está en la de hoy y nunca fue de serie).
