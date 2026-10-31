@@ -186,7 +186,6 @@ function DuelRoll({ decision, me, players, onRoll }: { decision: Extract<Decisio
         {me.name} vs {rival}
       </h3>
       {decision.tie && <p className="btn-game bg-btn-yellow px-4 py-1 text-lg text-white">¡EMPATE! TIRAN OTRA VEZ</p>}
-      {!challengerRolls && <p className="font-display text-lg text-white/85">{me.name} sacó {decision.a}</p>}
       <p className="font-display text-xl text-white">Tira el dado de {roller}</p>
       <button
         key={`${decision.rounds.length}-${decision.a}-${decision.b}`}
