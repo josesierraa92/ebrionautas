@@ -4,6 +4,7 @@
 // casillas (panel morado con borde grueso, pastilla y cuadros verde biche), con todos los jugadores y cuántos tragos se tomó cada uno.
 import BeerIcon from "@/components/BeerIcon";
 import Marciano from "@/components/Marciano";
+import TrophyIcon from "@/components/TrophyIcon";
 import { Cups } from "@/components/Winner";
 import { avatarOf } from "@/game/avatar";
 import { characterOf } from "@/game/characters";
@@ -54,7 +55,7 @@ export default function Clasificatoria({ game, onClose, unit = "17px" }: { game:
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-display leading-none text-white uppercase" style={{ fontSize: u(1.25) }}>
                         {p.name}
-                        {won && <span style={{ marginLeft: u(0.4) }}>🏆</span>}
+                        {won && <TrophyIcon size={u(1.3)} className="ml-1" />}
                         {(game.cupsGoal ?? 1) > 1 && <Cups n={p.cups} className="ml-1" />}
                       </p>
                       {/* barrita proporcional a lo que bebió */}

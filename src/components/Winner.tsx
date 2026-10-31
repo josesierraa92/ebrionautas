@@ -1,6 +1,7 @@
 import Marciano from "@/components/Marciano";
 import { avatarOf } from "@/game/avatar";
 import { characterOf } from "@/game/characters";
+import TrophyIcon from "@/components/TrophyIcon";
 import type { Player } from "@/game/engine";
 
 /** Copitas amarillas de un jugador (una por ronda ganada). */
@@ -9,7 +10,7 @@ export function Cups({ n, className = "" }: { n?: number; className?: string }) 
   return (
     <span className={`inline-flex ${className}`} title={`${n} ${n === 1 ? "copa" : "copas"}`} aria-label={`${n} ${n === 1 ? "copa" : "copas"}`}>
       {Array.from({ length: Math.min(n, 3) }, (_, i) => (
-        <span key={i} className="-ml-1 first:ml-0 drop-shadow-[0_1px_0_rgba(0,0,0,.6)]">🏆</span>
+        <TrophyIcon key={i} size="1em" className="-ml-1 first:ml-0 drop-shadow-[0_1px_0_rgba(0,0,0,.6)]" />
       ))}
     </span>
   );
@@ -20,7 +21,7 @@ export default function Winner({ winner, players, goal = 1, children }: { winner
   return (
     <div className="flex flex-col gap-3 text-center">
       <div className="flex items-end justify-center gap-2">
-        <span className="text-5xl">🏆</span>
+        <TrophyIcon size={56} />
         <Marciano avatar={avatarOf(winner)} expression="euforico" size={110} character={players ? characterOf(players, winner.id) : undefined} />
         <span className="text-5xl">🪦</span>
       </div>

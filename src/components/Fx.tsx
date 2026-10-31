@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import TrophyIcon from "@/components/TrophyIcon";
 import { iconMaskUrl } from "@/editor/icons";
 import type { Banner, DiceFx } from "@/lib/useGameFx";
 
@@ -76,7 +77,7 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
             </div>
           ) : (
             <span className="leading-none" style={{ fontSize: "9cqw" }}>
-              {banner.emoji}
+              {banner.emoji === "🏆" ? <TrophyIcon size="1em" /> : banner.emoji}
             </span>
           )}
           <div className="flex min-w-0 flex-col items-start">

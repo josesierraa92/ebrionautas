@@ -3,6 +3,7 @@
 import { characterOf } from "@/game/characters";
 import { useState } from "react";
 import Marciano from "@/components/Marciano";
+import TrophyIcon from "@/components/TrophyIcon";
 import { defaultAvatar } from "@/game/avatar";
 import type { Gender } from "@/game/engine";
 import { PLAYER_COLORS } from "@/game/tileStyle";
@@ -90,7 +91,7 @@ export default function Setup({ onStart, busy = false, hint, copas = true }: Pro
         <div className="mt-2 grid grid-cols-3 gap-2">
           {[1, 2, 3].map((n) => (
             <button key={n} aria-pressed={cups === n} onClick={() => setCups(n)} className={`rounded-xl border-2 border-ink py-2 font-display text-xl ${cups === n ? "bg-btn-yellow text-white" : "bg-space text-white/60"}`}>
-              {"🏆".repeat(n)}
+              <span className="flex justify-center gap-0.5">{Array.from({ length: n }, (_, i) => <TrophyIcon key={i} size={26} />)}</span>
               <span className="block text-sm">{n === 1 ? "1 copa" : `${n} copas`}</span>
             </button>
           ))}
