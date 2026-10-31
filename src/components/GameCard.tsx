@@ -116,6 +116,7 @@ function DiceIcon({ size, value }: { size: string; value?: number | null }) {
 function titleSize(title: string) {
   const longest = Math.max(1, ...title.split(/\s+/).map((w) => w.length));
   const byWord = 8.6 / (0.52 * longest);
-  const byLines = 17.2 / (0.52 * (title.length + 2));
-  return Math.max(1.2, Math.min(2.2, byWord, byLines));
+  // hasta 3 renglones en los títulos largos («¡De murciélago en murciélago!» salía muy chico en 2)
+  const byLines = (title.length > 22 ? 25.8 : 17.2) / (0.52 * (title.length + (title.length > 22 ? 3 : 2)));
+  return Math.max(1.2, Math.min(2.2, byWord, Math.max(1.4, byLines)));
 }
