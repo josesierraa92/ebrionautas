@@ -10,9 +10,7 @@ export function Cups({ n, className = "" }: { n?: number; className?: string }) 
   return (
     <span className={`inline-flex ${className}`} title={`${n} ${n === 1 ? "copa" : "copas"}`} aria-label={`${n} ${n === 1 ? "copa" : "copas"}`}>
       {Array.from({ length: Math.min(n, 3) }, (_, i) => (
-        <span key={i} className="-ml-1.5 inline-grid size-[1.7em] shrink-0 place-items-center rounded-full border-2 border-[#1a0b38] bg-[#6a3fd0] first:ml-0" style={{ background: "radial-gradient(circle at 35% 30%, #8a5af0 0%, #5a31ad 60%, #3a1d7a 100%)" }}>
-          <TrophyIcon size="1em" />
-        </span>
+        <TrophyIcon key={i} size="1.3em" className="-ml-1 first:ml-0 drop-shadow-[0_1px_1px_rgba(0,0,0,.5)]" />
       ))}
     </span>
   );

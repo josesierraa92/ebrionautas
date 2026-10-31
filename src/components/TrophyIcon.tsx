@@ -1,24 +1,31 @@
-// Copa amarilla en el estilo de los zombis (Kenney, bloques lisos de colores planos): pocas piezas grandes, sin contornos ni degradados,
-// solo un tono claro y otro más oscuro por pieza. Se usa en vez del emoji 🏆 en todo el juego (PC y celular).
-const LIGHT = "#ffd23f";
-const MID = "#f2a900";
-const DARK = "#c47f00";
+// Copa amarilla con la silueta de la referencia del usuario (copa redonda, dos asas con hueco, tallo y base de dos escalones) y un borde
+// morado oscuro. Se usa en vez del emoji 🏆 en todo el juego (PC y celular).
+const YELLOW = "#ffc82e";
+const OUTLINE = "#2a0f5c";
+
+const PARTS = [
+  // copa
+  "M125 0H387V120C387 230 330 312 256 312C182 312 125 230 125 120Z",
+  // asas (con hueco) izquierda y derecha
+  "M36 46H125V204H110C70 204 36 170 36 130ZM80 92H125V158C100 158 80 140 80 120Z",
+  "M476 46H387V204H402C442 204 476 170 476 130ZM432 92H387V158C412 158 432 140 432 120Z",
+  // tallo y base
+  "M228 300H284V390H228Z",
+  "M190 386H322Q334 386 334 398V430H178V398Q178 386 190 386Z",
+  "M152 428H360V512H152Z",
+];
 
 export default function TrophyIcon({ size = 24, className = "" }: { size?: number | string; className?: string }) {
   return (
-    <svg viewBox="0 0 64 64" width={size} height={size} className={className} aria-hidden focusable="false" style={{ display: "inline-block", verticalAlign: "middle" }}>
-      {/* asas: dos bloques */}
-      <polygon points="6,12 18,12 18,18 12,18 12,26 18,26 18,32 6,32" fill={DARK} />
-      <polygon points="58,12 46,12 46,18 52,18 52,26 46,26 46,32 58,32" fill={DARK} />
-      {/* copa: bloque ancho que se estrecha, mitad clara y mitad oscura */}
-      <polygon points="14,6 32,6 32,38 24,38" fill={LIGHT} />
-      <polygon points="50,6 32,6 32,38 40,38" fill={MID} />
-      {/* tallo */}
-      <rect x="27" y="38" width="10" height="10" fill={MID} />
-      <rect x="27" y="38" width="5" height="10" fill={LIGHT} />
-      {/* base */}
-      <rect x="16" y="48" width="32" height="10" fill={DARK} />
-      <rect x="16" y="48" width="16" height="10" fill={MID} />
+    <svg viewBox="-24 -24 560 560" width={size} height={size} className={className} aria-hidden focusable="false" style={{ display: "inline-block", verticalAlign: "middle" }}>
+      <g fillRule="evenodd" strokeLinejoin="round">
+        {PARTS.map((d, i) => (
+          <path key={`o${i}`} d={d} fill={OUTLINE} stroke={OUTLINE} strokeWidth="44" />
+        ))}
+        {PARTS.map((d, i) => (
+          <path key={`f${i}`} d={d} fill={YELLOW} />
+        ))}
+      </g>
     </svg>
   );
 }
