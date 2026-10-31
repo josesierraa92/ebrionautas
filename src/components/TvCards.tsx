@@ -140,7 +140,7 @@ export function RuleCard({ game, n, playerId, cardKey, result, scale = 1 }: Prop
 export function PhoneRuleCard({ game, n, playerId, cardKey, result, unit = "14px" }: Props & { unit?: string }) {
   useCardTexts();
   const { player, rule, accent, icon, emoji } = cardContent(game, n, playerId, result);
-  return <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n} · ${player.name}`} title={rule.title} text={rule.text} unit={unit} cardKey={cardKey} />;
+  return <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n} · ${player.name}`} title={rule.title} text={rule.text} unit={unit} cardKey={cardKey} phone />;
 }
 
 /**

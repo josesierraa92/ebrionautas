@@ -22,6 +22,7 @@ export default function GameCard({
   dice,
   unit,
   cardKey,
+  phone,
 }: {
   /** Color de la casilla (ya no se usa: todas las tarjetas van en verde biche, pedido del usuario). */
   accent?: string;
@@ -35,8 +36,12 @@ export default function GameCard({
   dice?: number | null;
   unit: string;
   cardKey: number;
+  /** Tarjeta del celular (angosta): un título largo va debajo del icono, a todo el ancho. */
+  phone?: boolean;
 }) {
   const mask = icon ? iconMaskUrl(icon, 256) : null;
+  // En el celular (unidad en px, tarjeta angosta) un título largo no cabe al lado del icono sin partirse en 4 renglones: va debajo, a todo el ancho.
+  const wide = !!phone && title.length > 22;
   const u = (k: number) => `calc(var(--u) * ${k})`;
   const maskStyle = (url: string) => ({ WebkitMaskImage: `url(${url})`, maskImage: `url(${url})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" });
   return (
@@ -58,12 +63,19 @@ export default function GameCard({
                 )}
               </div>
             </div>
-            <h3 className="min-w-0 font-display leading-[1.02] text-white uppercase" style={{ fontSize: u(titleSize(title)), textWrap: "balance", letterSpacing: "0.01em" }}>
-              {title}
-            </h3>
+            {!wide && (
+              <h3 className="min-w-0 font-display leading-[1.02] text-white uppercase" style={{ fontSize: u(titleSize(title)), textWrap: "balance", letterSpacing: "0.01em" }}>
+                {title}
+              </h3>
+            )}
             {/* flechita del color de la casilla a la derecha */}
             <span aria-hidden className="absolute right-0" style={{ top: "50%", transform: "translateY(-50%)", width: 0, height: 0, borderTop: `${u(0.55)} solid transparent`, borderBottom: `${u(0.55)} solid transparent`, borderRight: `${u(0.7)} solid ${GREEN_LIGHT}` }} />
           </div>
+          {wide && (
+            <h3 className="font-display leading-[1.02] text-white uppercase" style={{ marginTop: u(0.9), fontSize: u(Math.min(1.8, 14.4 / (0.58 * Math.ceil(title.length / 2 + 1)))), textWrap: "balance", letterSpacing: "0.01em" }}>
+              {title}
+            </h3>
+          )}
           <p className="whitespace-pre-line" style={{ marginTop: u(1), fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700, fontSize: u(1.12), lineHeight: 1.4, letterSpacing: 0, color: "#d8d4f6" }}>
             {text}
           </p>
