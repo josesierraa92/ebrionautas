@@ -47,7 +47,7 @@ export default function Winner({ winner, players, goal = 1, children }: { winner
   return (
     <div className="flex flex-col gap-3 text-center">
       <div className="flex items-end justify-center gap-2">
-        <TrophyIcon size={56} icon={roundOnly ? "estrellaGordaRedonda" : "copa"} />
+        <TrophyIcon size={56} />
         <Marciano avatar={avatarOf(winner)} expression="euforico" size={110} character={players ? characterOf(players, winner.id) : undefined} />
         <span className="text-5xl">🪦</span>
       </div>
