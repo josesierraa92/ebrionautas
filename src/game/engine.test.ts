@@ -408,8 +408,8 @@ describe("Pacto de Sangre", () => {
 });
 
 describe("Yo nunca", () => {
-  it("hay 3 casillas de Yo nunca y quedan 2 duelos", () => {
-    expect(BOARD.filter((t) => t.type === "YO_NUNCA").map((t) => t.n)).toEqual([7, 29, 37]);
+  it("hay 4 casillas de Yo nunca y quedan 2 duelos", () => {
+    expect(BOARD.filter((t) => t.type === "YO_NUNCA").map((t) => t.n)).toEqual([7, 23, 29, 37]);
     expect(BOARD.filter((t) => t.type === "DUELO").map((t) => t.n)).toEqual([19, 47]);
   });
 

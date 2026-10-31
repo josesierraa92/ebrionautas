@@ -76,7 +76,7 @@ export const BOARD: Tile[] = [
   // TODO validar texto exacto de la casilla 21
   { n: 21, type: "RASGO" },
   { n: 22, type: "RETO" },
-  { n: 23, type: "REGLA" },
+  { n: 23, type: "YO_NUNCA" },
   // TODO validar texto exacto de la casilla 24
   { n: 24, type: "ESCLAVO" },
   { n: 25, type: "RONDA" },
