@@ -120,18 +120,18 @@ export function parseUi(raw: unknown): UiSize {
  * `outline` = grosor del borde de la copa (unidades del dibujo, 0 = sin borde), `font` de `NUMBER_FONTS`, colores en `#rrggbb`.
  */
 export type ChipStyle = {
-  cupSize: number; cupX: number; cupY: number; outline: number; cupColor: string; outlineColor: string;
+  icon: string; cupSize: number; cupX: number; cupY: number; outline: number; cupColor: string; outlineColor: string;
   zombie: number; font: NumberFont; nameSize: number; nameColor: string; labelColor: string;
 };
 export const DEFAULT_CHIP: ChipStyle = {
-  cupSize: 100, cupX: 0, cupY: 0, outline: 44, cupColor: "#ffc82e", outlineColor: "#2a0f5c",
+  icon: "copa", cupSize: 100, cupX: 0, cupY: 0, outline: 44, cupColor: "#ffc82e", outlineColor: "#2a0f5c",
   zombie: 100, font: "lilita", nameSize: 100, nameColor: "#ffffff", labelColor: "#bffa58",
 };
 export const CHIP_LIMITS = {
   cupSize: { min: 40, max: 250 },
   cupX: { min: -150, max: 250 },
   cupY: { min: -150, max: 250 },
-  outline: { min: 0, max: 90 },
+  outline: { min: 0, max: 240 },
   zombie: { min: 60, max: 160 },
   nameSize: { min: 60, max: 150 },
 };
@@ -140,6 +140,7 @@ export function parseChip(raw: unknown): ChipStyle {
   const lim = (v: unknown, d: number, { min, max }: { min: number; max: number }) => Math.round(Math.max(min, Math.min(max, num(v, d))));
   const hex = (v: unknown, d: string) => (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : d);
   return {
+    icon: typeof n.icon === "string" && /^[A-Za-z]{1,30}$/.test(n.icon) ? n.icon : DEFAULT_CHIP.icon,
     cupSize: lim(n.cupSize, DEFAULT_CHIP.cupSize, CHIP_LIMITS.cupSize),
     cupX: lim(n.cupX, DEFAULT_CHIP.cupX, CHIP_LIMITS.cupX),
     cupY: lim(n.cupY, DEFAULT_CHIP.cupY, CHIP_LIMITS.cupY),

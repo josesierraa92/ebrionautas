@@ -3,6 +3,7 @@ import { DEFAULT_CHIP, NUMBER_FONTS, type ChipStyle } from "@/editor/layout";
 import { characterOf } from "@/game/characters";
 import Marciano from "@/components/Marciano";
 import { Cups } from "@/components/Winner";
+import type { TrophyId } from "@/components/TrophyIcon";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { getTile, PATINAZO_DRINKS } from "@/game/board";
 import { currentPlayer, matchOver, type Decision, type GameState } from "@/game/engine";
@@ -173,7 +174,7 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
         <Cups
           n={who.cups}
           size={`${(chip.cupSize / 100) * 1.3}em`}
-          cup={{ fill: chip.cupColor, outline: chip.outlineColor, stroke: chip.outline }}
+          cup={{ fill: chip.cupColor, outline: chip.outlineColor, stroke: chip.outline, icon: chip.icon as TrophyId }}
           className="absolute z-20 text-2xl"
           style={{ top: `${chip.cupY}%`, left: `${chip.cupX}%` }}
         />

@@ -4,6 +4,7 @@
 // zombi, tipo de letra, tamaño y colores del texto. La vista previa usa el mismo `TurnChip` que la TV.
 import { useMemo } from "react";
 import { TurnChip } from "@/components/TvCards";
+import TrophyIcon, { TROPHIES, TROPHY_IDS, type TrophyId } from "@/components/TrophyIcon";
 import { createGame } from "@/game/engine";
 import { CHIP_LIMITS, DEFAULT_CHIP, NUMBER_FONTS, type ChipStyle, type NumberFont } from "./layout";
 
@@ -54,11 +55,25 @@ export default function ChipSection({ chip, onLive, onStart, onEnd }: Props) {
       <div className="grid min-h-[120px] place-items-center overflow-hidden rounded-lg bg-[#0d0a1f] p-4">
         <TurnChip game={game} chip={chip} inline />
       </div>
-      <p className="text-[11px] font-bold opacity-80">Copita</p>
+      <p className="text-[11px] font-bold opacity-80">Icono</p>
+      <div className="grid grid-cols-4 gap-1.5">
+        {TROPHY_IDS.map((id: TrophyId) => (
+          <button
+            key={id}
+            title={TROPHIES[id].label}
+            aria-label={TROPHIES[id].label}
+            aria-pressed={chip.icon === id}
+            onClick={() => { onStart(); set({ icon: id }); onEnd(); }}
+            className={`grid place-items-center rounded-lg p-1.5 ${chip.icon === id ? "bg-amber-400/30 ring-2 ring-amber-400" : "bg-white/10 hover:bg-white/20"}`}
+          >
+            <TrophyIcon size={34} icon={id} fill={chip.cupColor} outline={chip.outlineColor} stroke={Math.min(chip.outline, 48)} />
+          </button>
+        ))}
+      </div>
       {slider("Tamaño", "cupSize", " %", 5)}
       {slider("Posición horizontal", "cupX", " %", 5)}
       {slider("Posición vertical", "cupY", " %", 5)}
-      {slider("Grosor del contorno", "outline", "", 2)}
+      {slider("Grosor del contorno", "outline", "", 4)}
       {color("Color de la copa", "cupColor")}
       {color("Color del contorno", "outlineColor")}
       <p className="mt-1 text-[11px] font-bold opacity-80">Zombi y texto</p>

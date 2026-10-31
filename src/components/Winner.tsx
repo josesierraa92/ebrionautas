@@ -1,11 +1,11 @@
 import Marciano from "@/components/Marciano";
 import { avatarOf } from "@/game/avatar";
 import { characterOf } from "@/game/characters";
-import TrophyIcon from "@/components/TrophyIcon";
+import TrophyIcon, { type TrophyId } from "@/components/TrophyIcon";
 import type { Player } from "@/game/engine";
 
 /** Copitas amarillas de un jugador (una por ronda ganada). */
-export function Cups({ n, className = "", size = "1.3em", cup, style }: { n?: number; className?: string; style?: React.CSSProperties; size?: string; cup?: { fill: string; outline: string; stroke: number } }) {
+export function Cups({ n, className = "", size = "1.3em", cup, style }: { n?: number; className?: string; style?: React.CSSProperties; size?: string; cup?: { fill: string; outline: string; stroke: number; icon?: TrophyId } }) {
   if (!n) return null;
   return (
     <span className={`inline-flex ${className}`} style={style} title={`${n} ${n === 1 ? "copa" : "copas"}`} aria-label={`${n} ${n === 1 ? "copa" : "copas"}`}>
