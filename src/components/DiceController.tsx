@@ -193,8 +193,11 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
   }
 
   if (game.phase === "DECISION" && decision) {
-    const tileNumber = card?.n ?? me.pos;
-    const tilePlayerId = card?.playerId ?? me.id;
+    // La tarjeta guardada puede ser de la jugada anterior (otro jugador, otra casilla): si la decisión es de quien tiene el turno ahora
+    // (p. ej. la deuda del Purgatorio al empezar su turno), la tarjeta es la de la decisión, no esa.
+    const own = card && card.playerId === me.id && game.decision?.kind !== "JAIL_PAY" ? card : null;
+    const tileNumber = own?.n ?? me.pos;
+    const tilePlayerId = me.id;
     // Pantalla completa: la tarjeta grande y centrada en el espacio que sobra, y las opciones abajo, al alcance del pulgar.
     return (
       <div className="flex flex-1 flex-col gap-4">
@@ -203,8 +206,8 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
             game={game}
             n={tileNumber}
             playerId={tilePlayerId}
-            cardKey={card?.key ?? (game.decisionSeq ?? tileNumber)}
-            result={card?.result}
+            cardKey={own?.key ?? (game.decisionSeq ?? tileNumber)}
+            result={own?.result}
             unit="18px"
           />
         </div>
