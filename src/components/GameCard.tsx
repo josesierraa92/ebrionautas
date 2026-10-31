@@ -67,7 +67,7 @@ export default function GameCard({
             {/* flechita del color de la casilla a la derecha */}
             <span aria-hidden className="absolute right-0" style={{ top: "50%", transform: "translateY(-50%)", width: 0, height: 0, borderTop: `${u(0.55)} solid transparent`, borderBottom: `${u(0.55)} solid transparent`, borderRight: `${u(0.7)} solid ${GREEN_LIGHT}` }} />
           </div>
-          <p className="whitespace-pre-line" style={{ marginTop: u(1), fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700, fontSize: u(1.12), lineHeight: 1.4, letterSpacing: 0, color: "#d8d4f6" }}>
+          <p className="whitespace-pre-line" style={{ marginTop: u(1), fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700, fontSize: u(1.12), lineHeight: 1.4, letterSpacing: 0, color: "#d8d4f6", textWrap: "balance" }}>
             {text}
           </p>
           {prompt && (
