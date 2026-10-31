@@ -18,7 +18,8 @@ const CARDS = cardCatalog();
 
 /** Con qué se rellenan los huecos en la vista previa: una partida de ejemplo (Ana juega; Beto va detrás y Carla delante). */
 function sampleVars(def: CardDef): Record<string, string | number> {
-  if (def.key === RESULT_KEYS.duel) return { resultado: "Ana 5 – Beto 2: bebe Beto." };
+  if (def.key === RESULT_KEYS.duel) return { resultado: "Ana 5 – Beto 2: gana Ana y bebe Beto." };
+  if (def.key === RESULT_KEYS.duelRoll) return { nombre: "Ana", rival: "Beto", dado: 4, gana: "5 o 6", pierde: "1, 2 o 3" };
   if (def.key === RESULT_KEYS.jailRoll) return { nombre: "Ana", dado: 5, vasos: "4 vasos" };
   if (def.key === RESULT_KEYS.jailDebt) return { nombre: "Ana", vasos: "3 vasos" };
   if (def.key === RESULT_KEYS.jailOwes) return { nombre: "Ana", pagados: "1 vaso", deuda: "3 vasos" };
@@ -294,7 +295,7 @@ function CardEditor({ def, value, onChange, onReset }: { def: CardDef; value: { 
   const edited = (value?.title !== undefined && value.title !== def.defaults.title) || (value?.text !== undefined && value.text !== def.defaults.text);
   // casilla de la que toma icono y color: la primera que usa la tarjeta (el resultado del duelo, la de duelo)
   // los resultados llevan el icono (negro, vectorial) de su casilla: duelo y purgatorio (cárcel)
-  const resultTile = def.key === RESULT_KEYS.duel ? "DUELO" : def.key.startsWith("RESULTADO:purgatorio") ? "CARCEL" : null;
+  const resultTile = def.key === RESULT_KEYS.duel || def.key === RESULT_KEYS.duelRoll ? "DUELO" : def.key.startsWith("RESULTADO:purgatorio") ? "CARCEL" : null;
   // el tipo se toma directamente (no de una casilla del tablero: si un tipo se queda sin casillas el icono no se pierde)
   const first = def.tiles[0] ? BOARD[def.tiles[0] - 1] : null;
   const type = first?.type ?? resultTile;

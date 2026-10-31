@@ -28,6 +28,8 @@ export const RESULT_KEYS = {
   /** Purgatorio: pagó todo y sale (la clave de antes, cuando siempre salía al tirar). */
   jail: "RESULTADO:purgatorio",
   duel: "RESULTADO:duelo",
+  /** Duelo: quien reta ya tiró; dice qué debe sacar su rival para ganar o perder. */
+  duelRoll: "RESULTADO:duelo-tirada",
 } as const;
 
 /**
@@ -127,6 +129,7 @@ export function cardCatalog(): CardDef[] {
   }
   const res: CardDef[] = [
     { key: RESULT_KEYS.duel, label: "Duelo: resultado", tiles: [], vars: [{ name: "resultado", about: "una línea por rival: quién sacó cuánto y quién bebe" }], defaults: { title: "¡Resultado del duelo!", text: "{resultado}" } },
+    { key: RESULT_KEYS.duelRoll, label: "Duelo: tirada del retador", tiles: [], vars: [NOMBRE, { name: "rival", about: "a quién le toca tirar" }, { name: "dado", about: "lo que sacó quien reta" }, { name: "gana", about: "qué números le dan la victoria al rival" }, { name: "pierde", about: "qué números hacen perder al rival" }], defaults: { title: "¡{nombre} sacó {dado}!", text: "{rival} gana si saca {gana}. Pierde y bebe si saca {pierde}. Con {dado} empatan y se repite." } },
     { key: RESULT_KEYS.jailRoll, label: "Purgatorio: tirada", tiles: [], vars: [NOMBRE, { name: "dado", about: "lo que sacó" }, { name: "vasos", about: "cuántos debe (2 o 4)" }], defaults: { title: "¡A pagar penitencia!", text: "{nombre} saca {dado}: debe {vasos} para salir del Purgatorio. Puede pagarlos todos ya o solo una parte y deber el resto para su próximo turno." } },
     { key: RESULT_KEYS.jailDebt, label: "Purgatorio: paga su deuda", tiles: [], vars: [NOMBRE, { name: "vasos", about: "cuántos debe todavía" }], defaults: { title: "Deuda del Purgatorio", text: "{nombre} todavía debe {vasos} del Purgatorio. Si los paga todos, sale y vuelve a tirar; si paga solo una parte, sigue debiendo el resto." } },
     { key: RESULT_KEYS.jailOwes, label: "Purgatorio: queda debiendo", tiles: [], vars: [NOMBRE, { name: "pagados", about: "cuántos pagó ahora" }, { name: "deuda", about: "cuántos sigue debiendo" }], defaults: { title: "¡Queda debiendo!", text: "{nombre} paga {pagados} y queda debiendo {deuda}. Sigue en el Purgatorio: en su próximo turno paga lo que debe." } },

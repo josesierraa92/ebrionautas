@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { DEFAULT_RETOS, recoverRetos } from "./content";
 import { CARD_GROUPS, cardCatalog, groupOf, parseCardOverrides, setCardOverrides } from "./cards";
 import { createGame } from "./engine";
-import { jailOutcome, staticCardVars, tileRule } from "./rules";
+import { duelRollCard, jailOutcome, staticCardVars, tileRule } from "./rules";
 
 describe("textos de las tarjetas", () => {
   const game = createGame([
@@ -37,7 +37,7 @@ describe("textos de las tarjetas", () => {
     expect(keys).toContain("RASGO");
     expect(cardCatalog().find((c) => c.key === "RASGO")?.tiles).toHaveLength(11);
     expect(cardCatalog().find((c) => c.key === "A_BEBER")?.tiles).toEqual([6, 30]);
-    expect(keys.filter((k) => k.startsWith("RESULTADO"))).toHaveLength(5);
+    expect(keys.filter((k) => k.startsWith("RESULTADO"))).toHaveLength(6);
   });
 });
 
@@ -106,5 +106,26 @@ describe("recuperar los retos de antes de agruparlos", () => {
     const sin = DEFAULT_RETOS.filter((x) => !x.startsWith("Cuenta un chiste"));
     expect(recoverRetos(sin, [{ title: "Cómicos", text: "Cuenta tu peor cita." }]).at(-1)).toBe("Cuenta tu peor cita.");
     expect(recoverRetos(out, [{ title: "Cómicos", text: "cuenta tu peor cita." }])).toEqual(out);
+  });
+});
+
+describe("duelo: tarjeta tras el dado del retador", () => {
+  const mk = (a: number | null, b: number | null = null) => {
+    const g = createGame([{ name: "Ana", color: "#fff" }, { name: "Beto", color: "#000" }]);
+    g.phase = "DECISION";
+    g.decision = { kind: "DUEL_ROLL", rivals: [g.players[1].id], i: 0, a, b, tie: false, rounds: [] };
+    return g;
+  };
+  it("dice qué debe sacar el rival para ganar o perder", () => {
+    const c = duelRollCard(mk(4))!;
+    expect(c.title).toContain("4");
+    expect(c.text).toContain("Beto gana si saca 5 o 6");
+    expect(c.text).toContain("1, 2 o 3");
+    expect(duelRollCard(mk(6))!.text).toContain("ningún número");
+    expect(duelRollCard(mk(1))!.text).toContain("Pierde y bebe si saca ningún número");
+  });
+  it("no sale antes de tirar ni cuando ya tiró el rival", () => {
+    expect(duelRollCard(mk(null))).toBeNull();
+    expect(duelRollCard(mk(4, 2))).toBeNull();
   });
 });

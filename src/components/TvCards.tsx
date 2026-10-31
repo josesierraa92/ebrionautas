@@ -5,7 +5,7 @@ import { avatarOf, expressionFor } from "@/game/avatar";
 import { getTile, PATINAZO_DRINKS } from "@/game/board";
 import { currentPlayer, type Decision, type GameState } from "@/game/engine";
 import { cardKeyOf, cardTitle, hasCardOverride } from "@/game/cards";
-import { jailPayCard, tileRule } from "@/game/rules";
+import { duelRollCard, jailPayCard, tileRule } from "@/game/rules";
 import { useCardTexts } from "@/lib/useCardTexts";
 import GameCard from "@/components/GameCard";
 import { DEFAULT_ICON } from "@/editor/icons";
@@ -95,7 +95,7 @@ export function cardContent(game: GameState, n: number, playerId: string, result
   const decision = game.decision && currentPlayer(game).id === playerId ? game.decision : null;
   // Purgatorio: mientras elige cuánto paga, la tarjeta dice cuánto debe (la tirada o la deuda de antes)
   const jailPay = decision?.kind === "JAIL_PAY" ? jailPayCard(game) : null;
-  result = jailPay ?? result;
+  result = jailPay ?? (decision?.kind === "DUEL_ROLL" ? duelRollCard(game) : null) ?? result;
   const style = result
     ? { icon: result.icon ?? (result.good ? "✨" : result.drinks ? "🔥" : "🍷"), bg: result.good ? ["#8be86b", "#2fae4a"] : ["#ff8a8a", "#d62a3f"] }
     : TILE_STYLE[tile.type];

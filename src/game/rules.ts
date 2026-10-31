@@ -33,12 +33,25 @@ export function jailPaidOutcome(game: GameState): { free: boolean; title: string
   return { free, ...t };
 }
 
+const listNums = (xs: number[]) => (xs.length === 0 ? "ningún número" : xs.length === 1 ? `${xs[0]}` : `${xs.slice(0, -1).join(", ")} o ${xs[xs.length - 1]}`);
+
+/** Duelo: quien reta ya tiró; dice qué debe sacar su rival para ganar o perder (null si no toca el dado del rival). */
+export function duelRollCard(game: GameState): { good: false; title: string; text: string; tileIcon: true } | null {
+  const d = game.decision;
+  if (d?.kind !== "DUEL_ROLL" || d.a === null || d.b !== null) return null;
+  const rival = game.players.find((q) => q.id === d.rivals[d.i])?.name ?? "?";
+  const a = d.a;
+  const gana = listNums([1, 2, 3, 4, 5, 6].filter((n) => n > a));
+  const pierde = listNums([1, 2, 3, 4, 5, 6].filter((n) => n < a));
+  return { good: false, tileIcon: true, ...cardText(RESULT_KEYS.duelRoll, { nombre: game.players[game.turn]?.name ?? "", rival, dado: a, gana, pierde }) };
+}
+
 /** Resultado de un duelo, una línea por rival: quién sacó cuánto y quién bebe. */
 export function duelOutcome(game: GameState): { title: string; text: string } | null {
   const d = game.lastDuel;
   if (!d) return null;
   const name = (id: string) => game.players.find((q) => q.id === id)?.name ?? "?";
-  const lines = d.rounds.map((r) => `${name(d.by)} ${r.a} – ${name(r.rival)} ${r.b}: bebe ${name(r.loser)}.`);
+  const lines = d.rounds.map((r) => `${name(d.by)} ${r.a} – ${name(r.rival)} ${r.b}: gana ${name(r.loser === d.by ? r.rival : d.by)} y bebe ${name(r.loser)}.`);
   return cardText(RESULT_KEYS.duel, { resultado: lines.join("\n") });
 }
 
