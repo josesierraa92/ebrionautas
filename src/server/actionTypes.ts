@@ -20,6 +20,7 @@ const ALL: Record<Action["type"], true> = {
   ADD_DRINK: true,
   REMOVE_DRINK: true,
   REMOVE_PLAYER: true,
+  PAUSE_PLAYER: true,
   PENALTY: true,
 };
 

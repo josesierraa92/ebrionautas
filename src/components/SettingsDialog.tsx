@@ -8,6 +8,7 @@ export default function SettingsDialog({ game, busy, onAction, onClose }: { game
   const [confirm, setConfirm] = useState<string | null>(null);
   const finished = game.phase === "FINISHED";
   const canRemove = game.players.length > 2 && !finished;
+  const active = game.players.filter((p) => !p.paused).length;
   return (
     <div className="fixed inset-0 z-[60] overflow-y-auto bg-space" role="dialog" aria-modal="true" aria-label="Ajustes de la partida">
       <div className="mx-auto flex max-w-md flex-col gap-3 px-4 py-4">
@@ -17,13 +18,15 @@ export default function SettingsDialog({ game, busy, onAction, onClose }: { game
             ✕ LISTO
           </button>
         </div>
-        <p className="text-sm text-white/70">Quita un vaso a quien se le contó de más, o saca a quien ya no está jugando.</p>
+        <p className="text-sm text-white/70">Quita un vaso a quien se le contó de más, pon en pausa a quien se ausenta un rato (se salta su turno) o saca a quien ya no está jugando.</p>
         <ul className="flex flex-col gap-2">
           {game.players.map((p) => (
             <li key={p.id} className="rounded-2xl border-[3px] border-ink bg-ink/70 p-2.5">
               <div className="flex items-center gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-display text-xl uppercase">{p.name}</p>
+                  <p className="truncate font-display text-xl uppercase">
+                    {p.name} {p.paused && <span className="text-sm text-btn-yellow">⏸ EN PAUSA</span>}
+                  </p>
                   <p className="text-sm text-white/70">
                     Lleva <b>{p.drunk}</b> {p.drunk === 1 ? "vaso" : "vasos"}
                     {p.pending > 0 && <> · debe <b>{p.pending}</b></>}
@@ -38,6 +41,15 @@ export default function SettingsDialog({ game, busy, onAction, onClose }: { game
                   − 1 VASO
                 </button>
               </div>
+              {!finished && (p.paused || active > 1) && (
+                <button
+                  disabled={busy}
+                  onClick={() => onAction({ type: "PAUSE_PLAYER", id: p.id, paused: !p.paused })}
+                  className={`btn-game mt-2 w-full px-3 py-1.5 text-white ${p.paused ? "bg-btn-green" : "bg-btn-yellow"}`}
+                >
+                  {p.paused ? "▶ VOLVER A JUGAR" : "⏸ PONER EN PAUSA"}
+                </button>
+              )}
               {canRemove &&
                 (confirm === p.id ? (
                   <div className="mt-2 flex items-center gap-2">

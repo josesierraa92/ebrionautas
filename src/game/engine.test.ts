@@ -597,3 +597,31 @@ describe("conteo de tragos", () => {
     expect(s.players.map((p) => p.drunk)).toEqual([2, 3, 0]);
   });
 });
+
+describe("pausa de jugadores", () => {
+  it("se salta su turno y vuelve cuando se reanuda", () => {
+    let s = act(game(), { type: "PAUSE_PLAYER", id: "p2", paused: true });
+    expect(s.players[1].paused).toBe(true);
+    // Ana juega y termina su turno: salta a Caro, no a Beto
+    s = rollFrom(s, 1, 1, 1); // casilla 2 (Juicio de los vivos): decisión
+    s = act(s, { type: "SELECT_DRINKERS", ids: [] });
+    expect(s.players[s.turn].name).toBe("Caro");
+    s = act(s, { type: "PAUSE_PLAYER", id: "p2", paused: false });
+    expect(s.players[1].paused).toBeFalsy();
+  });
+
+  it("al pausar a quien tiene el turno pasa al siguiente; nunca se pausa al último activo", () => {
+    let s = act(game(), { type: "PAUSE_PLAYER", id: "p1", paused: true });
+    expect(s.players[s.turn].name).toBe("Beto");
+    s = act(s, { type: "PAUSE_PLAYER", id: "p3", paused: true });
+    expect(s.players.filter((p) => !p.paused)).toHaveLength(1);
+    expect(act(s, { type: "PAUSE_PLAYER", id: "p2", paused: true })).toBe(s); // quedaría nadie
+  });
+
+  it("un jugador en pausa no puede ser elegido en repartos ni votaciones", () => {
+    let s = act(game(), { type: "PAUSE_PLAYER", id: "p3", paused: true });
+    s = rollFrom(s, 1, 1, 1);
+    expect(s.decision?.kind).toBe("SELECT_DRINKERS");
+    expect(act(s, { type: "SELECT_DRINKERS", ids: ["p3"] })).toBe(s);
+  });
+});

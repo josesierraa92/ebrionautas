@@ -28,7 +28,7 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
       )}
       <ul className="flex flex-col gap-2">
         {game.players.map((p) => (
-          <li key={p.id} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 ${p.id === current && !game.winner ? "bg-white/10 ring-2 ring-btn-yellow" : ""}`}>
+          <li key={p.id} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 ${p.paused ? "opacity-50" : ""} ${p.id === current && !game.winner ? "bg-white/10 ring-2 ring-btn-yellow" : ""}`}>
             <span className="relative shrink-0">
               <Marciano
                 avatar={avatarOf(p)}
@@ -41,6 +41,7 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
             <div className="min-w-0 flex-1">
               <p className={`truncate ${big ? "text-xl" : ""}`}>
                 <span className="font-display">{p.name}</span>{" "}
+                {p.paused && <span title="En pausa: se salta su turno">⏸ </span>}
                 {p.gender && <span className={p.gender === "hombre" ? "text-btn-blue" : "text-btn-special"}>{p.gender === "hombre" ? "♂" : "♀"}</span>}{" "}
                 {p.status.inmune && <span title="Estación Abstemia: inmune">⛽</span>}
                 {p.status.hipnosis && <span title="Abducción mental">🌀</span>}

@@ -28,6 +28,8 @@ export type Player = {
   pending: number; // vasos que debe y aún no ha confirmado con "¡Bebido!"
   /** Copas ganadas en las rondas de esta partida (modo «jugar a N copas»). */
   cups?: number;
+  /** En pausa (se fue un rato): se salta su turno y no entra en repartos, duelos ni votaciones; conserva casilla y vasos. */
+  paused?: boolean;
   status: PlayerStatus;
 };
 
@@ -119,6 +121,8 @@ export type Action =
   /** Ajustes del celular: quitar vasos a quien se le contaron de más (también resta de lo que «debe») o sacar a un jugador que se fue. */
   | { type: "REMOVE_DRINK"; id: string; n?: number }
   | { type: "REMOVE_PLAYER"; id: string }
+  /** Ajustes: poner en pausa a un jugador (se salta su turno) o volver a meterlo. */
+  | { type: "PAUSE_PLAYER"; id: string; paused: boolean }
   | { type: "PENALTY"; id: string };
 
 export type Rng = () => number;
@@ -145,7 +149,7 @@ export function trophiesOf(state: GameState, p: Player): { stars: number; trophy
   return { stars: cup ? Math.max(0, rounds - 1) : rounds, trophy: cup };
 }
 
-export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender; cups?: number; drunk?: number; pending?: number }[], cupsGoal = 1, seen?: Record<string, string[]>): GameState {
+export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender; cups?: number; drunk?: number; pending?: number; paused?: boolean }[], cupsGoal = 1, seen?: Record<string, string[]>): GameState {
   const state: GameState = {
     players: players.map((p, i) => ({
       id: `p${i + 1}`,
@@ -156,6 +160,7 @@ export function createGame(players: { name: string; color: string; avatar?: Avat
       pos: 1,
       drunk: p.drunk ?? 0,
       cups: p.cups ?? 0,
+      ...(p.paused ? { paused: true } : {}),
       pending: p.pending ?? 0, // lo que debían beber al acabar la ronda sigue pendiente en la siguiente
       status: { inmune: false, hipnosis: false, carcel: null },
     })),
@@ -239,9 +244,37 @@ export function applyAction(state: GameState, action: Action, rng: Rng = Math.ra
       s.extraRoll = false;
       s.waiting = false;
       if (!wasTurn) s.turn = (s.turn + 1) % s.players.length; // el duelo se cancela: sigue el siguiente
+      if (s.players.every((q) => q.paused)) s.players.forEach((q) => (q.paused = false)); // siempre debe quedar alguien jugando
+      if (s.players[s.turn].paused) advanceTurn(s);
       startTurn(s);
     }
     log(s, `🚪 ${gone.name} se fue de la partida.`);
+    return s;
+  }
+
+  // Ajustes: pausa (se salta su turno) o vuelve. Siempre debe quedar al menos un jugador activo.
+  if (action.type === "PAUSE_PLAYER") {
+    const idx = state.players.findIndex((p) => p.id === action.id);
+    if (idx < 0 || state.phase === "FINISHED" || !!state.players[idx].paused === !!action.paused) return state;
+    if (action.paused && state.players.filter((p) => !p.paused).length <= 1) return state;
+    const s = structuredClone(state);
+    const who = s.players[idx];
+    who.paused = action.paused;
+    log(s, action.paused ? `⏸️ ${who.name} se pone en pausa: se salta su turno.` : `▶️ ${who.name} vuelve a jugar.`);
+    if (action.paused && idx === s.turn) {
+      // era su turno: lo que estuviera decidiendo se cancela y juega el siguiente
+      s.decision = null;
+      s.phase = "ROLL";
+      s.extraRoll = false;
+      s.waiting = false;
+      advanceTurn(s);
+      startTurn(s);
+    }
+    if (action.paused && s.decision?.kind === "DUEL_ROLL" && s.decision.rivals.includes(who.id)) {
+      s.decision = null;
+      s.phase = "ROLL";
+      endTurn(s);
+    }
     return s;
   }
 
@@ -298,18 +331,27 @@ function endTurn(s: GameState) {
     s.phase = "ROLL";
     return;
   }
-  s.turn = (s.turn + 1) % s.players.length;
-  // el reto de ronda dura una ronda: termina cuando el turno vuelve a quien lo sacó
-  if (s.ronda && s.players[s.turn].id === s.ronda.by) {
-    log(s, `⏳ El reto de ronda de ${s.players[s.turn].name} terminó.`);
-    s.ronda = null;
-  }
-  // el Pacto de Sangre dura una ronda: termina cuando el turno vuelve a quien lo firmó
-  if (s.slave && s.players[s.turn].id === s.slave.master) {
-    log(s, `🩸 El Pacto de Sangre de ${s.players[s.turn].name} terminó (duró una ronda).`);
-    s.slave = null;
-  }
+  advanceTurn(s);
   startTurn(s);
+}
+
+/** Pasa al siguiente jugador que no esté en pausa (aunque se salte a alguien, su reto de ronda o su pacto terminan al «volverle el turno»). */
+function advanceTurn(s: GameState) {
+  for (let i = 0; i < s.players.length; i++) {
+    s.turn = (s.turn + 1) % s.players.length;
+    const who = s.players[s.turn];
+    // el reto de ronda dura una ronda: termina cuando el turno vuelve a quien lo sacó
+    if (s.ronda && who.id === s.ronda.by) {
+      log(s, `⏳ El reto de ronda de ${who.name} terminó.`);
+      s.ronda = null;
+    }
+    // el Pacto de Sangre dura una ronda: termina cuando el turno vuelve a quien lo firmó
+    if (s.slave && who.id === s.slave.master) {
+      log(s, `🩸 El Pacto de Sangre de ${who.name} terminó (duró una ronda).`);
+      s.slave = null;
+    }
+    if (!who.paused) return;
+  }
 }
 
 function decide(s: GameState, decision: Decision) {
@@ -514,7 +556,7 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
   if (d.kind === "DISTRIBUTE" && action.type === "DISTRIBUTE") {
     const entries = Object.entries(action.drinks).filter(([, n]) => n > 0);
     const total = entries.reduce((a, [, n]) => a + n, 0);
-    if (total !== d.amount || entries.some(([id, n]) => !ids.has(id) || !Number.isInteger(n))) return false;
+    if (total !== d.amount || entries.some(([id, n]) => !ids.has(id) || !Number.isInteger(n) || s.players.find((q) => q.id === id)?.paused)) return false;
     for (const [id, n] of entries) drink(s, id, n, p.id);
     endTurn(s);
     return true;
@@ -522,7 +564,7 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
 
   if (d.kind === "DUEL" && action.type === "DUEL") {
     const opps = [...new Set(action.opponents)];
-    if (opps.length < 1 || opps.length > d.amount || opps.some((id) => id === p.id || !ids.has(id))) return false;
+    if (opps.length < 1 || opps.length > d.amount || opps.some((id) => id === p.id || !ids.has(id) || s.players.find((q) => q.id === id)?.paused)) return false;
     log(s, `💀 ${p.name} reta a ${opps.map((id) => s.players.find((q) => q.id === id)!.name).join(" y a ")}: ¡cada uno tira su dado!`);
     decide(s, { kind: "DUEL_ROLL", rivals: opps, i: 0, a: null, b: null, tie: false, rounds: [] });
     return true;
@@ -614,7 +656,7 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
 
   if (d.kind === "SELECT_DRINKERS" && action.type === "SELECT_DRINKERS") {
     const chosen = [...new Set(action.ids)];
-    if (chosen.some((id) => !ids.has(id))) return false;
+    if (chosen.some((id) => !ids.has(id) || s.players.find((q) => q.id === id)?.paused)) return false;
     resolveDrinkers(s, chosen);
     return true;
   }
@@ -638,7 +680,7 @@ function resolveDecision(s: GameState, action: Action, rng: Rng): boolean {
   }
 
   if (d.kind === "SLAVE" && action.type === "CHOOSE_SLAVE") {
-    if (action.id === p.id || !ids.has(action.id)) return false;
+    if (action.id === p.id || !ids.has(action.id) || s.players.find((q) => q.id === action.id)?.paused) return false;
     s.slave = { master: p.id, slave: action.id };
     const slave = s.players.find((q) => q.id === action.id)!;
     log(s, `🩸 Pacto de Sangre: ${slave.name} beberá cada vez que ${p.name} beba.`);
