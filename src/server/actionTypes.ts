@@ -18,6 +18,8 @@ const ALL: Record<Action["type"], true> = {
   RANKING: true,
   DRANK: true,
   ADD_DRINK: true,
+  REMOVE_DRINK: true,
+  REMOVE_PLAYER: true,
   PENALTY: true,
 };
 

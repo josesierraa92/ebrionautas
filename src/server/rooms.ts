@@ -157,7 +157,7 @@ export async function resetRoom(code: string, who: string, same = false, nextRou
     if (same && room.game) {
       // siguiente ronda (modo de varias copas): mismos jugadores con sus copas y lo bebido; si no, partida nueva con las mismas copas por ganar
       room.game = createGame(
-        room.game.players.map((p) => ({ name: p.name, gender: p.gender, color: p.color, avatar: p.avatar, ...(nextRound ? { cups: p.cups, drunk: p.drunk } : {}) })),
+        room.game.players.map((p) => ({ name: p.name, gender: p.gender, color: p.color, avatar: p.avatar, ...(nextRound ? { cups: p.cups, drunk: p.drunk, pending: p.pending } : {}) })),
         room.game.cupsGoal ?? 1,
         nextRound ? room.game.seen : undefined, // entre rondas no se repiten las cartas que ya salieron
       );

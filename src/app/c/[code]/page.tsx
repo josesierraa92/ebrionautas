@@ -9,6 +9,7 @@ import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
 import Setup from "@/components/Setup";
 import Clasificatoria from "@/components/Clasificatoria";
+import SettingsDialog from "@/components/SettingsDialog";
 import Winner from "@/components/Winner";
 import { currentPlayer, matchOver, type Action, type Gender } from "@/game/engine";
 import { api, controlKey, saved, sendAction, useRoom } from "@/lib/room-client";
@@ -22,6 +23,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
+  const [settings, setSettings] = useState(false); // ⚙️ ajustes: quitar vasos / sacar a un jugador
   const [addDrink, setAddDrink] = useState(false); // «+ Trago»: sumar un vaso a mano a cualquier jugador
 
   useEffect(() => {
@@ -115,13 +117,16 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 py-4">
       <div className="flex items-center justify-between">
-        {!winner ? (
-          <button onClick={() => setAddDrink(true)} className="btn-game bg-btn-red px-3 py-1 text-white" aria-label="Agregar un trago a un jugador">
-            + TRAGO
+        <div className="flex items-center gap-2">
+          {!winner && (
+            <button onClick={() => setAddDrink(true)} className="btn-game bg-btn-red px-3 py-1 text-white" aria-label="Agregar un trago a un jugador">
+              + TRAGO
+            </button>
+          )}
+          <button onClick={() => setSettings(true)} className="btn-game bg-btn-grey px-3 py-1 text-white" aria-label="Ajustes de la partida">
+            ⚙️
           </button>
-        ) : (
-          <span />
-        )}
+        </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setMenu(true)} className="btn-game bg-btn-blue px-3 py-1 text-white" aria-label="Marcador e historial">
             ☰ MARCADOR
@@ -132,9 +137,14 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
       {winner && game.ranking ? null : winner ? (
         <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
           <Winner winner={winner} players={game.players} goal={game.cupsGoal ?? 1}>
-            <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game bg-btn-blue py-3 text-xl text-white">
-              VER CLASIFICATORIA
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game flex-1 bg-btn-blue py-3 text-xl text-white">
+                VER CLASIFICATORIA
+              </button>
+              <button onClick={() => setSettings(true)} className="btn-game bg-btn-grey px-4 py-3 text-xl text-white" aria-label="Ajustes de la partida">
+                ⚙️
+              </button>
+            </div>
             {!matchOver(game) && (
               <button
                 disabled={busy}
@@ -206,6 +216,8 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
           </div>
         </div>
       )}
+
+      {settings && <SettingsDialog game={game} busy={busy} onAction={act} onClose={() => setSettings(false)} />}
 
       {menu && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-space/95">

@@ -116,6 +116,9 @@ export type Action =
   | { type: "RANKING"; on: boolean }
   | { type: "DRANK"; id: string }
   | { type: "ADD_DRINK"; id: string; n?: number }
+  /** Ajustes del celular: quitar vasos a quien se le contaron de más (también resta de lo que «debe») o sacar a un jugador que se fue. */
+  | { type: "REMOVE_DRINK"; id: string; n?: number }
+  | { type: "REMOVE_PLAYER"; id: string }
   | { type: "PENALTY"; id: string };
 
 export type Rng = () => number;
@@ -142,7 +145,7 @@ export function trophiesOf(state: GameState, p: Player): { stars: number; trophy
   return { stars: cup ? Math.max(0, rounds - 1) : rounds, trophy: cup };
 }
 
-export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender; cups?: number; drunk?: number }[], cupsGoal = 1, seen?: Record<string, string[]>): GameState {
+export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender; cups?: number; drunk?: number; pending?: number }[], cupsGoal = 1, seen?: Record<string, string[]>): GameState {
   const state: GameState = {
     players: players.map((p, i) => ({
       id: `p${i + 1}`,
@@ -153,7 +156,7 @@ export function createGame(players: { name: string; color: string; avatar?: Avat
       pos: 1,
       drunk: p.drunk ?? 0,
       cups: p.cups ?? 0,
-      pending: 0,
+      pending: p.pending ?? 0, // lo que debían beber al acabar la ronda sigue pendiente en la siguiente
       status: { inmune: false, hipnosis: false, carcel: null },
     })),
     turn: 0,
@@ -198,7 +201,47 @@ export function applyAction(state: GameState, action: Action, rng: Rng = Math.ra
     const s = structuredClone(state);
     const who = s.players.find((p) => p.id === action.id)!;
     log(s, `➕ ${who.name} suma ${n} ${vasos(n)} a mano.`);
-    drink(s, action.id, n, null);
+    drink(s, action.id, n, null, true);
+    return s;
+  }
+
+  // Ajustes: quitar vasos contados de más (baja el total y lo que «debe»; nunca por debajo de 0)
+  if (action.type === "REMOVE_DRINK") {
+    const who = state.players.find((p) => p.id === action.id);
+    const n = Math.min(10, Math.max(1, Math.floor(action.n ?? 1)));
+    if (!who || who.drunk <= 0) return state;
+    const s = structuredClone(state);
+    const w = s.players.find((p) => p.id === action.id)!;
+    const quita = Math.min(n, w.drunk);
+    w.drunk -= quita;
+    w.pending = Math.max(0, (w.pending ?? 0) - quita);
+    log(s, `➖ ${w.name}: se le quitan ${quita} ${vasos(quita)} (lleva ${w.drunk}).`);
+    return s;
+  }
+
+  // Ajustes: un jugador se fue. Se necesitan al menos 2; si era su turno pasa al siguiente y lo que estuviera decidiendo se cancela.
+  if (action.type === "REMOVE_PLAYER") {
+    const idx = state.players.findIndex((p) => p.id === action.id);
+    if (idx < 0 || state.players.length <= 2 || state.phase === "FINISHED") return state;
+    const s = structuredClone(state);
+    const [gone] = s.players.splice(idx, 1);
+    const wasTurn = idx === s.turn;
+    if (idx < s.turn) s.turn -= 1;
+    if (s.turn >= s.players.length) s.turn = 0;
+    if (s.slave && (s.slave.master === gone.id || s.slave.slave === gone.id)) s.slave = null;
+    if (s.ronda?.by === gone.id) s.ronda = null;
+    if (s.rule?.by === gone.id) s.rule = null;
+    if (s.lastRoller === gone.id) s.lastRoller = null;
+    const duelWithGone = s.decision?.kind === "DUEL_ROLL" && s.decision.rivals.includes(gone.id);
+    if (wasTurn || duelWithGone) {
+      s.decision = null;
+      s.phase = "ROLL";
+      s.extraRoll = false;
+      s.waiting = false;
+      if (!wasTurn) s.turn = (s.turn + 1) % s.players.length; // el duelo se cancela: sigue el siguiente
+      startTurn(s);
+    }
+    log(s, `🚪 ${gone.name} se fue de la partida.`);
     return s;
   }
 
@@ -617,7 +660,7 @@ function resolveDrinkers(s: GameState, chosen: string[]) {
 // --- Bebida -----------------------------------------------------------------
 
 /** Aplica una bebida respetando La Capilla, Poseído y el Pacto de Sangre. */
-function drink(s: GameState, targetId: string, n: number, sourceId: string | null) {
+function drink(s: GameState, targetId: string, n: number, sourceId: string | null, manual = false) {
   if (n <= 0) return;
   const target = s.players.find((q) => q.id === targetId)!;
 
@@ -627,7 +670,8 @@ function drink(s: GameState, targetId: string, n: number, sourceId: string | nul
   }
 
   let own = n;
-  const hypnotized = s.players.find((q) => q.status.hipnosis && q.id !== targetId);
+  // «+ Trago» a mano (manual) anota lo que ese jugador bebió: el Poseído no se lo quita (con 1 vaso se llevaba el vaso entero)
+  const hypnotized = manual ? undefined : s.players.find((q) => q.status.hipnosis && q.id !== targetId);
   if (hypnotized) {
     const half = Math.ceil(n / 2);
     own = n - half;

@@ -533,3 +533,67 @@ describe("cartas sin repetir", () => {
     setNunca(DEFAULT_NUNCA);
   });
 });
+
+describe("ajustes: quitar vasos y jugadores", () => {
+  it("quita vasos (y lo que debe) sin bajar de 0", () => {
+    let s = act(game(), { type: "ADD_DRINK", id: "p2", n: 3 });
+    expect(s.players[1]).toMatchObject({ drunk: 3, pending: 3 });
+    s = act(s, { type: "REMOVE_DRINK", id: "p2" });
+    expect(s.players[1]).toMatchObject({ drunk: 2, pending: 2 });
+    s = act(s, { type: "REMOVE_DRINK", id: "p2", n: 10 });
+    expect(s.players[1]).toMatchObject({ drunk: 0, pending: 0 });
+    expect(act(s, { type: "REMOVE_DRINK", id: "p2" })).toBe(s); // ya no tiene: no cambia nada
+  });
+
+  it("sacar a quien tiene el turno pasa al siguiente y cancela lo que decidía", () => {
+    const s0 = rollFrom(game(), 1, 2, 1); // Ana cae en una casilla con decisión
+    expect(s0.decision).not.toBeNull();
+    const s = act(s0, { type: "REMOVE_PLAYER", id: "p1" });
+    expect(s.players.map((p) => p.name)).toEqual(["Beto", "Caro"]);
+    expect(s.turn).toBe(0);
+    expect(s.decision).toBeNull();
+    expect(s.phase).toBe("ROLL");
+  });
+
+  it("sacar a alguien antes en la lista mantiene el turno de quien jugaba; nunca quedan menos de 2", () => {
+    let s = game();
+    s = { ...s, turn: 2 }; // le toca a Caro
+    s = act(s, { type: "REMOVE_PLAYER", id: "p1" });
+    expect(s.players[s.turn].name).toBe("Caro");
+    const dos = act(s, { type: "REMOVE_PLAYER", id: "p2" });
+    expect(dos.players).toHaveLength(2);
+    expect(act(dos, { type: "REMOVE_PLAYER", id: "p3" })).toBe(dos);
+  });
+
+  it("al pasar de ronda se conserva lo que debían beber", () => {
+    const base = createGame([{ name: "Ana", color: "#fff", drunk: 4, pending: 2 }, { name: "Beto", color: "#000" }], 2);
+    expect(base.players[0]).toMatchObject({ drunk: 4, pending: 2 });
+  });
+});
+
+describe("conteo de tragos", () => {
+  it("cada trago suma al total y a lo que debe, una sola vez", () => {
+    let s = game();
+    s = act(s, { type: "ADD_DRINK", id: "p1" });
+    s = act(s, { type: "ADD_DRINK", id: "p1", n: 2 });
+    expect(s.players[0]).toMatchObject({ drunk: 3, pending: 3 });
+    s = act(s, { type: "DRANK", id: "p1" }); // confirma que se los bebió: baja lo que debe, no el total
+    expect(s.players[0]).toMatchObject({ drunk: 3, pending: 0 });
+  });
+
+  it("«+ Trago» a mano lo suma a ese jugador aunque haya un Poseído (no se lo lleva)", () => {
+    const s0 = game();
+    s0.players[2].status.hipnosis = true;
+    const s = act(s0, { type: "ADD_DRINK", id: "p1" });
+    expect(s.players.map((p) => p.drunk)).toEqual([1, 0, 0]);
+  });
+
+  it("el Pacto de Sangre suma lo mismo al pactado, sin cadena", () => {
+    let s = game();
+    s.slave = { master: "p1", slave: "p2" };
+    s = act(s, { type: "ADD_DRINK", id: "p1", n: 2 });
+    expect(s.players.map((p) => p.drunk)).toEqual([2, 2, 0]);
+    s = act(s, { type: "ADD_DRINK", id: "p2" }); // lo que beba el pactado no arrastra al que firmó
+    expect(s.players.map((p) => p.drunk)).toEqual([2, 3, 0]);
+  });
+});
