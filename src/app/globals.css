@@ -264,3 +264,10 @@ body {
   transition: opacity 0.2s, background 0.2s;
 }
 .icon-btn:hover, .icon-btn:focus-visible { opacity: 1; background: rgb(10 14 28 / 0.7); }
+
+/* El dado del modo «un solo aparato»: late suave para que se vea que hay que tocarlo */
+@keyframes dice-pulse {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-6px) rotate(3deg); }
+}
+.dice-pulse { animation: dice-pulse 1.6s ease-in-out infinite; }

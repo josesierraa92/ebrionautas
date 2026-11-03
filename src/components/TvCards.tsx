@@ -129,13 +129,16 @@ export function cardContent(game: GameState, n: number, playerId: string, result
   return { player, style, decision, rule, drinks, light, accent, icon, emoji: style.icon };
 }
 
-export function RuleCard({ game, n, playerId, cardKey, result, scale = 1 }: Props & { scale?: number }) {
+export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide = false }: Props & { scale?: number; /** celular vertical (modo «un solo aparato»): centrada y casi a todo el ancho, para que se lea */ wide?: boolean }) {
   useCardTexts();
   const { player, decision, rule, accent, icon, emoji } = cardContent(game, n, playerId, result);
   return (
     // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.
-    <div className="pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]" style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "bottom right" } : undefined}>
-      <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n}`} title={rule.title} text={rule.text} prompt={decision ? decisionPrompt(decision, player.name, game) : null} dice={game.lastRoll} unit="1cqw" cardKey={cardKey} />
+    <div
+      className={wide ? "pointer-events-none absolute bottom-[17%] left-1/2 z-40 w-[88%] -translate-x-1/2" : "pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]"}
+      style={!wide && scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "bottom right" } : undefined}
+    >
+      <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n}`} title={rule.title} text={rule.text} prompt={decision ? decisionPrompt(decision, player.name, game) : null} dice={game.lastRoll} unit={wide ? "3.52cqw" : "1cqw"} cardKey={cardKey} />
     </div>
   );
 }

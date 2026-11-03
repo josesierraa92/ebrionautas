@@ -15,7 +15,7 @@ import Clasificatoria from "@/components/Clasificatoria";
 import { PanelCard, RuleCard, TurnChip } from "@/components/TvCards";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Decision } from "@/game/engine";
-import { api, controlKey, epochKey, hostKey, saved, sendAction, useRoom } from "@/lib/room-client";
+import { api, controlKey, epochKey, hostKey, saved, useRoom } from "@/lib/room-client";
 import { useAutoUpdate } from "@/lib/useAutoUpdate";
 import { usePublishedLayout } from "@/lib/usePublishedBoard";
 import { useGameFx } from "@/lib/useGameFx";
@@ -39,6 +39,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const [controlEpoch, setControlEpoch] = useState<number | null>(null);
   const triedClaim = useRef(false);
   const [narrow, setNarrow] = useState(false); // pantalla estrecha (celular): lo que se dibuja sobre el tablero va más chico
+  const [portrait, setPortrait] = useState(false); // celular vertical: la tarjeta va casi a todo el ancho y el dado abajo en el centro
   const fx = useGameFx(room?.game ?? null);
   // Se recarga sola cuando hay una versión nueva del juego (sin dado ni jugada en marcha).
   useAutoUpdate(fx.settled && !fx.dice && !fx.banner);
@@ -55,11 +56,18 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     setSolo(new URLSearchParams(window.location.search).has("solo"));
     const mq = window.matchMedia("(max-width: 1023px)");
     const onMq = () => setNarrow(mq.matches);
+    const mp = window.matchMedia("(orientation: portrait)");
+    const onMp = () => setPortrait(mp.matches);
     onMq();
+    onMp();
     mq.addEventListener("change", onMq);
+    mp.addEventListener("change", onMp);
     setControlSecret(saved.get<string>(controlKey(code)));
     setControlEpoch(saved.get<number>(epochKey(code)));
-    return () => mq.removeEventListener("change", onMq);
+    return () => {
+      mq.removeEventListener("change", onMq);
+      mp.removeEventListener("change", onMp);
+    };
   }, [code]);
 
   // Un solo aparato: si la mesa aún no tiene quien la controle, este aparato toma el control (una sola vez)
@@ -137,7 +145,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   if (soloActive && (room.status === "LOBBY" || !room.game)) {
     return (
       <>
-        <Controller solo code={code} room={room} secret={controlSecret!} error={error} refresh={refresh} />
+        <Controller code={code} room={room} secret={controlSecret!} error={error} refresh={refresh} />
         <p className="pb-6 text-center">
           <Link href="/" className="font-display uppercase underline" style={{ color: "#bffa58", letterSpacing: "0.03em" }}>
             ← Volver
@@ -208,7 +216,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
         : null;
 
   // el celular abrió la clasificatoria: sustituye al mensaje de ganador y tapa el tablero (fuera de BoardStage: ocupa toda la pantalla)
-  const ranking = !soloActive && winner && game.ranking ? <Clasificatoria game={game} unit="min(1.7vw, 2.6vh)" /> : null;
+  const ranking = winner && game.ranking ? <Clasificatoria game={game} unit="min(1.7vw, 2.6vh)" /> : null;
 
   // Tarjeta del panel de la derecha (modo con marcador): la de lo que acaba de pasar; si no hay nada que explicar, la de la casilla donde está quien juega,
   // con «tira el dado desde el celular». Mientras la TV anima la tirada se queda la anterior (no se adelanta la casilla nueva).
@@ -221,12 +229,37 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     <>
       {/* hasta que llega el diseño publicado no se dibuja: con los valores de serie salía un instante la estrella en su sitio de antes y luego saltaba al configurado */}
       {published !== undefined && <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} scale={(ui.chip / 100) * (soloActive && narrow ? 0.5 : 1)} chip={published?.chip} />}
-      {withCard && card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} scale={ui.card / 100} />}
+      {withCard && card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} scale={ui.card / 100} wide={soloActive && portrait} />}
     </>
   );
 
-  // Modo tablero a pantalla completa: sin barra ni marcador, solo unos botones pequeños flotando (no en «un solo aparato»: ahí hace falta el control).
-  if (!panelOpen && !soloActive) {
+  // Un solo aparato: el tablero a pantalla completa, como en la TV, con el control flotando encima (dado, decisiones, botones)
+  if (soloActive) {
+    return (
+      <main className="fixed inset-0">
+        <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare className="h-full">
+          {overlays(!game.decision)}
+          <Controller
+            overlay
+            narrow={portrait}
+            locked={!fx.settled || !!fx.banner || !!fx.dice}
+            card={card}
+            extra={<SoundToggle />}
+            code={code}
+            room={room}
+            secret={controlSecret!}
+            error={error}
+            refresh={refresh}
+          />
+        </BoardStage>
+        {winner && !game.ranking && <Confetti />}
+        {claimPopup}
+      </main>
+    );
+  }
+
+  // Modo tablero a pantalla completa: sin barra ni marcador, solo unos botones pequeños flotando.
+  if (!panelOpen) {
     return (
       <main className="fixed inset-0">
         <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare className="h-full">
@@ -250,22 +283,18 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-[1600px] flex-col gap-4 px-4 py-4 lg:flex-row lg:items-start">
-      <section className={`flex flex-col gap-3 lg:flex-1 ${soloActive ? "max-lg:sticky max-lg:top-0 max-lg:z-20 max-lg:bg-[#0a0620] max-lg:pb-2" : ""}`}>
+      <section className="flex flex-col gap-3 lg:flex-1">
         <div className="flex items-center justify-between gap-2">
-          <Logo className="w-36 shrink-0 sm:w-60" />
-          <span className="flex min-w-0 items-center gap-2 font-display text-white/70">
+          <Logo className="w-48 sm:w-60" />
+          <span className="flex items-center gap-2 font-display text-white/70">
             <SoundToggle />
-            {!soloActive && (
-              <>
-                <button onClick={toggleFullscreen} aria-label="Pantalla completa" title="Pantalla completa" className="icon-btn">
-                  ⛶
-                </button>
-                <button onClick={togglePanel} aria-label="Solo tablero" title="Solo tablero (oculta el marcador)" className="icon-btn">
-                  ⤢
-                </button>
-              </>
-            )}
-            <span className="ml-2 whitespace-nowrap">Mesa {code}</span>
+            <button onClick={toggleFullscreen} aria-label="Pantalla completa" title="Pantalla completa" className="icon-btn">
+              ⛶
+            </button>
+            <button onClick={togglePanel} aria-label="Solo tablero" title="Solo tablero (oculta el marcador)" className="icon-btn">
+              ⤢
+            </button>
+            <span className="ml-2">Mesa {code}</span>
           </span>
         </div>
         <BoardStage
@@ -281,16 +310,14 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
         {ranking}
       </section>
       <aside className="flex flex-col gap-4 lg:w-[28rem]">
-        {soloActive ? (
-          <Controller solo code={code} room={room} secret={controlSecret!} error={error} refresh={refresh} />
-        ) : winner ? (
+        {winner ? (
           <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
             <Winner winner={winner} players={game.players} />
           </div>
         ) : (
           <PanelCard game={game} n={panelCard.n} playerId={panelCard.playerId} cardKey={panelCard.key} result={panelCard.result} prompt={panelCard.waiting ? `${me.name}, tira el dado desde el celular` : null} />
         )}
-        <PlayersList game={game} big onPenalty={soloActive ? (id) => { sendAction(code, controlSecret!, { type: "PENALTY", id }).then(() => refresh()).catch(() => {}); } : undefined} />
+        <PlayersList game={game} big />
         <GameLog log={game.log} max={12} big />
         {error && <p className="text-sm text-btn-red">⚠️ {error}</p>}
       </aside>
