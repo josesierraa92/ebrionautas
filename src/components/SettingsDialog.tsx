@@ -2,7 +2,8 @@
 
 // Ajustes de la partida (celular): quitar vasos contados de más, pausar a quien se ausenta y sacar a un jugador que se fue. Se abre con el botón AJUSTES.
 // Usa el diseño de las tarjetas (`CardPanel`); los nombres van grandes para leerse de noche.
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { isMuted, setMuted, unlock } from "@/lib/sfx";
 import CardPanel, { CardText, GREEN_LIGHT } from "@/components/CardPanel";
 import type { Action, GameState } from "@/game/engine";
 
@@ -11,6 +12,8 @@ const body = { fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700 } a
 
 export default function SettingsDialog({ game, busy, onAction, onRestart, onClose }: { game: GameState; busy: boolean; onAction: (a: Action) => void; onRestart?: () => void; onClose: () => void }) {
   const [confirm, setConfirm] = useState<string | null>(null);
+  const [muted, setMutedState] = useState(false);
+  useEffect(() => setMutedState(isMuted()), []);
   const [game_, setGameConfirm] = useState<"end" | "restart" | null>(null);
   const finished = game.phase === "FINISHED";
   const canRemove = game.players.length > 2 && !finished;
@@ -30,6 +33,14 @@ export default function SettingsDialog({ game, busy, onAction, onRestart, onClos
         </button>
       }
     >
+      <button
+        onClick={() => { setMuted(!muted); setMutedState(!muted); unlock(); }}
+        className={`btn-game w-full py-2 text-white ${muted ? "bg-btn-grey" : "bg-btn-green"}`}
+        style={{ fontSize: u(1.3), marginBottom: u(0.9) }}
+        aria-label={muted ? "Activar sonido" : "Silenciar"}
+      >
+        {muted ? "SONIDO: APAGADO" : "SONIDO: ENCENDIDO"}
+      </button>
       <CardText size={1}>Quita un vaso a quien se le contó de más, pon en pausa a quien se ausenta un rato (se salta su turno) o expulsa a quien ya no está jugando.</CardText>
 
       <ul className="flex flex-col" style={{ gap: u(0.7), marginTop: u(0.9) }}>

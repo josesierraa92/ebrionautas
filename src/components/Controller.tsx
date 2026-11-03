@@ -43,6 +43,15 @@ type Props = {
   narrow?: boolean;
 };
 
+function GearIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="1.25em" height="1.25em" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1" />
+    </svg>
+  );
+}
+
 export default function Controller({ code, room, secret, error, refresh, overlay = false, locked = false, card = null, extra, narrow = false }: Props) {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -133,8 +142,8 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               + TRAGO
             </button>
           )}
-          <button onClick={() => setSettings(true)} className={`btn-game whitespace-nowrap bg-btn-grey ${narrow ? "px-2 text-sm" : "px-2.5 text-base"} py-1 text-white`} aria-label="Ajustes de la partida">
-            AJUSTES
+          <button onClick={() => setSettings(true)} className={`btn-game flex items-center justify-center bg-btn-grey ${narrow ? "px-2 text-sm" : "px-2.5 text-base"} py-1 text-white`} aria-label="Ajustes de la partida" title="Ajustes">
+            <GearIcon />
           </button>
           <FullscreenButton />
           <button onClick={() => setMenu(true)} className={`btn-game whitespace-nowrap bg-btn-blue ${narrow ? "px-2 text-sm" : "px-2.5 text-base"} py-1 text-white`} aria-label="Marcador e historial">
@@ -242,8 +251,8 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               + TRAGO
             </button>
           )}
-          <button onClick={() => setSettings(true)} className="btn-game whitespace-nowrap bg-btn-grey px-2.5 py-1 text-base text-white" aria-label="Ajustes de la partida">
-            AJUSTES
+          <button onClick={() => setSettings(true)} className="btn-game flex items-center justify-center bg-btn-grey px-2.5 py-1 text-base text-white" aria-label="Ajustes de la partida" title="Ajustes">
+            <GearIcon />
           </button>
         </div>
         <div className="flex items-center gap-2">
