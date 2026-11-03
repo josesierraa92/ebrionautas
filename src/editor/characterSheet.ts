@@ -289,7 +289,7 @@ function eyeGlow(ctx: CanvasRenderingContext2D, x: number, y: number, w: number,
   ctx.rect(x, y, w, h);
   ctx.clip();
   ctx.globalCompositeOperation = "lighter";
-  for (const [blur, alpha] of [[4.5 * s, 0.6], [2.5 * s, 0.8], [1.2 * s, 0.8]] as const) {
+  for (const [blur, alpha] of [[6.5 * s, 0.8], [3.2 * s, 0.9], [1.5 * s, 0.9]] as const) {
     ctx.filter = `blur(${blur}px)`;
     ctx.globalAlpha = alpha;
     ctx.drawImage(mask, x, y);
