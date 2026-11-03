@@ -59,7 +59,7 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
     <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center overflow-hidden bg-black/35">
       <div key={banner.key} className="banner-slam w-full">
         <div
-          className="relative flex items-center justify-center gap-[3cqw] py-[2.4cqw]"
+          className="relative flex items-center justify-center gap-[3cqw] px-3 py-[max(2.4cqw,14px)]"
           style={{ background: "linear-gradient(90deg, transparent 0%, rgba(10,7,26,.94) 12%, rgba(10,7,26,.94) 88%, transparent 100%)" }}
         >
           {/* filetes de color arriba y abajo, que se apagan hacia los lados */}
@@ -72,21 +72,21 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
           ))}
           {mask ? (
             // el contorno oscuro va en el contenedor (un filtro dentro de una máscara se recortaría)
-            <div className="shrink-0" style={{ width: "11cqw", filter: `drop-shadow(0.25cqw 0 0 ${INK}) drop-shadow(-0.25cqw 0 0 ${INK}) drop-shadow(0 0.25cqw 0 ${INK}) drop-shadow(0 -0.25cqw 0 ${INK})` }}>
+            <div className="shrink-0" style={{ width: "max(11cqw, 64px)", filter: `drop-shadow(0.25cqw 0 0 ${INK}) drop-shadow(-0.25cqw 0 0 ${INK}) drop-shadow(0 0.25cqw 0 ${INK}) drop-shadow(0 -0.25cqw 0 ${INK})` }}>
               <div className="aspect-square w-full" style={{ background: banner.color, WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" }} />
             </div>
           ) : (
-            <span className="leading-none" style={{ fontSize: "9cqw" }}>
+            <span className="leading-none" style={{ fontSize: "max(9cqw, 56px)" }}>
               {banner.emoji === "🏆" ? <TrophyIcon size="1em" /> : banner.emoji}
             </span>
           )}
           <div className="flex min-w-0 flex-col items-start">
             {banner.n !== undefined && (
-              <span className="font-sans font-bold tracking-[0.5em] uppercase" style={{ fontSize: "1.5cqw", color: banner.color, opacity: 0.9 }}>
+              <span className="font-sans font-bold tracking-[0.5em] uppercase" style={{ fontSize: "max(1.5cqw, 14px)", color: banner.color, opacity: 0.9 }}>
                 Casilla {banner.n}
               </span>
             )}
-            <span className="banner-title leading-none whitespace-nowrap" style={{ fontSize: `${Math.min(8.6, 125 / banner.title.length)}cqw`, ["--accent" as string]: banner.color }}>
+            <span className="banner-title leading-[1.05]" style={{ textWrap: "balance", fontSize: `max(${Math.min(8.6, 125 / banner.title.length)}cqw, 28px)`, ["--accent" as string]: banner.color }}>
               {banner.title}
             </span>
           </div>
