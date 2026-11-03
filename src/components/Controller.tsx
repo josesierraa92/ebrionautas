@@ -269,7 +269,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
                 <span className="font-display uppercase" style={{ padding: "0.2rem 0.9rem", borderRadius: 999, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: "1.15rem", letterSpacing: "0.08em" }}>
                   Mesa {code}
                 </span>
-                <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-5 py-1 text-xl text-white">
+                <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-7 py-3 text-3xl text-white">
                   CERRAR
                 </button>
               </div>
@@ -405,7 +405,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               <span className="font-display uppercase" style={{ padding: "0.2rem 0.9rem", borderRadius: 999, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: "1.15rem", letterSpacing: "0.08em" }}>
                 Mesa {code}
               </span>
-              <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-5 py-1 text-xl text-white">
+              <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-7 py-3 text-3xl text-white">
                 CERRAR
               </button>
             </div>
