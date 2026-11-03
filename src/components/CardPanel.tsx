@@ -56,10 +56,11 @@ export default function CardPanel({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // (iconMaskUrl usa el DOM: se calcula después de comprobar que ya estamos en el navegador)
+  if (!mounted) return null;
   const mask = icon ? iconMaskUrl(icon, 256) : null;
   const maskStyle = (url: string) => ({ WebkitMaskImage: `url(${url})`, maskImage: `url(${url})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" });
 
-  if (!mounted) return null;
   return createPortal(
     <div
       role="dialog"
