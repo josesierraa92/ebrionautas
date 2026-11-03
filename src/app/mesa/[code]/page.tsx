@@ -92,7 +92,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
 
   if (room.status === "LOBBY" || !room.game) {
     // sala de espera: el logo y una tarjeta con el mismo diseño que las de las casillas (`CardPanel`, regla de diseño del CLAUDE.md)
-    const lobbyUnit = "min(1.5vw, 2.4vh)";
+    const lobbyUnit = "max(min(1.5vw, 2.4vh), min(2.5vw, 1.2vh))"; // en horizontal (TV) manda la primera; en vertical (celular) la segunda, para que la tarjeta no quede diminuta
     const c = (k: number) => `calc(var(--u) * ${k})`;
     return (
       <main className="mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center gap-6 px-4 py-8 text-center">
@@ -125,6 +125,10 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
             </div>
           </CardPanel>
         )}
+        {/* volver al inicio (en el celular no había cómo salir de esta pantalla) */}
+        <Link href="/" className="font-display uppercase underline" style={{ color: "#bffa58", fontSize: "max(1rem, min(1.5vw, 2.4vh))", letterSpacing: "0.03em" }}>
+          ← Volver
+        </Link>
         {claimPopup}
       </main>
     );
