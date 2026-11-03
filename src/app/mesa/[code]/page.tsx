@@ -51,7 +51,12 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
 
   const release = async () => {
     if (!confirm("¿Liberar el control para que otro celular lo tome?")) return;
-    await api(`/api/rooms/${code}/control`, { hostSecret }, "DELETE").catch(() => {});
+    try {
+      await api(`/api/rooms/${code}/control`, { hostSecret }, "DELETE");
+    } catch (e) {
+      // antes el error se tragaba y parecía que el botón no hacía nada
+      alert(`${(e as Error).message} Abre esta pantalla en el mismo navegador donde creaste la mesa, o crea una mesa nueva.`);
+    }
     await refresh();
   };
 
@@ -73,12 +78,10 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
             title="Celular conectado"
             badge="OK"
             actions={
-              hostSecret ? (
-                // el botón escala con la tarjeta (`--u`), como los demás botones del juego: antes salía con letra de 14 px y se veía pequeño
-                <button onClick={release} className="btn-game w-full bg-btn-grey text-white" style={{ fontSize: c(1.6), padding: `${c(0.7)} ${c(1.2)}` }}>
-                  CAMBIAR DE CELULAR
-                </button>
-              ) : undefined
+              // el botón escala con la tarjeta (`--u`), como los demás botones del juego; sale siempre (si esta pantalla no creó la mesa, el aviso lo explica)
+              <button onClick={release} className="btn-game w-full bg-btn-grey text-white" style={{ fontSize: c(1.6), padding: `${c(0.7)} ${c(1.2)}` }}>
+                CAMBIAR DE CELULAR
+              </button>
             }
           >
             <CardText size={1.3}>Agregad a los jugadores desde el celular y pulsad ¡A LEVANTARSE!</CardText>
@@ -142,6 +145,9 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
             <button onClick={togglePanel} aria-label="Marcador" title="Marcador" className="icon-btn">
               ☰
             </button>
+            <button onClick={release} aria-label="Cambiar de celular" title="Cambiar de celular (soltar el control)" className="icon-btn">
+              📱
+            </button>
           </div>
         </BoardStage>
         {winner && !game.ranking && <Confetti />}
@@ -164,11 +170,9 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
               ⤢
             </button>
             <span className="ml-2">Mesa {code}</span>
-            {hostSecret && (
-              <button onClick={release} className="ml-2 text-xs text-white/40 underline">
-                cambiar de celular
-              </button>
-            )}
+            <button onClick={release} className="btn-game ml-2 bg-btn-grey px-3 py-1 text-sm text-white" title="Soltar el control para que otro celular lo tome">
+              CAMBIAR DE CELULAR
+            </button>
           </span>
         </div>
         <BoardStage

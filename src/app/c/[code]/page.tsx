@@ -91,7 +91,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
           }
         >
           <CardText>Desde este celular se agregan los jugadores, se tira el dado y se decide todo. El tablero se ve en la TV.</CardText>
-          {room.hasController && <div style={{ marginTop: 10 }}><ErrorBox text="Otro celular ya controla esta mesa. Pulsa 'Cambiar de celular' en la TV para liberarla." /></div>}
+          {room.hasController && <div style={{ marginTop: 10 }}><ErrorBox text="Otro celular ya controla esta mesa. Si eres tú (por ejemplo abriste el link en otro navegador), pulsa «CAMBIAR DE CELULAR» en la TV y luego «VOLVER A INTENTAR»." /></div>}
           {actionError && <div style={{ marginTop: 10 }}><ErrorBox text={actionError} /></div>}
         </CardPanel>
       </Shell>
