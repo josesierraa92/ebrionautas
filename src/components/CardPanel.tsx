@@ -32,7 +32,7 @@ export default function CardPanel({
   /** Pastilla verde de arriba («SOLO PARA ADULTOS», «PRIVACIDAD»…). */
   kicker: string;
   title: string;
-  /** Icono vectorial del cuadro verde… */
+  /** Icono vectorial del cuadro verde… (sin icono ni texto no hay cuadro y el título ocupa toda la línea) */
   icon?: IconName;
   /** …o un texto corto en su lugar («+18»). */
   badge?: string;
@@ -75,6 +75,7 @@ export default function CardPanel({
         <div style={{ borderRadius: u(1.1), border: `${u(0.32)} solid #452b8e`, background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
           <div className="flex flex-col" style={{ maxHeight: maxH, padding: `${u(1.9)} ${u(1.4)} ${u(1.4)}`, gap: u(1) }}>
             <div className="flex shrink-0 items-center" style={{ gap: u(1.1) }}>
+              {(mask || badge) && (
               <div className="grid shrink-0 place-items-center" style={{ width: u(4), height: u(4), minWidth: u(4), minHeight: u(4), borderRadius: u(0.9), background: GREEN }}>
                 {mask ? (
                   <div style={{ width: u(3.9), height: u(3.9), background: "#14260a", ...maskStyle(mask) }} />
@@ -84,6 +85,7 @@ export default function CardPanel({
                   </span>
                 )}
               </div>
+              )}
               <h2 className="min-w-0 font-display leading-[1.05] text-white uppercase" style={{ fontSize: u(1.9), textWrap: "balance", letterSpacing: "0.01em" }}>
                 {title}
               </h2>

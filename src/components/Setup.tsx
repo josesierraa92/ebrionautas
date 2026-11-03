@@ -2,7 +2,7 @@
 
 import { characterOf } from "@/game/characters";
 import { useState } from "react";
-import CardPanel, { CardText } from "@/components/CardPanel";
+import CardPanel from "@/components/CardPanel";
 import Logo from "@/components/Logo";
 import Marciano from "@/components/Marciano";
 import TrophyIcon from "@/components/TrophyIcon";
@@ -14,14 +14,14 @@ type Draft = { name: string; gender: Gender | null };
 type Props = {
   onStart: (players: { name: string; gender: Gender }[], cups: number) => void;
   busy?: boolean;
-  /** Texto bajo el título (ej. dónde se verá el tablero). */
-  hint?: string;
+  /** Código de la mesa: sale arriba a la derecha, frente al logo. */
+  code?: string;
   /** Enseñar la elección de copas (el modo local `/jugar` no tiene rondas). */
   copas?: boolean;
 };
 
 /** Alta de participantes: nombre y hombre/mujer (se usa en las casillas Machos y Hembras). */
-export default function Setup({ onStart, busy = false, hint, copas = true }: Props) {
+export default function Setup({ onStart, busy = false, code, copas = true }: Props) {
   const [players, setPlayers] = useState<Draft[]>([
     { name: "", gender: null },
     { name: "", gender: null },
@@ -39,7 +39,15 @@ export default function Setup({ onStart, busy = false, hint, copas = true }: Pro
   const rowBg = "rgba(255,255,255,.08)";
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-4 py-6">
-      <Logo className="w-48 shrink-0" />
+      {/* logo a la izquierda y código de mesa a la derecha, del ancho de la tarjeta */}
+      <div className="flex w-full items-center justify-between gap-3" style={{ maxWidth: "calc(17px * 24)" }}>
+        <Logo className="w-44 shrink-0" />
+        {code && (
+          <span className="font-display uppercase" style={{ padding: "0.2rem 0.9rem", borderRadius: 999, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: "1.15rem", letterSpacing: "0.08em" }}>
+            Mesa {code}
+          </span>
+        )}
+      </div>
       <CardPanel
         inline
         unit="17px"
@@ -47,7 +55,6 @@ export default function Setup({ onStart, busy = false, hint, copas = true }: Pro
         maxH="none" /* formulario largo: la página se desplaza entera */
         kicker="Los muertos"
         title="¿Quién juega?"
-        icon="skull"
         actions={
           <>
             <button
@@ -69,8 +76,6 @@ export default function Setup({ onStart, busy = false, hint, copas = true }: Pro
           </>
         }
       >
-        {hint && <CardText size={1}>{hint}</CardText>}
-
         <ol className="flex flex-col" style={{ marginTop: u(0.8), gap: u(0.6) }}>
           {players.map((p, i) => (
             <li key={i} className="flex items-center gap-2 p-2" style={{ background: rowBg, borderRadius: u(0.9) }}>

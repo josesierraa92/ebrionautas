@@ -103,7 +103,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
       <>
         <Setup
           busy={busy}
-          hint={`Mesa ${code} · el tablero se verá en la TV`}
+          code={code}
           onStart={(players: { name: string; gender: Gender }[], cups: number) => run(() => api(`/api/rooms/${code}/start`, { secret, players, cups }))}
         />
         {actionError && (
