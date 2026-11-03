@@ -351,16 +351,16 @@ function stitchedMouth(mesh: THREE.Mesh, mouths: Mouth[]) {
   const z = Math.max(...mouths.map((m) => m.front)) + 0.003;
   const uv = mouths[0].uv;
   const xc = (x0 + x1) / 2;
-  const yc = (y0 + y1) / 2;
-  const w = Math.max(0.07, x1 - x0) + 0.02;
+  const yc = (y0 + y1) / 2 - 0.004;
+  const w = Math.max(0.06, x1 - x0) + 0.004;
   const box = (x: number, y: number, bw: number, bh: number) => {
     const g = new THREE.BoxGeometry(bw, bh, 0.01);
     g.translate(x, y, z);
     return { g, uv };
   };
   const n = w >= 0.12 ? 5 : 3;
-  const items = [box(xc, yc, w, 0.011)];
-  for (let i = 0; i < n; i++) items.push(box(xc + ((i / (n - 1) - 0.5) * (w - 0.025)), yc, 0.013, Math.max(0.05, y1 - y0 + 0.035)));
+  const items = [box(xc, yc, w, 0.009)];
+  for (let i = 0; i < n; i++) items.push(box(xc + ((i / (n - 1) - 0.5) * (w - 0.016)), yc, 0.01, Math.max(0.03, y1 - y0 + 0.012)));
   mergeOnto(mesh, bone, items);
 }
 
