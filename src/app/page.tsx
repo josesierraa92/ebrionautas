@@ -28,6 +28,10 @@ export default function Home() {
           Juego para mayores de 18 años. Bebe con moderación. ·{" "}
           <Link href="/privacidad" className="underline">
             Privacidad
+          </Link>{" "}
+          ·{" "}
+          <Link href="/terminos" className="underline">
+            Términos
           </Link>
         </p>
       </div>

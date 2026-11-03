@@ -50,7 +50,7 @@ type Step = "checking" | "ask" | "denied" | "ok";
 
 export default function AgeGate() {
   const pathname = usePathname();
-  const exempt = pathname.startsWith("/admin") || pathname.startsWith("/privacidad"); // el editor y la página de privacidad se ven sin responder
+  const exempt = pathname.startsWith("/admin") || pathname.startsWith("/privacidad") || pathname.startsWith("/terminos"); // el editor y las páginas legales se ven sin responder
   const [step, setStep] = useState<Step>("checking");
 
   useEffect(() => {
@@ -99,6 +99,10 @@ export default function AgeGate() {
                 Tu respuesta se guarda en este aparato. Contamos visitas de forma anónima, sin nombres.{" "}
                 <Link href="/privacidad" className="underline">
                   Privacidad
+                </Link>{" "}
+                ·{" "}
+                <Link href="/terminos" className="underline">
+                  Términos
                 </Link>
               </p>
             </>

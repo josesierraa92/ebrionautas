@@ -21,9 +21,14 @@ export default function Privacidad() {
       </ul>
       <p>No usamos cookies de publicidad ni vendemos datos.</p>
       <p>El juego es para mayores de 18 años. Bebe con moderación y no conduzcas si bebiste.</p>
-      <Link href="/" className="underline">
-        Volver al inicio
-      </Link>
+      <p className="flex gap-4">
+        <Link href="/terminos" className="underline">
+          Términos de uso
+        </Link>
+        <Link href="/" className="underline">
+          Volver al inicio
+        </Link>
+      </p>
     </main>
   );
 }
