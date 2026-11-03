@@ -2,6 +2,7 @@
 // espaldas (mirando a la derecha de la pantalla), quieto y en dos momentos del paso. Se hace al publicar (con la vista
 // elegida en el editor) y para la hoja de serie (scripts/characters/sheet.mjs).
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { CHARACTERS, SHEET_COLS, type Pose } from "@/game/characters";
 import { tvDirection, type TvView } from "./layout";
@@ -50,13 +51,17 @@ function zombieMap(original: THREE.Texture, id: string): THREE.Texture {
   const color = new THREE.Color();
   for (let i = 0; i < d.length; i += 4) {
     const lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
-    color.setHSL(hue / 360, 0.38, 0.22 + lum * 0.42, THREE.SRGBColorSpace);
+    color.setHSL(hue / 360, 0.27, 0.2 + lum * 0.36, THREE.SRGBColorSpace); // verde apagado y cadavérico
     const rgb = color.getStyle(THREE.SRGBColorSpace).match(/\d+/g)!.map(Number);
     [d[i], d[i + 1], d[i + 2]] = rgb;
   }
   ctx.putImageData(px, x0, y0);
   ctx.fillStyle = EYE.color; // los ojos (yellowEyes)
   ctx.fillRect(EYE.x * k, EYE.y * k, EYE.size * k, EYE.size * k);
+  for (const c2 of Object.keys(UNDEAD) as (keyof typeof UNDEAD)[]) {
+    ctx.fillStyle = UNDEAD[c2];
+    ctx.fillRect(UNDEAD_X[c2] * k, EYE.y * k, 16 * k, 16 * k);
+  }
   const tex = new THREE.CanvasTexture(c);
   tex.flipY = original.flipY;
   tex.colorSpace = original.colorSpace;
@@ -80,6 +85,10 @@ function pixels(tex: THREE.Texture) {
 
 /** Cuadrito amarillo vivo que se pinta en una zona vacía (negra) de la paleta: los ojos de zombi. */
 const EYE = { x: 8, y: 8, size: 16, color: "#fff04a" };
+/** Colores extra de la paleta para los detalles de muerto viviente (cuencas, sangre, hueso, dientes); cada uno es un cuadrito de 16 px en la fila de arriba. */
+const UNDEAD = { dark: "#0c0a10", blood: "#8a1018", bone: "#d8d0b0", teeth: "#efe8c8", rot: "#4a5a2c" } as const;
+const UNDEAD_X: Record<keyof typeof UNDEAD, number> = { dark: 32, blood: 56, bone: 80, teeth: 104, rot: 128 };
+const uvOf = (c: keyof typeof UNDEAD): [number, number] => [(UNDEAD_X[c] + 8) / 512, (EYE.y + 8) / 512];
 const YELLOW_UV = [(EYE.x + EYE.size / 2) / 512, (EYE.y + EYE.size / 2) / 512];
 
 /**
@@ -269,6 +278,99 @@ function eyeGlow(ctx: CanvasRenderingContext2D, x: number, y: number, w: number,
   ctx.restore();
 }
 
+
+type Piece = { c: keyof typeof UNDEAD; x: number; y: number; z: number; w: number; h: number; d?: number; rot?: number };
+
+/**
+ * Añade piezas sueltas (cajas de un solo color de la paleta) a una malla con esqueleto, atadas al hueso `bone`: así siguen a la cabeza o al torso
+ * cuando se anima, tanto en la hoja de sprites como en el 3D en vivo. Las posiciones son las de la malla en reposo.
+ */
+function addPieces(mesh: THREE.Mesh, bone: number, pieces: Piece[]) {
+  if (!pieces.length) return;
+  const base = mesh.geometry;
+  const parts: THREE.BufferGeometry[] = [base];
+  for (const pc of pieces) {
+    const g = new THREE.BoxGeometry(pc.w, pc.h, pc.d ?? 0.012);
+    if (pc.rot) g.rotateZ(pc.rot);
+    g.translate(pc.x, pc.y, pc.z);
+    const n = g.attributes.position.count;
+    const [u, v] = uvOf(pc.c);
+    const uv = new Float32Array(n * 2);
+    for (let i = 0; i < n; i++) [uv[i * 2], uv[i * 2 + 1]] = [u, v];
+    const out = new THREE.BufferGeometry();
+    out.setIndex(g.index!.array.length ? Array.from(g.index!.array) : []);
+    for (const name of Object.keys(base.attributes)) {
+      const a = base.attributes[name] as THREE.BufferAttribute;
+      if (name === "position" || name === "normal") out.setAttribute(name, g.attributes[name]);
+      else if (name.startsWith("uv")) out.setAttribute(name, new THREE.BufferAttribute(uv.slice(), 2));
+      else if (name === "skinIndex") out.setAttribute(name, new THREE.BufferAttribute(new Uint16Array(n * 4).map((_, i) => (i % 4 === 0 ? bone : 0)), 4));
+      else if (name === "skinWeight") out.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * 4).map((_, i) => (i % 4 === 0 ? 1 : 0)), 4));
+      else out.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * a.itemSize), a.itemSize));
+    }
+    parts.push(out);
+  }
+  mesh.geometry = mergeGeometries(parts, false) ?? base;
+}
+
+/** Cara de muerto viviente: cuencas oscuras, boca con dientes y una herida distinta según el personaje (`variant`). */
+function undeadFace(mesh: THREE.Mesh, eyes: THREE.Vector3[], variant: number) {
+  const skinned = mesh as THREE.SkinnedMesh;
+  const joint = (mesh.geometry.attributes.skinIndex?.getX(0) ?? 6) | 0;
+  if (!eyes.length || !skinned.isSkinnedMesh) return;
+  const zf = Math.max(...eyes.map((e) => e.z)) - 0.003;
+  const yc = eyes[0].y;
+  const pieces: Piece[] = [];
+  for (const e of eyes) pieces.push({ c: "dark", x: e.x, y: e.y, z: zf - 0.006, w: 0.105, h: 0.095 });
+  // boca: tajo oscuro con tres dientes
+  pieces.push({ c: "dark", x: 0, y: yc - 0.115, z: zf - 0.006, w: 0.13, h: 0.036 });
+  for (const dx of [-0.04, 0, 0.04]) pieces.push({ c: "teeth", x: dx, y: yc - 0.104, z: zf - 0.002, w: 0.024, h: 0.02, d: 0.014 });
+  const side = variant % 2 ? 1 : -1;
+  switch (variant % 6) {
+    case 0: // cicatriz cosida en la mejilla
+      pieces.push({ c: "blood", x: side * 0.1, y: yc - 0.06, z: zf - 0.004, w: 0.024, h: 0.17, rot: 0.5 * side });
+      for (const t of [-0.05, 0, 0.05]) pieces.push({ c: "dark", x: side * (0.1 - t * 0.5), y: yc - 0.06 + t, z: zf - 0.001, w: 0.07, h: 0.01, rot: 0.5 * side });
+      break;
+    case 1: // hueso al aire en la mejilla
+      pieces.push({ c: "blood", x: side * 0.105, y: yc - 0.05, z: zf - 0.005, w: 0.1, h: 0.09 });
+      pieces.push({ c: "bone", x: side * 0.105, y: yc - 0.05, z: zf - 0.001, w: 0.07, h: 0.055, d: 0.014 });
+      break;
+    case 2: // frente cosida
+      pieces.push({ c: "blood", x: 0, y: yc + 0.13, z: zf - 0.004, w: 0.24, h: 0.022 });
+      for (const dx of [-0.08, -0.027, 0.027, 0.08]) pieces.push({ c: "dark", x: dx, y: yc + 0.13, z: zf - 0.001, w: 0.012, h: 0.07 });
+      break;
+    case 3: // sangre que escurre de la boca
+      pieces.push({ c: "blood", x: -0.03, y: yc - 0.165, z: zf - 0.004, w: 0.04, h: 0.08 });
+      pieces.push({ c: "blood", x: 0.045, y: yc - 0.15, z: zf - 0.004, w: 0.03, h: 0.05 });
+      break;
+    case 4: // piel podrida a manchas
+      pieces.push({ c: "rot", x: side * 0.1, y: yc + 0.1, z: zf - 0.004, w: 0.09, h: 0.075 });
+      pieces.push({ c: "rot", x: -side * 0.08, y: yc - 0.06, z: zf - 0.004, w: 0.06, h: 0.05 });
+      break;
+    default: // herida abierta en la frente con hueso
+      pieces.push({ c: "blood", x: side * 0.07, y: yc + 0.14, z: zf - 0.004, w: 0.13, h: 0.085 });
+      pieces.push({ c: "bone", x: side * 0.07, y: yc + 0.14, z: zf - 0.001, w: 0.08, h: 0.05, d: 0.014 });
+  }
+  addPieces(mesh, joint, pieces);
+}
+
+/** Pecho de muerto viviente: camisa rota con las costillas al aire y manchas de sangre (atado al hueso del torso). */
+function undeadBody(mesh: THREE.Mesh, variant: number) {
+  const skinned = mesh as THREE.SkinnedMesh;
+  if (!skinned.isSkinnedMesh) return;
+  const joint = skinned.skeleton.bones.findIndex((b) => b.name === "torso");
+  if (joint < 0) return;
+  const z = 0.115;
+  const side = variant % 2 ? 1 : -1;
+  // camisa rota: un roto pequeño con sangre en el borde, costillas al aire y un jirón oscuro
+  const pieces: Piece[] = [
+    { c: "blood", x: side * 0.05, y: 0.215, z, w: 0.1, h: 0.075, d: 0.014, rot: 0.25 * side },
+    { c: "bone", x: side * 0.05, y: 0.215, z: z + 0.003, w: 0.065, h: 0.05, d: 0.014, rot: 0.25 * side },
+  ];
+  for (const dy of [-0.014, 0.014]) pieces.push({ c: "dark", x: side * 0.05, y: 0.215 + dy, z: z + 0.007, w: 0.065, h: 0.008, d: 0.014, rot: 0.25 * side });
+  if (variant % 3 === 0) pieces.push({ c: "blood", x: -side * 0.07, y: 0.12, z, w: 0.035, h: 0.05, d: 0.014 });
+  addPieces(mesh, joint, pieces);
+}
+
 /** Los 12 personajes ya convertidos en zombi (piel verde y ojos amarillos), con sus animaciones. */
 export function loadAll(): Promise<Loaded[]> {
   loading ??= Promise.all(
@@ -288,9 +390,13 @@ export function loadAll(): Promise<Loaded[]> {
                 const orig = [mesh.material].flat()[0] as THREE.MeshStandardMaterial;
                 if (/head/i.test(mesh.name) && orig.map) {
                   yellowEyes(mesh, orig.map, eyes);
+                  undeadFace(mesh, eyes, CHARACTERS.indexOf(id));
                   headMesh = mesh;
                 }
-                if (/body/i.test(mesh.name)) dropProps(mesh, id);
+                if (/body/i.test(mesh.name)) {
+                  dropProps(mesh, id);
+                  undeadBody(mesh, CHARACTERS.indexOf(id));
+                }
                 mesh.material = ([mesh.material].flat() as THREE.MeshStandardMaterial[]).map((orig) => {
                   const m = orig.clone();
                   if ("metalness" in m) m.metalness = 0;

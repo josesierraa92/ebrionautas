@@ -32,30 +32,6 @@ export default function SettingsDialog({ game, busy, onAction, onRestart, onClos
     >
       <CardText size={1}>Quita un vaso a quien se le contó de más, pon en pausa a quien se ausenta un rato (se salta su turno) o expulsa a quien ya no está jugando.</CardText>
 
-      {!finished && (
-        <div className="flex flex-col" style={{ gap: u(0.6), marginTop: u(1.2) }}>
-          {game_ ? (
-            <>
-              <CardText size={1}>{game_ === "end" ? "¿Terminar la partida ahora? Gana quien va más adelantado y se ve la clasificatoria." : "¿Reiniciar la partida? Todos vuelven a la casilla 1 con los mismos jugadores y sin tragos."}</CardText>
-              <div className="flex" style={{ gap: u(0.6) }}>
-                <button
-                  disabled={busy}
-                  onClick={() => { if (game_ === "end") onAction({ type: "END_GAME" }); else onRestart?.(); setGameConfirm(null); onClose(); }}
-                  className="btn-game flex-1 bg-btn-green py-3 text-xl text-white"
-                >
-                  {game_ === "end" ? "SÍ, TERMINAR" : "SÍ, REINICIAR"}
-                </button>
-                <button onClick={() => setGameConfirm(null)} className="btn-game flex-1 bg-btn-grey py-3 text-xl text-white">NO</button>
-              </div>
-            </>
-          ) : (
-            <div className="flex" style={{ gap: u(0.6) }}>
-              <button disabled={busy} onClick={() => setGameConfirm("restart")} className="btn-game flex-1 bg-btn-grey py-3 text-xl text-white">REINICIAR PARTIDA</button>
-              <button disabled={busy} onClick={() => setGameConfirm("end")} className="btn-game flex-1 bg-btn-yellow py-3 text-xl text-white">TERMINAR PARTIDA</button>
-            </div>
-          )}
-        </div>
-      )}
       <ul className="flex flex-col" style={{ gap: u(0.7), marginTop: u(0.9) }}>
         {game.players.map((p) => (
           <li key={p.id} style={{ padding: u(0.8), borderRadius: u(1), background: "rgba(255,255,255,.08)" }}>
@@ -118,6 +94,30 @@ export default function SettingsDialog({ game, busy, onAction, onRestart, onClos
           </li>
         ))}
       </ul>
+      {!finished && (
+        <div className="flex flex-col" style={{ gap: u(0.6), marginTop: u(1.2) }}>
+          {game_ ? (
+            <>
+              <CardText size={1}>{game_ === "end" ? "¿Terminar la partida ahora? Gana quien va más adelantado y se ve la clasificatoria." : "¿Reiniciar la partida? Todos vuelven a la casilla 1 con los mismos jugadores y sin tragos."}</CardText>
+              <div className="flex" style={{ gap: u(0.6) }}>
+                <button
+                  disabled={busy}
+                  onClick={() => { if (game_ === "end") onAction({ type: "END_GAME" }); else onRestart?.(); setGameConfirm(null); onClose(); }}
+                  className="btn-game flex-1 bg-btn-green py-3 text-xl text-white"
+                >
+                  {game_ === "end" ? "SÍ, TERMINAR" : "SÍ, REINICIAR"}
+                </button>
+                <button onClick={() => setGameConfirm(null)} className="btn-game flex-1 bg-btn-grey py-3 text-xl text-white">NO</button>
+              </div>
+            </>
+          ) : (
+            <div className="flex" style={{ gap: u(0.6) }}>
+              <button disabled={busy} onClick={() => setGameConfirm("restart")} className="btn-game flex-1 bg-btn-grey py-3 text-xl text-white">REINICIAR PARTIDA</button>
+              <button disabled={busy} onClick={() => setGameConfirm("end")} className="btn-game flex-1 bg-btn-yellow py-3 text-xl text-white">TERMINAR PARTIDA</button>
+            </div>
+          )}
+        </div>
+      )}
       {!canRemove && <p style={{ ...body, fontSize: u(0.9), color: "#d8d4f6", opacity: 0.6, marginTop: u(0.7) }}>{finished ? "Con la partida terminada solo se pueden quitar vasos." : "Con 2 jugadores no se puede expulsar a nadie: hacen falta al menos 2."}</p>}
     </CardPanel>
   );
