@@ -8,8 +8,7 @@ import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { currentPlayer, jailBail, type GameState, type Player } from "@/game/engine";
 import { duelOutcome, jailOutcome, jailPaidOutcome } from "@/game/rules";
-import { PhoneRuleCard, TurnChip } from "@/components/TvCards";
-import { usePublishedLayout } from "@/lib/usePublishedBoard";
+import { PhoneRuleCard } from "@/components/TvCards";
 import { stepPath, type Landed } from "@/lib/useGameFx";
 import { useShake } from "@/lib/useShake";
 
@@ -242,10 +241,11 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
  * El nombre nunca se corta: baja de tamaño si es largo y, si aun así no cabe, pasa a dos renglones.
  */
 function OwnerChip({ game, playerId }: { game: GameState; playerId: string }) {
-  const published = usePublishedLayout(true);
+  const owner = game.players.find((p) => p.id === playerId);
+  if (!owner) return null;
   return (
-    <div className="px-[5px] py-1">
-      <TurnChip game={game} playerId={playerId} inline fill chip={published?.chip} />
+    <div className="-mt-4">
+      <TurnBanner player={owner} label="Turno de" game={game} size={84} />
     </div>
   );
 }
