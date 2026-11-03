@@ -29,7 +29,7 @@ export default function SettingsDialog({ game, busy, onAction, onClose }: { game
         </button>
       }
     >
-      <CardText size={1}>Quita un vaso a quien se le contó de más, pon en pausa a quien se ausenta un rato (se salta su turno) o saca a quien ya no está jugando.</CardText>
+      <CardText size={1}>Quita un vaso a quien se le contó de más, pon en pausa a quien se ausenta un rato (se salta su turno) o expulsa a quien ya no está jugando.</CardText>
       <ul className="flex flex-col" style={{ gap: u(0.7), marginTop: u(0.9) }}>
         {game.players.map((p) => (
           <li key={p.id} style={{ padding: u(0.8), borderRadius: u(1), background: "rgba(255,255,255,.08)" }}>
@@ -67,26 +67,32 @@ export default function SettingsDialog({ game, busy, onAction, onClose }: { game
                 {p.paused ? "VOLVER A JUGAR" : "PONER EN PAUSA"}
               </button>
             )}
-            {canRemove &&
+            {!finished &&
               (confirm === p.id ? (
                 <div className="flex items-center" style={{ gap: u(0.6), marginTop: u(0.6) }}>
-                  <span className="flex-1" style={{ ...body, fontSize: u(1), color: GREEN_LIGHT }}>¿Sacar a {p.name} de la partida?</span>
+                  <span className="flex-1" style={{ ...body, fontSize: u(1), color: GREEN_LIGHT }}>¿Expulsar a {p.name} de la partida?</span>
                   <button disabled={busy} onClick={() => { onAction({ type: "REMOVE_PLAYER", id: p.id }); setConfirm(null); }} className="btn-game bg-btn-red px-3 py-1 text-white" style={{ fontSize: u(1) }}>
-                    SÍ, SACAR
+                    SÍ, EXPULSAR
                   </button>
                   <button onClick={() => setConfirm(null)} className="btn-game bg-btn-grey px-3 py-1 text-white" style={{ fontSize: u(1) }}>
                     NO
                   </button>
                 </div>
               ) : (
-                <button onClick={() => setConfirm(p.id)} className="underline" style={{ ...body, marginTop: u(0.6), fontSize: u(0.95), color: "#d8d4f6", opacity: 0.75 }}>
-                  {p.name} se fue de la partida
+                <button
+                  disabled={busy || !canRemove}
+                  onClick={() => setConfirm(p.id)}
+                  className="btn-game w-full bg-btn-grey px-3 py-1.5 text-white disabled:opacity-40"
+                  style={{ marginTop: u(0.6), fontSize: u(1.1) }}
+                  aria-label={`Expulsar a ${p.name} de la partida`}
+                >
+                  EXPULSAR
                 </button>
               ))}
           </li>
         ))}
       </ul>
-      {!canRemove && <p style={{ ...body, fontSize: u(0.9), color: "#d8d4f6", opacity: 0.6, marginTop: u(0.7) }}>{finished ? "Con la partida terminada solo se pueden quitar vasos." : "Hacen falta al menos 2 jugadores."}</p>}
+      {!canRemove && <p style={{ ...body, fontSize: u(0.9), color: "#d8d4f6", opacity: 0.6, marginTop: u(0.7) }}>{finished ? "Con la partida terminada solo se pueden quitar vasos." : "Con 2 jugadores no se puede expulsar a nadie: hacen falta al menos 2."}</p>}
     </CardPanel>
   );
 }
