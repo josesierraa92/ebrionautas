@@ -255,12 +255,12 @@ function TurnBanner({ player, label, game, size, compact = false }: { player: Pl
   const nameSize = compact ? (len <= 8 ? "3rem" : len <= 12 ? "2.4rem" : "1.9rem") : len <= 8 ? "4.6rem" : len <= 12 ? "3.4rem" : "2.6rem";
   const shadow = "0 3px 0 #090b2a, 0 5px 0 rgba(9,11,42,.6)";
   return (
-    <div className="flex w-full flex-col items-center text-center">
+    <div className={`flex w-full flex-col items-center text-center ${compact ? "" : "mt-8"}`}>
       <Marciano avatar={avatarOf(player)} expression={expressionFor(player, { isTurn: true })} size={size} animated character={characterOf(game.players, player.id)} />
       <p className="mt-2 font-display uppercase leading-none text-white" style={{ fontSize: compact ? "1.2rem" : "1.7rem", letterSpacing: "0.08em", textShadow: shadow }}>
         {label}
       </p>
-      <h2 className="mt-1 max-w-full font-display uppercase leading-[0.95] text-white" style={{ fontSize: nameSize, textShadow: shadow, overflowWrap: "break-word" }}>
+      <h2 className="mt-1 max-w-full font-display uppercase leading-[0.95]" style={{ fontSize: nameSize, color: "#bffa58", textShadow: shadow, overflowWrap: "break-word" }}>
         {player.name}
       </h2>
     </div>
