@@ -312,7 +312,10 @@ export class EditorScene {
       // pantalla vertical (celular): el zoom propio del celular, más cerca que el de la TV
       const tiles = this.layout ? tilesFor(this.layout.tvView, h > w) : 6;
       const vw = TILE_SIZE * Math.SQRT2 * tiles;
-      Object.assign(this.camera, { left: -vw / 2, right: vw / 2, top: (vw * h) / w / 2, bottom: -(vw * h) / w / 2, zoom: 1 });
+      const vh = (vw * h) / w;
+      // celular vertical: la ficha que sigue la cámara queda en el 38 % de la pantalla (no en el centro), para que la tarjeta de abajo no la tape
+      const lift = h > w ? -0.12 * vh : 0;
+      Object.assign(this.camera, { left: -vw / 2, right: vw / 2, top: vh / 2 + lift, bottom: -vh / 2 + lift, zoom: 1 });
       this.camera.updateProjectionMatrix();
       return;
     }
