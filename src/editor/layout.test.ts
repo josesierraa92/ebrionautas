@@ -252,3 +252,14 @@ describe("tarjeta de usuario (chip)", () => {
     expect(parseLayout(JSON.parse(JSON.stringify(l)))?.chip).toEqual(DEFAULT_CHIP);
   });
 });
+
+describe("cara de los zombis", () => {
+  it("la boca abierta empieza apagada, se valida y se conserva al cambiar el tamaño", () => {
+    const base = newLayout(20, 12);
+    expect(base.face).toEqual({ openMouth: false });
+    expect(parseLayout({ ...base, face: undefined })?.face).toEqual({ openMouth: false });
+    expect(parseLayout({ ...base, face: { openMouth: true } })?.face).toEqual({ openMouth: true });
+    expect(parseLayout({ ...base, face: { openMouth: "sí" } })?.face).toEqual({ openMouth: false });
+    expect(resize({ ...base, face: { openMouth: true } }, 24, 14).face).toEqual({ openMouth: true });
+  });
+});

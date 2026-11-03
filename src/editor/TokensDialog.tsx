@@ -9,7 +9,7 @@ import { PLAYER_COLORS } from "@/game/tileStyle";
 import type { Catalog } from "./catalogTypes";
 import { renderCharacterSheet } from "./characterSheet";
 import { loadModelScene, renderToken } from "./modelRender";
-import { CHARACTER_SIZE, DEFAULT_NAMES, DEFAULT_TOKEN, NAME_LIMITS, NUMBER_FONTS, TOKEN_SIZE, nameCssVars, type BoardLayout, type NameStyle, type NumberFont, type TokenSpec, type TvView } from "./layout";
+import { CHARACTER_SIZE, DEFAULT_NAMES, DEFAULT_TOKEN, NAME_LIMITS, NUMBER_FONTS, TOKEN_SIZE, nameCssVars, type BoardLayout, type FaceStyle, type NameStyle, type NumberFont, type TokenSpec, type TvView } from "./layout";
 
 /** Ajustes del nombre que flota sobre cada personaje, con una vista previa que usa el mismo CSS (`.live-name`) que el tablero. */
 function NamesSection({ names, onChange }: { names: NameStyle; onChange: (n: NameStyle) => void }) {
@@ -72,13 +72,13 @@ function NamesSection({ names, onChange }: { names: NameStyle; onChange: (n: Nam
 type Sheet = { url: string; cw: number; ch: number; feet: number; span: number; portraits: string[] };
 
 /** Hoja de personajes con el ángulo de la TV (se dibuja al abrir la ventana y cuando cambia la vista). */
-function useSheet(view: TvView): Sheet | null {
+function useSheet(view: TvView, face: FaceStyle): Sheet | null {
   const [sheet, setSheet] = useState<Sheet | null>(null);
-  const key = `${view.az}|${view.el}`;
+  const key = `${view.az}|${view.el}|${face.openMouth}`;
   useEffect(() => {
     let alive = true;
     setSheet(null);
-    renderCharacterSheet(view)
+    renderCharacterSheet(view, 192, 288, face)
       .then(({ canvas, feet, span }) => {
         if (!alive) return;
         const cw = canvas.width / SHEET_COLS;
@@ -148,7 +148,7 @@ export default function TokensDialog({
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [kit, setKit] = useState("todos");
   const [search, setSearch] = useState("");
-  const sheet = useSheet(layout.tvView);
+  const sheet = useSheet(layout.tvView, layout.face);
   const [pick, setPick] = useState(0); // personaje de la vista previa de tamaño
   const models = useMemo(() => new Map(catalog.models.map((m) => [m.id, m])), [catalog]);
   const spec = layout.tokens[slot];
@@ -252,6 +252,15 @@ export default function TokensDialog({
               />
             </label>
           </div>
+        </section>
+
+        <section className="grid gap-2 rounded-xl bg-white/5 p-3">
+          <h3 className="text-sm font-bold">Cara de los zombis</h3>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input type="checkbox" checked={layout.face.openMouth} onChange={(e) => onChange({ ...layout, face: { ...layout.face, openMouth: e.target.checked } })} />
+            Boca pequeña abierta con dientes (en lugar de la boca del modelo)
+          </label>
+          <p className="text-[11px] opacity-60">Apagado: la boca que trae el modelo. La nariz y las manchitas de piel salen siempre. Hay que «Publicar en la TV» para verlo en la TV.</p>
         </section>
 
         <NamesSection names={layout.names} onChange={(names) => onChange({ ...layout, names })} />

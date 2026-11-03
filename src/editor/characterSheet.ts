@@ -110,7 +110,7 @@ const YELLOW_UV = [(EYE.x + EYE.size / 2) / 512, (EYE.y + EYE.size / 2) / 512];
  */
 type Mouth = { x0: number; x1: number; y0: number; y1: number; front: number; uv: [number, number] };
 
-function yellowEyes(mesh: THREE.Mesh, map: THREE.Texture, eyes: THREE.Vector3[], mouths: Mouth[] = []) {
+function yellowEyes(mesh: THREE.Mesh, map: THREE.Texture, eyes: THREE.Vector3[], mouths: Mouth[] = [], removeMouth = false) {
   const geo = mesh.geometry;
   const pos = geo.attributes.position;
   const uv = geo.attributes.uv;
@@ -155,6 +155,7 @@ function yellowEyes(mesh: THREE.Mesh, map: THREE.Texture, eyes: THREE.Vector3[],
     const dark = vs.reduce((a, i) => a + lumAt(i), 0) / vs.length < 0.35;
     // boca del modelo: pieza oscura, pequeña y al frente de la cara, por debajo de los ojos (se usa para coserla)
     if (dark && yc > 0.33 && yc < 0.47 && Math.min(...zs) > 0.12 && w < 0.25 && h < 0.09) {
+      if (removeMouth) for (const i of vs) gone.add(i); // con la boca abierta opcional, la del modelo se quita
       mouths.push({ x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys), front: Math.max(...zs), uv: [uv.getX(vs[0]), uv.getY(vs[0])] });
     }
     if (!(flat && dark && w < 0.27 && h < 0.06 && yc > 0.47 && yc < 0.545)) continue;
@@ -254,7 +255,9 @@ export function eyeEmissiveMap(map: THREE.Texture): THREE.Texture {
   emissiveCache.set(map, tex);
   return tex;
 }
-let loading: Promise<Loaded[]> | null = null;
+/** Opciones de la cara de los zombis que cambian cómo se cargan (`FaceStyle` del diseño). */
+export type FaceOpts = { openMouth: boolean };
+const loadingByFace = new Map<string, Promise<Loaded[]>>();
 
 /**
  * Luz neón amarilla en los ojos: en la casilla (x, y, w, h) del dibujo busca los píxeles amarillo vivo (los ojos de `yellowEyes`) y
@@ -356,7 +359,7 @@ function mergeOnto(mesh: THREE.Mesh, bone: number, items: { g: THREE.BufferGeome
  * Cara de zombi de dibujos: boca pequeña y abierta con unos dientes, nariz chiquita en triángulo y manchitas de piel en otro tono de verde.
  * La boca se pone donde estaba la del modelo (que se quita) y es del color de esa boca. Todo va atado al hueso de la cabeza.
  */
-function faceDetails(mesh: THREE.Mesh, eyes: THREE.Vector3[], mouths: Mouth[], seed: number) {
+function faceDetails(mesh: THREE.Mesh, eyes: THREE.Vector3[], mouths: Mouth[], seed: number, openMouth: boolean) {
   const skinned = mesh as THREE.SkinnedMesh;
   if (!eyes.length || !skinned.isSkinnedMesh) return;
   const bone = (mesh.geometry.attributes.skinIndex?.getX(0) ?? 6) | 0;
@@ -378,6 +381,13 @@ function faceDetails(mesh: THREE.Mesh, eyes: THREE.Vector3[], mouths: Mouth[], s
     g.translate(x, y, z + dz);
     items.push({ g, uv });
   };
+  // boca pequeña abierta (opcional): dos dientes arriba y uno abajo; sustituye a la del modelo
+  if (openMouth) {
+    box(mx, my, 0.072, 0.036, mouthUv);
+    box(mx - 0.016, my + 0.01, 0.018, 0.015, cell(TEETH.x), 0.0045);
+    box(mx + 0.016, my + 0.01, 0.018, 0.015, cell(TEETH.x), 0.0045);
+    box(mx + 0.005, my - 0.012, 0.016, 0.01, cell(TEETH.x), 0.0045);
+  }
   // nariz: triángulo chiquito entre los ojos y la boca
   const ny = my + 0.05;
   const tri = new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-0.02, -0.014), new THREE.Vector2(0.02, -0.014), new THREE.Vector2(0, 0.019)]));
@@ -444,8 +454,11 @@ function bloodStains(body: THREE.Mesh | null, head: THREE.Mesh | null, seed: num
 }
 
 /** Los 12 personajes ya convertidos en zombi (piel verde y ojos amarillos), con sus animaciones. */
-export function loadAll(): Promise<Loaded[]> {
-  loading ??= Promise.all(
+export function loadAll(opts: FaceOpts = { openMouth: false }): Promise<Loaded[]> {
+  const key = opts.openMouth ? "abierta" : "modelo";
+  const cached = loadingByFace.get(key);
+  if (cached) return cached;
+  const loading = Promise.all(
     CHARACTERS.map(
       (id) =>
         new Promise<Loaded>((ok, fail) =>
@@ -463,8 +476,8 @@ export function loadAll(): Promise<Loaded[]> {
                 mesh.frustumCulled = false; // con la animación la caja de la malla no es la de reposo
                 const orig = [mesh.material].flat()[0] as THREE.MeshStandardMaterial;
                 if (/head/i.test(mesh.name) && orig.map) {
-                  yellowEyes(mesh, orig.map, eyes, mouths);
-                  faceDetails(mesh, eyes, mouths, CHARACTERS.indexOf(id));
+                  yellowEyes(mesh, orig.map, eyes, mouths, opts.openMouth);
+                  faceDetails(mesh, eyes, mouths, CHARACTERS.indexOf(id), opts.openMouth);
                   headMesh = mesh;
                 }
                 if (/body/i.test(mesh.name)) {
@@ -493,6 +506,7 @@ export function loadAll(): Promise<Loaded[]> {
         ),
     ),
   );
+  loadingByFace.set(key, loading);
   return loading;
 }
 
@@ -500,8 +514,8 @@ export function loadAll(): Promise<Loaded[]> {
  * La hoja: una fila por personaje (orden de CHARACTERS) y SHEET_COLS columnas (frente: quieto, paso A, paso B;
  * espaldas: lo mismo). Devuelve el lienzo y la altura de los pies en cada dibujo (fracción desde arriba).
  */
-export async function renderCharacterSheet(view: TvView, cw = 192, ch = 288): Promise<{ canvas: HTMLCanvasElement; feet: number; span: number }> {
-  const chars = await loadAll();
+export async function renderCharacterSheet(view: TvView, cw = 192, ch = 288, face: FaceOpts = { openMouth: false }): Promise<{ canvas: HTMLCanvasElement; feet: number; span: number }> {
+  const chars = await loadAll(face);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(1);
   renderer.setSize(cw, ch, false);

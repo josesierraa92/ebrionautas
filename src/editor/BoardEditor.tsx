@@ -512,7 +512,7 @@ export default function BoardEditor() {
       if (imageUrl)
         try {
           setStatus("Dibujando a los zombis…");
-          const { canvas, feet, span } = await renderCharacterSheet(l.tvView, 384, 576);
+          const { canvas, feet, span } = await renderCharacterSheet(l.tvView, 384, 576, l.face);
           const file = await new Promise<Blob>((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error("sin imagen"))), "image/webp", 0.9));
           characters = { image: await send(`personajes-${Date.now()}`, file), cw: canvas.width / SHEET_COLS, ch: canvas.height / CHARACTERS.length, feet, span };
         } catch {

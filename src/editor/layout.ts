@@ -99,11 +99,24 @@ export type BoardLayout = {
   characterSize: number;
   /** Cómo se ve el nombre que flota sobre cada personaje (tamaño, letra, espaciado, burbuja y neón de la flecha). */
   names: NameStyle;
+  /** Rasgos opcionales de la cara de los zombis (hoy: la boca pequeña abierta con dientes). */
+  face: FaceStyle;
   /** Tamaño de lo que se dibuja encima del tablero en la TV. */
   ui: UiSize;
   /** Cómo se ve la tarjeta de usuario (cuadro del turno) de la TV: copita, zombi y letra. */
   chip: ChipStyle;
 };
+
+/**
+ * Cara de los zombis. `openMouth`: en lugar de la boca que trae el modelo, una boca pequeña y abierta con dientes (de serie apagado: boca del modelo).
+ */
+export type FaceStyle = { openMouth: boolean };
+export const DEFAULT_FACE: FaceStyle = { openMouth: false };
+/** Valida un `FaceStyle` que llega de fuera (o falta): solo acepta un booleano, lo demás queda de serie. */
+export function parseFace(raw: unknown): FaceStyle {
+  const f = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  return { openMouth: typeof f.openMouth === "boolean" ? f.openMouth : DEFAULT_FACE.openMouth };
+}
 
 /** Tamaño (en %) de la tarjeta de la casilla (esquina de abajo a la derecha) y del cuadro del turno (esquina de arriba a la izquierda). 100 = el de serie. */
 export type UiSize = { card: number; chip: number };
@@ -311,6 +324,7 @@ export function newLayout(w = 32, h = 24): BoardLayout {
     tvView: DEFAULT_TV_VIEW,
     characterSize: CHARACTER_SIZE.default,
     names: DEFAULT_NAMES,
+    face: DEFAULT_FACE,
     ui: DEFAULT_UI,
     chip: DEFAULT_CHIP,
   };
@@ -404,7 +418,7 @@ export function resize(l: BoardLayout, w: number, h: number): BoardLayout {
       out.ground[y * w + x] = l.ground[cellIndex(l, x, y)];
       out.height[y * w + x] = l.height[cellIndex(l, x, y)];
     }
-  return { ...out, light: l.light, shadow: l.shadow, mist: l.mist, tileStyles: l.tileStyles, numbers: l.numbers, tokens: l.tokens, tvView: l.tvView, characterSize: l.characterSize, names: l.names, ui: l.ui, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
+  return { ...out, light: l.light, shadow: l.shadow, mist: l.mist, tileStyles: l.tileStyles, numbers: l.numbers, tokens: l.tokens, tvView: l.tvView, characterSize: l.characterSize, names: l.names, face: l.face, ui: l.ui, tiles: l.tiles.filter((t) => t.x + TILE_SIZE <= w && t.y + TILE_SIZE <= h), objects: l.objects.filter((o) => o.x >= 0 && o.z >= 0 && o.x <= w && o.z <= h) };
 }
 
 /** Altura (en unidades del mundo) de la superficie de una celda. Los líquidos quedan un poco hundidos. */
@@ -508,7 +522,7 @@ export function parseLayout(raw: unknown): BoardLayout | null {
       base: typeof t.base === "boolean" ? t.base : DEFAULT_TOKEN.base,
     };
   });
-  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers, tokens, tvView: parseTvView(r.tvView), characterSize, names: parseNames(r.names), ui: parseUi(r.ui), chip: parseChip(r.chip) };
+  return { version: 1, w, h, ground, height, objects, light, shadow, mist, tiles, tileStyles, numbers, tokens, tvView: parseTvView(r.tvView), characterSize, names: parseNames(r.names), face: parseFace(r.face), ui: parseUi(r.ui), chip: parseChip(r.chip) };
 }
 
 /** Un emoji/texto corto o una imagen pequeña subida desde el editor. */
