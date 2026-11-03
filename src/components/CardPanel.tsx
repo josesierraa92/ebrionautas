@@ -185,7 +185,7 @@ export function CardNote({ children }: { children: ReactNode }) {
 function panelTitleSize(title: string, width: number, hasBox: boolean, centered?: boolean) {
   const avail = width - 2.8 - (hasBox && !centered ? 5.1 : 0);
   const longest = Math.max(1, ...title.split(/\s+/).map((w) => w.length));
-  const byLines = avail / (0.53 * (Math.ceil(title.length / 2) + 0.5));
-  const byWord = avail / (0.53 * longest);
+  const byLines = avail / (0.66 * (Math.ceil(title.length / 2) + 0.5));
+  const byWord = avail / (0.66 * longest);
   return Math.max(1.1, Math.min(1.9, byLines, byWord));
 }
