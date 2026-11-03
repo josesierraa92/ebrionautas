@@ -60,6 +60,13 @@ function zombieMap(original: THREE.Texture, id: string): THREE.Texture {
   ctx.fillRect(EYE.x * k, EYE.y * k, EYE.size * k, EYE.size * k);
   ctx.fillStyle = BLOOD.color;
   ctx.fillRect(BLOOD.x * k, EYE.y * k, 16 * k, 16 * k);
+  ctx.fillStyle = TEETH.color;
+  ctx.fillRect(TEETH.x * k, EYE.y * k, 16 * k, 16 * k);
+  ctx.fillStyle = MOUTH_DARK.color;
+  ctx.fillRect(MOUTH_DARK.x * k, EYE.y * k, 16 * k, 16 * k);
+  color.setHSL((hue - 4) / 360, 0.55, 0.28, THREE.SRGBColorSpace); // manchitas: otro tono de verde, más oscuro que la piel
+  ctx.fillStyle = color.getStyle(THREE.SRGBColorSpace);
+  ctx.fillRect(SPOT_X * k, EYE.y * k, 16 * k, 16 * k);
   const tex = new THREE.CanvasTexture(c);
   tex.flipY = original.flipY;
   tex.colorSpace = original.colorSpace;
@@ -85,6 +92,11 @@ function pixels(tex: THREE.Texture) {
 const EYE = { x: 8, y: 8, size: 16, color: "#fff04a" };
 /** Rojo de las manchas de sangre de la ropa: un cuadrito de 16 px en la paleta (junto al amarillo de los ojos). */
 const BLOOD = { x: 32, color: "#b3141c" };
+/** Más cuadritos de la paleta para la cara: dientes, interior oscuro de la boca y manchitas de piel (este último se pinta por personaje, en otro verde). */
+const TEETH = { x: 56, color: "#f4eed2" };
+const MOUTH_DARK = { x: 104, color: "#1a0c16" };
+const SPOT_X = 80;
+const cell = (x: number): [number, number] => [(x + 8) / 512, (EYE.y + 8) / 512];
 const YELLOW_UV = [(EYE.x + EYE.size / 2) / 512, (EYE.y + EYE.size / 2) / 512];
 
 /**
@@ -139,6 +151,7 @@ function yellowEyes(mesh: THREE.Mesh, map: THREE.Texture, eyes: THREE.Vector3[],
     const dark = vs.reduce((a, i) => a + lumAt(i), 0) / vs.length < 0.35;
     // boca del modelo: pieza oscura, pequeña y al frente de la cara, por debajo de los ojos (se usa para coserla)
     if (dark && yc > 0.33 && yc < 0.47 && Math.min(...zs) > 0.12 && w < 0.25 && h < 0.09) {
+      for (const i of vs) gone.add(i); // la boca original se quita: se dibuja otra, pequeña y abierta
       mouths.push({ x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys), front: Math.max(...zs), uv: [uv.getX(vs[0]), uv.getY(vs[0])] });
     }
     if (!(flat && dark && w < 0.27 && h < 0.06 && yc > 0.47 && yc < 0.545)) continue;
@@ -337,30 +350,58 @@ function mergeOnto(mesh: THREE.Mesh, bone: number, items: { g: THREE.BufferGeome
 }
 
 /**
- * Costura sobre la boca que ya trae el modelo: un hilo horizontal y palitos cruzados, del mismo color que esa boca (su mismo cuadrito de la
- * paleta). Cuatro palitos si caben (boca de 0,12 o más de ancho) y, si no, dos. Atada al hueso de la cabeza.
+ * Cara de zombi de dibujos: boca pequeña y abierta con unos dientes, nariz chiquita en triángulo y manchitas de piel en otro tono de verde.
+ * La boca se pone donde estaba la del modelo (que se quita) y es del color de esa boca. Todo va atado al hueso de la cabeza.
  */
-function stitchedMouth(mesh: THREE.Mesh, mouths: Mouth[]) {
+function faceDetails(mesh: THREE.Mesh, eyes: THREE.Vector3[], mouths: Mouth[], seed: number) {
   const skinned = mesh as THREE.SkinnedMesh;
-  if (!mouths.length || !skinned.isSkinnedMesh) return;
+  if (!eyes.length || !skinned.isSkinnedMesh) return;
   const bone = (mesh.geometry.attributes.skinIndex?.getX(0) ?? 6) | 0;
-  const x0 = Math.min(...mouths.map((m) => m.x0));
-  const x1 = Math.max(...mouths.map((m) => m.x1));
-  const y0 = Math.min(...mouths.map((m) => m.y0));
-  const y1 = Math.max(...mouths.map((m) => m.y1));
-  const z = Math.max(...mouths.map((m) => m.front)) + 0.003;
-  const uv = mouths[0].uv;
-  const xc = (x0 + x1) / 2;
-  const yc = (y0 + y1) / 2 - 0.004;
-  const w = Math.max(0.06, x1 - x0) + 0.004;
-  const box = (x: number, y: number, bw: number, bh: number) => {
-    const g = new THREE.BoxGeometry(bw, bh, 0.01);
-    g.translate(x, y, z);
-    return { g, uv };
+  const eyeY = eyes[0].y;
+  const eyeFront = Math.max(...eyes.map((e) => e.z));
+  let mx = 0;
+  let my = eyeY - 0.105;
+  let z = eyeFront - 0.004;
+  let mouthUv = cell(MOUTH_DARK.x);
+  if (mouths.length) {
+    mx = (Math.min(...mouths.map((m) => m.x0)) + Math.max(...mouths.map((m) => m.x1))) / 2;
+    my = (Math.min(...mouths.map((m) => m.y0)) + Math.max(...mouths.map((m) => m.y1))) / 2;
+    z = Math.max(...mouths.map((m) => m.front));
+    mouthUv = mouths[0].uv;
+  }
+  const items: { g: THREE.BufferGeometry; uv: [number, number] }[] = [];
+  const box = (x: number, y: number, w: number, h: number, uv: [number, number], dz = 0.002) => {
+    const g = new THREE.BoxGeometry(w, h, 0.008);
+    g.translate(x, y, z + dz);
+    items.push({ g, uv });
   };
-  const n = w >= 0.12 ? 5 : 3;
-  const items = [box(xc, yc, w, 0.009)];
-  for (let i = 0; i < n; i++) items.push(box(xc + ((i / (n - 1) - 0.5) * (w - 0.016)), yc, 0.01, Math.max(0.03, y1 - y0 + 0.012)));
+  // boca pequeña abierta, con dos dientes arriba y uno abajo
+  box(mx, my, 0.072, 0.036, mouthUv);
+  box(mx - 0.016, my + 0.01, 0.018, 0.015, cell(TEETH.x), 0.0045);
+  box(mx + 0.016, my + 0.01, 0.018, 0.015, cell(TEETH.x), 0.0045);
+  box(mx + 0.005, my - 0.012, 0.016, 0.01, cell(TEETH.x), 0.0045);
+  // nariz: triángulo chiquito entre los ojos y la boca
+  const ny = my + 0.05;
+  const tri = new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-0.016, -0.012), new THREE.Vector2(0.016, -0.012), new THREE.Vector2(0, 0.016)]));
+  tri.translate(mx, ny, z + 0.005);
+  items.push({ g: tri, uv: cell(MOUTH_DARK.x) });
+  // manchitas de piel (mejillas, frente y barbilla), siempre las mismas en cada personaje
+  const rnd = seeded(seed + 101);
+  const spots: [number, number][] = [
+    [-(0.075 + rnd() * 0.03), eyeY - 0.055 - rnd() * 0.03],
+    [0.075 + rnd() * 0.03, eyeY - 0.06 - rnd() * 0.03],
+    [(rnd() - 0.5) * 0.12, my - 0.045 - rnd() * 0.01],
+  ];
+  for (const [sx, sy] of spots) {
+    const size = 0.016 + rnd() * 0.012;
+    const rot = rnd() * 6.28;
+    for (const g of bloodBlob(rnd)) {
+      g.rotateZ(rot);
+      g.scale(size, size * (0.8 + rnd() * 0.4), 1);
+      g.translate(sx, sy, z + 0.003);
+      items.push({ g, uv: cell(SPOT_X) });
+    }
+  }
   mergeOnto(mesh, bone, items);
 }
 
@@ -425,7 +466,7 @@ export function loadAll(): Promise<Loaded[]> {
                 const orig = [mesh.material].flat()[0] as THREE.MeshStandardMaterial;
                 if (/head/i.test(mesh.name) && orig.map) {
                   yellowEyes(mesh, orig.map, eyes, mouths);
-                  stitchedMouth(mesh, mouths);
+                  faceDetails(mesh, eyes, mouths, CHARACTERS.indexOf(id));
                   headMesh = mesh;
                 }
                 if (/body/i.test(mesh.name)) {
