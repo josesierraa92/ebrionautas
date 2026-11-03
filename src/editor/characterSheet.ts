@@ -67,6 +67,9 @@ function zombieMap(original: THREE.Texture, id: string): THREE.Texture {
   color.setHSL((hue - 4) / 360, 0.55, 0.28, THREE.SRGBColorSpace); // manchitas: otro tono de verde, más oscuro que la piel
   ctx.fillStyle = color.getStyle(THREE.SRGBColorSpace);
   ctx.fillRect(SPOT_X * k, EYE.y * k, 16 * k, 16 * k);
+  color.setHSL((hue - 2) / 360, 0.6, 0.18, THREE.SRGBColorSpace); // nariz: verde oscuro, no negro
+  ctx.fillStyle = color.getStyle(THREE.SRGBColorSpace);
+  ctx.fillRect(NOSE_X * k, EYE.y * k, 16 * k, 16 * k);
   const tex = new THREE.CanvasTexture(c);
   tex.flipY = original.flipY;
   tex.colorSpace = original.colorSpace;
@@ -96,6 +99,7 @@ const BLOOD = { x: 32, color: "#b3141c" };
 const TEETH = { x: 56, color: "#f4eed2" };
 const MOUTH_DARK = { x: 104, color: "#1a0c16" };
 const SPOT_X = 80;
+const NOSE_X = 128; // nariz: verde oscuro (por personaje, como las manchitas)
 const cell = (x: number): [number, number] => [(x + 8) / 512, (EYE.y + 8) / 512];
 const YELLOW_UV = [(EYE.x + EYE.size / 2) / 512, (EYE.y + EYE.size / 2) / 512];
 
@@ -382,9 +386,9 @@ function faceDetails(mesh: THREE.Mesh, eyes: THREE.Vector3[], mouths: Mouth[], s
   box(mx + 0.005, my - 0.012, 0.016, 0.01, cell(TEETH.x), 0.0045);
   // nariz: triángulo chiquito entre los ojos y la boca
   const ny = my + 0.05;
-  const tri = new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-0.016, -0.012), new THREE.Vector2(0.016, -0.012), new THREE.Vector2(0, 0.016)]));
+  const tri = new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-0.02, -0.014), new THREE.Vector2(0.02, -0.014), new THREE.Vector2(0, 0.019)]));
   tri.translate(mx, ny, z + 0.005);
-  items.push({ g: tri, uv: cell(MOUTH_DARK.x) });
+  items.push({ g: tri, uv: cell(NOSE_X) });
   // manchitas de piel (mejillas, frente y barbilla), siempre las mismas en cada personaje
   const rnd = seeded(seed + 101);
   const spots: [number, number][] = [
