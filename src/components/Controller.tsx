@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Board from "@/components/Board";
 import CardPanel, { CardText } from "@/components/CardPanel";
 import FullscreenButton from "@/components/FullscreenButton";
+import BeerIcon from "@/components/BeerIcon";
 import DecisionPanel from "@/components/DecisionPanel";
 import DiceController from "@/components/DiceController";
 import GameLog from "@/components/GameLog";
@@ -134,22 +135,45 @@ export default function Controller({ code, room, secret, error, refresh, overlay
     );
     return (
       <>
-        {/* botones de arriba a la derecha, como en la TV */}
-        <div className={`absolute top-[2%] right-[1.5%] z-50 flex items-center ${narrow ? "gap-0.5" : "gap-2"}`}>
+        {narrow ? (
+          <>
+            {/* celular vertical: iconos grandes, + TRAGO y ajustes pegados a la esquina de arriba */}
+            <div className="absolute top-2 right-2 z-50 flex items-center gap-1.5">
+              {!winner && (
+                <button onClick={() => setAddDrink(true)} className="btn-game relative grid h-12 w-12 place-items-center bg-btn-red text-white" aria-label="Agregar un trago a un jugador" title="+ Trago">
+                  <BeerIcon size="1.9rem" />
+                  <span className="absolute -top-2 -right-2 grid h-5 w-5 place-items-center rounded-full border-2 border-ink bg-white font-display text-sm leading-none text-ink">+</span>
+                </button>
+              )}
+              <button onClick={() => setSettings(true)} className="btn-game grid h-12 w-12 place-items-center bg-btn-grey text-2xl text-white" aria-label="Ajustes de la partida" title="Ajustes">
+                <GearIcon />
+              </button>
+              <FullscreenButton />
+            </div>
+            {/* el marcador, un icono junto al dado */}
+            <button onClick={() => setMenu(true)} className="btn-game absolute right-3 bottom-[5%] z-50 grid h-12 w-12 place-items-center bg-btn-blue text-white" aria-label="Marcador e historial" title="Marcador">
+              <svg viewBox="0 0 24 24" width="1.6rem" height="1.6rem" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 20V11h5v9M9.5 20V4h5v16M15 20v-6h5v6M3 20h18" />
+              </svg>
+            </button>
+          </>
+        ) : (
+        <div className="absolute top-[2%] right-[1.5%] z-50 flex items-center gap-2">
           {extra}
           {!winner && (
-            <button onClick={() => setAddDrink(true)} className={`btn-game whitespace-nowrap bg-btn-red ${narrow ? "px-1.5 text-xs" : "px-2.5 text-base"} py-1 text-white`} aria-label="Agregar un trago a un jugador">
+            <button onClick={() => setAddDrink(true)} className="btn-game whitespace-nowrap bg-btn-red px-2.5 text-base py-1 text-white" aria-label="Agregar un trago a un jugador">
               + TRAGO
             </button>
           )}
-          <button onClick={() => setSettings(true)} className={`btn-game flex items-center justify-center bg-btn-grey ${narrow ? "px-1.5 text-xs" : "px-2.5 text-base"} py-1 text-white`} aria-label="Ajustes de la partida" title="Ajustes">
+          <button onClick={() => setSettings(true)} className="btn-game flex items-center justify-center bg-btn-grey px-2.5 text-base py-1 text-white" aria-label="Ajustes de la partida" title="Ajustes">
             <GearIcon />
           </button>
           <FullscreenButton />
-          <button onClick={() => setMenu(true)} className={`btn-game whitespace-nowrap bg-btn-blue ${narrow ? "px-1.5 text-xs" : "px-2.5 text-base"} py-1 text-white`} aria-label="Marcador e historial">
+          <button onClick={() => setMenu(true)} className="btn-game whitespace-nowrap bg-btn-blue px-2.5 text-base py-1 text-white" aria-label="Marcador e historial">
             MARCADOR
           </button>
         </div>
+        )}
 
         {/* el dado: abajo a la izquierda (en celular vertical, abajo en el centro), lejos de la tarjeta de la casilla */}
         {!winner && game.phase === "ROLL" && (
