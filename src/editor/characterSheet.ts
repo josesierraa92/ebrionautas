@@ -60,6 +60,8 @@ function zombieMap(original: THREE.Texture, id: string): THREE.Texture {
   ctx.fillRect(EYE.x * k, EYE.y * k, EYE.size * k, EYE.size * k);
   ctx.fillStyle = BLOOD.color;
   ctx.fillRect(BLOOD.x * k, EYE.y * k, 16 * k, 16 * k);
+  ctx.fillStyle = THREAD.color;
+  ctx.fillRect(THREAD.x * k, EYE.y * k, 16 * k, 16 * k);
   const tex = new THREE.CanvasTexture(c);
   tex.flipY = original.flipY;
   tex.colorSpace = original.colorSpace;
@@ -85,6 +87,8 @@ function pixels(tex: THREE.Texture) {
 const EYE = { x: 8, y: 8, size: 16, color: "#fff04a" };
 /** Rojo de las manchas de sangre de la ropa: un cuadrito de 16 px en la paleta (junto al amarillo de los ojos). */
 const BLOOD = { x: 32, color: "#b3141c" };
+/** Negro de los hilos de la costura de la boca (otro cuadrito de 16 px de la paleta). */
+const THREAD = { x: 56, color: "#0c0a10" };
 const YELLOW_UV = [(EYE.x + EYE.size / 2) / 512, (EYE.y + EYE.size / 2) / 512];
 
 /**
@@ -303,10 +307,48 @@ function bloodBlob(rnd: () => number): THREE.BufferGeometry[] {
   if (rnd() < 0.7) {
     const g = make(0.22 + rnd() * 0.12, 0.7);
     const a = rnd() * 6.28;
-    g.translate(Math.cos(a) * 1.25, Math.sin(a) * 1.25, 0);
+    g.translate(Math.cos(a) * 1.2, Math.sin(a) * 1.2, 0);
     out.push(g);
   }
   return out;
+}
+
+/** Mezcla piezas planas en una malla con esqueleto, atadas al hueso `bone`, pintadas con el cuadrito (u, v) de la paleta. */
+function mergeOnto(mesh: THREE.Mesh, bone: number, items: { g: THREE.BufferGeometry; u: number }[]) {
+  const base = mesh.geometry;
+  const parts: THREE.BufferGeometry[] = [base];
+  for (const { g, u } of items) {
+    const n = g.attributes.position.count;
+    const out = new THREE.BufferGeometry();
+    out.setIndex(Array.from(g.index!.array));
+    for (const name of Object.keys(base.attributes)) {
+      const a = base.attributes[name] as THREE.BufferAttribute;
+      if (name === "position" || name === "normal") out.setAttribute(name, g.attributes[name]);
+      else if (name.startsWith("uv")) out.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * 2).map((_, i) => (i % 2 ? (EYE.y + 8) / 512 : (u + 8) / 512)), 2));
+      else if (name === "skinIndex") out.setAttribute(name, new THREE.BufferAttribute(new Uint16Array(n * 4).map((_, i) => (i % 4 === 0 ? bone : 0)), 4));
+      else if (name === "skinWeight") out.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * 4).map((_, i) => (i % 4 === 0 ? 1 : 0)), 4));
+      else out.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * a.itemSize), a.itemSize));
+    }
+    parts.push(out);
+  }
+  mesh.geometry = mergeGeometries(parts, false) ?? base;
+}
+
+/** Costura sobre la boca: un hilo horizontal con palitos cruzados (como una boca cosida), atada al hueso de la cabeza. */
+function stitchedMouth(mesh: THREE.Mesh, eyes: THREE.Vector3[]) {
+  const skinned = mesh as THREE.SkinnedMesh;
+  if (!eyes.length || !skinned.isSkinnedMesh) return;
+  const bone = (mesh.geometry.attributes.skinIndex?.getX(0) ?? 6) | 0;
+  const z = Math.max(...eyes.map((e) => e.z)) - 0.007;
+  const y = eyes[0].y - 0.105;
+  const box = (x: number, yy: number, w: number, h: number) => {
+    const g = new THREE.BoxGeometry(w, h, 0.012);
+    g.translate(x, yy, z);
+    return { g, u: THREAD.x };
+  };
+  const items = [box(0, y, 0.17, 0.011)];
+  for (const dx of [-0.065, -0.022, 0.022, 0.065]) items.push(box(dx, y, 0.013, 0.058));
+  mergeOnto(mesh, bone, items);
 }
 
 /**
@@ -318,33 +360,21 @@ function bloodStains(mesh: THREE.Mesh, seed: number) {
   if (!skinned.isSkinnedMesh) return;
   const bone = skinned.skeleton.bones.findIndex((b) => b.name === "torso");
   if (bone < 0) return;
-  const base = mesh.geometry;
   const rnd = seeded(seed + 1);
-  const parts: THREE.BufferGeometry[] = [base];
+  const items: { g: THREE.BufferGeometry; u: number }[] = [];
   for (let k = 0; k < 2; k++) {
-    const size = 0.032 + rnd() * 0.034;
-    const x = (k === 0 ? -1 : 1) * (0.015 + rnd() * 0.07);
-    const y = 0.15 + rnd() * 0.14;
+    const size = 0.02 + rnd() * 0.02;
+    const x = (k === 0 ? -1 : 1) * (0.012 + rnd() * 0.045);
+    const y = 0.17 + rnd() * 0.09;
     const rot = rnd() * 6.28;
     for (const g of bloodBlob(rnd)) {
       g.rotateZ(rot);
       g.scale(size, size * (0.8 + rnd() * 0.5), 1);
       g.translate(x, y, 0.113 + k * 0.001);
-      const n = g.attributes.position.count;
-      const out = new THREE.BufferGeometry();
-      out.setIndex(Array.from(g.index!.array));
-      for (const name of Object.keys(base.attributes)) {
-        const a = base.attributes[name] as THREE.BufferAttribute;
-        if (name === "position" || name === "normal") out.setAttribute(name, g.attributes[name]);
-        else if (name.startsWith("uv")) out.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * 2).map((_, i) => (i % 2 ? (EYE.y + 8) / 512 : (BLOOD.x + 8) / 512)), 2));
-        else if (name === "skinIndex") out.setAttribute(name, new THREE.BufferAttribute(new Uint16Array(n * 4).map((_, i) => (i % 4 === 0 ? bone : 0)), 4));
-        else if (name === "skinWeight") out.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * 4).map((_, i) => (i % 4 === 0 ? 1 : 0)), 4));
-        else out.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * a.itemSize), a.itemSize));
-      }
-      parts.push(out);
+      items.push({ g, u: BLOOD.x });
     }
   }
-  mesh.geometry = mergeGeometries(parts, false) ?? base;
+  mergeOnto(mesh, bone, items);
 }
 
 /** Los 12 personajes ya convertidos en zombi (piel verde y ojos amarillos), con sus animaciones. */
@@ -366,6 +396,7 @@ export function loadAll(): Promise<Loaded[]> {
                 const orig = [mesh.material].flat()[0] as THREE.MeshStandardMaterial;
                 if (/head/i.test(mesh.name) && orig.map) {
                   yellowEyes(mesh, orig.map, eyes);
+                  stitchedMouth(mesh, eyes);
                   headMesh = mesh;
                 }
                 if (/body/i.test(mesh.name)) {
