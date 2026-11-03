@@ -218,9 +218,19 @@ export const CHARACTER_SIZE = { min: 0.5, max: 4, default: 1 };
  * cámara sigue a una ficha (menos = más cerca). De serie, más desde arriba y más cerca que la isométrica (pedido
  * del usuario: "para que se note mejor el tablero").
  */
-export type TvView = { az: number; el: number; tiles: number };
-export const DEFAULT_TV_VIEW: TvView = { az: 45, el: 45, tiles: 6 };
-export const TV_VIEW_LIMITS = { el: { min: 20, max: 80 }, tiles: { min: 3, max: 20 } };
+export type TvView = {
+  az: number;
+  el: number;
+  tiles: number;
+  /** Casillas a lo ancho en un **celular en vertical** (pantalla estrecha: con las de la TV el tablero se veía lejísimos). Menos = más cerca. */
+  phoneTiles?: number;
+};
+export const DEFAULT_TV_VIEW: TvView = { az: 45, el: 45, tiles: 6, phoneTiles: 3.5 };
+export const TV_VIEW_LIMITS = { el: { min: 20, max: 80 }, tiles: { min: 3, max: 20 }, phoneTiles: { min: 2, max: 12 } };
+/** Casillas a lo ancho que debe mostrar la cámara según la pantalla: la de un celular vertical (más alta que ancha) usa `phoneTiles`. */
+export function tilesFor(v: TvView, portrait: boolean): number {
+  return portrait ? (v.phoneTiles ?? DEFAULT_TV_VIEW.phoneTiles!) : v.tiles;
+}
 
 /** Valida una vista de la TV (lo que falte o no valga, el de serie). */
 export function parseTvView(raw: unknown): TvView {
@@ -229,8 +239,9 @@ export function parseTvView(raw: unknown): TvView {
   const az = ((n(v.az, DEFAULT_TV_VIEW.az) % 360) + 360) % 360;
   const el = Math.max(TV_VIEW_LIMITS.el.min, Math.min(TV_VIEW_LIMITS.el.max, n(v.el, DEFAULT_TV_VIEW.el)));
   const tiles = Math.max(TV_VIEW_LIMITS.tiles.min, Math.min(TV_VIEW_LIMITS.tiles.max, n(v.tiles, DEFAULT_TV_VIEW.tiles)));
+  const phoneTiles = Math.max(TV_VIEW_LIMITS.phoneTiles.min, Math.min(TV_VIEW_LIMITS.phoneTiles.max, n(v.phoneTiles, DEFAULT_TV_VIEW.phoneTiles!)));
   const r = (x: number) => Math.round(x * 100) / 100;
-  return { az: r(az), el: r(el), tiles: r(tiles) };
+  return { az: r(az), el: r(el), tiles: r(tiles), phoneTiles: r(phoneTiles) };
 }
 
 /** Dirección desde el centro del tablero hacia la cámara de la TV (vector unitario). */

@@ -163,17 +163,31 @@ export default function Controller({ code, room, secret, error, refresh, overlay
         {!winner && game.decision && (() => {
           // una sola tarjeta: la de la casilla, con lo que hay que decidir dentro (no una tarjeta dentro de otra)
           const c = card ? cardContent(game, card.n, card.playerId, card.result) : null;
-          return (
-            <CardPanel unit="17px" width={23} maxH="92dvh" z="z-50" label="Decisión" kicker={card ? `Casilla ${card.n}` : `Turno de ${me.name}`} title={c?.rule.title} icon={c?.icon ?? undefined} centerTitle={!c}>
+          const body = (
+            <CardPanel
+              inline={!narrow}
+              unit="17px"
+              width={22}
+              maxH="90dvh"
+              z="z-50"
+              label="Decisión"
+              kicker={card ? `Casilla ${card.n}` : `Turno de ${me.name}`}
+              title={c?.rule.title}
+              icon={c?.icon ?? undefined}
+              centerTitle={!c}
+            >
               {c && <CardText size={1.05}>{c.rule.text}</CardText>}
               <div style={{ marginTop: c ? "0.9rem" : 0 }}>
                 <fieldset disabled={busy} className="contents">
-                  <DecisionPanel key={game.decisionSeq} decision={game.decision} me={me} players={game.players.filter((p) => !p.paused)} onAction={act} compact />
+                  <DecisionPanel key={game.decisionSeq} decision={game.decision!} me={me} players={game.players.filter((p) => !p.paused)} onAction={act} compact />
                 </fieldset>
               </div>
               {actionError && <ErrorBox text={actionError} />}
             </CardPanel>
           );
+          // PC / celular horizontal: en la esquina de abajo a la derecha, donde sale siempre la tarjeta de la casilla (sin tapar el tablero ni oscurecerlo);
+          // celular vertical: en una ventana centrada (no hay sitio en la esquina)
+          return narrow ? body : <div className="absolute right-[1.5%] bottom-[3%] z-50">{body}</div>;
         })()}
         {actionError && !game.decision && (
           <div className="absolute inset-x-0 top-[10%] z-50 mx-auto w-fit max-w-[90%]">

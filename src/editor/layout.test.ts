@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { History } from "./history";
-import { brushCells, DEFAULT_CHIP, DEFAULT_TV_VIEW, parseChip, expand, flatten, groundAt, lightOf, lookOf, MAX_LEVEL, MAX_SIZE, newLayout, paint, parseLayout, raise, resize, TILE_COUNT, tileAnchor, tileTypeOf, toggleTile, tvDirection } from "./layout";
+import { brushCells, DEFAULT_CHIP, DEFAULT_TV_VIEW, parseChip, expand, flatten, groundAt, lightOf, lookOf, MAX_LEVEL, MAX_SIZE, newLayout, paint, parseLayout, parseTvView, raise, resize, TILE_COUNT, tileAnchor, tilesFor, tileTypeOf, toggleTile, tvDirection } from "./layout";
 
 describe("diseño del tablero", () => {
   it("el pincel pinta un cuadrado y no se sale del mundo", () => {
@@ -143,7 +143,7 @@ describe("vista de la TV", () => {
     const base = newLayout(10, 8);
     expect(base.tvView).toEqual(DEFAULT_TV_VIEW);
     expect(parseLayout({ ...base, tvView: undefined })?.tvView).toEqual(DEFAULT_TV_VIEW);
-    expect(parseLayout({ ...base, tvView: { az: -90, el: 99, tiles: 1 } })?.tvView).toEqual({ az: 270, el: 80, tiles: 3 });
+    expect(parseLayout({ ...base, tvView: { az: -90, el: 99, tiles: 1 } })?.tvView).toEqual({ az: 270, el: 80, tiles: 3, phoneTiles: 3.5 });
     expect(resize({ ...base, tvView: { az: 10, el: 50, tiles: 5 } }, 20, 12).tvView).toEqual({ az: 10, el: 50, tiles: 5 });
     // az 45 y el 30 es la dirección isométrica de siempre (1, tan30°·√2, 1)
     const [x, y, z] = tvDirection({ az: 45, el: 30, tiles: 9 });
@@ -261,5 +261,18 @@ describe("cara de los zombis", () => {
     expect(parseLayout({ ...base, face: { openMouth: true } })?.face).toEqual({ openMouth: true });
     expect(parseLayout({ ...base, face: { openMouth: "sí" } })?.face).toEqual({ openMouth: false });
     expect(resize({ ...base, face: { openMouth: true } }, 24, 14).face).toEqual({ openMouth: true });
+  });
+});
+
+describe("zoom del celular", () => {
+  it("tiene un valor de serie, se limita y se elige según la pantalla", () => {
+    expect(DEFAULT_TV_VIEW.phoneTiles).toBe(3.5);
+    expect(parseTvView({ az: 45, el: 45, tiles: 6 }).phoneTiles).toBe(3.5); // un diseño guardado antes de este ajuste
+    expect(parseTvView({ phoneTiles: 1 }).phoneTiles).toBe(2);
+    expect(parseTvView({ phoneTiles: 99 }).phoneTiles).toBe(12);
+    expect(parseTvView({ phoneTiles: 4.5 }).phoneTiles).toBe(4.5);
+    expect(tilesFor({ az: 45, el: 45, tiles: 6, phoneTiles: 4 }, true)).toBe(4);
+    expect(tilesFor({ az: 45, el: 45, tiles: 6, phoneTiles: 4 }, false)).toBe(6);
+    expect(tilesFor({ az: 45, el: 45, tiles: 6 }, true)).toBe(3.5); // sin el campo: el de serie
   });
 });

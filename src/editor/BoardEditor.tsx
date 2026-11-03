@@ -938,6 +938,21 @@ export default function BoardEditor() {
           />
           <span className="w-20 text-right text-xs opacity-70">{layout.tvView.tiles.toFixed(1)} casillas</span>
         </label>
+        <label className="flex items-center gap-2 text-sm" title="Cuánto acerca la cámara en un celular en vertical (el modo «un solo aparato»): más zoom = menos casillas a lo ancho">
+          Zoom celular
+          <input
+            type="range"
+            min={TV_VIEW_LIMITS.phoneTiles.min}
+            max={TV_VIEW_LIMITS.phoneTiles.max}
+            step={0.5}
+            className="min-w-0 flex-1"
+            value={TV_VIEW_LIMITS.phoneTiles.min + TV_VIEW_LIMITS.phoneTiles.max - (layout.tvView.phoneTiles ?? 3.5)}
+            onPointerDown={() => (viewBefore.current = layoutRef.current)}
+            onChange={(e) => setTvView({ phoneTiles: TV_VIEW_LIMITS.phoneTiles.min + TV_VIEW_LIMITS.phoneTiles.max - Number(e.target.value) })}
+            onPointerUp={endTvView}
+          />
+          <span className="w-20 text-right text-xs opacity-70">{(layout.tvView.phoneTiles ?? 3.5).toFixed(1)} casillas</span>
+        </label>
         <label className="flex items-center gap-2 text-sm" title="Inclinación de la cámara de la TV: más grados = más desde arriba">
           Ángulo
           <input

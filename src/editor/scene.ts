@@ -9,7 +9,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { builtinIcon, drawIcon } from "./icons";
 import { viewerQuality, type Quality } from "./quality";
 import { findLamp, type Lamp } from "./lamp";
-import { lightOf, NUMBER_FONTS, parseTvView, tvDirection, type NumberFont, type NumberStyle, type TvView } from "./layout";
+import { lightOf, NUMBER_FONTS, parseTvView, tilesFor, tvDirection, type NumberFont, type NumberStyle, type TvView } from "./layout";
 import { brushCells, GROUNDS, groundAt, LEVEL, LIQUIDS, lookOf, TILE_SIZE, tileAnchor, tileTypeOf, type BoardLayout, type TileKind, type LightId, type PlacedObject } from "./layout";
 
 export type Tool = "select" | "paint" | "raise" | "lower" | "flatten" | "stamp" | "tiles";
@@ -309,7 +309,8 @@ export class EditorScene {
     this.renderer.setSize(w, h);
     if (this.viewer) {
       // visor: caben tvView.tiles casillas a lo ancho de la pantalla, a la resolución real de la pantalla
-      const tiles = this.layout?.tvView.tiles ?? 6;
+      // pantalla vertical (celular): el zoom propio del celular, más cerca que el de la TV
+      const tiles = this.layout ? tilesFor(this.layout.tvView, h > w) : 6;
       const vw = TILE_SIZE * Math.SQRT2 * tiles;
       Object.assign(this.camera, { left: -vw / 2, right: vw / 2, top: (vw * h) / w / 2, bottom: -(vw * h) / w / 2, zoom: 1 });
       this.camera.updateProjectionMatrix();
@@ -561,7 +562,7 @@ export class EditorScene {
     const az = (Math.atan2(d.x, d.z) * 180) / Math.PI;
     const el = (Math.asin(Math.min(1, Math.max(-1, d.y))) * 180) / Math.PI;
     const visible = (this.camera.right - this.camera.left) / this.camera.zoom;
-    return parseTvView({ az, el, tiles: visible / (TILE_SIZE * Math.SQRT2) });
+    return parseTvView({ az, el, tiles: visible / (TILE_SIZE * Math.SQRT2), phoneTiles: this.layout?.tvView.phoneTiles });
   }
 
   // ------------------------------------------------------------------ herramientas

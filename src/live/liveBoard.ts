@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { eyeEmissiveMap, loadAll, type Loaded } from "@/editor/characterSheet";
-import { nameCssVars, TILE_SIZE, tvDirection, type BoardLayout } from "@/editor/layout";
+import { nameCssVars, TILE_SIZE, tilesFor, tvDirection, type BoardLayout } from "@/editor/layout";
 import { EditorScene } from "@/editor/scene";
 import { CHARACTER_HEIGHT, characterOf, TOKEN_TO_TILE } from "@/game/characters";
 import type { Player } from "@/game/engine";
@@ -319,7 +319,7 @@ export class LiveBoard {
   /** Nombre encima de la cabeza, con la cámara ya colocada en este fotograma. */
   private placeLabels() {
     const w = this.labels.clientWidth || 1;
-    const tilePx = w / this.layout.tvView.tiles; // ancho de una casilla en pantalla
+    const tilePx = w / tilesFor(this.layout.tvView, (this.labels.clientHeight || 1) > w); // ancho de una casilla en pantalla
     for (const t of this.tokens.values()) {
       const p = this.scene.toScreen(t.group.position.clone().add(new THREE.Vector3(0, t.height * 1.04, 0)));
       t.label.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`;

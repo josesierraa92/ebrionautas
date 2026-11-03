@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Creepster, Fredoka, Lilita_One, Nunito_Sans } from "next/font/google";
 import AgeGate from "@/components/AgeGate";
+import FitButtons from "@/components/FitButtons";
 import "./globals.css";
 
 const display = Lilita_One({
@@ -48,6 +49,7 @@ export default function RootLayout({
     <html lang="es">
       <body className={`${display.variable} ${body.variable} ${spooky.variable} ${reading.variable} antialiased`}>
         {children}
+        <FitButtons />
         <AgeGate />
       </body>
     </html>

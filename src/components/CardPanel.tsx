@@ -90,7 +90,7 @@ export default function CardPanel({
                 )}
               </div>
               )}
-              <h2 className={`min-w-0 font-display leading-[1.05] text-white uppercase${centerTitle ? " w-full text-center" : ""}`} style={{ fontSize: u(1.9), textWrap: "balance", letterSpacing: "0.01em" }}>
+              <h2 className={`min-w-0 font-display leading-[1.05] text-white uppercase${centerTitle ? " w-full text-center" : ""}`} style={{ fontSize: u(panelTitleSize(title, width, !!(mask || badge) , centerTitle)), textWrap: "balance", letterSpacing: "0.01em" }}>
                 {title}
               </h2>
             </div>
@@ -176,4 +176,16 @@ export function CardList({ items }: { items: ReactNode[] }) {
 /** Texto pequeño y apagado (fecha, notas). */
 export function CardNote({ children }: { children: ReactNode }) {
   return <p style={{ ...body(0.9), marginTop: u(0.7), opacity: 0.65 }}>{children}</p>;
+}
+
+/**
+ * Tamaño del título (en `--u`): el de siempre (1,9) y, si es largo, baja lo justo para que no pase de **2 renglones** y ninguna palabra se parta
+ * («¡De murciélago en murciélago!» salía en 3). `avail` es el ancho que le queda al texto: el de la tarjeta menos los márgenes y, si lo lleva, el cuadro del icono.
+ */
+function panelTitleSize(title: string, width: number, hasBox: boolean, centered?: boolean) {
+  const avail = width - 2.8 - (hasBox && !centered ? 5.1 : 0);
+  const longest = Math.max(1, ...title.split(/\s+/).map((w) => w.length));
+  const byLines = avail / (0.53 * (Math.ceil(title.length / 2) + 0.5));
+  const byWord = avail / (0.53 * longest);
+  return Math.max(1.1, Math.min(1.9, byLines, byWord));
 }
