@@ -74,7 +74,8 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
             badge="OK"
             actions={
               hostSecret ? (
-                <button onClick={release} className="btn-game bg-btn-grey px-4 py-2 text-sm text-white">
+                // el botón escala con la tarjeta (`--u`), como los demás botones del juego: antes salía con letra de 14 px y se veía pequeño
+                <button onClick={release} className="btn-game w-full bg-btn-grey text-white" style={{ fontSize: c(1.6), padding: `${c(0.7)} ${c(1.2)}` }}>
                   CAMBIAR DE CELULAR
                 </button>
               ) : undefined
