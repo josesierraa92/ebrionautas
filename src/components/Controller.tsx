@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import Board from "@/components/Board";
 import CardPanel, { CardText } from "@/components/CardPanel";
 import FullscreenButton from "@/components/FullscreenButton";
-import BeerIcon from "@/components/BeerIcon";
 import DecisionPanel from "@/components/DecisionPanel";
 import DiceController from "@/components/DiceController";
 import GameLog from "@/components/GameLog";
@@ -141,8 +140,14 @@ export default function Controller({ code, room, secret, error, refresh, overlay
             <div className="absolute top-2 right-2 z-50 flex items-center gap-1.5">
               {!winner && (
                 <button onClick={() => setAddDrink(true)} className="btn-game relative grid h-12 w-12 place-items-center bg-btn-red text-white" aria-label="Agregar un trago a un jugador" title="+ Trago">
-                  <BeerIcon size="1.9rem" />
-                  <span className="absolute -top-2 -right-2 grid h-5 w-5 place-items-center rounded-full border-2 border-ink bg-white font-display text-sm leading-none text-ink">+</span>
+                  {/* botella en contorno blanco con un + del mismo trazo, todo en un solo dibujo */}
+                  <svg viewBox="0 0 64 64" width="2.2rem" height="2.2rem" fill="none" stroke="#fff" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <g transform="translate(-7 2)">
+                      <path d="M27 5h10v13l7 9v29a4 4 0 0 1-4 4H24a4 4 0 0 1-4-4V27l7-9z" />
+                      <rect x="25" y="32" width="14" height="14" rx="1.5" />
+                    </g>
+                    <path d="M50 9v14M43 16h14" />
+                  </svg>
                 </button>
               )}
               <button onClick={() => setSettings(true)} className="btn-game grid h-12 w-12 place-items-center bg-btn-grey text-2xl text-white" aria-label="Ajustes de la partida" title="Ajustes">
