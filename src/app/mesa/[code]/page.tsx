@@ -19,6 +19,7 @@ import { api, controlKey, epochKey, hostKey, saved, useRoom } from "@/lib/room-c
 import { useAutoUpdate } from "@/lib/useAutoUpdate";
 import { usePublishedLayout } from "@/lib/usePublishedBoard";
 import { useGameFx } from "@/lib/useGameFx";
+import { music, unlock } from "@/lib/sfx";
 
 /**
  * Pantalla grande (TV / portátil): QR para el control, tablero y marcador. Solo muestra.
@@ -41,6 +42,20 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const [narrow, setNarrow] = useState(false); // pantalla estrecha (celular): lo que se dibuja sobre el tablero va más chico
   const [portrait, setPortrait] = useState(false); // celular vertical: la tarjeta va casi a todo el ancho y el dado abajo en el centro
   const fx = useGameFx(room?.game ?? null);
+  // música de fondo mientras hay partida (la TV o el aparato único; el celular de control no la pone); el navegador solo deja sonar tras un toque
+  const playing = !!room?.game;
+  useEffect(() => {
+    if (!playing) return;
+    music.start();
+    const wake = () => void unlock();
+    window.addEventListener("pointerdown", wake, { once: true });
+    window.addEventListener("keydown", wake, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", wake);
+      window.removeEventListener("keydown", wake);
+      music.stop();
+    };
+  }, [playing]);
   // Se recarga sola cuando hay una versión nueva del juego (sin dado ni jugada en marcha).
   useAutoUpdate(fx.settled && !fx.dice && !fx.banner);
   // tamaño de la tarjeta de la casilla y del cuadro del turno elegido en el editor (el diseño publicado; 100 % de serie)

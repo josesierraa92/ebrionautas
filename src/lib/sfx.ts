@@ -131,3 +131,115 @@ export const sfx = {
     notes.forEach((f, i) => tone(f, i === notes.length - 1 ? 0.6 : 0.16, { type: "triangle", at: i * 0.14, vol: 0.25 }));
   },
 };
+
+// ---------------------------------------------------------------- música de fondo
+// Un bucle de 8 compases, sintetizado (sin archivos ni licencias): caja de música y bajo pizzicato en La menor con un paso por Mi mayor
+// (el sol sostenido da el toque de misterio) y acordes cortos a contratiempo. Es de videojuego: saltarín y alegre, con un poquito de
+// terror por la caja de música y el modo menor. Va muy bajito para no tapar los efectos ni la charla.
+
+const midi = (n: number) => 440 * Math.pow(2, (n - 69) / 12);
+const BPM = 104;
+const STEP = 60 / BPM / 2; // una corchea
+// por compás: raíz del bajo, quinta y acorde (a contratiempo)
+const BARS: { root: number; fifth: number; chord: number[] }[] = [
+  { root: 45, fifth: 52, chord: [57, 60, 64] }, // La menor
+  { root: 41, fifth: 48, chord: [57, 60, 65] }, // Fa
+  { root: 48, fifth: 55, chord: [55, 60, 64] }, // Do
+  { root: 40, fifth: 47, chord: [56, 59, 64] }, // Mi (con sol sostenido)
+  { root: 45, fifth: 52, chord: [57, 60, 64] },
+  { root: 41, fifth: 48, chord: [57, 60, 65] },
+  { root: 38, fifth: 45, chord: [57, 62, 65] }, // Re menor
+  { root: 40, fifth: 47, chord: [56, 59, 64] },
+];
+// melodía en corcheas (0 = silencio), 8 por compás
+const MELODY = [
+  76, 0, 72, 0, 69, 72, 76, 0,
+  77, 0, 74, 0, 72, 0, 69, 0,
+  72, 76, 79, 0, 76, 72, 67, 0,
+  76, 0, 80, 0, 83, 80, 76, 0,
+  81, 0, 76, 0, 72, 0, 76, 0,
+  77, 76, 74, 0, 72, 0, 69, 0,
+  74, 0, 77, 0, 81, 77, 74, 0,
+  80, 0, 76, 0, 71, 0, 76, 0,
+];
+
+let musicGain: GainNode | null = null;
+let musicTimer: ReturnType<typeof setInterval> | null = null;
+let musicStep = 0;
+let musicNext = 0;
+
+function note(freq: number, at: number, dur: number, type: OscillatorType, vol: number, bell = false) {
+  const a = ctx;
+  if (!a || !musicGain) return;
+  const gain = a.createGain();
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(vol, at + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  gain.connect(musicGain);
+  const osc = a.createOscillator();
+  osc.type = type;
+  osc.frequency.value = freq;
+  osc.connect(gain);
+  osc.start(at);
+  osc.stop(at + dur + 0.05);
+  if (bell) {
+    // armónico metálico que se apaga rápido: suena a caja de música
+    const g2 = a.createGain();
+    g2.gain.setValueAtTime(0.0001, at);
+    g2.gain.exponentialRampToValueAtTime(vol * 0.35, at + 0.008);
+    g2.gain.exponentialRampToValueAtTime(0.0001, at + dur * 0.4);
+    g2.connect(musicGain);
+    const o2 = a.createOscillator();
+    o2.type = "sine";
+    o2.frequency.value = freq * 2.76;
+    o2.connect(g2);
+    o2.start(at);
+    o2.stop(at + dur * 0.4 + 0.05);
+  }
+}
+
+function scheduleStep(i: number, at: number) {
+  const bar = BARS[Math.floor(i / 8) % BARS.length];
+  const beat = i % 8;
+  // bajo pizzicato: raíz en el 1, quinta en el 3 (corcheas 0 y 4), saltito en el 6
+  if (beat === 0) note(midi(bar.root), at, 0.32, "triangle", 0.5);
+  if (beat === 4) note(midi(bar.fifth), at, 0.28, "triangle", 0.4);
+  if (beat === 6) note(midi(bar.root + 12), at, 0.16, "triangle", 0.22);
+  // acorde cortito a contratiempo (2 y 4)
+  if (beat === 2 || beat === 6) bar.chord.forEach((n) => note(midi(n), at, 0.16, "triangle", 0.1));
+  // caja de música
+  const m = MELODY[i % MELODY.length];
+  if (m) note(midi(m), at, 0.9, "sine", 0.26, true);
+}
+
+function musicTick() {
+  const a = ctx;
+  if (!a || a.state !== "running" || muted) return;
+  if (musicNext < a.currentTime - 0.5) musicNext = a.currentTime + 0.05; // la pestaña estuvo dormida: seguimos desde ahora
+  while (musicNext < a.currentTime + 0.5) {
+    scheduleStep(musicStep, musicNext);
+    musicStep = (musicStep + 1) % (MELODY.length);
+    musicNext += STEP;
+  }
+}
+
+export const music = {
+  start() {
+    const a = audio();
+    if (!a || !master || musicTimer) return;
+    musicGain = a.createGain();
+    musicGain.gain.value = 0.2;
+    musicGain.connect(master);
+    musicStep = 0;
+    musicNext = a.currentTime + 0.1;
+    musicTimer = setInterval(musicTick, 120);
+  },
+  stop() {
+    if (musicTimer) clearInterval(musicTimer);
+    musicTimer = null;
+    try {
+      musicGain?.disconnect();
+    } catch {}
+    musicGain = null;
+  },
+};
