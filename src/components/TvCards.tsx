@@ -167,7 +167,7 @@ export function PhoneRuleCard({ game, n, playerId, cardKey, result, unit = "14px
  * Mientras la TV anima la tirada (`moving`, `rolling`) no se adelanta el resultado ni el turno siguiente.
  */
 // Solo quién tiene el turno: el dado ya se ve grande en el tablero y el número sale en el título de la jugada.
-export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP, inline = false, playerId }: { game: GameState; /** enseñar a este jugador en vez de a quien tiene el turno (la pantalla de la tarjeta del celular: de quién es) */ playerId?: string; moving?: boolean; rolling?: boolean; scale?: number; /** ajustes de la tarjeta (editor «Tarjeta de usuario») */ chip?: ChipStyle; /** sin colocarla en la esquina (vista previa del editor) */ inline?: boolean }) {
+export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP, inline = false, fill = false, playerId }: { game: GameState; /** ocupar todo el ancho disponible (la placa se estira): la pantalla de la tarjeta del celular, del ancho de la tarjeta de abajo */ fill?: boolean; /** enseñar a este jugador en vez de a quien tiene el turno (la pantalla de la tarjeta del celular: de quién es) */ playerId?: string; moving?: boolean; rolling?: boolean; scale?: number; /** ajustes de la tarjeta (editor «Tarjeta de usuario») */ chip?: ChipStyle; /** sin colocarla en la esquina (vista previa del editor) */ inline?: boolean }) {
   const f = NUMBER_FONTS[chip.font];
   const fontFamily = chip.font === DEFAULT_CHIP.font ? undefined : `var(${f.cssVar}), ${f.fallback}`;
   const roller = game.players.find((p) => p.id === game.lastRoller);
@@ -178,7 +178,7 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
   // «Turno de» en el verde neón de las tarjetas (`#bffa58`) y 3 px más abajo, nombre con sombra dura azul muy oscuro, sin filete (todo en CSS, mismo estilo
   // grueso y plano que las tarjetas).
   return (
-    <div className={`pointer-events-none z-30 flex items-center ${inline ? "relative" : "absolute top-[2%] left-[2%] max-md:top-16 max-md:scale-90 max-md:origin-top-left"}`} style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "top left" } : undefined}>
+    <div className={`pointer-events-none z-30 flex items-center ${fill ? "w-full" : ""} ${inline ? "relative" : "absolute top-[2%] left-[2%] max-md:top-16 max-md:scale-90 max-md:origin-top-left"}`} style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "top left" } : undefined}>
       {/* anillo de color del jugador con degradado (más claro arriba a la izquierda, más oscuro abajo a la derecha) */}
       <div className="relative z-10 -mr-[30px] -ml-[5px] shrink-0" style={{ padding: 5, borderRadius: 21, background: `linear-gradient(150deg, ${shadeHex(color, 0.12)} 0%, ${color} 35%, ${shadeHex(color, -0.38)} 100%)`, boxShadow: "0 6px 12px rgba(0,0,0,.45)" }}>
         <div
@@ -199,12 +199,12 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
           style={{ top: `${chip.cupY}%`, left: `${chip.cupX}%` }}
         />
       </div>
-      <div className="relative overflow-hidden rounded-2xl border-[5px] border-[#452b8e] py-1 pr-[26px] pl-[47px] shadow-[0_6px_12px_rgba(0,0,0,.45)]" style={{ background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
-        <div>
+      <div className={`relative overflow-hidden rounded-2xl border-[5px] border-[#452b8e] py-1 pr-[26px] pl-[47px] shadow-[0_6px_12px_rgba(0,0,0,.45)] ${fill ? "min-w-0 flex-1" : ""}`} style={{ background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
+        <div className={fill ? "text-center" : undefined}>
           <p className="relative top-[4px] font-display text-[1rem] leading-none tracking-wider uppercase" style={{ color: chip.labelColor, fontFamily }}>
             {winner ? (matchOver(game) ? "¡Ganador!" : "¡Gana la ronda!") : "Turno de"}
           </p>
-          <p className="mt-1 font-display leading-none uppercase" style={{ fontSize: `${2.6 * chip.nameSize / 100}rem`, color: chip.nameColor, fontFamily, textShadow: "0 2px 0 #1a0b38, 0 3px 0 #1a0b38" }}>
+          <p className="mt-1 font-display leading-none uppercase" style={{ fontSize: `${(fill ? 3.3 : 2.6) * chip.nameSize / 100}rem`, color: chip.nameColor, fontFamily, textShadow: "0 2px 0 #1a0b38, 0 3px 0 #1a0b38" }}>
             {who.name}
           </p>
         </div>

@@ -244,8 +244,8 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
 function OwnerChip({ game, playerId }: { game: GameState; playerId: string }) {
   const published = usePublishedLayout(true);
   return (
-    <div className="flex justify-center py-1">
-      <TurnChip game={game} playerId={playerId} inline chip={published?.chip} />
+    <div className="px-[5px] py-1">
+      <TurnChip game={game} playerId={playerId} inline fill chip={published?.chip} />
     </div>
   );
 }
