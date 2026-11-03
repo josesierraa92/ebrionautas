@@ -97,8 +97,8 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
       return (
         <Card title={compact ? undefined : "Elige a tu pactado"} text={compact ? "¿Con quién haces el pacto?" : "Elige con quién haces el pacto: beberá cada vez que tú bebas."}>
           {others.map((p) => (
-            <button key={p.id} onClick={() => onAction({ type: "CHOOSE_SLAVE", id: p.id })} className="btn-game py-2 text-lg text-white" style={{ background: p.color }}>
-              {p.name}
+            <button key={p.id} onClick={() => onAction({ type: "CHOOSE_SLAVE", id: p.id })} className="btn-game px-3 py-3 text-white" style={{ background: p.color }}>
+              <span className={NAME_CLASS} style={{ fontSize: nameSize(p.name) }}>{p.name}</span>
             </button>
           ))}
         </Card>
@@ -124,11 +124,18 @@ function JailPay({ owed, compact, onPay }: { owed: number; compact?: boolean; on
   );
 }
 
+/** Tamaño de letra de un nombre de jugador en un botón: grande para leerse de noche y con copas; baja solo si el nombre es largo. */
+const nameSize = (name: string, small = false) => {
+  const k = small ? 0.8 : 1;
+  return `${(name.length <= 8 ? 2.1 : name.length <= 12 ? 1.7 : 1.4) * k}rem`;
+};
+const NAME_CLASS = "min-w-0 break-words font-display uppercase leading-[1.02]";
+
 function Card({ title, text, children }: { title?: string; text?: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
       {title && <h3 className="font-display text-2xl text-btn-yellow">{title}</h3>}
-      {text && <p className="text-white/85">{text}</p>}
+      {text && <p className="text-lg text-white/85">{text}</p>}
       {children}
     </div>
   );
@@ -144,8 +151,8 @@ function Distribute({ amount, players, compact, onDone }: { amount: number; play
     <Card title={compact ? undefined : `Reparte ${amount} ${amount === 1 ? "vaso" : "vasos"}`} text={left === 0 ? "¡Listo! Confirma el reparto." : `Te ${left === 1 ? "queda" : "quedan"} ${left} ${left === 1 ? "vaso" : "vasos"} por repartir.`}>
       {players.map((p) => (
         <div key={p.id} className="flex items-center gap-2">
-          <span className="size-4 rounded-full border-2 border-ink" style={{ background: p.color }} />
-          <span className="flex-1 truncate">{p.name}</span>
+          <span className="size-4 shrink-0 rounded-full border-2 border-ink" style={{ background: p.color }} />
+          <span className={`flex-1 text-white ${NAME_CLASS}`} style={{ fontSize: nameSize(p.name, true) }}>{p.name}</span>
           <button aria-label={`Quitar a ${p.name}`} onClick={() => change(p.id, -1)} disabled={!drinks[p.id]} className="btn-game size-9 bg-btn-red text-white disabled:bg-btn-grey">
             −
           </button>
@@ -228,7 +235,7 @@ function PickPlayers(props: {
 
   return (
     <Card title={props.title} text={props.text}>
-      <div className="grid grid-cols-2 gap-2">
+      <div className={`grid gap-2 ${props.players.length > 6 ? "grid-cols-2" : "grid-cols-1"}`}>
         {props.players.map((p) => {
           const on = picked.includes(p.id);
           return (
@@ -236,10 +243,10 @@ function PickPlayers(props: {
               key={p.id}
               aria-pressed={on}
               onClick={() => toggle(p.id)}
-              className={`btn-game truncate px-2 py-2 text-base text-white ${on ? "" : "opacity-50"}`}
+              className={`btn-game px-3 py-3 text-white ${on ? "ring-4 ring-white" : "opacity-45"}`}
               style={{ background: p.color }}
             >
-              {p.name}
+              <span className={NAME_CLASS} style={{ fontSize: nameSize(p.name, props.players.length > 6) }}>{p.name}</span>
             </button>
           );
         })}
