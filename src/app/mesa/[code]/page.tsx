@@ -4,15 +4,14 @@ import CardPanel, { CardText, GREEN } from "@/components/CardPanel";
 import Logo from "@/components/Logo";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import BoardStage from "@/components/BoardStage";
 import { Confetti } from "@/components/Fx";
 import GameLog from "@/components/GameLog";
 import PlayersList from "@/components/PlayersList";
 import SoundToggle from "@/components/SoundToggle";
-import TurnHeader from "@/components/TurnHeader";
 import Clasificatoria from "@/components/Clasificatoria";
-import { RuleCard, TurnChip, decisionText } from "@/components/TvCards";
+import { PanelCard, RuleCard, TurnChip } from "@/components/TvCards";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Decision } from "@/game/engine";
 import { api, hostKey, saved, useRoom } from "@/lib/room-client";
@@ -25,6 +24,10 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const code = use(params).code.toUpperCase();
   const { room, error, refresh } = useRoom(code);
   const [hostSecret, setHostSecret] = useState<string | null>(null);
+  const heldCard = useRef<{ n: number; playerId: string; key: number; result?: Parameters<typeof PanelCard>[0]["result"]; waiting?: boolean } | null>(null); // la última tarjeta del panel: no se cambia mientras la TV anima la tirada
+  const [dismissedRequest, setDismissedRequest] = useState<number | null>(null); // «AHORA NO» del aviso de otro celular
+  const [releasing, setReleasing] = useState(false);
+  const [releaseError, setReleaseError] = useState<string | null>(null);
   const [controlUrl, setControlUrl] = useState("");
   const fx = useGameFx(room?.game ?? null);
   // Se recarga sola cuando hay una versión nueva del juego (sin dado ni jugada en marcha).
@@ -49,16 +52,43 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
 
   if (!room) return <Centered>{error ?? "Conectando con la mesa…"}</Centered>;
 
-  const release = async () => {
-    if (!confirm("¿Liberar el control para que otro celular lo tome?")) return;
+  // Otro celular pidió el control mientras alguien lo tiene: sale este aviso con «LIBERAR» (y nada más: sin botones fijos en la pantalla)
+  const releaseNow = async () => {
+    setReleasing(true);
+    setReleaseError(null);
     try {
       await api(`/api/rooms/${code}/control`, { hostSecret }, "DELETE");
     } catch (e) {
-      // antes el error se tragaba y parecía que el botón no hacía nada
-      alert(`${(e as Error).message} Abre esta pantalla en el mismo navegador donde creaste la mesa, o crea una mesa nueva.`);
+      setReleaseError(`${(e as Error).message} Abre esta pantalla en el mismo navegador donde creaste la mesa, o crea una mesa nueva.`);
+    } finally {
+      setReleasing(false);
     }
     await refresh();
   };
+  const askingControl = !!room.claimRequest && room.hasController && room.claimRequest !== dismissedRequest;
+  const claimPopup = askingControl ? (
+    <CardPanel
+      unit="min(1.5vw, 2.4vh)"
+      width={26}
+      kicker="Otro celular"
+      title="¿Liberar el control?"
+      centerTitle
+      onClose={() => setDismissedRequest(room.claimRequest ?? null)}
+      actions={
+        <>
+          <button disabled={releasing} onClick={releaseNow} className="btn-game w-full bg-btn-green text-white disabled:bg-btn-grey" style={{ fontSize: "calc(var(--u) * 2)", padding: "calc(var(--u) * .8) calc(var(--u) * 1.2)" }}>
+            {releasing ? "LIBERANDO…" : "LIBERAR"}
+          </button>
+          <button onClick={() => setDismissedRequest(room.claimRequest ?? null)} className="font-display uppercase underline" style={{ color: "#bffa58", fontSize: "calc(var(--u) * 1.1)" }}>
+            Ahora no
+          </button>
+        </>
+      }
+    >
+      <CardText size={1.25}>Otro celular quiere controlar la mesa. Si lo liberas, el celular de ahora deja de controlar.</CardText>
+      {releaseError && <CardText size={1.05}>{releaseError}</CardText>}
+    </CardPanel>
+  ) : null;
 
   if (room.status === "LOBBY" || !room.game) {
     // sala de espera: el logo y una tarjeta con el mismo diseño que las de las casillas (`CardPanel`, regla de diseño del CLAUDE.md)
@@ -77,12 +107,6 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
             kicker="¡Listo!"
             title="Celular conectado"
             badge="OK"
-            actions={
-              // el botón escala con la tarjeta (`--u`), como los demás botones del juego; sale siempre (si esta pantalla no creó la mesa, el aviso lo explica)
-              <button onClick={release} className="btn-game w-full bg-btn-grey text-white" style={{ fontSize: c(1.6), padding: `${c(0.7)} ${c(1.2)}` }}>
-                CAMBIAR DE CELULAR
-              </button>
-            }
           >
             <CardText size={1.3}>Agregad a los jugadores desde el celular y pulsad ¡A LEVANTARSE!</CardText>
           </CardPanel>
@@ -101,6 +125,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
             </div>
           </CardPanel>
         )}
+        {claimPopup}
       </main>
     );
   }
@@ -123,11 +148,18 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   // el celular abrió la clasificatoria: sustituye al mensaje de ganador y tapa el tablero (fuera de BoardStage: ocupa toda la pantalla)
   const ranking = winner && game.ranking ? <Clasificatoria game={game} unit="min(1.7vw, 2.6vh)" /> : null;
 
-  const overlays = (
+  // Tarjeta del panel de la derecha (modo con marcador): la de lo que acaba de pasar; si no hay nada que explicar, la de la casilla donde está quien juega,
+  // con «tira el dado desde el celular». Mientras la TV anima la tirada se queda la anterior (no se adelanta la casilla nueva).
+  const settledNow = fx.settled && !fx.banner;
+  const fresh = card ? { n: card.n, playerId: card.playerId, key: card.key, result: "result" in card ? card.result : undefined } : settledNow ? { n: me.pos, playerId: me.id, key: 500000 + (game.rollSeq ?? 0), waiting: true } : null;
+  if (fresh) heldCard.current = fresh;
+  const panelCard = fresh ?? heldCard.current ?? { n: me.pos, playerId: me.id, key: 500000, waiting: true };
+
+  const overlays = (withCard: boolean) => (
     <>
       {/* hasta que llega el diseño publicado no se dibuja: con los valores de serie salía un instante la estrella en su sitio de antes y luego saltaba al configurado */}
       {published !== undefined && <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} scale={ui.chip / 100} chip={published?.chip} />}
-      {card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} scale={ui.card / 100} />}
+      {withCard && card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} scale={ui.card / 100} />}
     </>
   );
 
@@ -136,7 +168,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     return (
       <main className="fixed inset-0">
         <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare className="h-full">
-          {overlays}
+          {overlays(true)}
           <div className="absolute top-[2%] right-[1.5%] z-50 flex items-center gap-2">
             <SoundToggle />
             <button onClick={toggleFullscreen} aria-label="Pantalla completa" title="Pantalla completa" className="icon-btn">
@@ -145,13 +177,11 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
             <button onClick={togglePanel} aria-label="Marcador" title="Marcador" className="icon-btn">
               ☰
             </button>
-            <button onClick={release} aria-label="Cambiar de celular" title="Cambiar de celular (soltar el control)" className="icon-btn">
-              📱
-            </button>
           </div>
         </BoardStage>
         {winner && !game.ranking && <Confetti />}
         {ranking}
+        {claimPopup}
       </main>
     );
   }
@@ -170,9 +200,6 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
               ⤢
             </button>
             <span className="ml-2">Mesa {code}</span>
-            <button onClick={release} className="btn-game ml-2 bg-btn-grey px-3 py-1 text-sm text-white" title="Soltar el control para que otro celular lo tome">
-              CAMBIAR DE CELULAR
-            </button>
           </span>
         </div>
         <BoardStage
@@ -182,30 +209,24 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
           fx={fx}
           className={`aspect-[16/10] lg:aspect-auto lg:h-[calc(100dvh-5.5rem)]`}
         >
-          {overlays}
+          {overlays(false)}
         </BoardStage>
         {winner && !game.ranking && <Confetti />}
         {ranking}
       </section>
       <aside className="flex flex-col gap-4 lg:w-[28rem]">
-        <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
-          {winner ? (
+        {winner ? (
+          <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
             <Winner winner={winner} players={game.players} />
-          ) : (
-            <div className="flex flex-col gap-3">
-              <TurnHeader game={game} />
-              {game.decision ? (
-                <DecisionInfo decision={game.decision} name={me.name} />
-              ) : (
-                <p className="font-display text-lg text-btn-yellow">🎲 {me.name}, tira el dado desde el celular</p>
-              )}
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <PanelCard game={game} n={panelCard.n} playerId={panelCard.playerId} cardKey={panelCard.key} result={panelCard.result} prompt={panelCard.waiting ? `${me.name}, tira el dado desde el celular` : null} />
+        )}
         <PlayersList game={game} big />
         <GameLog log={game.log} max={12} big />
         {error && <p className="text-sm text-btn-red">⚠️ {error}</p>}
       </aside>
+      {claimPopup}
     </main>
   );
 }
@@ -216,17 +237,6 @@ const PANEL_KEY = "ebrionautas:panel";
 function toggleFullscreen() {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   else document.documentElement.requestFullscreen?.().catch(() => {});
-}
-
-/** Qué se está decidiendo, en grande para que lo vea toda la mesa. */
-function DecisionInfo({ decision, name }: { decision: Decision; name: string }) {
-  const [title, text] = decisionText(decision, name);
-  return (
-    <div className="flex flex-col gap-1">
-      <p className="font-display text-2xl text-btn-yellow">{title}</p>
-      <p className="text-lg text-white/90">{text}</p>
-    </div>
-  );
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

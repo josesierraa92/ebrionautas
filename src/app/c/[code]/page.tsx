@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Board from "@/components/Board";
 import CardPanel, { CardText } from "@/components/CardPanel";
 import FullscreenButton from "@/components/FullscreenButton";
@@ -15,7 +15,7 @@ import Clasificatoria from "@/components/Clasificatoria";
 import SettingsDialog from "@/components/SettingsDialog";
 import Winner from "@/components/Winner";
 import { currentPlayer, matchOver, type Action, type Gender } from "@/game/engine";
-import { api, controlKey, saved, sendAction, useRoom } from "@/lib/room-client";
+import { api, controlKey, epochKey, saved, sendAction, useRoom } from "@/lib/room-client";
 
 /** El único celular que controla la mesa: agrega jugadores, tira el dado y decide. */
 export default function ControlPage({ params }: { params: Promise<{ code: string }> }) {
@@ -35,9 +35,18 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
   }, [code]);
 
   // Si la TV liberó el control, la clave guardada ya no sirve.
-  const released = room && !room.hasController && secret;
+  // …o si otro celular lo tomó después (la «época» de la mesa ya no es la que guardamos al tomarlo): sin esto el celular viejo seguía enseñando el juego sin poder jugar.
+  const lostEpoch = !!room && !!secret && (() => {
+    const mine = saved.get<number>(epochKey(code));
+    return mine !== null && room.controlEpoch !== mine;
+  })();
+  const released = room && secret && (!room.hasController || lostEpoch);
+  // el celular que PERDIÓ el control no vuelve a pedirlo solo (si no, al soltarlo la TV le saldría otra vez «¿liberar?»): `asked` evita el aviso automático
+  const asked = useRef(false);
+  const autoClaim = useRef(false);
   useEffect(() => {
     if (!released) return;
+    asked.current = true;
     saved.set(controlKey(code), null);
     setSecret(null);
   }, [released, code]);
@@ -55,19 +64,34 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
     }
   };
 
+  const claimNow = () =>
+    run(async () => {
+      const r = await api<{ secret: string; epoch: number }>(`/api/rooms/${code}/control`, {});
+      saved.set(controlKey(code), r.secret);
+      saved.set(epochKey(code), r.epoch);
+      await refresh(); // que la mesa ya diga "con control" antes de usar la clave
+      setSecret(r.secret);
+    });
+
+  // Otro celular ya controla: se le avisa a la TV (le sale «¿Liberar el control?») y, cuando la libera, este celular entra solo.
+  const blocked = loaded && !!room && !secret && room.hasController;
+  useEffect(() => {
+    if (!blocked || asked.current) return;
+    asked.current = true;
+    autoClaim.current = true; // y cuando la TV lo libere, entra solo
+    api(`/api/rooms/${code}/request`, {}).catch(() => {});
+  }, [blocked, code]);
+  useEffect(() => {
+    if (autoClaim.current && loaded && room && !secret && !room.hasController && !busy) claimNow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room?.hasController, secret, loaded]);
+
   if (!loaded || !room) {
     return <Shell>{error ? <ErrorBox text={error} /> : <p>Conectando con la mesa {code}…</p>}</Shell>;
   }
 
   // 1. Tomar el control
   if (!secret) {
-    const claim = () =>
-      run(async () => {
-        const r = await api<{ secret: string }>(`/api/rooms/${code}/control`, {});
-        saved.set(controlKey(code), r.secret);
-        await refresh(); // que la mesa ya diga "con control" antes de usar la clave
-        setSecret(r.secret);
-      });
     return (
       <Shell>
         <Logo className="w-56" />
@@ -80,18 +104,18 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
           icon="skull"
           actions={
             room.hasController ? (
-              <button onClick={() => refresh()} className="btn-game bg-btn-yellow px-4 py-2 text-white">
-                VOLVER A INTENTAR
+              <button onClick={() => api(`/api/rooms/${code}/request`, {}).catch(() => {})} className="btn-game bg-btn-yellow px-4 py-3 text-xl text-white">
+                PEDIR OTRA VEZ
               </button>
             ) : (
-              <button disabled={busy} onClick={claim} className="btn-game w-full bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey">
+              <button disabled={busy} onClick={claimNow} className="btn-game w-full bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey">
                 CONTROLAR LA MESA
               </button>
             )
           }
         >
           <CardText>Desde este celular se agregan los jugadores, se tira el dado y se decide todo. El tablero se ve en la TV.</CardText>
-          {room.hasController && <div style={{ marginTop: 10 }}><ErrorBox text="Otro celular ya controla esta mesa. Si eres tú (por ejemplo abriste el link en otro navegador), pulsa «CAMBIAR DE CELULAR» en la TV y luego «VOLVER A INTENTAR»." /></div>}
+          {room.hasController && <div style={{ marginTop: 10 }}><ErrorBox text="Otro celular controla la mesa. Ya le avisamos a la TV: pulsa «LIBERAR» ahí y entras solo." /></div>}
           {actionError && <div style={{ marginTop: 10 }}><ErrorBox text={actionError} /></div>}
         </CardPanel>
       </Shell>

@@ -37,6 +37,8 @@ export const saved = {
 
 export const hostKey = (code: string) => `ebrionautas:host:${code}`;
 export const controlKey = (code: string) => `ebrionautas:control:${code}`;
+/** La «época» del control que tomó este celular (`PublicRoom.controlEpoch`): si la mesa ya va por otra, el control pasó a otro celular. */
+export const epochKey = (code: string) => `ebrionautas:epoch:${code}`;
 
 /** Sigue el estado de una sala consultando al servidor cada segundo. */
 export function useRoom(code: string) {

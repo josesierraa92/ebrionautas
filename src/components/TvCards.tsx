@@ -140,6 +140,22 @@ export function RuleCard({ game, n, playerId, cardKey, result, scale = 1 }: Prop
   );
 }
 
+/**
+ * La tarjeta de la casilla dentro del panel derecho de la TV (en lugar de la caja «Turno de…» con otro retrato del jugador, que repetía al personaje 3 veces):
+ * el mismo diseño que sale en el tablero (`GameCard`), a todo el ancho del panel. `prompt` es lo que toca hacer cuando no hay una decisión en marcha
+ * («Vane, tira el dado desde el celular»); con decisión, la pastilla dice qué marcar en el celular.
+ */
+export function PanelCard({ game, n, playerId, cardKey, result, prompt }: Props & { prompt?: string | null }) {
+  useCardTexts();
+  const { player, decision, rule, accent, icon, emoji } = cardContent(game, n, playerId, result);
+  return (
+    // el contenedor mide su ancho: la tarjeta está pensada para ~25 unidades de ancho (25 `--u`), así que 1 `--u` = 4 % del contenedor
+    <div className="w-full" style={{ containerType: "inline-size" }}>
+      <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n}`} title={rule.title} text={rule.text} prompt={decision ? decisionPrompt(decision, player.name, game) : (prompt ?? null)} dice={game.lastRoll} unit="4cqw" cardKey={cardKey} />
+    </div>
+  );
+}
+
 export function PhoneRuleCard({ game, n, playerId, cardKey, result, unit = "14px" }: Props & { unit?: string }) {
   useCardTexts();
   const { player, rule, accent, icon, emoji } = cardContent(game, n, playerId, result);

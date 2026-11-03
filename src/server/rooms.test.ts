@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { actInRoom, claimControl, createRoom, getRoom, releaseControl, resetRoom, startRoom, type NewPlayer } from "./rooms";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { actInRoom, claimControl, createRoom, getRoom, releaseControl, requestControl, resetRoom, startRoom, type NewPlayer } from "./rooms";
 import { resetMemoryStore } from "./store";
 
 beforeEach(() => {
@@ -71,5 +71,29 @@ describe("mesas", () => {
 
   it("da error claro si la mesa no existe", async () => {
     await expect(getRoom("ZZZZ")).rejects.toThrow("no existe");
+  });
+});
+
+describe("pedir el control", () => {
+  it("sin dueño no hace falta pedir; con dueño la TV ve la petición y se borra al liberar o al tomarlo otro", async () => {
+    const { code, hostSecret } = await createRoom();
+    expect(await requestControl(code)).toEqual({ free: true });
+    expect((await getRoom(code)).claimRequest).toBeNull();
+
+    await claimControl(code);
+    expect(await requestControl(code)).toEqual({ free: false });
+    const asked = (await getRoom(code)).claimRequest;
+    expect(asked).toBeGreaterThan(0);
+
+    await releaseControl(code, hostSecret);
+    expect((await getRoom(code)).claimRequest).toBeNull();
+
+    // la petición vieja (más de 2 min) deja de verse
+    await claimControl(code);
+    await requestControl(code);
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.now() + 3 * 60 * 1000);
+    expect((await getRoom(code)).claimRequest).toBeNull();
+    vi.useRealTimers();
   });
 });

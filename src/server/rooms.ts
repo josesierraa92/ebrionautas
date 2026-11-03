@@ -10,6 +10,7 @@ import { SERIOUS_ROLLS, track } from "./stats";
 import { getStore } from "./store";
 
 const ROOM_TTL = 60 * 60 * 24; // 24 h
+const CLAIM_REQUEST_TTL = 2 * 60 * 1000; // el aviso «otro celular quiere el control» dura 2 min
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // sin I ni O para no confundir
 export const MAX_PLAYERS = PLAYER_COLORS.length;
 
@@ -17,6 +18,8 @@ type Room = {
   code: string;
   hostSecret: string; // la TV que creó la mesa
   controllerSecret: string | null; // el celular que la controla
+  epoch?: number; // cuántas veces se ha tomado el control: el celular que lo tenía se entera de que ya no es suyo
+  claimRequest?: number | null; // cuándo (ms) otro celular pidió el control: la TV enseña «¿liberar?»
   status: "LOBBY" | "PLAYING";
   game: GameState | null;
   version: number;
@@ -26,6 +29,10 @@ export type PublicRoom = {
   code: string;
   status: Room["status"];
   hasController: boolean;
+  /** Cuántas veces se ha tomado el control de esta mesa (no es un secreto): si no coincide con el que guardó un celular, ese celular ya no controla. */
+  controlEpoch: number;
+  /** Marca de tiempo del último celular que pidió el control mientras otro lo tenía (la TV enseña el aviso «liberar»); si es viejo, `null`. */
+  claimRequest: number | null;
   game: GameState | null;
   version: number;
 };
@@ -53,6 +60,8 @@ export function toPublic(room: Room): PublicRoom {
     code: room.code,
     status: room.status,
     hasController: room.controllerSecret !== null,
+    controlEpoch: room.epoch ?? 0,
+    claimRequest: room.claimRequest && Date.now() - room.claimRequest < CLAIM_REQUEST_TTL ? room.claimRequest : null,
     game: room.game,
     version: room.version,
   };
@@ -112,11 +121,13 @@ export async function createRoom(): Promise<{ code: string; hostSecret: string }
 }
 
 /** El primer celular que lo pide se queda con el control. */
-export async function claimControl(code: string): Promise<{ secret: string }> {
+export async function claimControl(code: string): Promise<{ secret: string; epoch: number }> {
   const result = await withRoom(code, (room) => {
     if (room.controllerSecret) throw new RoomError("Otro celular ya controla esta mesa. Pide que lo liberen desde la TV.", 409);
     room.controllerSecret = secret();
-    return { secret: room.controllerSecret };
+    room.claimRequest = null;
+    room.epoch = (room.epoch ?? 0) + 1;
+    return { secret: room.controllerSecret, epoch: room.epoch };
   });
   await track("celular");
   return result;
@@ -127,6 +138,19 @@ export async function releaseControl(code: string, hostSecret: string): Promise<
   await withRoom(code, (room) => {
     if (hostSecret !== room.hostSecret) throw new RoomError("Solo la pantalla de la mesa puede liberar el control.", 403);
     room.controllerSecret = null;
+    room.claimRequest = null;
+  });
+}
+
+/**
+ * Un celular nuevo avisa de que quiere el control mientras otro lo tiene: la TV (que ve `claimRequest`) enseña «¿liberar?».
+ * Si nadie controla, no hace falta pedir nada (`free: true`).
+ */
+export async function requestControl(code: string): Promise<{ free: boolean }> {
+  return withRoom(code, (room) => {
+    if (!room.controllerSecret) return { free: true };
+    room.claimRequest = Date.now();
+    return { free: false };
   });
 }
 
