@@ -72,9 +72,6 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
                   <span className="shrink-0 font-display" style={{ fontSize: u(1.05), color: GREEN_LIGHT }}>
                     {p.pos}/{LAST_TILE}
                   </span>
-                  <span className="inline-flex shrink-0 items-center font-display text-white" style={{ gap: u(0.3), padding: `${u(0.1)} ${u(0.7)}`, borderRadius: 999, background: "#1a0b38", fontSize: u(1.5) }} title="Total bebido">
-                    <BeerIcon /> {p.drunk}
-                  </span>
                 </div>
                 {(chips.length > 0 || p.paused) && (
                   <div className="flex flex-wrap" style={{ gap: u(0.4), marginTop: u(0.5) }}>
@@ -91,23 +88,26 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
                     ))}
                   </div>
                 )}
-              </div>
-              <div className="flex shrink-0 flex-col items-end" style={{ gap: u(0.4) }}>
-                {p.pending > 0 &&
-                  (onDrank ? (
-                    <button title="Marcar como bebido" onClick={() => onDrank(p.id)} className="btn-game animate-pulse bg-btn-red px-2 py-0.5 text-white" style={{ fontSize: u(0.95) }}>
-                      DEBE {p.pending} ✓
+                <div className="flex flex-wrap items-center" style={{ gap: u(0.5), marginTop: u(0.6) }}>
+                  <span className="inline-flex shrink-0 items-center font-display text-white" style={{ gap: u(0.3), padding: `${u(0.1)} ${u(0.7)}`, borderRadius: 999, background: "#1a0b38", fontSize: u(1.3) }} title="Total bebido">
+                    <BeerIcon /> {p.drunk}
+                  </span>
+                  {p.pending > 0 &&
+                    (onDrank ? (
+                      <button title="Marcar como bebido" onClick={() => onDrank(p.id)} className="btn-game animate-pulse bg-btn-red px-2.5 py-0.5 text-white" style={{ fontSize: u(1.1) }}>
+                        DEBE {p.pending} ✓
+                      </button>
+                    ) : (
+                      <span className="animate-pulse rounded-full bg-btn-red px-2.5 py-0.5 font-display text-white" style={{ fontSize: u(1.1) }}>
+                        DEBE {p.pending}
+                      </span>
+                    ))}
+                  {onPenalty && game.rule && !game.winner && (
+                    <button title="Rompió la ley: bebe" aria-label={`${p.name} rompió la ley`} onClick={() => onPenalty(p.id)} className="btn-game bg-btn-special px-3 py-0.5 text-white" style={{ fontSize: u(1.2) }}>
+                      +1
                     </button>
-                  ) : (
-                    <span className="animate-pulse rounded-full bg-btn-red px-2 font-display text-white" style={{ fontSize: u(0.95) }}>
-                      DEBE {p.pending}
-                    </span>
-                  ))}
-                {onPenalty && game.rule && !game.winner && (
-                  <button title="Rompió la ley: bebe" aria-label={`${p.name} rompió la ley`} onClick={() => onPenalty(p.id)} className="btn-game bg-btn-special px-2 text-white" style={{ fontSize: u(0.95) }}>
-                    +1
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
             </li>
           );
