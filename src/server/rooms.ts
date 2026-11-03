@@ -4,8 +4,9 @@
 import { defaultAvatar } from "@/game/avatar";
 import { setLists } from "@/game/content";
 import { loadLists } from "./lists";
-import { applyAction, createGame, type Action, type GameState, type Gender } from "@/game/engine";
+import { applyAction, createGame, matchOver, type Action, type GameState, type Gender } from "@/game/engine";
 import { PLAYER_COLORS } from "@/game/tileStyle";
+import { SERIOUS_ROLLS, track } from "./stats";
 import { getStore } from "./store";
 
 const ROOM_TTL = 60 * 60 * 24; // 24 h
@@ -104,6 +105,7 @@ export async function createRoom(): Promise<{ code: string; hostSecret: string }
     if (await store.get(key(code))) continue;
     const room: Room = { code, hostSecret: secret(), controllerSecret: null, status: "LOBBY", game: null, version: 0 };
     await save(room);
+    await track("mesa");
     return { code, hostSecret: room.hostSecret };
   }
   throw new RoomError("No se pudo crear la mesa, inténtalo de nuevo.", 500);
@@ -111,11 +113,13 @@ export async function createRoom(): Promise<{ code: string; hostSecret: string }
 
 /** El primer celular que lo pide se queda con el control. */
 export async function claimControl(code: string): Promise<{ secret: string }> {
-  return withRoom(code, (room) => {
+  const result = await withRoom(code, (room) => {
     if (room.controllerSecret) throw new RoomError("Otro celular ya controla esta mesa. Pide que lo liberen desde la TV.", 409);
     room.controllerSecret = secret();
     return { secret: room.controllerSecret };
   });
+  await track("celular");
+  return result;
 }
 
 /** Desde la TV: suelta el control para que otro celular lo tome (ej. si se perdió). */
@@ -145,6 +149,8 @@ export async function startRoom(code: string, who: string, players: NewPlayer[],
     );
     room.status = "PLAYING";
   });
+  await track("partida");
+  await track("jugadores", clean.length);
 }
 
 /**
@@ -152,7 +158,7 @@ export async function startRoom(code: string, who: string, players: NewPlayer[],
  * (SALIR) vuelve a la pantalla de jugadores. Solo se llama a mano desde el celular: nada reinicia la partida terminada por sí solo.
  */
 export async function resetRoom(code: string, who: string, same = false, nextRound = false): Promise<void> {
-  await withRoom(code, (room) => {
+  const started = await withRoom(code, (room) => {
     assertController(room, who);
     if (same && room.game) {
       // siguiente ronda (modo de varias copas): mismos jugadores con sus copas y lo bebido; si no, partida nueva con las mismas copas por ganar
@@ -162,21 +168,33 @@ export async function resetRoom(code: string, who: string, same = false, nextRou
         nextRound ? room.game.seen : undefined, // entre rondas no se repiten las cartas que ya salieron
       );
       room.status = "PLAYING";
-      return;
+      return nextRound ? 0 : room.game.players.length; // la siguiente ronda sigue la misma partida; REINICIAR es una partida nueva
     }
     room.game = null;
     room.status = "LOBBY";
+    return 0;
   });
+  if (started > 0) {
+    await track("partida");
+    await track("jugadores", started);
+  }
 }
 
 export async function actInRoom(code: string, who: string, action: Action): Promise<void> {
   // las listas que dejó el admin (categorías de La Ouija, trabalenguas y apodos: el motor las usa al caer alguien en la casilla)
   if (action.type === "ROLL" || action.type === "DUEL_ROLL") setLists(await loadLists().catch(() => null));
-  await withRoom(code, (room) => {
+  const events = await withRoom(code, (room) => {
     assertController(room, who);
     if (!room.game) throw new RoomError("La partida no ha empezado.", 409);
-    const next = applyAction(room.game, action);
-    if (next === room.game) throw new RoomError("Esa jugada no es válida ahora.", 409);
+    const prev = room.game;
+    const next = applyAction(prev, action);
+    if (next === prev) throw new RoomError("Esa jugada no es válida ahora.", 409);
     room.game = next;
+    // estadísticas anónimas: la partida pasa de «probando» a «en serio» al llegar a SERIOUS_ROLLS tiradas, y se cuenta una vez al terminar
+    const events: Parameters<typeof track>[0][] = [];
+    if ((prev.rollSeq ?? 0) < SERIOUS_ROLLS && (next.rollSeq ?? 0) >= SERIOUS_ROLLS) events.push("enserio");
+    if (matchOver(next) && !matchOver(prev)) events.push("terminada");
+    return events;
   });
+  for (const ev of events) await track(ev);
 }

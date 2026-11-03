@@ -45,6 +45,7 @@ import { loadModelScene, renderToken } from "./modelRender";
 import { nameFromFile, uploadModel, type CustomModel } from "./modelUpload";
 import CardsDialog from "./CardsDialog";
 import TokensDialog from "./TokensDialog";
+import StatsDialog from "./StatsDialog";
 import { PLAYER_COLORS } from "@/game/tileStyle";
 
 const DRAFT_KEY = "ebrio-editor:borrador";
@@ -128,6 +129,7 @@ export default function BoardEditor() {
   const [uploadMode, setUploadMode] = useState<"blob" | "dev">("blob");
   const [tokensOpen, setTokensOpen] = useState(false);
   const [cardsOpen, setCardsOpen] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [baseCatalog, setCatalog] = useState<Catalog | null>(null);
   const catalog = useMemo<Catalog | null>(
     () =>
@@ -895,6 +897,9 @@ export default function BoardEditor() {
             <button className={`${btn} ${layout.tokens.some(Boolean) ? on : off}`} onClick={() => setTokensOpen(true)} title="Elegir el modelo de cada ficha de jugador y su tamaño">
               🧟 Fichas
             </button>
+            <button className={`${btn} ${off} col-span-2`} onClick={() => setStatsOpen(true)} title="Cuántos grupos juegan de verdad: mesas, partidas, partidas terminadas (solo para ti)">
+              📊 Estadísticas
+            </button>
           </div>
 
           {/* ------------------------------------------------ ajustes (antes en la barra de arriba) */}
@@ -1137,6 +1142,7 @@ export default function BoardEditor() {
           </div>
         </aside>
       </div>
+      {statsOpen && <StatsDialog adminKey={() => adminKey() ?? ""} onClose={() => setStatsOpen(false)} />}
       {cardsOpen && <CardsDialog adminKey={() => adminKey() ?? ""} onClose={() => setCardsOpen(false)} onStatus={setStatus} />}
       {tokensOpen && catalog && <TokensDialog layout={layout} catalog={catalog} onChange={commit} onClose={() => setTokensOpen(false)} />}
     </div>

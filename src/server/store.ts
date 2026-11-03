@@ -7,6 +7,8 @@ export interface Store {
   /** SET NX con expiración: true si se adquirió. */
   setNx(key: string, value: string, ttlMs: number): Promise<boolean>;
   del(key: string): Promise<void>;
+  /** Suma `n` a un contador (empieza en 0) y devuelve el total. */
+  incr(key: string, n?: number): Promise<number>;
 }
 
 class UpstashStore implements Store {
@@ -40,6 +42,9 @@ class UpstashStore implements Store {
   async del(key: string) {
     await this.command(["DEL", key]);
   }
+  async incr(key: string, n = 1) {
+    return Number(await this.command(["INCRBY", key, n]));
+  }
 }
 
 class MemoryStore implements Store {
@@ -63,6 +68,11 @@ class MemoryStore implements Store {
   }
   async del(key: string) {
     this.data.delete(key);
+  }
+  async incr(key: string, n = 1) {
+    const total = Number(this.read(key)?.value ?? 0) + n;
+    this.data.set(key, { value: String(total), expires: Date.now() + 1000 * 60 * 60 * 24 * 400 });
+    return total;
   }
 }
 
