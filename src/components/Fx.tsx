@@ -52,9 +52,32 @@ export function DiceOverlay({ dice }: { dice: DiceFx | null }) {
  * casilla (vector, nítido, del color del evento con contorno), «CASILLA N» y el título en letra de terror. Sin
  * resplandor ni discos: solo se atenúa un poco el tablero para que se lea.
  */
+/** Parte un título en dos renglones lo más parejos posible, sin cortar palabras. */
+function splitTitle(title: string): string[] {
+  const words = title.split(" ");
+  if (words.length < 2) return [title];
+  let best = [title];
+  let diff = Infinity;
+  for (let i = 1; i < words.length; i++) {
+    const a = words.slice(0, i).join(" ");
+    const b = words.slice(i).join(" ");
+    const d = Math.abs(a.length - b.length);
+    if (d < diff) {
+      diff = d;
+      best = [a, b];
+    }
+  }
+  return best;
+}
+
 export function BannerOverlay({ banner }: { banner: Banner | null }) {
   if (!banner) return null;
   const mask = banner.icon ? iconMaskUrl(banner.icon, 512) : null;
+  // celular vertical: un título largo va en dos renglones parejos, cada uno en su línea, así el bloque mide lo que mide su renglón más largo y el icono queda pegado al título
+  const portrait = typeof window !== "undefined" && window.innerHeight > window.innerWidth;
+  const lines = portrait && banner.title.length > 14 ? splitTitle(banner.title) : [banner.title];
+  const longest = Math.max(...lines.map((l) => l.length));
+  const titleSize = lines.length > 1 ? `max(${Math.min(8.6, 70 / (0.66 * longest))}cqw, 22px)` : `max(${Math.min(8.6, 125 / banner.title.length)}cqw, 28px)`;
   return (
     <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center overflow-hidden bg-black/35">
       <div key={banner.key} className="banner-slam w-full">
@@ -86,9 +109,11 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
                 Casilla {banner.n}
               </span>
             )}
-            <span className="banner-title leading-[1.05]" style={{ textWrap: "balance", fontSize: `max(${Math.min(8.6, 125 / banner.title.length)}cqw, 28px)`, ["--accent" as string]: banner.color }}>
-              {banner.title}
-            </span>
+            {lines.map((line) => (
+              <span key={line} className="banner-title leading-[1.05] whitespace-nowrap" style={{ fontSize: titleSize, ["--accent" as string]: banner.color }}>
+                {line}
+              </span>
+            ))}
           </div>
         </div>
       </div>
