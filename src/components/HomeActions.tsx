@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { api, hostKey, saved } from "@/lib/room-client";
+import { api, controlKey, epochKey, hostKey, saved } from "@/lib/room-client";
 
 export default function HomeActions() {
   const router = useRouter();
@@ -18,6 +17,23 @@ export default function HomeActions() {
       const room = await api<{ code: string; hostSecret: string }>("/api/rooms", {});
       saved.set(hostKey(room.code), room.hostSecret);
       router.push(`/mesa/${room.code}`);
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(false);
+    }
+  };
+
+  // Un solo aparato (PC o celular): crea la mesa, toma el control y abre el tablero con el control en la misma pantalla
+  const playSolo = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const room = await api<{ code: string; hostSecret: string }>("/api/rooms", {});
+      saved.set(hostKey(room.code), room.hostSecret);
+      const c = await api<{ secret: string; epoch: number }>(`/api/rooms/${room.code}/control`, {});
+      saved.set(controlKey(room.code), c.secret);
+      saved.set(epochKey(room.code), c.epoch);
+      router.push(`/mesa/${room.code}?solo=1`);
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
@@ -60,10 +76,10 @@ export default function HomeActions() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Link href="/jugar" className="btn-game bg-btn-yellow py-3 text-lg text-white landscape:py-3">
-          JUGAR SIN TV
-        </Link>
-        <p className="text-sm text-white/70">Todos en un mismo celular, sin TV.</p>
+        <button disabled={busy} onClick={playSolo} className="btn-game bg-btn-yellow py-3 text-lg text-white disabled:bg-btn-grey landscape:py-3">
+          {busy ? "CREANDO…" : "JUGAR EN ESTE APARATO"}
+        </button>
+        <p className="text-sm text-white/70">En la PC o en el celular, sin otro aparato: el tablero y el control en la misma pantalla.</p>
       </div>
       {error && <p className="rounded-xl border-[3px] border-ink bg-btn-red px-3 py-2 text-white landscape:col-span-3">{error}</p>}
     </div>

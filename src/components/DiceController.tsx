@@ -226,7 +226,7 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
               : "🔥 Purgatorio: con 1-3 debes 2, con 4-6 debes 4 para salir"
             : spin ? "Rodando…" : shake.state === "on" ? "📳 Agita el celular o toca el dado" : "👆 Toca el dado para tirar"}
         </p>
-        {shake.state === "needs-permission" && (
+        {shake.state === "needs-permission" && typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches && (
           <button onClick={() => void shake.request()} className="btn-game bg-btn-blue px-4 py-2 text-white">
             📳 ACTIVAR AGITAR
           </button>

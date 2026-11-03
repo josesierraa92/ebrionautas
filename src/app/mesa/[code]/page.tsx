@@ -1,6 +1,7 @@
 "use client";
 
 import CardPanel, { CardText, GREEN } from "@/components/CardPanel";
+import Controller from "@/components/Controller";
 import Logo from "@/components/Logo";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
@@ -14,12 +15,15 @@ import Clasificatoria from "@/components/Clasificatoria";
 import { PanelCard, RuleCard, TurnChip } from "@/components/TvCards";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Decision } from "@/game/engine";
-import { api, hostKey, saved, useRoom } from "@/lib/room-client";
+import { api, controlKey, epochKey, hostKey, saved, sendAction, useRoom } from "@/lib/room-client";
 import { useAutoUpdate } from "@/lib/useAutoUpdate";
 import { usePublishedLayout } from "@/lib/usePublishedBoard";
 import { useGameFx } from "@/lib/useGameFx";
 
-/** Pantalla grande (TV / portátil): QR para el control, tablero y marcador. Solo muestra. */
+/**
+ * Pantalla grande (TV / portátil): QR para el control, tablero y marcador. Solo muestra.
+ * Con `?solo=1` es el modo «un solo aparato» (PC o celular): la misma pantalla es la TV y el control (jugadores, dado, decisiones, ajustes).
+ */
 export default function MesaPage({ params }: { params: Promise<{ code: string }> }) {
   const code = use(params).code.toUpperCase();
   const { room, error, refresh } = useRoom(code);
@@ -29,6 +33,12 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const [releasing, setReleasing] = useState(false);
   const [releaseError, setReleaseError] = useState<string | null>(null);
   const [controlUrl, setControlUrl] = useState("");
+  // modo «un solo aparato»: este mismo aparato lleva el control de la mesa
+  const [solo, setSolo] = useState(false);
+  const [controlSecret, setControlSecret] = useState<string | null>(null);
+  const [controlEpoch, setControlEpoch] = useState<number | null>(null);
+  const triedClaim = useRef(false);
+  const [narrow, setNarrow] = useState(false); // pantalla estrecha (celular): lo que se dibuja sobre el tablero va más chico
   const fx = useGameFx(room?.game ?? null);
   // Se recarga sola cuando hay una versión nueva del juego (sin dado ni jugada en marcha).
   useAutoUpdate(fx.settled && !fx.dice && !fx.banner);
@@ -42,8 +52,39 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     setHostSecret(saved.get<string>(hostKey(code)));
     setControlUrl(`${window.location.origin}/c/${code}`);
     setPanelOpen(saved.get<boolean>(PANEL_KEY) ?? true);
-
+    setSolo(new URLSearchParams(window.location.search).has("solo"));
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const onMq = () => setNarrow(mq.matches);
+    onMq();
+    mq.addEventListener("change", onMq);
+    setControlSecret(saved.get<string>(controlKey(code)));
+    setControlEpoch(saved.get<number>(epochKey(code)));
+    return () => mq.removeEventListener("change", onMq);
   }, [code]);
+
+  // Un solo aparato: si la mesa aún no tiene quien la controle, este aparato toma el control (una sola vez)
+  useEffect(() => {
+    if (!solo || !room || controlSecret || room.hasController || triedClaim.current) return;
+    triedClaim.current = true;
+    api<{ secret: string; epoch: number }>(`/api/rooms/${code}/control`, {})
+      .then((r) => {
+        saved.set(controlKey(code), r.secret);
+        saved.set(epochKey(code), r.epoch);
+        setControlSecret(r.secret);
+        setControlEpoch(r.epoch);
+        return refresh();
+      })
+      .catch(() => {});
+  }, [solo, room, controlSecret, code, refresh]);
+  // …y si otro aparato se lleva el control (la TV lo liberó), este suelta su clave y no lo vuelve a pedir solo
+  const lostControl = solo && !!room && !!controlSecret && (!room.hasController || (controlEpoch !== null && room.controlEpoch !== controlEpoch));
+  useEffect(() => {
+    if (!lostControl) return;
+    triedClaim.current = true;
+    saved.set(controlKey(code), null);
+    setControlSecret(null);
+  }, [lostControl, code]);
+  const soloActive = solo && !!room && !!controlSecret && !lostControl;
 
   const togglePanel = () => {
     saved.set(PANEL_KEY, !panelOpen);
@@ -89,6 +130,23 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
       {releaseError && <CardText size={1.05}>{releaseError}</CardText>}
     </CardPanel>
   ) : null;
+
+  // un solo aparato: mientras toma el control se espera un instante
+  if (solo && !soloActive && !room.hasController) return <Centered>Preparando la mesa…</Centered>;
+
+  if (soloActive && (room.status === "LOBBY" || !room.game)) {
+    return (
+      <>
+        <Controller solo code={code} room={room} secret={controlSecret!} error={error} refresh={refresh} />
+        <p className="pb-6 text-center">
+          <Link href="/" className="font-display uppercase underline" style={{ color: "#bffa58", letterSpacing: "0.03em" }}>
+            ← Volver
+          </Link>
+        </p>
+        {claimPopup}
+      </>
+    );
+  }
 
   if (room.status === "LOBBY" || !room.game) {
     // sala de espera: el logo y una tarjeta con el mismo diseño que las de las casillas (`CardPanel`, regla de diseño del CLAUDE.md)
@@ -150,7 +208,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
         : null;
 
   // el celular abrió la clasificatoria: sustituye al mensaje de ganador y tapa el tablero (fuera de BoardStage: ocupa toda la pantalla)
-  const ranking = winner && game.ranking ? <Clasificatoria game={game} unit="min(1.7vw, 2.6vh)" /> : null;
+  const ranking = !soloActive && winner && game.ranking ? <Clasificatoria game={game} unit="min(1.7vw, 2.6vh)" /> : null;
 
   // Tarjeta del panel de la derecha (modo con marcador): la de lo que acaba de pasar; si no hay nada que explicar, la de la casilla donde está quien juega,
   // con «tira el dado desde el celular». Mientras la TV anima la tirada se queda la anterior (no se adelanta la casilla nueva).
@@ -162,13 +220,13 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const overlays = (withCard: boolean) => (
     <>
       {/* hasta que llega el diseño publicado no se dibuja: con los valores de serie salía un instante la estrella en su sitio de antes y luego saltaba al configurado */}
-      {published !== undefined && <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} scale={ui.chip / 100} chip={published?.chip} />}
+      {published !== undefined && <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} scale={(ui.chip / 100) * (soloActive && narrow ? 0.5 : 1)} chip={published?.chip} />}
       {withCard && card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} scale={ui.card / 100} />}
     </>
   );
 
-  // Modo tablero a pantalla completa: sin barra ni marcador, solo unos botones pequeños flotando.
-  if (!panelOpen) {
+  // Modo tablero a pantalla completa: sin barra ni marcador, solo unos botones pequeños flotando (no en «un solo aparato»: ahí hace falta el control).
+  if (!panelOpen && !soloActive) {
     return (
       <main className="fixed inset-0">
         <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare className="h-full">
@@ -192,18 +250,22 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-[1600px] flex-col gap-4 px-4 py-4 lg:flex-row lg:items-start">
-      <section className="flex flex-col gap-3 lg:flex-1">
+      <section className={`flex flex-col gap-3 lg:flex-1 ${soloActive ? "max-lg:sticky max-lg:top-0 max-lg:z-20 max-lg:bg-[#0a0620] max-lg:pb-2" : ""}`}>
         <div className="flex items-center justify-between gap-2">
-          <Logo className="w-48 sm:w-60" />
-          <span className="flex items-center gap-2 font-display text-white/70">
+          <Logo className="w-36 shrink-0 sm:w-60" />
+          <span className="flex min-w-0 items-center gap-2 font-display text-white/70">
             <SoundToggle />
-            <button onClick={toggleFullscreen} aria-label="Pantalla completa" title="Pantalla completa" className="icon-btn">
-              ⛶
-            </button>
-            <button onClick={togglePanel} aria-label="Solo tablero" title="Solo tablero (oculta el marcador)" className="icon-btn">
-              ⤢
-            </button>
-            <span className="ml-2">Mesa {code}</span>
+            {!soloActive && (
+              <>
+                <button onClick={toggleFullscreen} aria-label="Pantalla completa" title="Pantalla completa" className="icon-btn">
+                  ⛶
+                </button>
+                <button onClick={togglePanel} aria-label="Solo tablero" title="Solo tablero (oculta el marcador)" className="icon-btn">
+                  ⤢
+                </button>
+              </>
+            )}
+            <span className="ml-2 whitespace-nowrap">Mesa {code}</span>
           </span>
         </div>
         <BoardStage
@@ -219,14 +281,16 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
         {ranking}
       </section>
       <aside className="flex flex-col gap-4 lg:w-[28rem]">
-        {winner ? (
+        {soloActive ? (
+          <Controller solo code={code} room={room} secret={controlSecret!} error={error} refresh={refresh} />
+        ) : winner ? (
           <div className="rounded-2xl border-[3px] border-ink bg-ink/80 p-4">
             <Winner winner={winner} players={game.players} />
           </div>
         ) : (
           <PanelCard game={game} n={panelCard.n} playerId={panelCard.playerId} cardKey={panelCard.key} result={panelCard.result} prompt={panelCard.waiting ? `${me.name}, tira el dado desde el celular` : null} />
         )}
-        <PlayersList game={game} big />
+        <PlayersList game={game} big onPenalty={soloActive ? (id) => { sendAction(code, controlSecret!, { type: "PENALTY", id }).then(() => refresh()).catch(() => {}); } : undefined} />
         <GameLog log={game.log} max={12} big />
         {error && <p className="text-sm text-btn-red">⚠️ {error}</p>}
       </aside>
