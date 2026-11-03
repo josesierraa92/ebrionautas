@@ -169,7 +169,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
         {winnerButtons}
 
         {/* decisión: la tarjeta y lo que hay que marcar, en una ventana */}
-        {!winner && game.decision && (() => {
+        {!winner && game.decision && !(overlay && locked) && (() => {
           // una sola tarjeta: la de la casilla, con lo que hay que decidir dentro (no una tarjeta dentro de otra)
           const c = card ? cardContent(game, card.n, card.playerId, card.result) : null;
           const body = (

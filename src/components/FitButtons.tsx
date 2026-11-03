@@ -1,7 +1,7 @@
 "use client";
 
 // Los botones del juego (`.btn-game`) nunca se parten en dos renglones: si el texto no cabe en el ancho que tiene el botón, la letra baja
-// (hasta la mitad) hasta que cabe en una línea. Solo los botones de puro texto (los que llevan elementos dentro, como el nombre y los vasos de
+// (hasta la mitad) hasta que cabe en una línea con un margen de 14 px a cada lado. Solo los botones de puro texto (los que llevan elementos dentro, como el nombre y los vasos de
 // «+ TRAGO», se arreglan a mano). Se revisa cuando cambia la pantalla, el texto o aparece un botón nuevo.
 import { useEffect } from "react";
 
@@ -13,11 +13,17 @@ function fit(el: HTMLElement) {
   // el tamaño que ya traía el botón (por clase de Tailwind, o inline en las tarjetas de la TV)
   if (el.dataset.fitInline === undefined) el.dataset.fitInline = el.style.fontSize;
   el.style.fontSize = el.dataset.fitInline;
-  if (el.scrollWidth <= el.clientWidth + 1) return;
-  let size = parseFloat(getComputedStyle(el).fontSize);
+  // ancho del texto contra el ancho del botón menos un margen a cada lado (el mayor entre su relleno y 14 px), para que la letra nunca roce el borde
+  const cs = getComputedStyle(el);
+  const margin = Math.max(parseFloat(cs.paddingLeft) || 0, 14);
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const tooWide = () => range.getBoundingClientRect().width > el.clientWidth - 2 * margin;
+  if (!tooWide()) return;
+  let size = parseFloat(cs.fontSize);
   if (!Number.isFinite(size)) return;
   const min = size * MIN;
-  while (el.scrollWidth > el.clientWidth + 1 && size > min) {
+  while (tooWide() && size > min) {
     size -= 0.5;
     el.style.fontSize = `${size}px`;
   }
