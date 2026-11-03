@@ -2,7 +2,7 @@
 
 import { characterOf } from "@/game/characters";
 import { useState } from "react";
-import CardPanel from "@/components/CardPanel";
+import CardPanel, { CardText } from "@/components/CardPanel";
 import Logo from "@/components/Logo";
 import Marciano from "@/components/Marciano";
 import TrophyIcon from "@/components/TrophyIcon";
@@ -27,6 +27,9 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
     { name: "", gender: null },
   ]);
   const [cups, setCups] = useState(1);
+  // paso 1: los muertos; paso 2: las copas (solo si el modo las tiene) y ahí se pulsa «¡A LEVANTARSE!»
+  const [step, setStep] = useState<1 | 2>(1);
+  const start = () => onStart(filled.map((p) => ({ name: p.name.trim(), gender: p.gender! })), copas ? cups : 1);
   const set = (i: number, patch: Partial<Draft>) => setPlayers(players.map((p, j) => (j === i ? { ...p, ...patch } : p)));
 
   const filled = players.filter((p) => p.name.trim());
@@ -48,6 +51,7 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
           </span>
         )}
       </div>
+      {step === 1 ? (
       <CardPanel
         inline
         unit="17px"
@@ -57,12 +61,8 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
         title="¿Quién juega?"
         actions={
           <>
-            <button
-              disabled={!ready || busy}
-              onClick={() => onStart(filled.map((p) => ({ name: p.name.trim(), gender: p.gender! })), copas ? cups : 1)}
-              className="btn-game bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey"
-            >
-              {busy ? "LEVANTÁNDOSE…" : "¡A LEVANTARSE!"}
+            <button disabled={!ready || busy} onClick={() => (copas ? setStep(2) : start())} className="btn-game bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey">
+              {copas ? "SIGUIENTE" : busy ? "LEVANTÁNDOSE…" : "¡A LEVANTARSE!"}
             </button>
             <p className="text-center text-sm" style={{ color: "#d8d4f6", opacity: 0.75, fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700 }}>
               {filled.length < 2
@@ -117,29 +117,44 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
           </button>
         )}
 
-        {copas && (
-          <div role="group" aria-label="Copas para ganar" className="p-3 text-center" style={{ marginTop: u(0.8), background: rowBg, borderRadius: u(0.9) }}>
-            <p className="font-display text-lg uppercase" style={{ color: "#bffa58" }}>¿A cuántas copas?</p>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {[1, 2, 3].map((n) => (
-                <button
-                  key={n}
-                  aria-pressed={cups === n}
-                  onClick={() => setCups(n)}
-                  className={`rounded-xl py-2 font-display text-xl ${cups === n ? "text-[#14260a]" : "bg-black/30 text-white/60"}`}
-                  style={cups === n ? { background: "linear-gradient(160deg, #bffa58, #5fc34a)" } : undefined}
-                >
-                  <span className="flex justify-center gap-0.5">{Array.from({ length: n }, (_, i) => <TrophyIcon key={i} size={26} />)}</span>
-                  <span className="block text-sm">{n === 1 ? "1 copa" : `${n} copas`}</span>
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-sm" style={{ color: "#d8d4f6", opacity: 0.8, fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700 }}>
-              {cups === 1 ? "El primero que llegue a la meta gana." : `Gana quien consiga ${cups} copas: cada ronda se juega hasta la meta y se reinicia.`}
-            </p>
-          </div>
-        )}
       </CardPanel>
+      ) : (
+        <CardPanel
+          inline
+          unit="17px"
+          width={24}
+          maxH="none"
+          kicker="La meta"
+          title="¿Cuántas copas?"
+          actions={
+            <>
+              <button disabled={busy} onClick={start} className="btn-game bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey">
+                {busy ? "LEVANTÁNDOSE…" : "¡A LEVANTARSE!"}
+              </button>
+              <button onClick={() => setStep(1)} disabled={busy} className="font-display text-sm uppercase underline" style={{ color: "#bffa58" }}>
+                ← Atrás
+              </button>
+            </>
+          }
+        >
+          {/* minimalista: tres opciones grandes y una línea que explica la elegida */}
+          <div role="group" aria-label="Copas para ganar" className="grid grid-cols-3" style={{ marginTop: u(0.8), gap: u(0.7) }}>
+            {[1, 2, 3].map((n) => (
+              <button
+                key={n}
+                aria-pressed={cups === n}
+                onClick={() => setCups(n)}
+                className={`flex flex-col items-center justify-center font-display ${cups === n ? "text-[#14260a]" : "bg-black/30 text-white/70"}`}
+                style={{ gap: u(0.5), padding: `${u(1.3)} 0`, borderRadius: u(1), ...(cups === n ? { background: "linear-gradient(160deg, #bffa58, #5fc34a)" } : {}) }}
+              >
+                <span className="flex justify-center" style={{ gap: 2, minHeight: 34 }}>{Array.from({ length: n }, (_, i) => <TrophyIcon key={i} size={n === 1 ? 40 : n === 2 ? 30 : 24} />)}</span>
+                <span style={{ fontSize: u(1.9), lineHeight: 1 }}>{n}</span>
+              </button>
+            ))}
+          </div>
+          <CardText size={1.05}>{cups === 1 ? "El primero que llegue a la meta gana." : `Gana quien consiga ${cups} copas: cada ronda se juega hasta la meta y se reinicia.`}</CardText>
+        </CardPanel>
+      )}
     </main>
   );
 }
