@@ -2,6 +2,7 @@
 // espaldas (mirando a la derecha de la pantalla), quieto y en dos momentos del paso. Se hace al publicar (con la vista
 // elegida en el editor) y para la hoja de serie (scripts/characters/sheet.mjs).
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { CHARACTERS, SHEET_COLS, type Pose } from "@/game/characters";
 import { tvDirection, type TvView } from "./layout";
@@ -57,6 +58,8 @@ function zombieMap(original: THREE.Texture, id: string): THREE.Texture {
   ctx.putImageData(px, x0, y0);
   ctx.fillStyle = EYE.color; // los ojos (yellowEyes)
   ctx.fillRect(EYE.x * k, EYE.y * k, EYE.size * k, EYE.size * k);
+  ctx.fillStyle = BLOOD.color;
+  ctx.fillRect(BLOOD.x * k, EYE.y * k, 16 * k, 16 * k);
   const tex = new THREE.CanvasTexture(c);
   tex.flipY = original.flipY;
   tex.colorSpace = original.colorSpace;
@@ -80,6 +83,8 @@ function pixels(tex: THREE.Texture) {
 
 /** Cuadrito amarillo vivo que se pinta en una zona vacía (negra) de la paleta: los ojos de zombi. */
 const EYE = { x: 8, y: 8, size: 16, color: "#fff04a" };
+/** Rojo de las manchas de sangre de la ropa: un cuadrito de 16 px en la paleta (junto al amarillo de los ojos). */
+const BLOOD = { x: 32, color: "#b3141c" };
 const YELLOW_UV = [(EYE.x + EYE.size / 2) / 512, (EYE.y + EYE.size / 2) / 512];
 
 /**
@@ -269,6 +274,79 @@ function eyeGlow(ctx: CanvasRenderingContext2D, x: number, y: number, w: number,
   ctx.restore();
 }
 
+
+/** Azar con semilla: cada zombi tiene siempre las mismas manchas (en la hoja de sprites y en el 3D). */
+function seeded(seed: number) {
+  let a = seed * 2654435761 + 12345;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Mancha orgánica (borde ondulado y, a veces, una gotita aparte), plana, de radio ~1 y en el plano XY. */
+function bloodBlob(rnd: () => number): THREE.BufferGeometry[] {
+  const make = (r0: number, wob: number) => {
+    const ph = [rnd() * 6.28, rnd() * 6.28, rnd() * 6.28];
+    const amp = [0.22 * wob, 0.14 * wob, 0.09 * wob];
+    const pts: THREE.Vector2[] = [];
+    for (let i = 0; i < 40; i++) {
+      const a = (i / 40) * Math.PI * 2;
+      const r = r0 * (1 + amp[0] * Math.cos(2 * a + ph[0]) + amp[1] * Math.cos(3 * a + ph[1]) + amp[2] * Math.cos(5 * a + ph[2]));
+      pts.push(new THREE.Vector2(Math.cos(a) * r, Math.sin(a) * r));
+    }
+    return new THREE.ShapeGeometry(new THREE.Shape(pts));
+  };
+  const out = [make(1, 1)];
+  if (rnd() < 0.7) {
+    const g = make(0.22 + rnd() * 0.12, 0.7);
+    const a = rnd() * 6.28;
+    g.translate(Math.cos(a) * 1.25, Math.sin(a) * 1.25, 0);
+    out.push(g);
+  }
+  return out;
+}
+
+/**
+ * Dos manchas de sangre sobre la ropa del pecho/barriga de cada zombi (tamaño, forma, sitio y giro al azar, con semilla). Se mezclan en la malla
+ * del cuerpo y van atadas al hueso del torso, así siguen la animación en la hoja de sprites y en el 3D en vivo.
+ */
+function bloodStains(mesh: THREE.Mesh, seed: number) {
+  const skinned = mesh as THREE.SkinnedMesh;
+  if (!skinned.isSkinnedMesh) return;
+  const bone = skinned.skeleton.bones.findIndex((b) => b.name === "torso");
+  if (bone < 0) return;
+  const base = mesh.geometry;
+  const rnd = seeded(seed + 1);
+  const parts: THREE.BufferGeometry[] = [base];
+  for (let k = 0; k < 2; k++) {
+    const size = 0.032 + rnd() * 0.034;
+    const x = (k === 0 ? -1 : 1) * (0.015 + rnd() * 0.07);
+    const y = 0.15 + rnd() * 0.14;
+    const rot = rnd() * 6.28;
+    for (const g of bloodBlob(rnd)) {
+      g.rotateZ(rot);
+      g.scale(size, size * (0.8 + rnd() * 0.5), 1);
+      g.translate(x, y, 0.113 + k * 0.001);
+      const n = g.attributes.position.count;
+      const out = new THREE.BufferGeometry();
+      out.setIndex(Array.from(g.index!.array));
+      for (const name of Object.keys(base.attributes)) {
+        const a = base.attributes[name] as THREE.BufferAttribute;
+        if (name === "position" || name === "normal") out.setAttribute(name, g.attributes[name]);
+        else if (name.startsWith("uv")) out.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * 2).map((_, i) => (i % 2 ? (EYE.y + 8) / 512 : (BLOOD.x + 8) / 512)), 2));
+        else if (name === "skinIndex") out.setAttribute(name, new THREE.BufferAttribute(new Uint16Array(n * 4).map((_, i) => (i % 4 === 0 ? bone : 0)), 4));
+        else if (name === "skinWeight") out.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * 4).map((_, i) => (i % 4 === 0 ? 1 : 0)), 4));
+        else out.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * a.itemSize), a.itemSize));
+      }
+      parts.push(out);
+    }
+  }
+  mesh.geometry = mergeGeometries(parts, false) ?? base;
+}
+
 /** Los 12 personajes ya convertidos en zombi (piel verde y ojos amarillos), con sus animaciones. */
 export function loadAll(): Promise<Loaded[]> {
   loading ??= Promise.all(
@@ -290,7 +368,10 @@ export function loadAll(): Promise<Loaded[]> {
                   yellowEyes(mesh, orig.map, eyes);
                   headMesh = mesh;
                 }
-                if (/body/i.test(mesh.name)) dropProps(mesh, id);
+                if (/body/i.test(mesh.name)) {
+                  dropProps(mesh, id);
+                  bloodStains(mesh, CHARACTERS.indexOf(id));
+                }
                 mesh.material = ([mesh.material].flat() as THREE.MeshStandardMaterial[]).map((orig) => {
                   const m = orig.clone();
                   if ("metalness" in m) m.metalness = 0;
