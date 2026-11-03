@@ -5,6 +5,7 @@ import type { Action } from "@/game/engine";
 const ALL: Record<Action["type"], true> = {
   ROLL: true,
   NEXT_TURN: true,
+  END_GAME: true,
   DISTRIBUTE: true,
   DUEL: true,
   DUEL_ROLL: true,

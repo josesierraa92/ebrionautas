@@ -257,7 +257,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
         </CardPanel>
       )}
 
-      {settings && <SettingsDialog game={game} busy={busy} onAction={act} onClose={() => setSettings(false)} />}
+      {settings && <SettingsDialog game={game} busy={busy} onAction={act} onRestart={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))} onClose={() => setSettings(false)} />}
 
       {menu && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0a0620]">

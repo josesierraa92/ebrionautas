@@ -625,3 +625,16 @@ describe("pausa de jugadores", () => {
     expect(act(s, { type: "SELECT_DRINKERS", ids: ["p3"] })).toBe(s);
   });
 });
+
+describe("terminar partida a mano", () => {
+  it("END_GAME termina la partida: gana el más adelantado y se enseña la clasificatoria", () => {
+    const g = createGame([{ name: "Ana", color: "#f00" }, { name: "Beto", color: "#0f0" }], 3);
+    g.players[1].pos = 20;
+    const e = applyAction(g, { type: "END_GAME" });
+    expect(e.phase).toBe("FINISHED");
+    expect(e.winner).toBe("p2");
+    expect(matchOver(e)).toBe(true);
+    expect(e.ranking).toBe(true);
+    expect(applyAction(e, { type: "END_GAME" })).toBe(e);
+  });
+});

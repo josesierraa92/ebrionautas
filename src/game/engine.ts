@@ -100,6 +100,8 @@ export type GameState = {
   seen?: Record<string, string[]>;
   /** Quien llegó a la meta en esta ronda (si le faltan copas, la partida sigue con otra ronda; ver `matchOver`). */
   winner: string | null;
+  /** La partida se terminó a mano desde Ajustes (gana quien va más adelantado; no hace falta llegar a la meta ni tener las copas). */
+  ended?: boolean;
   log: LogEntry[];
   logSeq: number;
 };
@@ -107,6 +109,7 @@ export type GameState = {
 export type Action =
   | { type: "ROLL" }
   | { type: "NEXT_TURN" }
+  | { type: "END_GAME" }
   | { type: "DISTRIBUTE"; drinks: Record<string, number> }
   | { type: "DUEL"; opponents: string[] }
   | { type: "DUEL_ROLL" }
@@ -137,6 +140,7 @@ const d6 = (rng: Rng) => Math.floor(rng() * 6) + 1;
 export function matchOver(state: GameState): boolean {
   const w = state.players.find((p) => p.id === state.winner);
   if (!w) return false;
+  if (state.ended) return true;
   // con 1 copa (o una partida de antes de este modo, sin `cupsGoal`) quien llega a la meta gana siempre, tenga o no `cups` anotado
   return (state.cupsGoal ?? 1) <= 1 || (w.cups ?? 0) >= (state.cupsGoal ?? 1);
 }
@@ -285,6 +289,20 @@ export function applyAction(state: GameState, action: Action, rng: Rng = Math.ra
   if (action.type === "RANKING") {
     if (state.phase !== "FINISHED" || !!state.ranking === !!action.on) return state;
     return { ...state, ranking: !!action.on };
+  }
+
+  // Terminar la partida a mano: gana quien va más adelantado y se enseña la clasificatoria
+  if (action.type === "END_GAME") {
+    if (state.phase === "FINISHED") return state;
+    const s = structuredClone(state);
+    const lead = [...s.players].sort((a, b) => b.pos - a.pos)[0];
+    s.winner = lead.id;
+    s.phase = "FINISHED";
+    s.decision = null;
+    s.ended = true;
+    s.ranking = true;
+    log(s, `🏁 Se terminó la partida. Va adelante ${lead.name}.`);
+    return s;
   }
 
   if (state.phase === "FINISHED") return state;
