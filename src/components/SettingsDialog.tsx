@@ -45,11 +45,6 @@ export default function SettingsDialog({ game, busy, onAction, onClose }: { game
                 )}
                 <p style={{ ...body, fontSize: u(1), color: "#d8d4f6", marginTop: u(0.2) }}>
                   Lleva <b className="text-white">{p.drunk}</b> {p.drunk === 1 ? "vaso" : "vasos"}
-                  {p.pending > 0 && (
-                    <>
-                      {" "}· debe <b className="text-white">{p.pending}</b>
-                    </>
-                  )}
                 </p>
               </div>
               <button

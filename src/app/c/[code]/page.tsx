@@ -246,7 +246,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
                 CERRAR
               </button>
             </div>
-            <PlayersList game={game} onPenalty={(id) => act({ type: "PENALTY", id })} onDrank={(id) => act({ type: "DRANK", id })} />
+            <PlayersList game={game} onPenalty={(id) => act({ type: "PENALTY", id })} />
             <GameLog log={game.log} max={10} />
             <CardPanel inline kicker="Tablero" unit="17px" width={30} maxH="none">
               <Board players={game.players} current={me.id} />

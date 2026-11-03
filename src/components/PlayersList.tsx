@@ -13,15 +13,13 @@ type Props = {
   big?: boolean;
   /** Si se pasa, muestra el botón +1 para penalizar a quien rompa la ley vigente. */
   onPenalty?: (id: string) => void;
-  /** Si se pasa, la deuda de cada jugador es un botón para marcarla como bebida. */
-  onDrank?: (id: string) => void;
 };
 
 const ROW = "rgba(255,255,255,.08)";
 const body = { fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700 } as const;
 
 /** Marcador con el diseño de las tarjetas: casilla, vasos bebidos, deudas y estados de cada jugador. Los nombres van muy grandes (se leen de noche y con copas). */
-export default function PlayersList({ game, big = false, onPenalty, onDrank }: Props) {
+export default function PlayersList({ game, big = false, onPenalty }: Props) {
   const current = game.players[game.turn]?.id;
   const u = (k: number) => `calc(var(--u) * ${k})`;
   const nameOf = (id: string) => game.players.find((q) => q.id === id)?.name;
@@ -90,16 +88,6 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
                   <span className="inline-flex shrink-0 items-center font-display text-white" style={{ gap: u(0.3), padding: `${u(0.1)} ${u(0.55)}`, borderRadius: 999, background: "#1a0b38", fontSize: u(1.15) }} title="Total bebido">
                     <BeerIcon /> {p.drunk}
                   </span>
-                  {p.pending > 0 &&
-                    (onDrank ? (
-                      <button title="Marcar como bebido" onClick={() => onDrank(p.id)} className="btn-game animate-pulse bg-btn-red px-2 py-0.5 text-white" style={{ fontSize: u(0.9) }}>
-                        DEBE {p.pending}
-                      </button>
-                    ) : (
-                      <span className="animate-pulse rounded-full bg-btn-red px-2 py-0.5 font-display text-white" style={{ fontSize: u(0.9) }}>
-                        DEBE {p.pending}
-                      </span>
-                    ))}
                   {onPenalty && game.rule && !game.winner && (
                     <button title="Rompió la ley: bebe" aria-label={`${p.name} rompió la ley`} onClick={() => onPenalty(p.id)} className="btn-game bg-btn-special px-3 py-0.5 text-white" style={{ fontSize: u(1.2) }}>
                       +1
