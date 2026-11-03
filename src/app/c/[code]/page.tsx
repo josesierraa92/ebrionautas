@@ -227,17 +227,24 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
       {settings && <SettingsDialog game={game} busy={busy} onAction={act} onClose={() => setSettings(false)} />}
 
       {menu && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-space/95">
-          <div className="mx-auto flex max-w-md flex-col gap-4 px-4 py-4">
-            <div className="flex items-center justify-between">
-              <span className="font-display text-2xl">Mesa {code}</span>
-              <button onClick={() => setMenu(false)} className="btn-game bg-btn-yellow px-4 py-1 text-white">
-                ✕ CERRAR
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0a0620]">
+          <div className="mx-auto flex max-w-md flex-col items-center gap-5 px-4 py-4">
+            <div className="flex w-full items-center justify-between gap-3">
+              <span className="font-display uppercase" style={{ padding: "0.2rem 0.9rem", borderRadius: 999, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: "1.15rem", letterSpacing: "0.08em" }}>
+                Mesa {code}
+              </span>
+              <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-5 py-1 text-xl text-white">
+                CERRAR
               </button>
             </div>
             <PlayersList game={game} onPenalty={(id) => act({ type: "PENALTY", id })} onDrank={(id) => act({ type: "DRANK", id })} />
             <GameLog log={game.log} max={10} />
-            <Board players={game.players} current={me.id} />
+            <CardPanel inline kicker="Tablero" unit="17px" width={30} maxH="none">
+              <Board players={game.players} current={me.id} />
+            </CardPanel>
+            <button onClick={() => setMenu(false)} className="btn-game w-full bg-btn-green py-3 text-2xl text-white">
+              CERRAR
+            </button>
           </div>
         </div>
       )}

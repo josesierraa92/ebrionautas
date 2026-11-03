@@ -5,6 +5,10 @@ import { BOARD, type Tile } from "@/game/board";
 import type { Player } from "@/game/engine";
 import { GRID, TILE_AREA, tileCenter } from "@/game/spiral";
 import { TILE_STYLE, tileLabel } from "@/game/tileStyle";
+import MaskIcon from "@/components/MaskIcon";
+import { builtinIcon } from "@/editor/icons";
+import { lookOf, newLayout, type BoardLayout } from "@/editor/layout";
+import { usePublishedLayout } from "@/lib/usePublishedBoard";
 
 type Props = {
   players: Player[];
@@ -19,19 +23,23 @@ type Props = {
 };
 
 const TILE_PCT = 100 / GRID;
+const FALLBACK: BoardLayout = newLayout();
 
 /** Tablero en espiral; las fichas son los personajes de colores. */
 export default function Board({ players, current, winner, shown, flying, children }: Props) {
+  // mismos colores e iconos que el tablero de la TV (los del editor); sin diseño publicado, los de serie
+  const published = usePublishedLayout(true);
+  const layout = published ?? FALLBACK;
   // Fichas agrupadas por casilla para repartirlas si comparten sitio.
   const at = (p: Player) => shown?.[p.id] ?? p.pos;
   const groups = new Map<number, Player[]>();
   for (const p of players) groups.set(at(p), [...(groups.get(at(p)) ?? []), p]);
 
   return (
-    <div className="board-space @container relative aspect-square w-full overflow-hidden rounded-3xl border-4 border-ink p-[1%] shadow-[0_8px_0_#1b1f4b]">
+    <div className="@container relative aspect-square w-full overflow-hidden rounded-2xl p-[1%]" style={{ background: "#160a35" }}>
       <div className="grid h-full w-full gap-[0.5%]" style={{ gridTemplate: `repeat(${GRID}, 1fr) / repeat(${GRID}, 1fr)` }}>
         {BOARD.map((tile) => (
-          <TileView key={tile.n} tile={tile} />
+          <TileView key={tile.n} tile={tile} layout={layout} />
         ))}
       </div>
 
@@ -86,21 +94,34 @@ export default function Board({ players, current, winner, shown, flying, childre
   );
 }
 
-function TileView({ tile }: { tile: Tile }) {
+function TileView({ tile, layout }: { tile: Tile; layout: BoardLayout }) {
   const area = TILE_AREA[tile.n];
-  const style = TILE_STYLE[tile.type];
+  const look = lookOf(layout, tile.type);
   const grid = { gridRow: `${area.row + 1} / span ${area.rows}`, gridColumn: `${area.col + 1} / span ${area.cols}` };
+  const name = builtinIcon(look.icon);
+  const icon = (size: string) =>
+    name ? (
+      <MaskIcon name={name} color={ink} size={size} />
+    ) : look.icon.startsWith("data:") ? (
+      // imagen propia del editor
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={look.icon} alt="" style={{ width: size, height: size, objectFit: "contain" }} />
+    ) : (
+      <span aria-hidden style={{ fontSize: size, lineHeight: 1 }}>{look.icon}</span>
+    );
+  // el color del número y del icono se lee siempre: oscuro sobre casillas claras y blanco sobre las oscuras (la pintura suave de la TV se pierde en el celular)
+  const rgb = [1, 3, 5].map((i) => parseInt(look.color.slice(i, i + 2), 16));
+  const ink = look.customInk ? look.ink : (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114) / 255 > 0.55 ? "#2b2140" : "#ffffff";
+  const face = { background: `linear-gradient(165deg, ${look.color}, color-mix(in srgb, ${look.color} 72%, #000))`, color: ink };
 
   if (tile.type === "META") {
     return (
-      <div className="earth-tile @container relative flex flex-col items-center justify-center rounded-2xl border-[3px] border-ink" style={grid}>
-        <span className="earth-glow leading-none" style={{ fontSize: "30cqw" }} aria-hidden>
-          🪦
+      <div className="@container relative flex flex-col items-center justify-center rounded-[6%]" style={{ ...grid, ...face }}>
+        {icon("34cqw")}
+        <span className="font-display uppercase leading-none" style={{ fontSize: "12cqw", marginTop: "3cqw" }}>
+          Tu tumba
         </span>
-        <span className="title-game leading-none" style={{ fontSize: "11cqw" }}>
-          TU TUMBA
-        </span>
-        <span className="font-display text-ink/80" style={{ fontSize: "5.5cqw" }}>
+        <span className="font-display" style={{ fontSize: "5.5cqw", opacity: 0.8 }}>
           62 · ¡La fiesta definitiva!
         </span>
       </div>
@@ -109,21 +130,11 @@ function TileView({ tile }: { tile: Tile }) {
 
   const label = tileLabel(tile);
   return (
-    <div
-      className={`@container relative flex flex-col items-center justify-center overflow-hidden rounded-[14%] border-2 border-ink ${style.dark ? "text-white" : "text-ink"}`}
-      style={{ ...grid, background: `linear-gradient(160deg, ${style.bg[0]}, ${style.bg[1]})` }}
-      title={`${tile.n} · ${label}`}
-    >
-      <span className="absolute inset-x-[8%] top-[5%] h-[18%] rounded-full bg-white/30" aria-hidden />
-      <span
-        className="absolute top-[4%] left-[6%] grid aspect-square place-items-center rounded-full bg-ink font-display leading-none text-white"
-        style={{ width: "30cqw", fontSize: "17cqw" }}
-      >
+    <div className="@container relative flex flex-col items-center justify-center overflow-hidden rounded-[16%]" style={{ ...grid, ...face }} title={`${tile.n} · ${label}`}>
+      <span className="absolute top-[6%] left-[9%] font-display leading-none" style={{ fontSize: "22cqw" }}>
         {tile.n}
       </span>
-      <span className="leading-none drop-shadow-[0_2px_0_rgba(0,0,0,.25)]" style={{ fontSize: "44cqw", marginTop: "8cqw" }} aria-hidden>
-        {style.icon}
-      </span>
+      <span style={{ marginTop: "8cqw" }}>{icon("46cqw")}</span>
       {label && (
         <span className="hidden w-full truncate px-[4%] text-center font-display leading-tight @[64px]:block" style={{ fontSize: "12.5cqw" }}>
           {label}

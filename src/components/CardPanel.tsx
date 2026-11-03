@@ -32,7 +32,7 @@ export default function CardPanel({
 }: {
   /** Pastilla verde de arriba («SOLO PARA ADULTOS», «PRIVACIDAD»…). */
   kicker?: string;
-  title: string;
+  title?: string;
   /** Icono vectorial del cuadro verde… (sin icono ni texto no hay cuadro y el título ocupa toda la línea) */
   icon?: IconName;
   /** …o un texto corto en su lugar («+18»). */
@@ -77,6 +77,7 @@ export default function CardPanel({
       <div className="card-pop relative w-full text-left" style={{ ["--u" as string]: unit, maxWidth: u(width), paddingTop: u(0.9), filter: `drop-shadow(0 ${u(0.4)} ${u(0.6)} rgba(0,0,0,.55))` }}>
         <div style={{ borderRadius: u(1.1), border: `${u(0.32)} solid #452b8e`, background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
           <div className="flex flex-col" style={{ maxHeight: maxH, padding: `${u(1.9)} ${u(1.4)} ${u(1.4)}`, gap: u(1) }}>
+            {title && (
             <div className="flex shrink-0 items-center" style={{ gap: u(1.1) }}>
               {(mask || badge) && (
               <div className="grid shrink-0 place-items-center" style={{ width: u(4), height: u(4), minWidth: u(4), minHeight: u(4), borderRadius: u(0.9), background: GREEN }}>
@@ -93,6 +94,7 @@ export default function CardPanel({
                 {title}
               </h2>
             </div>
+            )}
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" style={{ paddingRight: u(0.3) }}>
               {children}
@@ -121,7 +123,7 @@ export default function CardPanel({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={label ?? title}
+      aria-label={label ?? title ?? kicker}
       className={`fixed inset-0 ${z} grid place-items-center px-4 py-6 ${solid ? "bg-[#0a0620]" : "bg-[#090620]/90"}`}
       onMouseDown={(e) => (downOnBackdrop.current = e.target === e.currentTarget)}
       onClick={(e) => {

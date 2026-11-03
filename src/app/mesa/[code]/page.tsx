@@ -199,7 +199,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
           )}
         </div>
         <PlayersList game={game} big />
-        <GameLog log={game.log} max={12} />
+        <GameLog log={game.log} max={12} big />
         {error && <p className="text-sm text-btn-red">⚠️ {error}</p>}
       </aside>
     </main>
