@@ -135,18 +135,18 @@ export default function Controller({ code, room, secret, error, refresh, overlay
     return (
       <>
         {/* botones de arriba a la derecha, como en la TV */}
-        <div className={`absolute top-[2%] right-[1.5%] z-50 flex items-center ${narrow ? "gap-1" : "gap-2"}`}>
+        <div className={`absolute top-[2%] right-[1.5%] z-50 flex items-center ${narrow ? "gap-0.5" : "gap-2"}`}>
           {extra}
           {!winner && (
-            <button onClick={() => setAddDrink(true)} className={`btn-game whitespace-nowrap bg-btn-red ${narrow ? "px-2 text-sm" : "px-2.5 text-base"} py-1 text-white`} aria-label="Agregar un trago a un jugador">
+            <button onClick={() => setAddDrink(true)} className={`btn-game whitespace-nowrap bg-btn-red ${narrow ? "px-1.5 text-xs" : "px-2.5 text-base"} py-1 text-white`} aria-label="Agregar un trago a un jugador">
               + TRAGO
             </button>
           )}
-          <button onClick={() => setSettings(true)} className={`btn-game flex items-center justify-center bg-btn-grey ${narrow ? "px-2 text-sm" : "px-2.5 text-base"} py-1 text-white`} aria-label="Ajustes de la partida" title="Ajustes">
+          <button onClick={() => setSettings(true)} className={`btn-game flex items-center justify-center bg-btn-grey ${narrow ? "px-1.5 text-xs" : "px-2.5 text-base"} py-1 text-white`} aria-label="Ajustes de la partida" title="Ajustes">
             <GearIcon />
           </button>
           <FullscreenButton />
-          <button onClick={() => setMenu(true)} className={`btn-game whitespace-nowrap bg-btn-blue ${narrow ? "px-2 text-sm" : "px-2.5 text-base"} py-1 text-white`} aria-label="Marcador e historial">
+          <button onClick={() => setMenu(true)} className={`btn-game whitespace-nowrap bg-btn-blue ${narrow ? "px-1.5 text-xs" : "px-2.5 text-base"} py-1 text-white`} aria-label="Marcador e historial">
             MARCADOR
           </button>
         </div>

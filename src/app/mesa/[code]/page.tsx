@@ -228,7 +228,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const overlays = (withCard: boolean) => (
     <>
       {/* hasta que llega el diseño publicado no se dibuja: con los valores de serie salía un instante la estrella en su sitio de antes y luego saltaba al configurado */}
-      {published !== undefined && <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} scale={(ui.chip / 100) * (soloActive && narrow ? 0.75 : 1)} chip={published?.chip} />}
+      {published !== undefined && <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} scale={(ui.chip / 100) * (soloActive && narrow ? 0.7 : 1)} chip={published?.chip} topAlign={soloActive && narrow} />}
       {withCard && card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} scale={ui.card / 100} wide={soloActive && portrait} />}
     </>
   );

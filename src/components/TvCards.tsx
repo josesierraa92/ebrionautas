@@ -170,7 +170,7 @@ export function PhoneRuleCard({ game, n, playerId, cardKey, result, unit = "14px
  * Mientras la TV anima la tirada (`moving`, `rolling`) no se adelanta el resultado ni el turno siguiente.
  */
 // Solo quién tiene el turno: el dado ya se ve grande en el tablero y el número sale en el título de la jugada.
-export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP, inline = false, fill = false, playerId }: { game: GameState; /** ocupar todo el ancho disponible (la placa se estira): la pantalla de la tarjeta del celular, del ancho de la tarjeta de abajo */ fill?: boolean; /** enseñar a este jugador en vez de a quien tiene el turno (la pantalla de la tarjeta del celular: de quién es) */ playerId?: string; moving?: boolean; rolling?: boolean; scale?: number; /** ajustes de la tarjeta (editor «Tarjeta de usuario») */ chip?: ChipStyle; /** sin colocarla en la esquina (vista previa del editor) */ inline?: boolean }) {
+export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP, inline = false, fill = false, playerId, topAlign = false }: { /** en la fila de botones de arriba (un solo aparato en celular vertical), sin bajarla debajo de ellos */ topAlign?: boolean; game: GameState; /** ocupar todo el ancho disponible (la placa se estira): la pantalla de la tarjeta del celular, del ancho de la tarjeta de abajo */ fill?: boolean; /** enseñar a este jugador en vez de a quien tiene el turno (la pantalla de la tarjeta del celular: de quién es) */ playerId?: string; moving?: boolean; rolling?: boolean; scale?: number; /** ajustes de la tarjeta (editor «Tarjeta de usuario») */ chip?: ChipStyle; /** sin colocarla en la esquina (vista previa del editor) */ inline?: boolean }) {
   const f = NUMBER_FONTS[chip.font];
   const fontFamily = chip.font === DEFAULT_CHIP.font ? undefined : `var(${f.cssVar}), ${f.fallback}`;
   const roller = game.players.find((p) => p.id === game.lastRoller);
@@ -181,7 +181,7 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
   // «Turno de» en el verde neón de las tarjetas (`#bffa58`) y 3 px más abajo, nombre con sombra dura azul muy oscuro, sin filete (todo en CSS, mismo estilo
   // grueso y plano que las tarjetas).
   return (
-    <div className={`pointer-events-none z-30 flex items-center ${fill ? "w-full" : ""} ${inline ? "relative" : "absolute top-[2%] left-[2%] max-md:top-16 max-md:scale-90 max-md:origin-top-left"}`} style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "top left" } : undefined}>
+    <div className={`pointer-events-none z-30 flex items-center ${fill ? "w-full" : ""} ${inline ? "relative" : (topAlign ? "absolute top-[2%] left-[2%]" : "absolute top-[2%] left-[2%] max-md:top-16 max-md:scale-90 max-md:origin-top-left")}`} style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "top left" } : undefined}>
       {/* anillo de color del jugador con degradado (más claro arriba a la izquierda, más oscuro abajo a la derecha) */}
       <div className="relative z-10 -mr-[30px] -ml-[5px] shrink-0" style={{ padding: 5, borderRadius: 21, background: `linear-gradient(150deg, ${shadeHex(color, 0.12)} 0%, ${color} 35%, ${shadeHex(color, -0.38)} 100%)`, boxShadow: "0 6px 12px rgba(0,0,0,.45)" }}>
         <div
