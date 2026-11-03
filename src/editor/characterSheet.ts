@@ -358,7 +358,7 @@ function stitchedMouth(mesh: THREE.Mesh, mouths: Mouth[]) {
     g.translate(x, y, z);
     return { g, uv };
   };
-  const n = w >= 0.12 ? 4 : 2;
+  const n = w >= 0.12 ? 5 : 3;
   const items = [box(xc, yc, w, 0.011)];
   for (let i = 0; i < n; i++) items.push(box(xc + ((i / (n - 1) - 0.5) * (w - 0.025)), yc, 0.013, Math.max(0.05, y1 - y0 + 0.035)));
   mergeOnto(mesh, bone, items);
