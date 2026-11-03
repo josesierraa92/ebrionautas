@@ -25,6 +25,9 @@ export default function CardPanel({
   label,
   z = "z-[10000]",
   solid,
+  inline,
+  width = 30,
+  maxH = "88dvh",
 }: {
   /** Pastilla verde de arriba («SOLO PARA ADULTOS», «PRIVACIDAD»…). */
   kicker: string;
@@ -44,6 +47,12 @@ export default function CardPanel({
   z?: string;
   /** Fondo opaco (el aviso de +18 tapa todo el juego). */
   solid?: boolean;
+  /** Sin ventana ni fondo: solo la tarjeta, para usarla como parte de una pantalla (la sala de espera de la TV). */
+  inline?: boolean;
+  /** Ancho máximo en `--u` (30 por defecto). */
+  width?: number;
+  /** Alto máximo de la tarjeta (el contenido se desplaza dentro). */
+  maxH?: string;
 }) {
   const downOnBackdrop = useRef(false);
   // se dibuja directamente en <body> (un portal): así nunca queda dentro de un <p>, de un contenedor con transform ni bajo otro z-index
@@ -61,23 +70,10 @@ export default function CardPanel({
   const mask = icon ? iconMaskUrl(icon, 256) : null;
   const maskStyle = (url: string) => ({ WebkitMaskImage: `url(${url})`, maskImage: `url(${url})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" });
 
-  return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={label ?? title}
-      className={`fixed inset-0 ${z} grid place-items-center px-4 py-6 ${solid ? "bg-[#0a0620]" : "bg-[#090620]/90"}`}
-      onMouseDown={(e) => (downOnBackdrop.current = e.target === e.currentTarget)}
-      onClick={(e) => {
-        // solo cierra si el clic empezó Y terminó en el fondo (arrastrar para seleccionar texto no la cierra)
-        const fromBackdrop = downOnBackdrop.current && e.target === e.currentTarget;
-        downOnBackdrop.current = false;
-        if (fromBackdrop) onClose?.();
-      }}
-    >
-      <div className="card-pop relative w-full text-left" style={{ ["--u" as string]: unit, maxWidth: u(30), paddingTop: u(0.9), filter: `drop-shadow(0 ${u(0.4)} ${u(0.6)} rgba(0,0,0,.55))` }}>
+  const card = (
+      <div className="card-pop relative w-full text-left" style={{ ["--u" as string]: unit, maxWidth: u(width), paddingTop: u(0.9), filter: `drop-shadow(0 ${u(0.4)} ${u(0.6)} rgba(0,0,0,.55))` }}>
         <div style={{ borderRadius: u(1.1), border: `${u(0.32)} solid #452b8e`, background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
-          <div className="flex max-h-[88dvh] flex-col" style={{ padding: `${u(1.9)} ${u(1.4)} ${u(1.4)}`, gap: u(1) }}>
+          <div className="flex flex-col" style={{ maxHeight: maxH, padding: `${u(1.9)} ${u(1.4)} ${u(1.4)}`, gap: u(1) }}>
             <div className="flex shrink-0 items-center" style={{ gap: u(1.1) }}>
               <div className="grid shrink-0 place-items-center" style={{ width: u(4), height: u(4), minWidth: u(4), minHeight: u(4), borderRadius: u(0.9), background: GREEN }}>
                 {mask ? (
@@ -113,6 +109,24 @@ export default function CardPanel({
           {kicker}
         </div>
       </div>
+  );
+  if (inline) return card;
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={label ?? title}
+      className={`fixed inset-0 ${z} grid place-items-center px-4 py-6 ${solid ? "bg-[#0a0620]" : "bg-[#090620]/90"}`}
+      onMouseDown={(e) => (downOnBackdrop.current = e.target === e.currentTarget)}
+      onClick={(e) => {
+        // solo cierra si el clic empezó Y terminó en el fondo (arrastrar para seleccionar texto no la cierra)
+        const fromBackdrop = downOnBackdrop.current && e.target === e.currentTarget;
+        downOnBackdrop.current = false;
+        if (fromBackdrop) onClose?.();
+      }}
+    >
+      {card}
     </div>,
     document.body,
   );

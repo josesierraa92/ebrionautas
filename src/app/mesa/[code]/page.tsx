@@ -1,5 +1,7 @@
 "use client";
 
+import CardPanel, { CardText, GREEN } from "@/components/CardPanel";
+import Logo from "@/components/Logo";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import { use, useEffect, useState } from "react";
@@ -54,37 +56,46 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   };
 
   if (room.status === "LOBBY" || !room.game) {
+    // sala de espera: el logo y una tarjeta con el mismo diseño que las de las casillas (`CardPanel`, regla de diseño del CLAUDE.md)
+    const lobbyUnit = "min(1.5vw, 2.4vh)";
+    const c = (k: number) => `calc(var(--u) * ${k})`;
     return (
       <main className="mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center gap-6 px-4 py-8 text-center">
-        <Link href="/" className="title-game text-5xl sm:text-6xl">
-          MUERTOS DE SED
+        <Link href="/" aria-label="Muertos de Sed" className="block w-[min(34rem,70vw)]">
+          <Logo className="w-full" />
         </Link>
         {room.hasController ? (
-          <div className="flex flex-col items-center gap-3">
-            <p className="text-6xl">📱✅</p>
-            <p className="font-display text-3xl">Celular conectado</p>
-            <p className="text-lg text-white/80">Agregad a los jugadores desde el celular y pulsad ¡A LEVANTARSE!</p>
-          </div>
+          <CardPanel
+            inline
+            unit={lobbyUnit}
+            width={30}
+            kicker="¡Listo!"
+            title="Celular conectado"
+            badge="OK"
+            actions={
+              hostSecret ? (
+                <button onClick={release} className="btn-game bg-btn-grey px-4 py-2 text-sm text-white">
+                  CAMBIAR DE CELULAR
+                </button>
+              ) : undefined
+            }
+          >
+            <CardText size={1.3}>Agregad a los jugadores desde el celular y pulsad ¡A LEVANTARSE!</CardText>
+          </CardPanel>
         ) : (
-          <>
-            <p className="text-xl text-white/80">Escanea el QR con el celular que va a controlar el juego:</p>
-            <div className="flex flex-col items-center gap-6 sm:flex-row sm:gap-10">
+          <CardPanel inline unit={lobbyUnit} width={36} kicker="Sala de espera" title="Escanea el QR" badge="QR">
+            <CardText size={1.3}>Escanéalo con el celular que va a controlar el juego, o entra a la web y pon el código:</CardText>
+            <div className="flex items-center justify-center" style={{ marginTop: c(1.3), gap: c(1.6) }}>
               {controlUrl && (
-                <div className="rounded-2xl border-[3px] border-ink bg-white p-3">
-                  <QRCodeSVG value={controlUrl} size={220} />
+                <div className="shrink-0 bg-white" style={{ width: c(11), padding: c(0.8), borderRadius: c(1) }}>
+                  <QRCodeSVG value={controlUrl} size={256} style={{ width: "100%", height: "auto", display: "block" }} />
                 </div>
               )}
-              <div>
-                <p className="text-sm text-white/70">o entra a la web y pon el código</p>
-                <p className="title-game text-7xl tracking-widest">{code}</p>
+              <div className="grid place-items-center font-display" style={{ minWidth: c(11), padding: `${c(1)} ${c(1.2)}`, borderRadius: c(1), background: GREEN, color: "#14260a", fontSize: c(4.6), letterSpacing: "0.12em", lineHeight: 1, paddingLeft: c(1.6) }}>
+                {code}
               </div>
             </div>
-          </>
-        )}
-        {room.hasController && hostSecret && (
-          <button onClick={release} className="btn-game bg-btn-grey px-4 py-2 text-sm text-white">
-            CAMBIAR DE CELULAR
-          </button>
+          </CardPanel>
         )}
       </main>
     );
@@ -142,7 +153,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     <main className="mx-auto flex min-h-dvh max-w-[1600px] flex-col gap-4 px-4 py-4 lg:flex-row lg:items-start">
       <section className="flex flex-col gap-3 lg:flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className="title-game text-3xl">MUERTOS DE SED</span>
+          <Logo className="w-48 sm:w-60" />
           <span className="flex items-center gap-2 font-display text-white/70">
             <SoundToggle />
             <button onClick={toggleFullscreen} aria-label="Pantalla completa" title="Pantalla completa" className="icon-btn">

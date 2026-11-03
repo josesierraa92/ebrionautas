@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import Board from "@/components/Board";
+import CardPanel, { CardText } from "@/components/CardPanel";
+import Logo from "@/components/Logo";
 import DecisionPanel from "@/components/DecisionPanel";
 import DiceController from "@/components/DiceController";
 import GameLog from "@/components/GameLog";
@@ -67,25 +69,30 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
       });
     return (
       <Shell>
-        <p className="text-6xl">📱💀</p>
-        <p className="text-white/70">
-          Mesa <b className="font-display text-btn-yellow">{code}</b>
-        </p>
-        <h2 className="font-display text-3xl">¿Controlas tú el juego?</h2>
-        <p className="text-white/70">Desde este celular se agregan los jugadores, se tira el dado y se decide todo. El tablero se ve en la TV.</p>
-        {room.hasController ? (
-          <ErrorBox text="Otro celular ya controla esta mesa. Pulsa 'Cambiar de celular' en la TV para liberarla." />
-        ) : (
-          <button disabled={busy} onClick={claim} className="btn-game w-full bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey">
-            🎮 CONTROLAR LA MESA
-          </button>
-        )}
-        {room.hasController && (
-          <button onClick={() => refresh()} className="btn-game bg-btn-yellow px-4 py-2 text-white">
-            VOLVER A INTENTAR
-          </button>
-        )}
-        {actionError && <ErrorBox text={actionError} />}
+        <Logo className="w-56" />
+        <CardPanel
+          inline
+          unit="17px"
+          width={22}
+          kicker={`Mesa ${code}`}
+          title="¿Controlas tú el juego?"
+          icon="skull"
+          actions={
+            room.hasController ? (
+              <button onClick={() => refresh()} className="btn-game bg-btn-yellow px-4 py-2 text-white">
+                VOLVER A INTENTAR
+              </button>
+            ) : (
+              <button disabled={busy} onClick={claim} className="btn-game w-full bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey">
+                CONTROLAR LA MESA
+              </button>
+            )
+          }
+        >
+          <CardText>Desde este celular se agregan los jugadores, se tira el dado y se decide todo. El tablero se ve en la TV.</CardText>
+          {room.hasController && <div style={{ marginTop: 10 }}><ErrorBox text="Otro celular ya controla esta mesa. Pulsa 'Cambiar de celular' en la TV para liberarla." /></div>}
+          {actionError && <div style={{ marginTop: 10 }}><ErrorBox text={actionError} /></div>}
+        </CardPanel>
       </Shell>
     );
   }

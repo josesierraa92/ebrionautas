@@ -1,5 +1,6 @@
 "use client";
 
+import Logo from "@/components/Logo";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import BoardStage from "@/components/BoardStage";
@@ -61,8 +62,8 @@ export default function JugarPage() {
     <main className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-start">
       <section className="flex flex-col gap-3 lg:flex-1">
         <div className="flex items-center justify-between gap-2">
-          <Link href="/" className="title-game text-2xl sm:text-3xl">
-            MUERTOS DE SED
+          <Link href="/" aria-label="Muertos de Sed" className="block">
+            <Logo className="w-40 sm:w-52" />
           </Link>
           <SoundToggle />
           <button
