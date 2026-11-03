@@ -230,6 +230,11 @@ body {
   border-radius: 3px;
   animation: confetti-fall linear infinite;
 }
+.confetti-skull {
+  border: 0;
+  border-radius: 0;
+  filter: drop-shadow(0 0 3px #b98bf0);
+}
 @keyframes confetti-fall {
   0% { transform: translateY(0) rotate(0deg); }
   100% { transform: translateY(110vh) rotate(720deg); }

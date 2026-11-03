@@ -121,26 +121,29 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
   );
 }
 
-const CONFETTI_COLORS = ["#5cd23c", "#2f7bf5", "#e53fd6", "#ffc61a", "#e8344a", "#00d1c1", "#ff8a1f", "#fff"];
+// el confeti del ganador son mini calaveras moradas y negras (con un resplandor morado para que las negras se vean sobre la noche)
+const CONFETTI_COLORS = ["#8a5af0", "#0a0714", "#b98bf0", "#1a0b38", "#6a3fd0", "#0a0714", "#d2b4ff", "#3a1d7a"];
 
 /** Lluvia de confeti para el ganador. Posiciones deterministas: nada de Math.random al renderizar. */
 export function Confetti() {
+  const mask = iconMaskUrl("skull", 96);
   return (
     <div className="pointer-events-none fixed inset-0 z-[60] overflow-hidden" aria-hidden>
-      {Array.from({ length: 70 }, (_, i) => (
-        <span
-          key={i}
-          className="confetti"
-          style={{
-            left: `${(i * 37) % 100}%`,
-            background: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-            animationDelay: `${(i % 14) * 0.18}s`,
-            animationDuration: `${2.6 + (i % 5) * 0.45}s`,
-            width: i % 3 ? 10 : 14,
-            height: i % 2 ? 16 : 10,
-          }}
-        />
-      ))}
+      {Array.from({ length: 56 }, (_, i) => {
+        const size = 18 + (i % 4) * 5;
+        return (
+          <span
+            key={i}
+            className="confetti confetti-skull"
+            style={{ left: `${(i * 37) % 100}%`, animationDelay: `${(i % 14) * 0.18}s`, animationDuration: `${2.8 + (i % 5) * 0.45}s`, width: size, height: size }}
+          >
+            <span
+              className="block h-full w-full"
+              style={{ background: CONFETTI_COLORS[i % CONFETTI_COLORS.length], WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" }}
+            />
+          </span>
+        );
+      })}
     </div>
   );
 }
