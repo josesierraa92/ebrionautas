@@ -47,29 +47,26 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
             <li
               key={p.id}
               className={`flex items-center ${p.paused ? "opacity-50" : ""}`}
-              style={{ gap: u(0.8), padding: u(0.7), borderRadius: u(1), background: ROW, boxShadow: isTurn ? `inset 0 0 0 ${u(0.24)} ${GREEN_LIGHT}` : undefined }}
+              style={{ gap: u(0.55), padding: u(0.6), borderRadius: u(1), background: ROW, boxShadow: isTurn ? `inset 0 0 0 ${u(0.24)} ${GREEN_LIGHT}` : undefined }}
             >
               <span className="relative shrink-0">
                 <Marciano
                   avatar={avatarOf(p)}
                   expression={expressionFor(p, { winner: game.winner, isTurn })}
-                  size={big ? 64 : 56}
+                  size={big ? 52 : 40}
                   character={characterOf(game.players, p.id)}
                 />
                 <Cups {...trophiesOf(game, p)} className={`absolute -top-1.5 -left-1.5 ${big ? "text-lg" : "text-sm"}`} />
               </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-display uppercase leading-[1.02] text-white" style={{ fontSize: u(p.name.length <= 8 ? 1.9 : p.name.length <= 12 ? 1.6 : 1.35), letterSpacing: "0.01em", overflowWrap: "break-word" }}>
+              <div className="min-w-0 flex-1" style={{ minWidth: u(4.5) }}>
+                <p className="font-display uppercase leading-[1.02] text-white" style={{ fontSize: u(p.name.length <= 6 ? 1.7 : p.name.length <= 10 ? 1.35 : 1.0), letterSpacing: "0.01em", overflowWrap: "normal" }}>
                   {p.name}
-                  {p.gender && (
-                    <span style={{ marginLeft: u(0.5), fontSize: u(1.2), color: p.gender === "hombre" ? "#7aa2ff" : "#ff7ac0" }}>{p.gender === "hombre" ? "♂" : "♀"}</span>
-                  )}
                 </p>
                 <div className="flex items-center" style={{ gap: u(0.6), marginTop: u(0.5) }}>
                   <div className="flex-1 overflow-hidden rounded-full" style={{ height: u(0.7), background: "#1a0b38" }} title={`Casilla ${p.pos} de ${LAST_TILE}`}>
                     <div className="h-full rounded-full" style={{ width: `${(p.pos / LAST_TILE) * 100}%`, background: p.color }} />
                   </div>
-                  <span className="shrink-0 font-display" style={{ fontSize: u(1.05), color: GREEN_LIGHT }}>
+                  <span className="shrink-0 font-display" style={{ fontSize: u(0.85), color: GREEN_LIGHT }}>
                     {p.pos}/{LAST_TILE}
                   </span>
                 </div>
@@ -88,17 +85,18 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
                     ))}
                   </div>
                 )}
-                <div className="flex flex-wrap items-center" style={{ gap: u(0.5), marginTop: u(0.6) }}>
-                  <span className="inline-flex shrink-0 items-center font-display text-white" style={{ gap: u(0.3), padding: `${u(0.1)} ${u(0.7)}`, borderRadius: 999, background: "#1a0b38", fontSize: u(1.3) }} title="Total bebido">
+              </div>
+                <div className="flex shrink-0 flex-nowrap items-center" style={{ gap: u(0.3) }}>
+                  <span className="inline-flex shrink-0 items-center font-display text-white" style={{ gap: u(0.3), padding: `${u(0.1)} ${u(0.55)}`, borderRadius: 999, background: "#1a0b38", fontSize: u(1.15) }} title="Total bebido">
                     <BeerIcon /> {p.drunk}
                   </span>
                   {p.pending > 0 &&
                     (onDrank ? (
-                      <button title="Marcar como bebido" onClick={() => onDrank(p.id)} className="btn-game animate-pulse bg-btn-red px-2.5 py-0.5 text-white" style={{ fontSize: u(1.1) }}>
-                        DEBE {p.pending} ✓
+                      <button title="Marcar como bebido" onClick={() => onDrank(p.id)} className="btn-game animate-pulse bg-btn-red px-2 py-0.5 text-white" style={{ fontSize: u(0.9) }}>
+                        DEBE {p.pending}
                       </button>
                     ) : (
-                      <span className="animate-pulse rounded-full bg-btn-red px-2.5 py-0.5 font-display text-white" style={{ fontSize: u(1.1) }}>
+                      <span className="animate-pulse rounded-full bg-btn-red px-2 py-0.5 font-display text-white" style={{ fontSize: u(0.9) }}>
                         DEBE {p.pending}
                       </span>
                     ))}
@@ -108,7 +106,6 @@ export default function PlayersList({ game, big = false, onPenalty, onDrank }: P
                     </button>
                   )}
                 </div>
-              </div>
             </li>
           );
         })}
