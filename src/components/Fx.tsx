@@ -80,7 +80,7 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
               {banner.emoji === "🏆" ? <TrophyIcon size="1em" /> : banner.emoji}
             </span>
           )}
-          <div className="flex min-w-0 flex-col items-start">
+          <div className="flex min-w-0 flex-col items-center text-center">
             {banner.n !== undefined && (
               <span className="font-sans font-bold tracking-[0.5em] uppercase" style={{ fontSize: "max(1.5cqw, 14px)", color: banner.color, opacity: 0.9 }}>
                 Casilla {banner.n}
