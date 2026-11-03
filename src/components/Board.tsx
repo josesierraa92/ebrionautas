@@ -109,25 +109,13 @@ function TileView({ tile, layout }: { tile: Tile; layout: BoardLayout }) {
     ) : (
       <span aria-hidden style={{ fontSize: size, lineHeight: 1 }}>{look.icon}</span>
     );
-  // el color del número y del icono se lee siempre: oscuro sobre casillas claras y blanco sobre las oscuras (la pintura suave de la TV se pierde en el celular)
-  const rgb = [1, 3, 5].map((i) => parseInt(look.color.slice(i, i + 2), 16));
-  const ink = look.customInk ? look.ink : (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114) / 255 > 0.55 ? "#2b2140" : "#ffffff";
-  const face = { background: `linear-gradient(165deg, ${look.color}, color-mix(in srgb, ${look.color} 72%, #000))`, color: ink };
-
-  if (tile.type === "META") {
-    return (
-      <div className="@container relative flex flex-col items-center justify-center rounded-[6%]" style={{ ...grid, ...face }}>
-        {icon("34cqw")}
-        <span className="font-display uppercase leading-none" style={{ fontSize: "12cqw", marginTop: "3cqw" }}>
-          Tu tumba
-        </span>
-        <span className="font-display" style={{ fontSize: "5.5cqw", opacity: 0.8 }}>
-          62 · ¡La fiesta definitiva!
-        </span>
-      </div>
-    );
-  }
-
+  // Mismo aspecto que la losa de la TV (`tileTexture` en editor/scene.ts): las de tipo «road» son asfalto con el icono y el número
+  // pintados en el tono suave de su color; las «vivid», color liso con un degradado muy suave.
+  const ink = look.ink;
+  const face =
+    look.kind === "road"
+      ? { background: "#4a4d54", color: ink }
+      : { background: `linear-gradient(135deg, color-mix(in srgb, ${look.color} 90%, #fff), color-mix(in srgb, ${look.color} 92%, #000))`, color: ink };
   const label = tileLabel(tile);
   return (
     <div className="@container relative flex flex-col items-center justify-center overflow-hidden rounded-[16%]" style={{ ...grid, ...face }} title={`${tile.n} · ${label}`}>

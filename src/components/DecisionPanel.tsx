@@ -54,10 +54,10 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
     case "NUNCA":
       return (
         <Card title={compact ? undefined : "Yo nunca"} text={compact ? undefined : `${me.name}, ¿lo has hecho?`}>
-          <button onClick={() => onAction({ type: "NUNCA", did: true })} className="btn-game bg-btn-red py-3 text-lg text-white">
+          <button onClick={() => onAction({ type: "NUNCA", did: true })} className="btn-game bg-btn-red py-4 text-3xl text-white">
             SÍ LO HE HECHO (BEBO)
           </button>
-          <button onClick={() => onAction({ type: "NUNCA", did: false })} className="btn-game bg-btn-green py-3 text-lg text-white">
+          <button onClick={() => onAction({ type: "NUNCA", did: false })} className="btn-game bg-btn-green py-4 text-3xl text-white">
             NUNCA LO HE HECHO
           </button>
         </Card>
@@ -66,10 +66,10 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
     case "OCA":
       return (
         <Card title={compact ? undefined : "¿Bebes para seguir?"} text={compact ? undefined : decision.next ? `Bebe y vuela hasta la casilla ${decision.next}, y vuelve a tirar. O plántate aquí.` : "Es el último murciélago: bebe y vuelve a tirar, o plántate aquí."}>
-          <button onClick={() => onAction({ type: "OCA", choice: "fly" })} className="btn-game bg-btn-green py-3 text-lg text-white">
+          <button onClick={() => onAction({ type: "OCA", choice: "fly" })} className="btn-game bg-btn-green py-4 text-3xl text-white">
             SÍ, BEBO{decision.next ? ` Y VUELO A LA ${decision.next}` : " Y VUELVO A TIRAR"}
           </button>
-          <button onClick={() => onAction({ type: "OCA", choice: "stay" })} className="btn-game bg-btn-yellow py-3 text-lg text-white">
+          <button onClick={() => onAction({ type: "OCA", choice: "stay" })} className="btn-game bg-btn-yellow py-4 text-3xl text-white">
             NO, ME PLANTO
           </button>
         </Card>
@@ -78,10 +78,10 @@ export default function DecisionPanel({ decision, me, players, onAction, compact
     case "PATINAZO":
       return (
         <Card title={compact ? undefined : "¿Qué eliges?"} text={compact ? undefined : "Para no caerte:"}>
-          <button onClick={() => onAction({ type: "PATINAZO", choice: "drink" })} className="btn-game bg-btn-green py-3 text-lg text-white">
+          <button onClick={() => onAction({ type: "PATINAZO", choice: "drink" })} className="btn-game bg-btn-green py-4 text-3xl text-white">
             BEBER {PATINAZO_DRINKS} DE GOLPE
           </button>
-          <button onClick={() => onAction({ type: "PATINAZO", choice: "back" })} className="btn-game bg-btn-yellow py-3 text-lg text-white">
+          <button onClick={() => onAction({ type: "PATINAZO", choice: "back" })} className="btn-game bg-btn-yellow py-4 text-3xl text-white">
             RODAR HASTA LA {decision.backTo}
           </button>
         </Card>
@@ -112,11 +112,11 @@ function JailPay({ owed, compact, onPay }: { owed: number; compact?: boolean; on
   const vasos = (n: number) => `${n} ${n === 1 ? "VASO" : "VASOS"}`;
   return (
     <Card title={compact ? undefined : "Paga tu penitencia"} text={`Debes ${owed} ${owed === 1 ? "vaso" : "vasos"}. ¿Cuántos pagas ahora?`}>
-      <button onClick={() => onPay(owed)} className="btn-game bg-btn-green py-3 text-lg text-white">
+      <button onClick={() => onPay(owed)} className="btn-game bg-btn-green py-4 text-3xl text-white">
         PAGAR LOS {owed} Y SALIR
       </button>
       {Array.from({ length: owed - 1 }, (_, i) => i + 1).map((n) => (
-        <button key={n} onClick={() => onPay(n)} className="btn-game bg-btn-yellow py-3 text-lg text-white">
+        <button key={n} onClick={() => onPay(n)} className="btn-game bg-btn-yellow py-4 text-3xl text-white">
           PAGAR {vasos(n)} · DEBO {owed - n}
         </button>
       ))}
@@ -162,7 +162,7 @@ function Distribute({ amount, players, compact, onDone }: { amount: number; play
           </button>
         </div>
       ))}
-      <button disabled={left !== 0} onClick={() => onDone(drinks)} className="btn-game bg-btn-green py-3 text-lg text-white disabled:bg-btn-grey">
+      <button disabled={left !== 0} onClick={() => onDone(drinks)} className="btn-game bg-btn-green py-4 text-3xl text-white disabled:bg-btn-grey">
         REPARTIR
       </button>
     </Card>
@@ -251,7 +251,7 @@ function PickPlayers(props: {
           );
         })}
       </div>
-      <button disabled={picked.length < props.min} onClick={() => props.onDone(picked)} className="btn-game bg-btn-green py-3 text-lg text-white disabled:bg-btn-grey">
+      <button disabled={picked.length < props.min} onClick={() => props.onDone(picked)} className="btn-game bg-btn-green py-4 text-3xl text-white disabled:bg-btn-grey">
         {picked.length === 0 && props.min === 0 ? "NADIE BEBE" : props.confirm}
       </button>
     </Card>
@@ -261,7 +261,7 @@ function PickPlayers(props: {
 function RuleInput({ compact, onDone }: { compact?: boolean; onDone: () => void }) {
   return (
     <Card title={compact ? undefined : "Dicta tu ley"} text={compact ? undefined : "Dicta tu ley en voz alta para todos. Dura hasta que alguien dicte otra. Quien la rompa, bebe."}>
-      <button onClick={onDone} className="btn-game bg-btn-green py-3 text-lg text-white">
+      <button onClick={onDone} className="btn-game bg-btn-green py-4 text-3xl text-white">
         YA LA DICTÉ
       </button>
     </Card>

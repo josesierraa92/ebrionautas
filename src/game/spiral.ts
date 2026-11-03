@@ -1,12 +1,12 @@
 // Geometría del tablero en espiral, como el tablero original: la salida abajo a
 // la izquierda, el recorrido da vueltas hacia dentro y la tumba (62) ocupa el centro.
 //
-// En una cuadrícula de 9×9, dos vueltas completas (32 + 24 casillas) y un lado de
-// la tercera (5) suman 61 casillas; lo que queda es un rectángulo de 5×4 para la 62.
+// En una cuadrícula de 8×8 las tres vueltas completas (28 + 20 + 12 casillas) y la mitad de la última (2)
+// suman las 62 casillas, todas iguales (la tumba también ocupa una sola celda); quedan 2 celdas vacías en el centro.
 
 import { BOARD } from "./board";
 
-export const GRID = 9;
+export const GRID = 8;
 
 export type Cell = { row: number; col: number }; // 0-based
 export type Area = Cell & { rows: number; cols: number };
@@ -37,13 +37,10 @@ function spiralCells(count: number): { cells: Cell[]; rest: Area } {
   return { cells, rest: { row: top, col: left, rows: bottom - top + 1, cols: right - left + 1 } };
 }
 
-const { cells, rest } = spiralCells(BOARD.length - 1);
+const { cells } = spiralCells(BOARD.length);
 
-/** Celda (o área, para la 62) de cada casilla, indexada por número de casilla. */
-export const TILE_AREA: Record<number, Area> = Object.fromEntries([
-  ...cells.map((c, i) => [i + 1, { ...c, rows: 1, cols: 1 }] as const),
-  [BOARD.length, rest] as const,
-]);
+/** Celda de cada casilla, indexada por número de casilla (todas de 1×1). */
+export const TILE_AREA: Record<number, Area> = Object.fromEntries(cells.map((c, i) => [i + 1, { ...c, rows: 1, cols: 1 }] as const));
 
 /** Centro de una casilla en % del tablero (para posicionar las fichas encima). */
 export function tileCenter(n: number): { x: number; y: number } {
