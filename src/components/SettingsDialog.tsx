@@ -122,9 +122,9 @@ export default function SettingsDialog({ game, busy, onAction, onRestart, onClos
               </div>
             </>
           ) : (
-            <div className="flex" style={{ gap: u(0.6) }}>
-              <button disabled={busy} onClick={() => setGameConfirm("restart")} className="btn-game flex-1 bg-btn-grey py-3 text-xl text-white">REINICIAR PARTIDA</button>
-              <button disabled={busy} onClick={() => setGameConfirm("end")} className="btn-game flex-1 bg-btn-yellow py-3 text-xl text-white">TERMINAR PARTIDA</button>
+            <div className="flex flex-col" style={{ gap: u(0.6) }}>
+              <button disabled={busy} onClick={() => setGameConfirm("restart")} className="btn-game w-full bg-btn-grey py-3 text-2xl text-white">REINICIAR PARTIDA</button>
+              <button disabled={busy} onClick={() => setGameConfirm("end")} className="btn-game w-full bg-btn-yellow py-3 text-2xl text-white">TERMINAR PARTIDA</button>
             </div>
           )}
         </div>
