@@ -6,7 +6,7 @@ import BeerIcon from "@/components/BeerIcon";
 import { Die } from "@/components/Fx";
 import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
-import { currentPlayer, jailBail, type GameState } from "@/game/engine";
+import { currentPlayer, jailBail, type GameState, type Player } from "@/game/engine";
 import { duelOutcome, jailOutcome, jailPaidOutcome } from "@/game/rules";
 import { PhoneRuleCard } from "@/components/TvCards";
 import { stepPath, type Landed } from "@/lib/useGameFx";
@@ -168,13 +168,7 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
           {(() => {
             const owner = game.players.find((p) => p.id === card.playerId) ?? me;
             return (
-              <div className="flex items-center justify-center gap-3">
-                <Marciano avatar={avatarOf(owner)} expression={expressionFor(owner, { isTurn: true })} size={64} animated character={characterOf(game.players, owner.id)} />
-                <div className="min-w-0 text-left">
-                  <p className="font-display text-base leading-none text-btn-special">Turno de</p>
-                  <h2 className="title-game mt-1 max-w-full truncate text-4xl leading-none">{owner.name.toUpperCase()}</h2>
-                </div>
-              </div>
+              <TurnBanner player={owner} label="Turno de" game={game} size={72} compact />
             );
           })()}
           <PhoneRuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={card.result} unit="19px" />
@@ -218,13 +212,7 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
 
   return (
     <div className="flex flex-1 flex-col items-center justify-between gap-4 text-center">
-      <div className="flex items-center gap-3">
-        <Marciano avatar={avatarOf(me)} expression={expressionFor(me, { isTurn: true })} size={84} animated character={characterOf(game.players, me.id)} />
-        <div className="min-w-0 text-left">
-          <p className="font-display text-lg text-white/70">Le toca a</p>
-          <h2 className="title-game max-w-full truncate text-5xl">{me.name.toUpperCase()}</h2>
-        </div>
-      </div>
+      <TurnBanner player={me} label="Le toca a" game={game} size={96} />
 
       <button
         onClick={tap}
@@ -249,6 +237,27 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * «Le toca a / Turno de» + nombre: siempre en blanco, grande y centrado, para leerse de noche y con copas.
+ * El nombre nunca se corta: baja de tamaño si es largo y, si aun así no cabe, pasa a dos renglones.
+ */
+function TurnBanner({ player, label, game, size, compact = false }: { player: Player; label: string; game: GameState; size: number; compact?: boolean }) {
+  const len = player.name.length;
+  const nameSize = compact ? (len <= 8 ? "3rem" : len <= 12 ? "2.4rem" : "1.9rem") : len <= 8 ? "4.6rem" : len <= 12 ? "3.4rem" : "2.6rem";
+  const shadow = "0 3px 0 #090b2a, 0 5px 0 rgba(9,11,42,.6)";
+  return (
+    <div className="flex w-full flex-col items-center text-center">
+      <Marciano avatar={avatarOf(player)} expression={expressionFor(player, { isTurn: true })} size={size} animated character={characterOf(game.players, player.id)} />
+      <p className="mt-2 font-display uppercase leading-none text-white" style={{ fontSize: compact ? "1.2rem" : "1.7rem", letterSpacing: "0.08em", textShadow: shadow }}>
+        {label}
+      </p>
+      <h2 className="mt-1 max-w-full font-display uppercase leading-[0.95] text-white" style={{ fontSize: nameSize, textShadow: shadow, overflowWrap: "break-word" }}>
+        {player.name}
+      </h2>
     </div>
   );
 }
