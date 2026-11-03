@@ -116,20 +116,20 @@ export default function Controller({ code, room, secret, error, refresh, overlay
     const rollNow = () => run(() => sendAction(code, secret, { type: "ROLL" }));
     const dim = locked || busy;
     const winnerButtons = winner && !game.ranking && (
-      <div className="absolute inset-x-0 bottom-[3%] z-50 flex flex-wrap items-center justify-center gap-3 px-3">
-        <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game bg-btn-blue px-5 py-3 text-xl text-white">
+      <div className={narrow ? "absolute inset-x-0 bottom-[3%] z-50 flex flex-col items-stretch gap-3 px-4" : "absolute inset-x-0 bottom-[3%] z-50 flex flex-wrap items-center justify-center gap-3 px-3"}>
+        <button onClick={() => act({ type: "RANKING", on: true })} className={`btn-game bg-btn-blue px-5 py-3 ${narrow ? "w-full text-2xl" : "text-xl"} text-white`}>
           VER CLASIFICATORIA
         </button>
         {!matchOver(game) ? (
-          <button disabled={busy} onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true, next: true }))} className="btn-game bg-btn-green px-5 py-3 text-xl text-white">
+          <button disabled={busy} onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true, next: true }))} className={`btn-game bg-btn-green px-5 py-3 ${narrow ? "w-full text-2xl" : "text-xl"} text-white`}>
             SIGUIENTE RONDA ▶
           </button>
         ) : (
-          <button disabled={busy} onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))} className="btn-game bg-btn-green px-5 py-3 text-xl text-white">
+          <button disabled={busy} onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))} className={`btn-game bg-btn-green px-5 py-3 ${narrow ? "w-full text-2xl" : "text-xl"} text-white`}>
             REINICIAR (MISMOS JUGADORES)
           </button>
         )}
-        <button disabled={busy} onClick={() => run(async () => { await api(`/api/rooms/${code}/reset`, { secret }); window.location.href = "/"; })} className="btn-game bg-btn-yellow px-5 py-3 text-xl text-white">
+        <button disabled={busy} onClick={() => run(async () => { await api(`/api/rooms/${code}/reset`, { secret }); window.location.href = "/"; })} className={`btn-game bg-btn-yellow px-5 py-3 ${narrow ? "w-full text-2xl" : "text-xl"} text-white`}>
           SALIR
         </button>
       </div>
@@ -156,8 +156,8 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               </button>
               <FullscreenButton />
             </div>
-            {/* el marcador, un icono junto al dado */}
-            <button onClick={() => setMenu(true)} className="btn-game absolute right-3 bottom-[5%] z-50 grid h-12 w-12 place-items-center bg-btn-blue text-white" aria-label="Marcador e historial" title="Marcador">
+            {/* el marcador, un icono junto al dado (con el juego ganado sube a la fila de arriba para no chocar con los botones del final) */}
+            <button onClick={() => setMenu(true)} className={`btn-game absolute right-3 z-50 ${winner ? "top-[4.5rem]" : "bottom-[5%]"} grid h-12 w-12 place-items-center bg-btn-blue text-white`} aria-label="Marcador e historial" title="Marcador">
               <svg viewBox="0 0 24 24" width="1.6rem" height="1.6rem" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M4 20V11h5v9M9.5 20V4h5v16M15 20v-6h5v6M3 20h18" />
               </svg>
