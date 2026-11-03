@@ -226,7 +226,7 @@ export class LiveBoard {
         const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glowTex, blending: THREE.AdditiveBlending, depthTest: true, depthWrite: false, transparent: true, opacity: 0 }));
         // el modelo ya está escalado (`base`): el ojo (en medidas del modelo sin escalar) se lleva a medidas del mundo antes de pasarlo al hueso
         s.position.copy(head.worldToLocal(e.clone().add(new THREE.Vector3(0, 0, 0.02)).multiplyScalar(base)));
-        s.scale.setScalar(0.14);
+        s.scale.setScalar(0.07);
         s.renderOrder = 6;
         head.add(s);
         glow.push(s);
@@ -310,7 +310,7 @@ export class LiveBoard {
       if (t.head && t.glow.length) {
         t.head.getWorldQuaternion(this.tmpQ).multiply(t.headRestInv);
         const facing = this.tmpV.set(0, 0, 1).applyQuaternion(this.tmpQ).dot(this.camDir);
-        const op = Math.max(0, Math.min(1, facing * 1.8 - 0.1)) * 0.95;
+        const op = Math.max(0, Math.min(1, facing * 1.8 - 0.1)) * 0.6;
         for (const g of t.glow) g.material.opacity = op;
       }
     }
