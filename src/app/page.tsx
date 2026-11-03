@@ -1,5 +1,5 @@
-import Link from "next/link";
 import HomeActions from "@/components/HomeActions";
+import LegalLinks from "@/components/LegalLinks";
 
 // Pantalla de inicio: la portada del juego (public/art/portada.webp, ya trae el logo «Muertos de Sed»). En horizontal
 // (TV, portátil) ocupa toda la pantalla y los botones van abajo en una fila; en vertical (celular) la portada va arriba
@@ -25,14 +25,7 @@ export default function Home() {
         <p className="font-display text-lg text-btn-yellow drop-shadow-[0_2px_0_rgba(0,0,0,.6)] landscape:text-xl">Una noche para beber. Toda la eternidad para dormirla.</p>
         <HomeActions />
         <p className="text-xs text-white/60">
-          Juego para mayores de 18 años. Bebe con moderación. ·{" "}
-          <Link href="/privacidad" className="underline">
-            Privacidad
-          </Link>{" "}
-          ·{" "}
-          <Link href="/terminos" className="underline">
-            Términos
-          </Link>
+          Juego para mayores de 18 años. Bebe con moderación. · <LegalLinks />
         </p>
       </div>
     </main>

@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import CardPanel, { CardText, GREEN_LIGHT } from "@/components/CardPanel";
+import LegalDialog, { type LegalKind } from "@/components/LegalDialog";
 
 // Aviso de +18 (el juego va de beber alcohol). Se pregunta una vez por aparato y la respuesta se guarda en el navegador.
 // Es una declaración, no una verificación de edad. El editor (/admin) no lo enseña.
@@ -52,6 +53,7 @@ export default function AgeGate() {
   const pathname = usePathname();
   const exempt = pathname.startsWith("/admin") || pathname.startsWith("/privacidad") || pathname.startsWith("/terminos"); // el editor y las páginas legales se ven sin responder
   const [step, setStep] = useState<Step>("checking");
+  const [legal, setLegal] = useState<LegalKind | null>(null);
 
   useEffect(() => {
     if (exempt) return;
@@ -76,44 +78,49 @@ export default function AgeGate() {
     setStep("denied");
   };
 
+  // mientras se mira el aparato, una pantalla lisa para que no se vea el juego un instante
+  if (step === "checking") return <div aria-hidden className="fixed inset-0 z-[9999] bg-[#0a0620]" />;
+
   return (
-    <div role="dialog" aria-modal="true" aria-label="Aviso para mayores de 18 años" className="fixed inset-0 z-[9999] grid place-items-center overflow-y-auto bg-[#0a0620] p-5 text-center">
-      {step !== "checking" && (
-        <div className="flex w-full max-w-md flex-col items-center gap-5">
-          <div className="grid size-24 place-items-center rounded-full border-[5px] border-[#1a0b38] bg-btn-red font-display text-4xl text-white shadow-[0_6px_0_#1a0b38]">+18</div>
-          {step === "ask" ? (
+    <>
+      {step === "ask" ? (
+        <CardPanel
+          solid
+          kicker="Solo para adultos"
+          title="Solo para mayores de 18"
+          badge="+18"
+          label="Aviso para mayores de 18 años"
+          actions={
             <>
-              <h1 className="font-display text-3xl text-btn-yellow drop-shadow-[0_2px_0_rgba(0,0,0,.6)]">Solo para mayores de 18</h1>
-              <p className="text-lg text-white/85">
-                <strong>Muertos de Sed</strong> es un juego para beber alcohol entre amigos. Bebe con moderación, no conduzcas si bebiste y nadie está obligado a beber: si no quieres, pasa.
-              </p>
-              <div className="flex w-full flex-col gap-3">
-                <button autoFocus onClick={accept} className="btn-game bg-btn-green py-4 text-2xl text-white">
-                  TENGO 18 AÑOS O MÁS
-                </button>
-                <button onClick={refuse} className="btn-game bg-btn-grey py-3 text-lg text-white">
-                  SOY MENOR DE 18
-                </button>
-              </div>
-              <p className="text-xs text-white/55">
-                Tu respuesta se guarda en este aparato. Contamos visitas de forma anónima, sin nombres.{" "}
-                <Link href="/privacidad" className="underline">
-                  Privacidad
-                </Link>{" "}
-                ·{" "}
-                <Link href="/terminos" className="underline">
-                  Términos
-                </Link>
-              </p>
+              <button autoFocus onClick={accept} className="btn-game bg-btn-green py-4 text-2xl text-white">
+                TENGO 18 AÑOS O MÁS
+              </button>
+              <button onClick={refuse} className="btn-game bg-btn-grey py-3 text-lg text-white">
+                SOY MENOR DE 18
+              </button>
             </>
-          ) : (
-            <>
-              <h1 className="font-display text-3xl text-btn-yellow">Todavía no es tu noche</h1>
-              <p className="text-lg text-white/85">Este juego es solo para mayores de 18 años. Vuelve cuando cumplas la mayoría de edad.</p>
-            </>
-          )}
-        </div>
+          }
+        >
+          <CardText>
+            <strong className="text-white">Muertos de Sed</strong> es un juego para beber alcohol entre amigos. Bebe con moderación, no conduzcas si bebiste y nadie está obligado a beber: si no quieres, pasa.
+          </CardText>
+          <p className="text-xs" style={{ marginTop: 10, color: "#d8d4f6", opacity: 0.65, fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700 }}>
+            Tu respuesta se guarda en este aparato. Contamos visitas de forma anónima, sin nombres.{" "}
+            <button className="underline" style={{ color: GREEN_LIGHT }} onClick={() => setLegal("privacidad")}>
+              Privacidad
+            </button>{" "}
+            ·{" "}
+            <button className="underline" style={{ color: GREEN_LIGHT }} onClick={() => setLegal("terminos")}>
+              Términos
+            </button>
+          </p>
+        </CardPanel>
+      ) : (
+        <CardPanel solid kicker="Solo para adultos" title="Todavía no es tu noche" badge="+18" label="Aviso para mayores de 18 años">
+          <CardText>Este juego es solo para mayores de 18 años. Vuelve cuando cumplas la mayoría de edad.</CardText>
+        </CardPanel>
       )}
-    </div>
+      {legal && <LegalDialog kind={legal} onClose={() => setLegal(null)} />}
+    </>
   );
 }
