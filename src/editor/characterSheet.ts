@@ -155,7 +155,6 @@ function yellowEyes(mesh: THREE.Mesh, map: THREE.Texture, eyes: THREE.Vector3[],
     const dark = vs.reduce((a, i) => a + lumAt(i), 0) / vs.length < 0.35;
     // boca del modelo: pieza oscura, pequeña y al frente de la cara, por debajo de los ojos (se usa para coserla)
     if (dark && yc > 0.33 && yc < 0.47 && Math.min(...zs) > 0.12 && w < 0.25 && h < 0.09) {
-      for (const i of vs) gone.add(i); // la boca original se quita: se dibuja otra, pequeña y abierta
       mouths.push({ x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys), front: Math.max(...zs), uv: [uv.getX(vs[0]), uv.getY(vs[0])] });
     }
     if (!(flat && dark && w < 0.27 && h < 0.06 && yc > 0.47 && yc < 0.545)) continue;
@@ -379,11 +378,6 @@ function faceDetails(mesh: THREE.Mesh, eyes: THREE.Vector3[], mouths: Mouth[], s
     g.translate(x, y, z + dz);
     items.push({ g, uv });
   };
-  // boca pequeña abierta, con dos dientes arriba y uno abajo
-  box(mx, my, 0.072, 0.036, mouthUv);
-  box(mx - 0.016, my + 0.01, 0.018, 0.015, cell(TEETH.x), 0.0045);
-  box(mx + 0.016, my + 0.01, 0.018, 0.015, cell(TEETH.x), 0.0045);
-  box(mx + 0.005, my - 0.012, 0.016, 0.01, cell(TEETH.x), 0.0045);
   // nariz: triángulo chiquito entre los ojos y la boca
   const ny = my + 0.05;
   const tri = new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-0.02, -0.014), new THREE.Vector2(0.02, -0.014), new THREE.Vector2(0, 0.019)]));
