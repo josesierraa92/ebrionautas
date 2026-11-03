@@ -156,10 +156,10 @@ export function PanelCard({ game, n, playerId, cardKey, result, prompt }: Props 
   );
 }
 
-export function PhoneRuleCard({ game, n, playerId, cardKey, result, unit = "14px" }: Props & { unit?: string }) {
+export function PhoneRuleCard({ game, n, playerId, cardKey, result, unit = "14px", showName = true }: Props & { unit?: string; /** poner el nombre del jugador en la pastilla (sin la tarjeta de usuario encima, que ya lo dice) */ showName?: boolean }) {
   useCardTexts();
   const { player, rule, accent, icon, emoji } = cardContent(game, n, playerId, result);
-  return <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n} · ${player.name}`} title={rule.title} text={rule.text} unit={unit} cardKey={cardKey} phone />;
+  return <GameCard accent={accent} icon={icon} emoji={emoji} kicker={showName ? `Casilla ${n} · ${player.name}` : `Casilla ${n}`} title={rule.title} text={rule.text} unit={unit} cardKey={cardKey} phone />;
 }
 
 /**
@@ -167,12 +167,12 @@ export function PhoneRuleCard({ game, n, playerId, cardKey, result, unit = "14px
  * Mientras la TV anima la tirada (`moving`, `rolling`) no se adelanta el resultado ni el turno siguiente.
  */
 // Solo quién tiene el turno: el dado ya se ve grande en el tablero y el número sale en el título de la jugada.
-export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP, inline = false }: { game: GameState; moving?: boolean; rolling?: boolean; scale?: number; /** ajustes de la tarjeta (editor «Tarjeta de usuario») */ chip?: ChipStyle; /** sin colocarla en la esquina (vista previa del editor) */ inline?: boolean }) {
+export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP, inline = false, playerId }: { game: GameState; /** enseñar a este jugador en vez de a quien tiene el turno (la pantalla de la tarjeta del celular: de quién es) */ playerId?: string; moving?: boolean; rolling?: boolean; scale?: number; /** ajustes de la tarjeta (editor «Tarjeta de usuario») */ chip?: ChipStyle; /** sin colocarla en la esquina (vista previa del editor) */ inline?: boolean }) {
   const f = NUMBER_FONTS[chip.font];
   const fontFamily = chip.font === DEFAULT_CHIP.font ? undefined : `var(${f.cssVar}), ${f.fallback}`;
   const roller = game.players.find((p) => p.id === game.lastRoller);
   const winner = game.players.find((p) => p.id === game.winner);
-  const who = winner ?? (moving && roller ? roller : currentPlayer(game));
+  const who = winner ?? game.players.find((p) => p.id === playerId) ?? (moving && roller ? roller : currentPlayer(game));
   const color = who.color;
   // Placa de HUD de videojuego: retrato enmarcado con el color del jugador que sobresale de una placa oscura ladeada,
   // «Turno de» en el verde neón de las tarjetas (`#bffa58`) y 3 px más abajo, nombre con sombra dura azul muy oscuro, sin filete (todo en CSS, mismo estilo

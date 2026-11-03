@@ -8,7 +8,8 @@ import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { currentPlayer, jailBail, type GameState, type Player } from "@/game/engine";
 import { duelOutcome, jailOutcome, jailPaidOutcome } from "@/game/rules";
-import { PhoneRuleCard } from "@/components/TvCards";
+import { PhoneRuleCard, TurnChip } from "@/components/TvCards";
+import { usePublishedLayout } from "@/lib/usePublishedBoard";
 import { stepPath, type Landed } from "@/lib/useGameFx";
 import { useShake } from "@/lib/useShake";
 
@@ -164,14 +165,9 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
     return (
       <div className="flex flex-1 flex-col justify-between gap-4">
         <div className="flex flex-1 flex-col justify-center gap-4">
-          {/* de quién es la tarjeta (quien tiró) */}
-          {(() => {
-            const owner = game.players.find((p) => p.id === card.playerId) ?? me;
-            return (
-              <TurnBanner player={owner} label="Turno de" game={game} size={72} compact />
-            );
-          })()}
-          <PhoneRuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={card.result} unit="19px" />
+          {/* de quién es la tarjeta (quien tiró): la misma tarjeta de usuario que en la TV, con los ajustes del editor */}
+          <OwnerChip game={game} playerId={card.playerId} />
+          <PhoneRuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={card.result} unit="19px" showName={false} />
         </div>
         <button
           onClick={() => {
@@ -245,6 +241,15 @@ export default function DiceController({ game, busy, onRoll, onNext, decision }:
  * «Le toca a / Turno de» + nombre: siempre en blanco, grande y centrado, para leerse de noche y con copas.
  * El nombre nunca se corta: baja de tamaño si es largo y, si aun así no cabe, pasa a dos renglones.
  */
+function OwnerChip({ game, playerId }: { game: GameState; playerId: string }) {
+  const published = usePublishedLayout(true);
+  return (
+    <div className="flex justify-center py-1">
+      <TurnChip game={game} playerId={playerId} inline chip={published?.chip} />
+    </div>
+  );
+}
+
 function TurnBanner({ player, label, game, size, compact = false }: { player: Player; label: string; game: GameState; size: number; compact?: boolean }) {
   const len = player.name.length;
   const nameSize = compact ? (len <= 8 ? "3rem" : len <= 12 ? "2.4rem" : "1.9rem") : len <= 8 ? "4.6rem" : len <= 12 ? "3.4rem" : "2.6rem";
