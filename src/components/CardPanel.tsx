@@ -28,9 +28,10 @@ export default function CardPanel({
   inline,
   width = 30,
   maxH = "88dvh",
+  centerTitle,
 }: {
   /** Pastilla verde de arriba («SOLO PARA ADULTOS», «PRIVACIDAD»…). */
-  kicker: string;
+  kicker?: string;
   title: string;
   /** Icono vectorial del cuadro verde… (sin icono ni texto no hay cuadro y el título ocupa toda la línea) */
   icon?: IconName;
@@ -53,6 +54,8 @@ export default function CardPanel({
   width?: number;
   /** Alto máximo de la tarjeta (el contenido se desplaza dentro). */
   maxH?: string;
+  /** Título centrado (para tarjetas sin icono ni pastilla, como el alta de jugadores). */
+  centerTitle?: boolean;
 }) {
   const downOnBackdrop = useRef(false);
   // se dibuja directamente en <body> (un portal): así nunca queda dentro de un <p>, de un contenedor con transform ni bajo otro z-index
@@ -86,7 +89,7 @@ export default function CardPanel({
                 )}
               </div>
               )}
-              <h2 className="min-w-0 font-display leading-[1.05] text-white uppercase" style={{ fontSize: u(1.9), textWrap: "balance", letterSpacing: "0.01em" }}>
+              <h2 className={`min-w-0 font-display leading-[1.05] text-white uppercase${centerTitle ? " w-full text-center" : ""}`} style={{ fontSize: u(1.9), textWrap: "balance", letterSpacing: "0.01em" }}>
                 {title}
               </h2>
             </div>
@@ -107,9 +110,9 @@ export default function CardPanel({
             )}
           </div>
         </div>
-        <div className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-display uppercase" style={{ padding: `${u(0.2)} ${u(1)}`, borderRadius: u(9), background: GREEN, color: "#14260a", fontSize: u(0.95), letterSpacing: "0.04em" }}>
+        {kicker && <div className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-display uppercase" style={{ padding: `${u(0.2)} ${u(1)}`, borderRadius: u(9), background: GREEN, color: "#14260a", fontSize: u(0.95), letterSpacing: "0.04em" }}>
           {kicker}
-        </div>
+        </div>}
       </div>
   );
   if (inline) return card;

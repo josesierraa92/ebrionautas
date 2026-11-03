@@ -43,9 +43,10 @@ export function parseSheet(raw: unknown): CharacterSheet | undefined {
  * Personaje de cada jugador: los hombres van tomando los personajes hombre en orden y las mujeres los de mujer
  * (sin género, como hombre). Con más de 6 de un género se repiten (se distinguen por el nombre).
  */
-export function characterOf(players: { id: string; gender?: Gender | null }[], id: string): number {
+export function characterOf(players: { id: string; gender?: Gender | null; look?: number }[], id: string): number {
   const me = players.find((p) => p.id === id);
   const female = me?.gender === "mujer";
+  if (me && typeof me.look === "number" && me.look >= 0 && me.look < 6) return (female ? MALE.length : 0) + me.look; // sorteado al elegir género
   const same = players.filter((p) => (p.gender === "mujer") === female);
   const i = Math.max(0, same.findIndex((p) => p.id === id));
   return (female ? MALE.length : 0) + (i % 6);
