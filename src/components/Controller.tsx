@@ -115,25 +115,38 @@ export default function Controller({ code, room, secret, error, refresh, overlay
   if (overlay) {
     const rollNow = () => run(() => sendAction(code, secret, { type: "ROLL" }));
     const dim = locked || busy;
-    const winnerButtons = winner && !game.ranking && (
-      <div className={narrow ? "absolute inset-x-0 bottom-[3%] z-50 flex flex-col items-stretch gap-3 px-4" : "absolute inset-x-0 bottom-[3%] z-50 flex flex-wrap items-center justify-center gap-3 px-3"}>
-        <button onClick={() => act({ type: "RANKING", on: true })} className={`btn-game bg-btn-blue px-5 py-3 ${narrow ? "w-full text-2xl" : "text-xl"} text-white`}>
+    const nextRound = !matchOver(game);
+    const onNext = () => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true, ...(nextRound ? { next: true } : {}) }));
+    const onExit = () => run(async () => { await api(`/api/rooms/${code}/reset`, { secret }); window.location.href = "/"; });
+    const winnerButtons = winner && !game.ranking && (narrow ? (
+      // celular vertical: clasificatoria arriba a todo el ancho; abajo, reiniciar a la izquierda y salir a la derecha
+      <div className="absolute inset-x-0 bottom-[3%] z-50 flex flex-col gap-3 px-4">
+        <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game w-full bg-btn-special py-3 text-2xl text-white">
+          CLASIFICATORIA
+        </button>
+        <div className="flex gap-3">
+          <button disabled={busy} onClick={onNext} className="btn-game flex-1 bg-btn-green py-3 text-2xl text-white">
+            {nextRound ? "SIGUIENTE RONDA" : "REINICIAR"}
+          </button>
+          <button disabled={busy} onClick={onExit} className="btn-game flex-1 bg-btn-grey py-3 text-2xl text-white">
+            SALIR
+          </button>
+        </div>
+      </div>
+    ) : (
+      <div className="absolute inset-x-0 bottom-[3%] z-50 flex flex-wrap items-center justify-center gap-3 px-3">
+        <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game bg-btn-special px-5 py-3 text-xl text-white">
           VER CLASIFICATORIA
         </button>
-        {!matchOver(game) ? (
-          <button disabled={busy} onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true, next: true }))} className={`btn-game bg-btn-green px-5 py-3 ${narrow ? "w-full text-2xl" : "text-xl"} text-white`}>
-            SIGUIENTE RONDA ▶
-          </button>
-        ) : (
-          <button disabled={busy} onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))} className={`btn-game bg-btn-green px-5 py-3 ${narrow ? "w-full text-2xl" : "text-xl"} text-white`}>
-            REINICIAR (MISMOS JUGADORES)
-          </button>
-        )}
-        <button disabled={busy} onClick={() => run(async () => { await api(`/api/rooms/${code}/reset`, { secret }); window.location.href = "/"; })} className={`btn-game bg-btn-yellow px-5 py-3 ${narrow ? "w-full text-2xl" : "text-xl"} text-white`}>
+        <button disabled={busy} onClick={onNext} className="btn-game bg-btn-green px-5 py-3 text-xl text-white">
+          {nextRound ? "SIGUIENTE RONDA ▶" : "REINICIAR (MISMOS JUGADORES)"}
+        </button>
+        <button disabled={busy} onClick={onExit} className="btn-game bg-btn-grey px-5 py-3 text-xl text-white">
           SALIR
         </button>
       </div>
-    );
+    ));
+
     return (
       <>
         {narrow ? (
