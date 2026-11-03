@@ -31,6 +31,8 @@ export const metadata: Metadata = {
   title: "Muertos de Sed",
   description:
     "Muertos de Sed: el juego de mesa para beber del Día de Muertos. Vuelve a tu tumba antes del amanecer.",
+  // al guardarlo en la pantalla de inicio del iPhone se abre a pantalla completa
+  appleWebApp: { capable: true, title: "Muertos de Sed", statusBarStyle: "black" },
 };
 
 export const viewport: Viewport = {

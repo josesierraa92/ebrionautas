@@ -4,6 +4,7 @@ import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import Board from "@/components/Board";
 import CardPanel, { CardText } from "@/components/CardPanel";
+import FullscreenButton from "@/components/FullscreenButton";
 import Logo from "@/components/Logo";
 import DecisionPanel from "@/components/DecisionPanel";
 import DiceController from "@/components/DiceController";
@@ -124,18 +125,19 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {!winner && (
-            <button onClick={() => setAddDrink(true)} className="btn-game bg-btn-red px-3 py-1 text-white" aria-label="Agregar un trago a un jugador">
+            <button onClick={() => setAddDrink(true)} className="btn-game whitespace-nowrap bg-btn-red px-2.5 py-1 text-base text-white" aria-label="Agregar un trago a un jugador">
               + TRAGO
             </button>
           )}
-          <button onClick={() => setSettings(true)} className="btn-game bg-btn-grey px-3 py-1 text-white" aria-label="Ajustes de la partida">
+          <button onClick={() => setSettings(true)} className="btn-game whitespace-nowrap bg-btn-grey px-2.5 py-1 text-base text-white" aria-label="Ajustes de la partida">
             AJUSTES
           </button>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setMenu(true)} className="btn-game bg-btn-blue px-3 py-1 text-white" aria-label="Marcador e historial">
+          <FullscreenButton />
+          <button onClick={() => setMenu(true)} className="btn-game whitespace-nowrap bg-btn-blue px-2.5 py-1 text-base text-white" aria-label="Marcador e historial">
             MARCADOR
           </button>
         </div>
