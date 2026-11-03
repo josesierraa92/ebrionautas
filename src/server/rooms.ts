@@ -30,7 +30,7 @@ export type PublicRoom = {
   version: number;
 };
 
-export type NewPlayer = { name: string; gender: Gender };
+export type NewPlayer = { name: string; gender: Gender; look?: number };
 
 export class RoomError extends Error {
   constructor(
@@ -133,7 +133,7 @@ export async function releaseControl(code: string, hostSecret: string): Promise<
 export async function startRoom(code: string, who: string, players: NewPlayer[], cups = 1): Promise<void> {
   const goal = [1, 2, 3].includes(cups) ? cups : 1;
   const clean = players
-    .map((p) => ({ name: String(p?.name ?? "").trim().slice(0, 16), gender: p?.gender }))
+    .map((p) => ({ name: String(p?.name ?? "").trim().slice(0, 16), gender: p?.gender, look: Number.isInteger(p?.look) && p.look! >= 0 && p.look! < 6 ? p.look : undefined }))
     .filter((p) => p.name);
   if (clean.length < 2) throw new RoomError("Hacen falta al menos 2 jugadores.");
   if (clean.length > MAX_PLAYERS) throw new RoomError(`Máximo ${MAX_PLAYERS} jugadores.`);
@@ -144,7 +144,7 @@ export async function startRoom(code: string, who: string, players: NewPlayer[],
     assertController(room, who);
     if (room.status !== "LOBBY") throw new RoomError("La partida ya empezó.", 409);
     room.game = createGame(
-      clean.map((p, i) => ({ name: p.name, gender: p.gender, color: PLAYER_COLORS[i], avatar: defaultAvatar(i, PLAYER_COLORS[i]) })),
+      clean.map((p, i) => ({ name: p.name, gender: p.gender, look: p.look, color: PLAYER_COLORS[i], avatar: defaultAvatar(i, PLAYER_COLORS[i]) })),
       goal,
     );
     room.status = "PLAYING";
@@ -163,7 +163,7 @@ export async function resetRoom(code: string, who: string, same = false, nextRou
     if (same && room.game) {
       // siguiente ronda (modo de varias copas): mismos jugadores con sus copas y lo bebido; si no, partida nueva con las mismas copas por ganar
       room.game = createGame(
-        room.game.players.map((p) => ({ name: p.name, gender: p.gender, color: p.color, avatar: p.avatar, ...(nextRound ? { cups: p.cups, drunk: p.drunk, pending: p.pending, paused: p.paused } : {}) })),
+        room.game.players.map((p) => ({ name: p.name, gender: p.gender, look: p.look, color: p.color, avatar: p.avatar, ...(nextRound ? { cups: p.cups, drunk: p.drunk, pending: p.pending, paused: p.paused } : {}) })),
         room.game.cupsGoal ?? 1,
         nextRound ? room.game.seen : undefined, // entre rondas no se repiten las cartas que ya salieron
       );

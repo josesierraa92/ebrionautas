@@ -104,7 +104,7 @@ export default function ControlPage({ params }: { params: Promise<{ code: string
         <Setup
           busy={busy}
           code={code}
-          onStart={(players: { name: string; gender: Gender }[], cups: number) => run(() => api(`/api/rooms/${code}/start`, { secret, players, cups }))}
+          onStart={(players: { name: string; gender: Gender; look?: number }[], cups: number) => run(() => api(`/api/rooms/${code}/start`, { secret, players, cups }))}
         />
         {actionError && (
           <div className="mx-auto max-w-md px-4 pb-6">

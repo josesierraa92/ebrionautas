@@ -23,6 +23,8 @@ export type Player = {
   color: string;
   avatar?: AvatarConfig;
   gender?: Gender; // las casillas "Machos" y "Hembras" se resuelven solas con esto
+  /** Personaje (0-5) entre los de su género, sorteado al elegir hombre/mujer en el alta. Sin él se asigna por orden. */
+  look?: number;
   pos: number;
   drunk: number; // total bebido en la partida
   pending: number; // vasos que debe y aún no ha confirmado con "¡Bebido!"
@@ -149,7 +151,7 @@ export function trophiesOf(state: GameState, p: Player): { stars: number; trophy
   return { stars: cup ? Math.max(0, rounds - 1) : rounds, trophy: cup };
 }
 
-export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender; cups?: number; drunk?: number; pending?: number; paused?: boolean }[], cupsGoal = 1, seen?: Record<string, string[]>): GameState {
+export function createGame(players: { name: string; color: string; avatar?: AvatarConfig; gender?: Gender; look?: number; cups?: number; drunk?: number; pending?: number; paused?: boolean }[], cupsGoal = 1, seen?: Record<string, string[]>): GameState {
   const state: GameState = {
     players: players.map((p, i) => ({
       id: `p${i + 1}`,
@@ -157,6 +159,7 @@ export function createGame(players: { name: string; color: string; avatar?: Avat
       color: p.color,
       avatar: p.avatar,
       gender: p.gender,
+      ...(p.look != null ? { look: p.look } : {}),
       pos: 1,
       drunk: p.drunk ?? 0,
       cups: p.cups ?? 0,

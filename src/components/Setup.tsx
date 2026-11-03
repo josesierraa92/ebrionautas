@@ -10,9 +10,9 @@ import { defaultAvatar } from "@/game/avatar";
 import type { Gender } from "@/game/engine";
 import { PLAYER_COLORS } from "@/game/tileStyle";
 
-type Draft = { name: string; gender: Gender | null };
+type Draft = { name: string; gender: Gender | null; look?: number };
 type Props = {
-  onStart: (players: { name: string; gender: Gender }[], cups: number) => void;
+  onStart: (players: { name: string; gender: Gender; look?: number }[], cups: number) => void;
   busy?: boolean;
   /** Código de la mesa: sale arriba a la derecha, frente al logo. */
   code?: string;
@@ -28,6 +28,14 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
   ]);
   const [cups, setCups] = useState(1);
   const set = (i: number, patch: Partial<Draft>) => setPlayers(players.map((p, j) => (j === i ? { ...p, ...patch } : p)));
+  /** Al elegir hombre o mujer (cada vez que se toca) sale un personaje al azar de ese género, evitando los que ya usan otros. */
+  const pickGender = (i: number, g: Gender) => {
+    const taken = new Set(players.filter((q, j) => j !== i && q.gender === g && q.look != null).map((q) => q.look));
+    const all = [0, 1, 2, 3, 4, 5];
+    const free = all.filter((n) => !taken.has(n));
+    const pool = free.length ? free : all;
+    set(i, { gender: g, look: pool[Math.floor(Math.random() * pool.length)] });
+  };
 
   const filled = players.filter((p) => p.name.trim());
   const names = filled.map((p) => p.name.trim().toLowerCase());
@@ -53,13 +61,13 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
         unit="17px"
         width={24}
         maxH="none" /* formulario largo: la página se desplaza entera */
-        kicker="Los muertos"
         title="¿Quién juega?"
+        centerTitle
         actions={
           <>
             <button
               disabled={!ready || busy}
-              onClick={() => onStart(filled.map((p) => ({ name: p.name.trim(), gender: p.gender! })), copas ? cups : 1)}
+              onClick={() => onStart(filled.map((p) => ({ name: p.name.trim(), gender: p.gender!, look: p.look })), copas ? cups : 1)}
               className="btn-game bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey"
             >
               {busy ? "LEVANTÁNDOSE…" : "¡A LEVANTARSE!"}
@@ -79,7 +87,7 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
         <ol className="flex flex-col" style={{ marginTop: u(0.8), gap: u(0.6) }}>
           {players.map((p, i) => (
             <li key={i} className="flex items-center gap-2 p-2" style={{ background: rowBg, borderRadius: u(0.9) }}>
-              <Marciano avatar={defaultAvatar(i, PLAYER_COLORS[i])} size={42} className="shrink-0" character={characterOf(players.map((q, j) => ({ id: String(j), gender: q.gender })), String(i))} />
+              <Marciano avatar={defaultAvatar(i, PLAYER_COLORS[i])} size={42} className="shrink-0" character={characterOf(players.map((q, j) => ({ id: String(j), gender: q.gender, look: q.look })), String(i))} />
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <input
                   value={p.name}
@@ -94,7 +102,7 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
                     <button
                       key={g}
                       aria-pressed={p.gender === g}
-                      onClick={() => set(i, { gender: g })}
+                      onClick={() => pickGender(i, g)}
                       className={`rounded-lg py-1 font-display text-sm ${p.gender === g ? (g === "hombre" ? "bg-btn-blue text-white" : "bg-btn-special text-white") : "bg-black/30 text-white/60"}`}
                     >
                       {g === "hombre" ? "♂ HOMBRE" : "♀ MUJER"}
