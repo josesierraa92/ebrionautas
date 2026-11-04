@@ -161,7 +161,7 @@ export class LiveBoard {
       const hOff = ((i % cols) - (cols - 1) / 2) * (n > 4 ? 0.2 : n > 2 ? 0.24 : 0.32) * TILE_W;
       const dOff = n > 4 ? (Math.floor(i / cols) - (rows - 1) / 2) * 0.17 * TILE_W : 0;
       const goal = center.clone().addScaledVector(right, hOff).addScaledVector(toward, dOff);
-      const shrink = n > 8 ? 46 / 86 : n > 3 ? 62 / 86 : 1;
+      const shrink = 1; // el tamaño de los zombis no cambia con cuántos haya en la casilla (pedido del usuario)
       const height = TOKEN_TO_TILE * TILE_W * CHARACTER_HEIGHT * s.characterScale * shrink;
       if (!t) {
         t = this.makeToken(p, character, goal, height);

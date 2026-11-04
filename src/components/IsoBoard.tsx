@@ -243,7 +243,7 @@ function IsoBoardView({ players, current, winner, shown, flying, focus, geo }: P
       const hOff = ((i % cols) - (cols - 1) / 2) * (n > 4 ? 0.2 : n > 2 ? 0.24 : 0.32);
       const dOff = n > 4 ? (Math.floor(i / cols) - (rows - 1) / 2) * 0.17 : 0; // hacia delante o hacia atrás en la losa
       const custom = geo.tokenScale?.[PLAYER_COLORS.indexOf(avatarOf(p).skin.toLowerCase())];
-      const size = (n > 8 ? 46 : n > 3 ? 62 : 86) * k * (custom ?? 1) * s; // 86 = TOKEN_TO_TILE de una casilla
+      const size = 86 * k * (custom ?? 1) * s; // 86 = TOKEN_TO_TILE de una casilla
       // sin ficha propia del editor: el personaje zombi (hombre o mujer) mirando hacia donde va
       const f = facing(p);
       const sprite = custom == null ? spriteOf(characterOf(players, p.id), f.dx, f.dy, f.pose) : null;
