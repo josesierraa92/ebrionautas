@@ -49,16 +49,29 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
 
   // en pantallas grandes (PC, TV) todo el formulario se agranda (`zoom`); en el celular se queda como está
   const [zoom, setZoom] = useState(1);
+  const [vp, setVp] = useState({ w: 390, h: 800 });
   useEffect(() => {
-    const fit = () => setZoom(window.innerWidth < 700 ? 1 : Math.max(1, Math.min(1.6, Math.min(window.innerHeight / 780, window.innerWidth / 560))));
+    const fit = () => {
+      setVp({ w: window.innerWidth, h: window.innerHeight });
+      setZoom(window.innerWidth < 700 ? 1 : Math.max(1, Math.min(1.6, Math.min(window.innerHeight / 780, window.innerWidth / 560))));
+    };
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
   }, []);
+  // en pantallas anchas, a partir de 3 jugadores la lista va en columnas (la tarjeta se ensancha) para no alargarla sin fin:
+  // 2 columnas y, si aun así no cabe en la altura de la pantalla, 3 (siempre que quepan a lo ancho)
+  const cols = (() => {
+    if (!(zoom > 1 && step === 1 && players.length >= 3)) return 1;
+    const fits = (c: number) => (458 + Math.ceil(players.length / c) * 118) * zoom <= vp.h;
+    const roomFor3 = (66 * 17 * zoom + 64) <= vp.w;
+    return fits(2) || !roomFor3 ? 2 : 3;
+  })();
+  const twoCols = cols > 1;
   const u = (k: number) => `calc(var(--u) * ${k})`;
   const rowBg = "rgba(255,255,255,.08)";
   return (
-    <main className="mx-auto flex max-w-md flex-col items-center justify-center gap-4 px-4 py-6" style={{ zoom, minHeight: `calc((100dvh - 4.5rem) / ${zoom})` }}>
+    <main className={`mx-auto flex ${cols === 3 ? "max-w-[90rem]" : twoCols ? "max-w-[60rem]" : "max-w-md"} flex-col items-center justify-center gap-4 px-4 py-6`} style={{ zoom, minHeight: `calc((100dvh - 4.5rem) / ${zoom})` }}>
       {/* logo grande arriba y centrado; el código de la mesa, en la esquina de arriba a la derecha de la pantalla */}
       <Logo className="w-[min(22rem,100%)] shrink-0" />
       {code && (
@@ -70,7 +83,7 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
       <CardPanel
         inline
         unit="17px"
-        width={24}
+        width={cols === 3 ? 66 : twoCols ? 46 : 24}
         maxH="none" /* formulario largo: la página se desplaza entera */
         title="¿Quién juega?"
         centerTitle
@@ -91,7 +104,7 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
           </>
         }
       >
-        <ol className="flex flex-col" style={{ marginTop: u(0.8), gap: u(0.6) }}>
+        <ol className={cols === 3 ? "grid grid-cols-3" : twoCols ? "grid grid-cols-2" : "flex flex-col"} style={{ marginTop: u(0.8), gap: u(0.6) }}>
           {players.map((p, i) => (
             <li key={i} className="flex items-center gap-2 p-2" style={{ background: rowBg, borderRadius: u(0.9) }}>
               <Marciano avatar={defaultAvatar(i, PLAYER_COLORS[i])} size={42} className="shrink-0" character={characterOf(players.map((q, j) => ({ id: String(j), gender: q.gender, look: q.look })), String(i))} />
