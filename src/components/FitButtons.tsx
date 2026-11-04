@@ -27,7 +27,8 @@ function fit(el: HTMLElement) {
   const pcs = parent ? getComputedStyle(parent) : null;
   const room = parent && pcs ? parent.clientWidth - (parseFloat(pcs.paddingLeft) || 0) - (parseFloat(pcs.paddingRight) || 0) : Infinity;
   const avail = () => Math.min(el.clientWidth, room);
-  if (Math.abs(el.offsetWidth - natural) <= 2 && el.offsetWidth <= room + 1) return;
+  // (pero si el botón ocupa todo el ancho libre, el texto sí necesita su margen: un botón a todo el ancho con texto justo rozaba los bordes)
+  if (Math.abs(el.offsetWidth - natural) <= 2 && el.offsetWidth < room - 3) return;
   // si la tarjeta está entrando con una animación de escala, el texto medido en pantalla sale más chico que el botón: se mide sin esa escala
   const tooWide = () => {
     const scale = (el.getBoundingClientRect().width / (el.offsetWidth || 1)) || 1;
