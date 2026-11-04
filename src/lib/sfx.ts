@@ -133,92 +133,105 @@ export const sfx = {
 };
 
 // ---------------------------------------------------------------- música de fondo
-// Un bucle de 8 compases, sintetizado (sin archivos ni licencias): caja de música y bajo pizzicato en La menor con un paso por Mi mayor
-// (el sol sostenido da el toque de misterio) y acordes cortos a contratiempo. Es de videojuego: saltarín y alegre, con un poquito de
-// terror por la caja de música y el modo menor. Va muy bajito para no tapar los efectos ni la charla.
+// Muy lenta y suave, de cripta: un piano apagado toca una melodía sencilla y pegajosa (como las de Minecraft: pocas notas, largos silencios,
+// mucha reverberación), sobre un colchón de cuerdas graves y una campanada lejana. De vez en cuando, una frasecita de caja de música en
+// modo mayor, medio feliz, como de circo viejo. Todo sintetizado (sin archivos ni licencias) y a muy poco volumen.
 
 const midi = (n: number) => 440 * Math.pow(2, (n - 69) / 12);
-const BPM = 104;
-const STEP = 60 / BPM / 2; // una corchea
-// por compás: raíz del bajo, quinta y acorde (a contratiempo)
-const BARS: { root: number; fifth: number; chord: number[] }[] = [
-  { root: 45, fifth: 52, chord: [57, 60, 64] }, // La menor
-  { root: 41, fifth: 48, chord: [57, 60, 65] }, // Fa
-  { root: 48, fifth: 55, chord: [55, 60, 64] }, // Do
-  { root: 40, fifth: 47, chord: [56, 59, 64] }, // Mi (con sol sostenido)
-  { root: 45, fifth: 52, chord: [57, 60, 64] },
-  { root: 41, fifth: 48, chord: [57, 60, 65] },
-  { root: 38, fifth: 45, chord: [57, 62, 65] }, // Re menor
-  { root: 40, fifth: 47, chord: [56, 59, 64] },
+const BPM = 54;
+const STEP = 60 / BPM / 2; // una corchea (~0,56 s)
+const LOOP = 128; // 16 compases de 8 corcheas, ~71 s
+
+// acordes del colchón, uno cada 2 compases: raíz grave y notas del acorde
+const PADS: { root: number; chord: number[] }[] = [
+  { root: 33, chord: [45, 52, 57] }, // La menor
+  { root: 29, chord: [45, 53, 57] }, // Fa
+  { root: 36, chord: [48, 52, 55] }, // Do
+  { root: 28, chord: [44, 52, 56] }, // Mi (con sol sostenido)
+  { root: 33, chord: [45, 52, 57] }, // La menor
+  { root: 38, chord: [45, 50, 53] }, // Re menor
+  { root: 29, chord: [45, 53, 57] }, // Fa
+  { root: 28, chord: [44, 52, 56] }, // Mi
 ];
-// melodía en corcheas (0 = silencio), 8 por compás
-const MELODY = [
-  76, 0, 72, 0, 69, 72, 76, 0,
-  77, 0, 74, 0, 72, 0, 69, 0,
-  72, 76, 79, 0, 76, 72, 67, 0,
-  76, 0, 80, 0, 83, 80, 76, 0,
-  81, 0, 76, 0, 72, 0, 76, 0,
-  77, 76, 74, 0, 72, 0, 69, 0,
-  74, 0, 77, 0, 81, 77, 74, 0,
-  80, 0, 76, 0, 71, 0, 76, 0,
+// melodía: [corchea, nota, duración en corcheas, caja de música]
+const TUNE: [number, number, number, boolean][] = [
+  [0, 69, 4, false], [4, 72, 3, false], [8, 76, 7, false], [15, 74, 1, false],
+  [16, 72, 4, false], [20, 69, 3, false], [24, 67, 8, false],
+  // (silencio)
+  [48, 76, 1, true], [49, 76, 1, true], [50, 76, 1, true], [51, 72, 5, true], [57, 79, 1, true], [58, 76, 1, true], [59, 72, 3, true],
+  // (silencio)
+  [96, 69, 4, false], [100, 72, 3, false], [104, 76, 4, false], [108, 80, 3, false], [111, 81, 9, false],
+  [120, 84, 1, true], [121, 81, 1, true], [122, 76, 1, true], [123, 72, 5, true],
 ];
+const TUNE_AT = new Map(TUNE.map((t) => [t[0], t]));
 
 let musicGain: GainNode | null = null;
 let musicTimer: ReturnType<typeof setInterval> | null = null;
 let musicStep = 0;
 let musicNext = 0;
 
-function note(freq: number, at: number, dur: number, type: OscillatorType, vol: number, bell = false) {
+/** Reverberación de sala grande y fría: ruido que se apaga despacio. */
+function reverb(a: AudioContext) {
+  const len = Math.floor(a.sampleRate * 3.2);
+  const buf = a.createBuffer(2, len, a.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6);
+  }
+  const conv = a.createConvolver();
+  conv.buffer = buf;
+  return conv;
+}
+
+/** Piano apagado: triángulo con un armónico suave, ataque rápido y caída larga. */
+function piano(freq: number, at: number, steps: number, vol: number, bell = false) {
   const a = ctx;
   if (!a || !musicGain) return;
+  const dur = Math.min(4.5, steps * STEP + 1.6);
+  const filter = a.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = bell ? 5200 : 2000;
   const gain = a.createGain();
   gain.gain.setValueAtTime(0.0001, at);
-  gain.gain.exponentialRampToValueAtTime(vol, at + 0.012);
+  gain.gain.exponentialRampToValueAtTime(vol, at + 0.01);
   gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  filter.connect(gain);
   gain.connect(musicGain);
-  const osc = a.createOscillator();
-  osc.type = type;
-  osc.frequency.value = freq;
-  osc.connect(gain);
-  osc.start(at);
-  osc.stop(at + dur + 0.05);
-  if (bell) {
-    // armónico metálico que se apaga rápido: suena a caja de música
-    const g2 = a.createGain();
-    g2.gain.setValueAtTime(0.0001, at);
-    g2.gain.exponentialRampToValueAtTime(vol * 0.35, at + 0.008);
-    g2.gain.exponentialRampToValueAtTime(0.0001, at + dur * 0.4);
-    g2.connect(musicGain);
-    const o2 = a.createOscillator();
-    o2.type = "sine";
-    o2.frequency.value = freq * 2.76;
-    o2.connect(g2);
-    o2.start(at);
-    o2.stop(at + dur * 0.4 + 0.05);
+  const parts: [OscillatorType, number, number][] = bell ? [["sine", 1, 1], ["sine", 2.76, 0.3], ["sine", 4.1, 0.12]] : [["triangle", 1, 1], ["sine", 2, 0.25]];
+  for (const [type, mult, level] of parts) {
+    const g = a.createGain();
+    g.gain.value = level;
+    g.connect(filter);
+    const osc = a.createOscillator();
+    osc.type = type;
+    osc.frequency.value = freq * mult;
+    osc.connect(g);
+    osc.start(at);
+    osc.stop(at + dur + 0.05);
   }
 }
 
-/** Violín: dos dientes de sierra apenas desafinados (efecto de sección de cuerdas), filtro suave y vibrato lento. */
-function violin(freq: number, at: number, dur: number, vol: number, attack = 0.07) {
+/** Cuerdas graves: dos dientes de sierra apenas desafinados, filtro cerrado, entrada lenta y vibrato suave. */
+function strings(freq: number, at: number, dur: number, vol: number, attack: number) {
   const a = ctx;
   if (!a || !musicGain) return;
   const filter = a.createBiquadFilter();
   filter.type = "lowpass";
-  filter.frequency.value = Math.min(3200, freq * 5);
-  filter.Q.value = 0.6;
+  filter.frequency.value = Math.min(1500, freq * 4);
+  filter.Q.value = 0.5;
   const gain = a.createGain();
   gain.gain.setValueAtTime(0.0001, at);
   gain.gain.exponentialRampToValueAtTime(vol, at + attack);
-  gain.gain.setValueAtTime(vol, at + Math.max(attack, dur - 0.18));
+  gain.gain.setValueAtTime(vol, at + Math.max(attack, dur - 1.5));
   gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
   filter.connect(gain);
   gain.connect(musicGain);
   const lfo = a.createOscillator();
-  lfo.frequency.value = 5.4;
+  lfo.frequency.value = 4.6;
   const lfoGain = a.createGain();
-  lfoGain.gain.value = 9; // cents de vibrato
+  lfoGain.gain.value = 7;
   lfo.connect(lfoGain);
-  for (const det of [-6, 6]) {
+  for (const det of [-7, 7]) {
     const osc = a.createOscillator();
     osc.type = "sawtooth";
     osc.frequency.value = freq;
@@ -232,11 +245,11 @@ function violin(freq: number, at: number, dur: number, vol: number, attack = 0.0
   lfo.stop(at + dur + 0.05);
 }
 
-/** Campanada lejana y grave, como de capilla o cripta: suena muy de vez en cuando. */
+/** Campanada lejana y grave, como de capilla o cripta. */
 function toll(at: number) {
   const a = ctx;
   if (!a || !musicGain) return;
-  for (const [mult, vol, dur] of [[1, 0.5, 3.4], [2.4, 0.2, 2.4], [3.1, 0.12, 1.6]] as const) {
+  for (const [mult, vol, dur] of [[1, 0.45, 4], [2.4, 0.16, 3], [3.1, 0.1, 2]] as const) {
     const gain = a.createGain();
     gain.gain.setValueAtTime(0.0001, at);
     gain.gain.exponentialRampToValueAtTime(vol, at + 0.02);
@@ -244,7 +257,7 @@ function toll(at: number) {
     gain.connect(musicGain);
     const osc = a.createOscillator();
     osc.type = "sine";
-    osc.frequency.value = 110 * mult;
+    osc.frequency.value = 98 * mult;
     osc.connect(gain);
     osc.start(at);
     osc.stop(at + dur + 0.05);
@@ -252,24 +265,18 @@ function toll(at: number) {
 }
 
 function scheduleStep(i: number, at: number) {
-  const bar = BARS[Math.floor(i / 8) % BARS.length];
-  const beat = i % 8;
-  const barNo = Math.floor(i / 8) % BARS.length;
-  // bajo pizzicato: raíz en el 1, quinta en el 3 (corcheas 0 y 4), saltito en el 6
-  if (beat === 0) note(midi(bar.root), at, 0.32, "triangle", 0.5);
-  if (beat === 4) note(midi(bar.fifth), at, 0.28, "triangle", 0.4);
-  if (beat === 6) note(midi(bar.root + 12), at, 0.16, "triangle", 0.22);
-  // sección de cuerdas: el acorde del compás sostenido, entrando despacio
-  if (beat === 0) bar.chord.forEach((n) => violin(midi(n - 12), at, STEP * 8, 0.05, 0.35));
-  // campanada grave en la entrada y a mitad del bucle (la cripta)
-  if (beat === 0 && (barNo === 0 || barNo === 4)) toll(at);
-  // violín solista: cada nota dura hasta la siguiente (máximo 3 corcheas), ligada
-  const m = MELODY[i % MELODY.length];
-  if (m) {
-    let len = 1;
-    while (len < 3 && !MELODY[(i + len) % MELODY.length] && (i + len) % 8 !== 0) len++;
-    violin(midi(m - 12 + (m < 72 ? 12 : 0)), at, STEP * len + 0.08, 0.1);
+  // colchón: cada 2 compases cambia el acorde (cuerdas graves entrando despacio) con una nota grave suave
+  if (i % 16 === 0) {
+    const pad = PADS[(i / 16) % PADS.length];
+    const dur = STEP * 16 + 1;
+    strings(midi(pad.root), at, dur, 0.07, 2.2);
+    pad.chord.forEach((n) => strings(midi(n), at, dur, 0.035, 2.8));
   }
+  // campanada de cripta al empezar el bucle y a la mitad
+  if (i === 0 || i === 64) toll(at);
+  // melodía
+  const t = TUNE_AT.get(i);
+  if (t) piano(midi(t[1]), at, t[2], t[3] ? 0.18 : 0.3, t[3]);
 }
 
 function musicTick() {
@@ -278,7 +285,7 @@ function musicTick() {
   if (musicNext < a.currentTime - 0.5) musicNext = a.currentTime + 0.05; // la pestaña estuvo dormida: seguimos desde ahora
   while (musicNext < a.currentTime + 0.5) {
     scheduleStep(musicStep, musicNext);
-    musicStep = (musicStep + 1) % (MELODY.length);
+    musicStep = (musicStep + 1) % LOOP;
     musicNext += STEP;
   }
 }
@@ -288,10 +295,16 @@ export const music = {
     const a = audio();
     if (!a || !master || musicTimer) return;
     musicGain = a.createGain();
-    musicGain.gain.value = 0.2;
+    musicGain.gain.value = 0.16;
     musicGain.connect(master);
+    const wet = a.createGain();
+    wet.gain.value = 0.9;
+    const conv = reverb(a);
+    musicGain.connect(conv);
+    conv.connect(wet);
+    wet.connect(master);
     musicStep = 0;
-    musicNext = a.currentTime + 0.1;
+    musicNext = a.currentTime + 0.3;
     musicTimer = setInterval(musicTick, 120);
   },
   stop() {
