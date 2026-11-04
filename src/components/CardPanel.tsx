@@ -76,6 +76,8 @@ export default function CardPanel({
   const mask = icon ? iconMaskUrl(icon, 256) : null;
   const maskStyle = (url: string) => ({ WebkitMaskImage: `url(${url})`, maskImage: `url(${url})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" });
 
+  // toda ventana emergente que se puede cerrar lleva la bolita roja con la X (las que van dentro de una pantalla, `inline`, solo si piden `cornerClose`)
+  const closeX = cornerClose ?? (inline ? undefined : onClose);
   const card = (
       <div className="card-pop relative w-full text-left" style={{ ["--u" as string]: unit, maxWidth: u(width), paddingTop: u(0.9), filter: `drop-shadow(0 ${u(0.4)} ${u(0.6)} rgba(0,0,0,.55))` }}>
         <div style={{ borderRadius: u(1.1), border: `${u(0.32)} solid #452b8e`, background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
@@ -118,8 +120,8 @@ export default function CardPanel({
         {kicker && <div className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-display uppercase" style={{ padding: `${u(0.2)} ${u(1)}`, borderRadius: u(9), background: GREEN, color: "#14260a", fontSize: u(0.95), letterSpacing: "0.04em" }}>
           {kicker}
         </div>}
-        {cornerClose && (
-          <button onClick={cornerClose} aria-label="Cerrar" className="absolute grid place-items-center rounded-full text-white active:scale-95" style={{ right: u(-0.05), top: u(-0.4), width: u(2.6), height: u(2.6), background: "radial-gradient(circle at 35% 30%, #ff6b73, #e5333f 60%, #b91c2a)", border: `${u(0.22)} solid #5a0f1a`, boxShadow: `0 ${u(0.15)} 0 #5a0f1a` }}>
+        {closeX && (
+          <button onClick={closeX} aria-label="Cerrar" className="absolute grid place-items-center rounded-full text-white active:scale-95" style={{ right: u(-0.05), top: u(-0.4), width: u(2.6), height: u(2.6), background: "radial-gradient(circle at 35% 30%, #ff6b73, #e5333f 60%, #b91c2a)", border: `${u(0.22)} solid #5a0f1a`, boxShadow: `0 ${u(0.15)} 0 #5a0f1a` }}>
             <svg viewBox="0 0 24 24" style={{ width: u(1.3), height: u(1.3) }} fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" aria-hidden><path d="M5 5l14 14M19 5L5 19" /></svg>
           </button>
         )}
