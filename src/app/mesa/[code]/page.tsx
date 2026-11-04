@@ -188,11 +188,11 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
 
   if (room.status === "LOBBY" || !room.game) {
     // sala de espera: el logo y una tarjeta con el mismo diseño que las de las casillas (`CardPanel`, regla de diseño del CLAUDE.md)
-    const lobbyUnit = "max(min(1.5vw, 2.4vh), min(2.5vw, 1.2vh))"; // en horizontal (TV) manda la primera; en vertical (celular) la segunda, para que la tarjeta no quede diminuta
+    const lobbyUnit = "max(min(1.4vw, 1.8vh), min(2.5vw, 1.2vh))"; // en horizontal (TV) manda la primera; en vertical (celular) la segunda, para que la tarjeta no quede diminuta
     const c = (k: number) => `calc(var(--u) * ${k})`;
     return (
-      <main className="mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center gap-6 px-4 py-8 text-center">
-        <Link href="/" aria-label="Muertos de Sed" className="block w-[min(34rem,70vw)]">
+      <main className="mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center gap-[min(1.5rem,2.2vh)] px-4 py-[min(2rem,2vh)] text-center">
+        <Link href="/" aria-label="Muertos de Sed" className="block w-[min(34rem,70vw,50vh)]">
           <Logo className="w-full" />
         </Link>
         {room.hasController ? (
@@ -223,7 +223,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
         )}
         {/* local sin celular: la misma pantalla es el control (jugadores, dado, decisiones) */}
         {!room.hasController && (
-          <a href={`/mesa/${code}?solo=1`} className="btn-game bg-btn-yellow text-white" style={{ fontSize: "max(1.1rem, min(1.8vw, 2.8vh))", padding: "0.6em 1.4em" }}>
+          <a href={`/mesa/${code}?solo=1`} className="btn-game bg-btn-yellow text-white" style={{ fontSize: "max(1rem, min(1.5vw, 2.3vh))", padding: "0.5em 1.3em" }}>
             JUGAR SIN CELULAR, EN ESTA PANTALLA
           </a>
         )}
