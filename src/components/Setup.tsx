@@ -25,6 +25,9 @@ type Props = {
 };
 
 /** Alta de participantes: nombre y hombre/mujer (se usa en las casillas Machos y Hembras). */
+/** Tamaño común de «Volver» y del código de mesa en el celular. */
+const PHONE_CHIP = "h-11 w-[9.5rem]";
+
 export default function Setup({ onStart, busy = false, code, copas = true, backHref }: Props) {
   const [players, setPlayers] = useState<Draft[]>([
     { name: "", gender: null },
@@ -52,10 +55,12 @@ export default function Setup({ onStart, busy = false, code, copas = true, backH
 
   // en pantallas grandes (PC, TV) todo el formulario se agranda (`zoom`); en el celular se queda como está
   const [zoom, setZoom] = useState(1);
+  const [phone, setPhone] = useState(false); // pantalla estrecha: el código y «Volver» van abajo
   const [vp, setVp] = useState({ w: 390, h: 800 });
   useEffect(() => {
     const fit = () => {
       setVp({ w: window.innerWidth, h: window.innerHeight });
+      setPhone(window.innerWidth < 700);
       setZoom(window.innerWidth < 700 ? 1 : Math.max(1, Math.min(1.6, Math.min(window.innerHeight / 780, window.innerWidth / 560))));
     };
     fit();
@@ -78,7 +83,8 @@ export default function Setup({ onStart, busy = false, code, copas = true, backH
       <RoomBackdrop />
       {/* logo grande arriba y centrado; el código de la mesa, en la esquina de arriba a la derecha de la pantalla */}
       <Logo className="w-[min(22rem,100%)] shrink-0" />
-      {code && (
+      {/* PC / TV: el código en la esquina de arriba a la derecha de la pantalla */}
+      {code && !phone && (
         <span className="fixed top-3 right-3 z-20 font-display uppercase" style={{ padding: "0.3rem 1.1rem", borderRadius: 999, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: "1.3rem", letterSpacing: "0.08em", zoom: 1 / zoom }}>
           Mesa {code}
         </span>
@@ -186,7 +192,19 @@ export default function Setup({ onStart, busy = false, code, copas = true, backH
           <div className="text-center"><CardText size={1.05}>{cups === 1 ? <><b style={{ color: "#bffa58" }}>Partida corta:</b> el primero que llegue a la meta gana.</> : <><b style={{ color: "#bffa58" }}>Partida {cups === 2 ? "larga" : "muy larga"}:</b> gana quien llegue a la meta {cups} veces. Cada vez que alguien llega, la carrera empieza de nuevo.</>}</CardText></div>
         </CardPanel>
       )}
-      {step === 1 && backHref && <BackButton href={backHref} size="0.95rem" />}
+      {phone ? (
+        // celular: abajo, «Volver» a la izquierda y el código a la derecha, del mismo tamaño
+        <div className="flex w-full max-w-[22rem] items-center justify-between">
+          {step === 1 && backHref ? <BackButton href={backHref} size="0.95rem" className={PHONE_CHIP} /> : <span />}
+          {code && (
+            <span className={`inline-flex items-center justify-center font-display uppercase ${PHONE_CHIP}`} style={{ borderRadius: 16, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: "0.95rem", letterSpacing: "0.08em" }}>
+              Mesa {code}
+            </span>
+          )}
+        </div>
+      ) : (
+        step === 1 && backHref && <BackButton href={backHref} size="0.95rem" />
+      )}
     </main>
   );
 }
