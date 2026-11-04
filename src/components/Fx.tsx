@@ -52,14 +52,37 @@ export function DiceOverlay({ dice }: { dice: DiceFx | null }) {
  * casilla (vector, nítido, del color del evento con contorno), «CASILLA N» y el título en letra de terror. Sin
  * resplandor ni discos: solo se atenúa un poco el tablero para que se lea.
  */
+/** Parte un título en dos renglones lo más parejos posible, sin cortar palabras. */
+function splitTitle(title: string): string[] {
+  const words = title.split(" ");
+  if (words.length < 2) return [title];
+  let best = [title];
+  let diff = Infinity;
+  for (let i = 1; i < words.length; i++) {
+    const a = words.slice(0, i).join(" ");
+    const b = words.slice(i).join(" ");
+    const d = Math.abs(a.length - b.length);
+    if (d < diff) {
+      diff = d;
+      best = [a, b];
+    }
+  }
+  return best;
+}
+
 export function BannerOverlay({ banner }: { banner: Banner | null }) {
   if (!banner) return null;
   const mask = banner.icon ? iconMaskUrl(banner.icon, 512) : null;
+  // celular vertical: un título largo va en dos renglones parejos, cada uno en su línea, así el bloque mide lo que mide su renglón más largo y el icono queda pegado al título
+  const portrait = typeof window !== "undefined" && window.innerHeight > window.innerWidth;
+  const lines = portrait && banner.title.length > 14 ? splitTitle(banner.title) : [banner.title];
+  const longest = Math.max(...lines.map((l) => l.length));
+  const titleSize = lines.length > 1 ? `max(${Math.min(8.6, 70 / (0.66 * longest))}cqw, 22px)` : `max(${Math.min(8.6, 125 / banner.title.length)}cqw, 28px)`;
   return (
     <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center overflow-hidden bg-black/35">
       <div key={banner.key} className="banner-slam w-full">
         <div
-          className="relative flex items-center justify-center gap-[3cqw] py-[2.4cqw]"
+          className="relative flex items-center justify-center gap-[3cqw] px-3 py-[max(2.4cqw,14px)]"
           style={{ background: "linear-gradient(90deg, transparent 0%, rgba(10,7,26,.94) 12%, rgba(10,7,26,.94) 88%, transparent 100%)" }}
         >
           {/* filetes de color arriba y abajo, que se apagan hacia los lados */}
@@ -72,23 +95,25 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
           ))}
           {mask ? (
             // el contorno oscuro va en el contenedor (un filtro dentro de una máscara se recortaría)
-            <div className="shrink-0" style={{ width: "11cqw", filter: `drop-shadow(0.25cqw 0 0 ${INK}) drop-shadow(-0.25cqw 0 0 ${INK}) drop-shadow(0 0.25cqw 0 ${INK}) drop-shadow(0 -0.25cqw 0 ${INK})` }}>
+            <div className="shrink-0" style={{ width: "max(11cqw, 64px)", filter: `drop-shadow(0.25cqw 0 0 ${INK}) drop-shadow(-0.25cqw 0 0 ${INK}) drop-shadow(0 0.25cqw 0 ${INK}) drop-shadow(0 -0.25cqw 0 ${INK})` }}>
               <div className="aspect-square w-full" style={{ background: banner.color, WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" }} />
             </div>
           ) : (
-            <span className="leading-none" style={{ fontSize: "9cqw" }}>
+            <span className="leading-none" style={{ fontSize: "max(9cqw, 56px)" }}>
               {banner.emoji === "🏆" ? <TrophyIcon size="1em" /> : banner.emoji}
             </span>
           )}
-          <div className="flex min-w-0 flex-col items-start">
+          <div className="flex min-w-0 flex-col items-center text-center">
             {banner.n !== undefined && (
-              <span className="font-sans font-bold tracking-[0.5em] uppercase" style={{ fontSize: "1.5cqw", color: banner.color, opacity: 0.9 }}>
+              <span className="font-sans font-bold tracking-[0.5em] uppercase" style={{ fontSize: "max(1.5cqw, 14px)", color: banner.color, opacity: 0.9 }}>
                 Casilla {banner.n}
               </span>
             )}
-            <span className="banner-title leading-none whitespace-nowrap" style={{ fontSize: `${Math.min(8.6, 125 / banner.title.length)}cqw`, ["--accent" as string]: banner.color }}>
-              {banner.title}
-            </span>
+            {lines.map((line) => (
+              <span key={line} className="banner-title leading-[1.05] whitespace-nowrap" style={{ fontSize: titleSize, ["--accent" as string]: banner.color }}>
+                {line}
+              </span>
+            ))}
           </div>
         </div>
       </div>
@@ -96,26 +121,24 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
   );
 }
 
-const CONFETTI_COLORS = ["#5cd23c", "#2f7bf5", "#e53fd6", "#ffc61a", "#e8344a", "#00d1c1", "#ff8a1f", "#fff"];
+// el «confeti» del ganador: chispas de fuego (brasas naranjas) que suben flotando
+const EMBER_COLORS = ["#ff5a14", "#ff8a1f", "#ffb830", "#ffd96a", "#ff3d0a"];
 
-/** Lluvia de confeti para el ganador. Posiciones deterministas: nada de Math.random al renderizar. */
+/** Brasas que suben para el ganador. Posiciones deterministas: nada de Math.random al renderizar. */
 export function Confetti() {
   return (
     <div className="pointer-events-none fixed inset-0 z-[60] overflow-hidden" aria-hidden>
-      {Array.from({ length: 70 }, (_, i) => (
-        <span
-          key={i}
-          className="confetti"
-          style={{
-            left: `${(i * 37) % 100}%`,
-            background: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-            animationDelay: `${(i % 14) * 0.18}s`,
-            animationDuration: `${2.6 + (i % 5) * 0.45}s`,
-            width: i % 3 ? 10 : 14,
-            height: i % 2 ? 16 : 10,
-          }}
-        />
-      ))}
+      {Array.from({ length: 34 }, (_, i) => {
+        const size = 4 + (i % 3) * 3;
+        const color = EMBER_COLORS[i % EMBER_COLORS.length];
+        return (
+          <span
+            key={`e${i}`}
+            className="ember"
+            style={{ left: `${(i * 29 + 7) % 100}%`, width: size, height: size, background: color, boxShadow: `0 0 ${size * 1.6}px ${size * 0.5}px ${color}`, animationDelay: `${(i % 11) * 0.45}s`, animationDuration: `${3.5 + (i % 6) * 0.6}s` }}
+          />
+        );
+      })}
     </div>
   );
 }

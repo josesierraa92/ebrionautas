@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Board from "@/components/Board";
 import CardPanel, { CardText } from "@/components/CardPanel";
 import FullscreenButton from "@/components/FullscreenButton";
+import BeerIcon from "@/components/BeerIcon";
 import DecisionPanel from "@/components/DecisionPanel";
 import DiceController from "@/components/DiceController";
 import GameLog from "@/components/GameLog";
@@ -41,18 +42,22 @@ type Props = {
   extra?: React.ReactNode;
   /** (overlay) Celular vertical: el dado va abajo en el centro. */
   narrow?: boolean;
+  /** (overlay, celular vertical) El ojito: vista de arriba con todos los jugadores. */
+  overview?: boolean;
+  onOverview?: () => void;
 };
 
 function GearIcon() {
+  // tuerca sencilla, blanca, de 8 dientes y agujero en el medio
   return (
-    <svg viewBox="0 0 24 24" width="1.25em" height="1.25em" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="3.2" />
-      <path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1" />
+    <svg viewBox="0 0 24 24" width="1.25em" height="1.25em" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinejoin="round" aria-hidden="true">
+      <path d="M19.39 10.23 L22.11 10.64 L22.11 13.36 L19.39 13.77 L18.48 15.97 L20.11 18.19 L18.19 20.11 L15.97 18.48 L13.77 19.39 L13.36 22.11 L10.64 22.11 L10.23 19.39 L8.03 18.48 L5.81 20.11 L3.89 18.19 L5.52 15.97 L4.61 13.77 L1.89 13.36 L1.89 10.64 L4.61 10.23 L5.52 8.03 L3.89 5.81 L5.81 3.89 L8.03 5.52 L10.23 4.61 L10.64 1.89 L13.36 1.89 L13.77 4.61 L15.97 5.52 L18.19 3.89 L20.11 5.81 L18.48 8.03Z" />
+      <circle cx="12" cy="12" r="3.4" />
     </svg>
   );
 }
 
-export default function Controller({ code, room, secret, error, refresh, overlay = false, locked = false, card = null, extra, narrow = false }: Props) {
+export default function Controller({ code, room, secret, error, refresh, overlay = false, locked = false, card = null, extra, narrow = false, overview = false, onOverview }: Props) {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
@@ -113,43 +118,114 @@ export default function Controller({ code, room, secret, error, refresh, overlay
   if (overlay) {
     const rollNow = () => run(() => sendAction(code, secret, { type: "ROLL" }));
     const dim = locked || busy;
-    const winnerButtons = winner && !game.ranking && (
+    const nextRound = !matchOver(game);
+    const onNext = () => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true, ...(nextRound ? { next: true } : {}) }));
+    const onExit = () => run(async () => { await api(`/api/rooms/${code}/reset`, { secret }); window.location.href = "/"; });
+    const winnerButtons = winner && !game.ranking && (narrow ? (
+      // celular vertical: clasificatoria arriba a todo el ancho; abajo, reiniciar a la izquierda y salir a la derecha
+      <div className="absolute inset-x-0 bottom-[3%] z-50 flex flex-col gap-3 px-4">
+        <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game w-full bg-btn-purple py-3 text-2xl text-white">
+          CLASIFICATORIA
+        </button>
+        <div className="flex gap-3">
+          <button disabled={busy} onClick={onNext} className="btn-game flex-1 bg-btn-green py-3 text-2xl text-white">
+            {nextRound ? "SIGUIENTE RONDA" : "REINICIAR"}
+          </button>
+          <button disabled={busy} onClick={onExit} className="btn-game flex-1 bg-btn-red py-3 text-2xl text-white">
+            SALIR
+          </button>
+        </div>
+      </div>
+    ) : (
       <div className="absolute inset-x-0 bottom-[3%] z-50 flex flex-wrap items-center justify-center gap-3 px-3">
-        <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game bg-btn-blue px-5 py-3 text-xl text-white">
+        <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game bg-btn-purple px-5 py-3 text-xl text-white">
           VER CLASIFICATORIA
         </button>
-        {!matchOver(game) ? (
-          <button disabled={busy} onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true, next: true }))} className="btn-game bg-btn-green px-5 py-3 text-xl text-white">
-            SIGUIENTE RONDA ▶
-          </button>
-        ) : (
-          <button disabled={busy} onClick={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))} className="btn-game bg-btn-green px-5 py-3 text-xl text-white">
-            REINICIAR (MISMOS JUGADORES)
-          </button>
-        )}
-        <button disabled={busy} onClick={() => run(async () => { await api(`/api/rooms/${code}/reset`, { secret }); window.location.href = "/"; })} className="btn-game bg-btn-yellow px-5 py-3 text-xl text-white">
+        <button disabled={busy} onClick={onNext} className="btn-game bg-btn-green px-5 py-3 text-xl text-white">
+          {nextRound ? "SIGUIENTE RONDA ▶" : "REINICIAR (MISMOS JUGADORES)"}
+        </button>
+        <button disabled={busy} onClick={onExit} className="btn-game bg-btn-red px-5 py-3 text-xl text-white">
           SALIR
         </button>
       </div>
-    );
+    ));
+
     return (
       <>
-        {/* botones de arriba a la derecha, como en la TV */}
-        <div className={`absolute top-[2%] right-[1.5%] z-50 flex items-center ${narrow ? "gap-0.5" : "gap-3"}`}>
+        {narrow ? (
+          winner ? (
+            // juego terminado: abajo van los botones del final, así que los iconos se juntan en una columna arriba a la derecha
+            <div className="absolute top-2 right-2 z-50 flex flex-col items-end gap-2">
+              <button onClick={() => setSettings(true)} className="btn-game grid h-12 w-12 place-items-center bg-btn-grey text-2xl text-white" aria-label="Ajustes de la partida" title="Ajustes">
+                <GearIcon />
+              </button>
+              <button onClick={() => setMenu(true)} className="btn-game grid h-12 w-12 place-items-center bg-btn-blue text-white" aria-label="Marcador e historial" title="Marcador">
+                <svg viewBox="0 0 24 24" width="1.6rem" height="1.6rem" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 20V11h5v9M9.5 20V4h5v16M15 20v-6h5v6M3 20h18" />
+                </svg>
+              </button>
+              {onOverview && (
+              <button onClick={onOverview} className={`btn-game grid h-12 w-12 place-items-center ${overview ? "bg-btn-yellow" : "bg-btn-purple"} text-white`} aria-label={overview ? "Volver al jugador" : "Ver a todos los jugadores desde arriba"} aria-pressed={overview} title="Vista de arriba">
+                <svg viewBox="0 0 24 24" width="1.9rem" height="1.9rem" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                  <circle cx="12" cy="12" r="3.2" />
+                </svg>
+              </button>
+              )}
+              <FullscreenButton />
+            </div>
+          ) : (
+          <>
+            {/* celular vertical: iconos grandes, + trago y ajustes en la esquina de arriba */}
+            <div className="absolute top-2 right-2 z-50 flex items-center gap-1.5">
+              <button onClick={() => setAddDrink(true)} className="btn-game relative grid h-12 w-12 place-items-center bg-btn-red text-white" aria-label="Agregar un trago a un jugador" title="+ Trago">
+                <BeerIcon size="1.9rem" />
+                {/* el + va dibujado (no es texto): el text-shadow del botón lo duplicaba y se veía doble */}
+                <span className="absolute -top-2 -right-2 grid h-6 w-6 place-items-center rounded-full border-2 border-ink bg-white">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#14260a" strokeWidth="4.5" strokeLinecap="round" aria-hidden="true">
+                    <path d="M12 4v16M4 12h16" />
+                  </svg>
+                </span>
+              </button>
+              <button onClick={() => setSettings(true)} className="btn-game grid h-12 w-12 place-items-center bg-btn-grey text-2xl text-white" aria-label="Ajustes de la partida" title="Ajustes">
+                <GearIcon />
+              </button>
+              <FullscreenButton />
+            </div>
+            {/* el marcador, un icono junto al dado, abajo a la derecha */}
+            <button onClick={() => setMenu(true)} className="btn-game absolute right-2 bottom-[5%] z-50 grid h-12 w-12 place-items-center bg-btn-blue text-white" aria-label="Marcador e historial" title="Marcador">
+              <svg viewBox="0 0 24 24" width="1.6rem" height="1.6rem" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 20V11h5v9M9.5 20V4h5v16M15 20v-6h5v6M3 20h18" />
+                </svg>
+            </button>
+            {/* el ojito: vista de arriba con todos los jugadores, abajo a la izquierda */}
+            {onOverview && (
+            <button onClick={onOverview} className={`btn-game absolute bottom-[5%] left-3 z-50 grid h-12 w-12 place-items-center ${overview ? "bg-btn-yellow" : "bg-btn-purple"} text-white`} aria-label={overview ? "Volver al jugador" : "Ver a todos los jugadores desde arriba"} aria-pressed={overview} title="Vista de arriba">
+                <svg viewBox="0 0 24 24" width="1.9rem" height="1.9rem" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                  <circle cx="12" cy="12" r="3.2" />
+                </svg>
+              </button>
+            )}
+          </>
+          )
+        ) : (
+        <div className="absolute top-[2%] right-[1.5%] z-50 flex items-center gap-3">
           {extra}
           {!winner && (
-            <button onClick={() => setAddDrink(true)} className={`btn-game whitespace-nowrap bg-btn-red ${narrow ? "px-1.5 text-xs" : "px-4 text-xl"} py-2 text-white`} aria-label="Agregar un trago a un jugador">
+            <button onClick={() => setAddDrink(true)} className="btn-game whitespace-nowrap bg-btn-red px-4 text-xl py-2 text-white" aria-label="Agregar un trago a un jugador">
               + TRAGO
             </button>
           )}
-          <button onClick={() => setSettings(true)} className={`btn-game flex items-center justify-center bg-btn-grey ${narrow ? "px-1.5 text-xs" : "px-4 text-xl"} py-2 text-white`} aria-label="Ajustes de la partida" title="Ajustes">
+          <button onClick={() => setSettings(true)} className="btn-game flex items-center justify-center bg-btn-grey px-4 text-xl py-2 text-white" aria-label="Ajustes de la partida" title="Ajustes">
             <GearIcon />
           </button>
           <FullscreenButton />
-          <button onClick={() => setMenu(true)} className={`btn-game whitespace-nowrap bg-btn-blue ${narrow ? "px-1.5 text-xs" : "px-4 text-xl"} py-2 text-white`} aria-label="Marcador e historial">
+          <button onClick={() => setMenu(true)} className="btn-game whitespace-nowrap bg-btn-blue px-4 text-xl py-2 text-white" aria-label="Marcador e historial">
             MARCADOR
           </button>
         </div>
+        )}
 
         {/* el dado: abajo a la izquierda (en celular vertical, abajo en el centro), lejos de la tarjeta de la casilla */}
         {!winner && game.phase === "ROLL" && (
@@ -219,13 +295,19 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               </button>
             }
           >
-            <CardText size={1}>Toca a quien debe beber (por ejemplo, si se equivocó con el apodo). No cambia el turno.</CardText>
+            <CardText size={1}>Con el + se suma un trago a quien debe beber fuera de su ronda (por ejemplo, si se equivocó con el apodo); con el − se quita uno si hubo un error. No cambia el turno.</CardText>
             <ul className="flex flex-col" style={{ gap: "0.7rem", marginTop: "0.9rem" }}>
               {game.players.map((p) => (
-                <li key={p.id}>
-                  <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game flex w-full items-center justify-between gap-2 bg-btn-red px-4 py-3 text-white disabled:opacity-60">
-                    <span className="min-w-0 break-words text-left font-display uppercase leading-none" style={{ fontSize: p.name.length <= 8 ? "2rem" : p.name.length <= 12 ? "1.6rem" : "1.3rem" }}>{p.name}</span>
-                    <span className="shrink-0 text-lg">+1 · lleva {p.drunk}</span>
+                <li key={p.id} className="flex items-center gap-2 rounded-2xl bg-white/10 p-2">
+                  <button disabled={busy || p.drunk <= 0} onClick={() => act({ type: "REMOVE_DRINK", id: p.id })} className="btn-game grid h-16 w-16 shrink-0 place-items-center bg-btn-grey text-white disabled:opacity-40" aria-label={`Quitar un trago a ${p.name}`}>
+                    <svg viewBox="0 0 24 24" width="2.2rem" height="2.2rem" fill="none" stroke="#fff" strokeWidth="5.5" strokeLinecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
+                  </button>
+                  <div className="min-w-0 flex-1 text-center">
+                    <p className="break-words font-display uppercase leading-none text-white" style={{ fontSize: p.name.length <= 8 ? "1.9rem" : p.name.length <= 12 ? "1.5rem" : "1.2rem" }}>{p.name}</p>
+                    <p className="mt-1 font-display text-xl leading-none text-[#bffa58]">{p.drunk} {p.drunk === 1 ? "trago" : "tragos"}</p>
+                  </div>
+                  <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game grid h-16 w-16 shrink-0 place-items-center bg-btn-red text-white disabled:opacity-60" aria-label={`Sumar un trago a ${p.name}`}>
+                    <svg viewBox="0 0 24 24" width="2.2rem" height="2.2rem" fill="none" stroke="#fff" strokeWidth="5.5" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                   </button>
                 </li>
               ))}
@@ -240,7 +322,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
                 <span className="font-display uppercase" style={{ padding: "0.2rem 0.9rem", borderRadius: 999, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: "1.15rem", letterSpacing: "0.08em" }}>
                   Mesa {code}
                 </span>
-                <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-5 py-1 text-xl text-white">
+                <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-7 py-3 text-3xl text-white">
                   CERRAR
                 </button>
               </div>
@@ -353,15 +435,21 @@ export default function Controller({ code, room, secret, error, refresh, overlay
             </>
           }
         >
-          <CardText size={1}>Toca a quien debe beber (por ejemplo, si se equivocó con el apodo). No cambia el turno.</CardText>
+          <CardText size={1}>Con el + se suma un trago a quien debe beber fuera de su ronda (por ejemplo, si se equivocó con el apodo); con el − se quita uno si hubo un error. No cambia el turno.</CardText>
           <ul className="flex flex-col" style={{ gap: "0.7rem", marginTop: "0.9rem" }}>
             {game.players.map((p) => (
-              <li key={p.id}>
-                <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game flex w-full items-center justify-between gap-2 bg-btn-red px-4 py-3 text-white disabled:opacity-60">
-                  <span className="min-w-0 break-words text-left font-display uppercase leading-none" style={{ fontSize: p.name.length <= 8 ? "2rem" : p.name.length <= 12 ? "1.6rem" : "1.3rem" }}>{p.name}</span>
-                  <span className="shrink-0 text-lg">+1 · lleva {p.drunk}</span>
-                </button>
-              </li>
+              <li key={p.id} className="flex items-center gap-2 rounded-2xl bg-white/10 p-2">
+                  <button disabled={busy || p.drunk <= 0} onClick={() => act({ type: "REMOVE_DRINK", id: p.id })} className="btn-game grid h-16 w-16 shrink-0 place-items-center bg-btn-grey text-white disabled:opacity-40" aria-label={`Quitar un trago a ${p.name}`}>
+                    <svg viewBox="0 0 24 24" width="2.2rem" height="2.2rem" fill="none" stroke="#fff" strokeWidth="5.5" strokeLinecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
+                  </button>
+                  <div className="min-w-0 flex-1 text-center">
+                    <p className="break-words font-display uppercase leading-none text-white" style={{ fontSize: p.name.length <= 8 ? "1.9rem" : p.name.length <= 12 ? "1.5rem" : "1.2rem" }}>{p.name}</p>
+                    <p className="mt-1 font-display text-xl leading-none text-[#bffa58]">{p.drunk} {p.drunk === 1 ? "trago" : "tragos"}</p>
+                  </div>
+                  <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game grid h-16 w-16 shrink-0 place-items-center bg-btn-red text-white disabled:opacity-60" aria-label={`Sumar un trago a ${p.name}`}>
+                    <svg viewBox="0 0 24 24" width="2.2rem" height="2.2rem" fill="none" stroke="#fff" strokeWidth="5.5" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                  </button>
+                </li>
             ))}
           </ul>
         </CardPanel>
@@ -376,7 +464,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               <span className="font-display uppercase" style={{ padding: "0.2rem 0.9rem", borderRadius: 999, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: "1.15rem", letterSpacing: "0.08em" }}>
                 Mesa {code}
               </span>
-              <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-5 py-1 text-xl text-white">
+              <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-7 py-3 text-3xl text-white">
                 CERRAR
               </button>
             </div>

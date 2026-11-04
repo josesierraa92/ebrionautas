@@ -13,15 +13,17 @@ type Props = {
   className?: string;
   /** Sin marco ni bordes redondeados: modo tablero a pantalla completa. */
   bare?: boolean;
+  /** Vista de arriba con todos los jugadores (el ojito del celular). */
+  overview?: boolean;
   /** Capas extra encima del tablero (tarjeta grande, indicador de turno…). */
   children?: React.ReactNode;
 };
 
 /** Tablero isométrico con el dado y los títulos de evento encima. */
-export default function BoardStage({ players, current, winner, fx, className, bare = false, children }: Props) {
+export default function BoardStage({ players, current, winner, fx, className, bare = false, overview = false, children }: Props) {
   return (
     <div className={`board-space @container relative w-full overflow-hidden ${bare ? "" : "rounded-3xl border-4 border-ink shadow-[0_8px_0_#1b1f4b]"} ${className ?? ""}`}>
-      <IsoBoard players={players} current={current} winner={winner} shown={fx.shown} flying={fx.flying} focus={fx.focus ?? current} />
+      <IsoBoard players={players} current={current} winner={winner} shown={fx.shown} flying={fx.flying} focus={fx.focus ?? current} overview={overview} />
       <DiceOverlay dice={fx.dice} />
       <BannerOverlay banner={fx.banner} />
       {children}

@@ -120,6 +120,8 @@ export class EditorScene {
   quality: Quality | null = null;
   private look = new THREE.Vector3();
   private lookGoal = new THREE.Vector3();
+  /** Visor: acercamiento de la cámara (1 = el normal; menos = más lejos, para la vista de arriba con todos los jugadores). */
+  private zoomGoal = 1;
   /** Se llama en cada fotograma del visor con los segundos desde el anterior (para animar las fichas). */
   onFrame: ((dt: number) => void) | null = null;
   /** Visor: después de dibujar, con la cámara ya colocada (para lo que se pone en HTML encima). */
@@ -255,6 +257,10 @@ export class EditorScene {
         this.onFrame?.(dt);
         // la cámara sigue el punto pedido con suavidad (como en Mario Party), sin saltos
         this.look.lerp(this.lookGoal, 1 - Math.exp(-dt * 2.6));
+        if (Math.abs(this.camera.zoom - this.zoomGoal) > 0.002) {
+          this.camera.zoom += (this.zoomGoal - this.camera.zoom) * (1 - Math.exp(-dt * 3));
+          this.camera.updateProjectionMatrix();
+        }
         this.placeViewerCamera();
         this.updateViewerLights(dt);
         this.renderer.render(this.scene, this.camera);
@@ -312,7 +318,10 @@ export class EditorScene {
       // pantalla vertical (celular): el zoom propio del celular, más cerca que el de la TV
       const tiles = this.layout ? tilesFor(this.layout.tvView, h > w) : 6;
       const vw = TILE_SIZE * Math.SQRT2 * tiles;
-      Object.assign(this.camera, { left: -vw / 2, right: vw / 2, top: (vw * h) / w / 2, bottom: -(vw * h) / w / 2, zoom: 1 });
+      const vh = (vw * h) / w;
+      // celular vertical: la ficha que sigue la cámara queda en el 38 % de la pantalla (no en el centro), para que la tarjeta de abajo no la tape
+      const lift = h > w ? -0.12 * vh : 0;
+      Object.assign(this.camera, { left: -vw / 2, right: vw / 2, top: vh / 2 + lift, bottom: -vh / 2 + lift, zoom: this.zoomGoal });
       this.camera.updateProjectionMatrix();
       return;
     }
@@ -335,6 +344,25 @@ export class EditorScene {
   lookAt(p: THREE.Vector3, instant = false) {
     this.lookGoal.copy(p);
     if (instant) this.look.copy(p);
+  }
+
+  /** Visor: acercamiento al que va la cámara con suavidad (o de golpe con `instant`). */
+  setZoom(z: number, instant = false) {
+    this.zoomGoal = z;
+    if (instant) {
+      this.camera.zoom = z;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  /** Visor: cuánto mundo cabe a lo ancho de la pantalla con el acercamiento normal. */
+  viewWorldWidth() {
+    return this.camera.right - this.camera.left;
+  }
+
+  /** Visor: alto del mundo que cabe en la pantalla con el acercamiento normal. */
+  viewWorldHeight() {
+    return this.camera.top - this.camera.bottom;
   }
 
   /** Centro de la cara de arriba de la casilla n (1..62), donde se apoyan las fichas. */
@@ -757,8 +785,9 @@ export class EditorScene {
     // se recorta el mundo (apenas ensanchado y poco difuminado): en la línea amarilla la neblina ya es notoria y
     // a unas 3 casillas es opaca, con un degradado suave en el borde (el usuario no quiere ver nada de lo de fuera)
     ctx.globalCompositeOperation = "destination-out";
-    ctx.filter = `blur(${Math.round(1.4 * k)}px)`;
-    const grow = 0.4 * k;
+    // la neblina empieza ya fuera del borde (3 celdas = una casilla y media) y se difumina en unas 2: así no tapa ni oscurece las casillas del final del tablero
+    ctx.filter = `blur(${Math.round(2.2 * k)}px)`;
+    const grow = 3 * k;
     ctx.fillRect(E * k - grow, E * k - grow, l.w * k + 2 * grow, l.h * k + 2 * grow);
     ctx.filter = "none";
     const tex = new THREE.CanvasTexture(canvas);

@@ -41,12 +41,12 @@ export default function SettingsDialog({ game, busy, onAction, onRestart, onClos
       >
         {muted ? "SONIDO: APAGADO" : "SONIDO: ENCENDIDO"}
       </button>
-      <CardText size={1}>Quita un vaso a quien se le contó de más, pon en pausa a quien se ausenta un rato (se salta su turno) o expulsa a quien ya no está jugando.</CardText>
+      <CardText size={1}>Pon en pausa a quien se ausenta un rato (se salta su turno) o expulsa a quien ya no está jugando.</CardText>
 
       <ul className="flex flex-col" style={{ gap: u(0.7), marginTop: u(0.9) }}>
         {game.players.map((p) => (
           <li key={p.id} style={{ padding: u(0.8), borderRadius: u(1), background: "rgba(255,255,255,.08)" }}>
-            <div className="flex items-center" style={{ gap: u(0.7) }}>
+            <div className="flex items-center justify-between" style={{ gap: u(0.7) }}>
               <div className="min-w-0 flex-1">
                 <p className="font-display uppercase leading-[1.02] text-white" style={{ fontSize: u(p.name.length <= 8 ? 1.9 : p.name.length <= 12 ? 1.6 : 1.35), overflowWrap: "break-word" }}>
                   {p.name}
@@ -56,19 +56,10 @@ export default function SettingsDialog({ game, busy, onAction, onRestart, onClos
                     En pausa
                   </span>
                 )}
-                <p style={{ ...body, fontSize: u(1), color: "#d8d4f6", marginTop: u(0.2) }}>
-                  Lleva <b className="text-white">{p.drunk}</b> {p.drunk === 1 ? "vaso" : "vasos"}
-                </p>
               </div>
-              <button
-                disabled={busy || p.drunk <= 0}
-                onClick={() => onAction({ type: "REMOVE_DRINK", id: p.id })}
-                className="btn-game shrink-0 bg-btn-red px-3 py-2 text-white disabled:opacity-40"
-                style={{ fontSize: u(1.1) }}
-                aria-label={`Quitar un vaso a ${p.name}`}
-              >
-                − 1 VASO
-              </button>
+              <p className="shrink-0 font-display uppercase leading-none" style={{ fontSize: u(1.5), color: GREEN_LIGHT }}>
+                {p.drunk} <span style={{ fontSize: u(1), color: "#d8d4f6" }}>{p.drunk === 1 ? "vaso" : "vasos"}</span>
+              </p>
             </div>
             {!finished && (p.paused || active > 1) && (
               <button
@@ -122,9 +113,9 @@ export default function SettingsDialog({ game, busy, onAction, onRestart, onClos
               </div>
             </>
           ) : (
-            <div className="flex" style={{ gap: u(0.6) }}>
-              <button disabled={busy} onClick={() => setGameConfirm("restart")} className="btn-game flex-1 bg-btn-grey py-3 text-xl text-white">REINICIAR PARTIDA</button>
-              <button disabled={busy} onClick={() => setGameConfirm("end")} className="btn-game flex-1 bg-btn-yellow py-3 text-xl text-white">TERMINAR PARTIDA</button>
+            <div className="flex flex-col" style={{ gap: u(0.6) }}>
+              <button disabled={busy} onClick={() => setGameConfirm("restart")} className="btn-game w-full bg-btn-grey py-3 text-2xl text-white">REINICIAR PARTIDA</button>
+              <button disabled={busy} onClick={() => setGameConfirm("end")} className="btn-game w-full bg-btn-yellow py-3 text-2xl text-white">TERMINAR PARTIDA</button>
             </div>
           )}
         </div>

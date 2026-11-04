@@ -19,6 +19,7 @@ import { api, controlKey, epochKey, hostKey, saved, useRoom } from "@/lib/room-c
 import { useAutoUpdate } from "@/lib/useAutoUpdate";
 import { usePublishedLayout } from "@/lib/usePublishedBoard";
 import { useGameFx } from "@/lib/useGameFx";
+import { music, unlock } from "@/lib/sfx";
 
 /**
  * Pantalla grande (TV / portátil): QR para el control, tablero y marcador. Solo muestra.
@@ -41,6 +42,23 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const [narrow, setNarrow] = useState(false); // pantalla estrecha (celular): lo que se dibuja sobre el tablero va más chico
   const [portrait, setPortrait] = useState(false); // celular vertical: la tarjeta va casi a todo el ancho y el dado abajo en el centro
   const fx = useGameFx(room?.game ?? null);
+  // música de fondo mientras hay partida (la TV o el aparato único; el celular de control no la pone); el navegador solo deja sonar tras un toque
+  const [overview, setOverview] = useState(false); // el ojito del celular: vista de arriba con todos los jugadores
+  const playing = !!room?.game;
+  useEffect(() => {
+    if (!playing) return;
+    music.start();
+    // en el iPhone el audio solo se despierta con un toque «de verdad» (touchend/click): se intenta en cada toque hasta que suena
+    const wake = () => void unlock();
+    const events = ["pointerdown", "pointerup", "touchend", "click", "keydown"] as const;
+    events.forEach((e) => window.addEventListener(e, wake));
+    document.addEventListener("visibilitychange", wake);
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, wake));
+      document.removeEventListener("visibilitychange", wake);
+      music.stop();
+    };
+  }, [playing]);
   // Se recarga sola cuando hay una versión nueva del juego (sin dado ni jugada en marcha).
   useAutoUpdate(fx.settled && !fx.dice && !fx.banner);
   // tamaño de la tarjeta de la casilla y del cuadro del turno elegido en el editor (el diseño publicado; 100 % de serie)
@@ -237,11 +255,13 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   if (soloActive) {
     return (
       <main className="fixed inset-0">
-        <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare className="h-full">
+        <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare overview={overview} className="h-full">
           {overlays(!game.decision)}
           <Controller
             overlay
             narrow={portrait}
+            overview={overview}
+            onOverview={portrait ? () => setOverview((v) => !v) : undefined}
             locked={!fx.settled || !!fx.banner || !!fx.dice}
             card={card}
             code={code}

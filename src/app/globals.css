@@ -10,6 +10,7 @@
   --color-btn-red: #e8344a;
   --color-btn-grey: #8a9bb5;
   --color-btn-special: #e53fd6;
+  --color-btn-purple: #6a3fd0;
   --font-display: var(--font-lilita), system-ui, sans-serif;
   --font-sans: var(--font-lilita), system-ui, sans-serif;
 }
@@ -230,13 +231,41 @@ body {
   border-radius: 3px;
   animation: confetti-fall linear infinite;
 }
+.confetti-bat {
+  border: 0;
+  border-radius: 0;
+  animation-name: bat-fall;
+  animation-timing-function: ease-in-out;
+}
+@keyframes bat-fall {
+  0% { transform: translate(0, 0) rotate(-18deg) scaleX(1); }
+  25% { transform: translate(28px, 28vh) rotate(14deg) scaleX(0.7); }
+  50% { transform: translate(-22px, 55vh) rotate(-14deg) scaleX(1); }
+  75% { transform: translate(30px, 82vh) rotate(16deg) scaleX(0.7); }
+  100% { transform: translate(0, 112vh) rotate(-10deg) scaleX(1); }
+}
+.ember {
+  position: absolute;
+  bottom: -20px;
+  border-radius: 999px;
+  opacity: 0;
+  animation: ember-rise linear infinite;
+}
+@keyframes ember-rise {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  10% { opacity: 1; }
+  30% { transform: translate(-14px, -30vh) scale(0.9); opacity: 0.75; }
+  50% { transform: translate(16px, -52vh) scale(0.75); opacity: 1; }
+  70% { transform: translate(-10px, -74vh) scale(0.55); opacity: 0.6; }
+  100% { transform: translate(8px, -108vh) scale(0.2); opacity: 0; }
+}
 @keyframes confetti-fall {
   0% { transform: translateY(0) rotate(0deg); }
   100% { transform: translateY(110vh) rotate(720deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mc-bob, .mc-hop, .zb-breathe, .earth-glow, .ship-hover, .beam-pulse, .ship-light, .dice-idle, .mc-anim .mc-eyes, .confetti { animation: none; }
+  .mc-bob, .mc-hop, .zb-breathe, .earth-glow, .ship-hover, .beam-pulse, .ship-light, .dice-idle, .mc-anim .mc-eyes, .confetti, .ember { animation: none; }
 }
 
 /* Íconos con sombra sólida, como en la referencia de UI */

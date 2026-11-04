@@ -131,8 +131,8 @@ export function useGameFx(game: GameState | null) {
           setDice(null);
           setBanner(
             result.good
-              ? { key: bkey, title: result.title, emoji: "✨", color: "#5cd23c" }
-              : { key: bkey, title: result.title, emoji: jail ? "🔥" : "🍷", color: "#ffc61a" },
+              ? { key: bkey, title: result.title, emoji: "✨", color: "#5cd23c", icon: "moon", n }
+              : { key: bkey, title: result.title, emoji: "🔥", color: "#ffc61a", icon: DEFAULT_ICON.CARCEL, n },
           );
           if (result.good) sfx.fly();
           else sfx.drink();
@@ -177,7 +177,7 @@ export function useGameFx(game: GameState | null) {
       const title = names.length === 1 ? `¡${names[0].toUpperCase()} PIERDE Y BEBE!` : `¡PIERDEN ${names.map((n) => n.toUpperCase()).join(" Y ")}!`;
       at(t, () => {
         setDice(null);
-        setBanner({ key: bkey, title, emoji: "💀", color: "#ff6b7d" });
+        setBanner({ key: bkey, title, emoji: "💀", color: "#ff6b7d", icon: DEFAULT_ICON.DUELO, n: game.players.find((p) => p.id === game.lastDuel!.by)!.pos });
         sfx.zap();
       });
       later(t + BANNER_MS + 400, () => setBanner((b) => (b?.key === bkey ? null : b)));
@@ -192,7 +192,7 @@ export function useGameFx(game: GameState | null) {
       const bkey = ++seq.current;
       at(t, () => {
         setDice(null);
-        setBanner(paid.free ? { key: bkey, title: paid.title, emoji: "✨", color: "#5cd23c" } : { key: bkey, title: paid.title, emoji: "🔥", color: "#ff6b3d" });
+        setBanner(paid.free ? { key: bkey, title: paid.title, emoji: "✨", color: "#5cd23c", icon: "moon", n: by.pos } : { key: bkey, title: paid.title, emoji: "🔥", color: "#ff6b3d", icon: DEFAULT_ICON.CARCEL, n: by.pos });
         if (paid.free) sfx.fly();
         else sfx.drink();
       });
