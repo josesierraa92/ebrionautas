@@ -262,7 +262,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               className={`flex w-full flex-col items-center gap-1 transition-opacity ${dim ? "opacity-50" : "dice-pulse"}`}
             >
               <Die value={game.lastRoll ?? 1} className="w-full drop-shadow-[0_6px_0_rgba(0,0,0,.35)]" />
-              <span className="whitespace-nowrap rounded-full bg-black/60 px-3 py-0.5 font-display text-sm uppercase tracking-wide text-white">{dim ? "…" : seat && !myTurn ? `Tirar por ${me.name}` : narrow ? "Toca para tirar" : "Tirar · espacio"}</span>
+              <span className="whitespace-nowrap rounded-full bg-black/60 px-3 py-0.5 font-display text-sm uppercase tracking-wide text-white">{dim ? "…" : seat && !myTurn ? `Tirar por ${me.name}` : narrow ? `Tira ${me.name}` : `Tira ${me.name} · espacio`}</span>
             </button>
           </div>
         )}
