@@ -41,7 +41,7 @@ export default function SettingsDialog({ game, busy, onAction, onRestart, onClos
       >
         {muted ? "SONIDO: APAGADO" : "SONIDO: ENCENDIDO"}
       </button>
-      <CardText size={1}>Quita un vaso a quien se le contó de más, pon en pausa a quien se ausenta un rato (se salta su turno) o expulsa a quien ya no está jugando.</CardText>
+      <CardText size={1}>Pon en pausa a quien se ausenta un rato (se salta su turno) o expulsa a quien ya no está jugando.</CardText>
 
       <ul className="flex flex-col" style={{ gap: u(0.7), marginTop: u(0.9) }}>
         {game.players.map((p) => (
@@ -60,15 +60,6 @@ export default function SettingsDialog({ game, busy, onAction, onRestart, onClos
                   Lleva <b className="text-white">{p.drunk}</b> {p.drunk === 1 ? "vaso" : "vasos"}
                 </p>
               </div>
-              <button
-                disabled={busy || p.drunk <= 0}
-                onClick={() => onAction({ type: "REMOVE_DRINK", id: p.id })}
-                className="btn-game shrink-0 bg-btn-red px-3 py-2 text-white disabled:opacity-40"
-                style={{ fontSize: u(1.1) }}
-                aria-label={`Quitar un vaso a ${p.name}`}
-              >
-                − 1 VASO
-              </button>
             </div>
             {!finished && (p.paused || active > 1) && (
               <button

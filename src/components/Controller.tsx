@@ -274,11 +274,14 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               </button>
             }
           >
-            <CardText size={1}>Toca a quien debe beber (por ejemplo, si se equivocó con el apodo). No cambia el turno.</CardText>
+            <CardText size={1}>Toca el nombre para sumar un trago a quien debe beber fuera de su ronda (por ejemplo, si se equivocó con el apodo). Con el − se quita uno si hubo un error. No cambia el turno.</CardText>
             <ul className="flex flex-col" style={{ gap: "0.7rem", marginTop: "0.9rem" }}>
               {game.players.map((p) => (
-                <li key={p.id}>
-                  <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game flex w-full items-center justify-between gap-2 bg-btn-red px-4 py-3 text-white disabled:opacity-60">
+                <li key={p.id} className="flex items-stretch gap-2">
+                  <button disabled={busy || p.drunk <= 0} onClick={() => act({ type: "REMOVE_DRINK", id: p.id })} className="btn-game grid w-16 shrink-0 place-items-center bg-btn-grey text-4xl text-white disabled:opacity-40" aria-label={`Quitar un trago a ${p.name}`}>
+                    −
+                  </button>
+                  <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game flex min-w-0 flex-1 items-center justify-between gap-2 bg-btn-red px-4 py-3 text-white disabled:opacity-60" aria-label={`Sumar un trago a ${p.name}`}>
                     <span className="min-w-0 break-words text-left font-display uppercase leading-none" style={{ fontSize: p.name.length <= 8 ? "2rem" : p.name.length <= 12 ? "1.6rem" : "1.3rem" }}>{p.name}</span>
                     <span className="shrink-0 text-lg">+1 · lleva {p.drunk}</span>
                   </button>
@@ -408,15 +411,18 @@ export default function Controller({ code, room, secret, error, refresh, overlay
             </>
           }
         >
-          <CardText size={1}>Toca a quien debe beber (por ejemplo, si se equivocó con el apodo). No cambia el turno.</CardText>
+          <CardText size={1}>Toca el nombre para sumar un trago a quien debe beber fuera de su ronda (por ejemplo, si se equivocó con el apodo). Con el − se quita uno si hubo un error. No cambia el turno.</CardText>
           <ul className="flex flex-col" style={{ gap: "0.7rem", marginTop: "0.9rem" }}>
             {game.players.map((p) => (
-              <li key={p.id}>
-                <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game flex w-full items-center justify-between gap-2 bg-btn-red px-4 py-3 text-white disabled:opacity-60">
-                  <span className="min-w-0 break-words text-left font-display uppercase leading-none" style={{ fontSize: p.name.length <= 8 ? "2rem" : p.name.length <= 12 ? "1.6rem" : "1.3rem" }}>{p.name}</span>
-                  <span className="shrink-0 text-lg">+1 · lleva {p.drunk}</span>
-                </button>
-              </li>
+              <li key={p.id} className="flex items-stretch gap-2">
+                  <button disabled={busy || p.drunk <= 0} onClick={() => act({ type: "REMOVE_DRINK", id: p.id })} className="btn-game grid w-16 shrink-0 place-items-center bg-btn-grey text-4xl text-white disabled:opacity-40" aria-label={`Quitar un trago a ${p.name}`}>
+                    −
+                  </button>
+                  <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game flex min-w-0 flex-1 items-center justify-between gap-2 bg-btn-red px-4 py-3 text-white disabled:opacity-60" aria-label={`Sumar un trago a ${p.name}`}>
+                    <span className="min-w-0 break-words text-left font-display uppercase leading-none" style={{ fontSize: p.name.length <= 8 ? "2rem" : p.name.length <= 12 ? "1.6rem" : "1.3rem" }}>{p.name}</span>
+                    <span className="shrink-0 text-lg">+1 · lleva {p.drunk}</span>
+                  </button>
+                </li>
             ))}
           </ul>
         </CardPanel>
