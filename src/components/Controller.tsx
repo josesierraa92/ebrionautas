@@ -283,9 +283,9 @@ export default function Controller({ code, room, secret, error, refresh, overlay
           const body = (
             <CardPanel
               inline={!narrow}
-              unit="17px"
+              unit="min(17px, 2.7dvh)"
               width={22}
-              maxH="90dvh"
+              maxH="none"
               z="z-50"
               label="Decisión"
               kicker={card ? `Casilla ${card.n}` : `Turno de ${me.name}`}
