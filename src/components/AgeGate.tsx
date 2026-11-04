@@ -105,7 +105,7 @@ export default function AgeGate() {
             <strong className="text-white">Muertos de Sed</strong> es un juego para beber alcohol entre amigos. Bebe con moderación, no conduzcas si bebiste y nadie está obligado a beber: si no quieres, pasa.
           </CardText>
           <p className="text-xs" style={{ marginTop: 10, color: "#d8d4f6", opacity: 0.65, fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700 }}>
-            Tu respuesta se guarda en este aparato. Contamos visitas de forma anónima, sin nombres.{" "}
+            Tu respuesta se guarda en este dispositivo. Contamos visitas de forma anónima, sin nombres.{" "}
             <button className="underline" style={{ color: GREEN_LIGHT }} onClick={() => setLegal("privacidad")}>
               Privacidad
             </button>{" "}

@@ -49,7 +49,7 @@ export default function StatsPanel({ adminKey = askAdminKey }: { adminKey?: () =
     ? [
         { label: "Aparatos nuevos", value: t.edad_si, hint: "Contestaron «tengo 18» por primera vez (≈ gente distinta que llegó)." },
         { label: "Visitas", value: t.visita, hint: "Veces que se abrió el juego (una por pestaña)." },
-        { label: "Volvieron otro día", value: t.vuelve, hint: "Visitas de aparatos que ya habían venido antes: lo más parecido a retención." },
+        { label: "Volvieron otro día", value: t.vuelve, hint: "Visitas de dispositivos que ya habían venido antes: lo más parecido a retención." },
         { label: "Mesas creadas", value: t.mesa, hint: "Veces que alguien pulsó «Crear mesa»." },
         { label: "Celulares conectados", value: t.celular, hint: "Celulares que tomaron el control de una mesa." },
         { label: "Partidas empezadas", value: t.partida, hint: "Mesas donde se pulsó «Empezar» con jugadores." },

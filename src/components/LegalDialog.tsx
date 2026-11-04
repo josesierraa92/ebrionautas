@@ -14,7 +14,7 @@ function Privacidad() {
       <CardList
         items={[
           <><strong className="text-white">La partida:</strong> los nombres que escribes, lo que pasa en el tablero y lo que se bebe. Se borra sola a las 24 horas y no se usa para nada más.</>,
-          <><strong className="text-white">En tu aparato:</strong> que ya dijiste que tienes 18 años o más y el último día que abriste el juego (para no preguntarte cada vez).</>,
+          <><strong className="text-white">En tu dispositivo:</strong> que ya dijiste que tienes 18 años o más y el último día que abriste el juego (para no preguntarte cada vez).</>,
           <><strong className="text-white">Contadores anónimos:</strong> cuántas mesas se crean, cuántas partidas empiezan y terminan y cuántos jugadores hay en cada una, sumados por día. No llevan nombres, direcciones IP ni identificadores y no se pueden ligar a una persona.</>,
         ]}
       />

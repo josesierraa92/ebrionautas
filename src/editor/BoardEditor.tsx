@@ -938,7 +938,7 @@ export default function BoardEditor() {
           />
           <span className="w-20 text-right text-xs opacity-70">{layout.tvView.tiles.toFixed(1)} casillas</span>
         </label>
-        <label className="flex items-center gap-2 text-sm" title="Cuánto acerca la cámara en un celular en vertical (el modo «un solo aparato»): más zoom = menos casillas a lo ancho">
+        <label className="flex items-center gap-2 text-sm" title="Cuánto acerca la cámara en un celular en vertical (el modo «un solo dispositivo»): más zoom = menos casillas a lo ancho">
           Zoom celular
           <input
             type="range"

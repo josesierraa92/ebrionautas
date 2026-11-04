@@ -54,7 +54,7 @@ export default function HomeActions() {
         <button disabled={busy} onClick={() => setChoosing(true)} className="btn-game bg-btn-green py-4 text-3xl text-white disabled:bg-btn-grey landscape:py-3">
           CREAR MESA
         </button>
-        <p className="text-sm text-white/70">Tú eres el anfitrión: elige si se juega en un solo lugar o cada quien desde su aparato.</p>
+        <p className="text-sm text-white/70">Tú eres el anfitrión: juegan todos juntos o cada uno desde su dispositivo.</p>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -88,7 +88,7 @@ export default function HomeActions() {
               <button disabled={busy} onClick={() => create("online")} className="btn-game w-full bg-btn-blue py-3 text-3xl text-white disabled:bg-btn-grey">
                 ONLINE
               </button>
-              <CardText size={0.95}>Cada jugador entra con su propio aparato usando el código. Todos esperan en la sala y tú das «¡A levantarse!».</CardText>
+              <CardText size={0.95}>Cada jugador entra desde su dispositivo con el código y tú das «¡A levantarse!».</CardText>
             </div>
           </div>
         </CardPanel>
