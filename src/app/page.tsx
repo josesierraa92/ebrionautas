@@ -27,7 +27,6 @@ export default function Home() {
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 hidden h-[30%] bg-gradient-to-b from-[#0a0620]/40 to-transparent landscape:block" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-md flex-col items-center gap-5 px-4 pb-8 text-center landscape:max-w-5xl landscape:gap-2 landscape:pb-3">
-        <p className="font-display text-lg text-btn-yellow drop-shadow-[0_2px_0_rgba(0,0,0,.6)] landscape:text-xl">Una noche para beber. Toda la eternidad para dormirla.</p>
         <HomeActions />
         <p className="text-xs text-white/60">
           Juego para mayores de 18 años. Bebe con moderación. · <LegalLinks />
