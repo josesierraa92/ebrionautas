@@ -220,6 +220,14 @@ export default function Controller({ code, room, secret, error, refresh, overlay
           <button onClick={() => setSettings(true)} className="btn-game flex items-center justify-center bg-btn-grey px-4 text-xl py-2 text-white" aria-label="Ajustes de la partida" title="Ajustes">
             <GearIcon />
           </button>
+          {onOverview && (
+            <button onClick={onOverview} className={`btn-game grid place-items-center ${overview ? "bg-btn-yellow" : "bg-btn-purple"} px-3 py-2 text-white`} aria-label={overview ? "Volver al jugador" : "Ver a todos los jugadores desde arriba"} aria-pressed={overview} title="Vista de arriba">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                <circle cx="12" cy="12" r="3.2" />
+              </svg>
+            </button>
+          )}
           <FullscreenButton />
           <button onClick={() => setMenu(true)} className="btn-game whitespace-nowrap bg-btn-blue px-4 text-xl py-2 text-white" aria-label="Marcador e historial">
             MARCADOR

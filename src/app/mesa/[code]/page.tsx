@@ -261,7 +261,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
             overlay
             narrow={portrait}
             overview={overview}
-            onOverview={portrait ? () => setOverview((v) => !v) : undefined}
+            onOverview={() => setOverview((v) => !v)}
             locked={!fx.settled || !!fx.banner || !!fx.dice}
             card={card}
             code={code}
