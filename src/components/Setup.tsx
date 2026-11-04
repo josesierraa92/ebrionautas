@@ -73,7 +73,7 @@ export default function Setup({ onStart, busy = false, code, copas = true, backH
   const u = (k: number) => `calc(var(--u) * ${k})`;
   const rowBg = "rgba(255,255,255,.08)";
   return (
-    <main className={`mx-auto flex ${cols === 3 ? "max-w-[90rem]" : twoCols ? "max-w-[60rem]" : "max-w-md"} flex-col items-center justify-center gap-4 px-4 pt-10 pb-4`} style={{ zoom, minHeight: `calc((100dvh - 4.5rem) / ${zoom})` }}>
+    <main className={`mx-auto flex ${cols === 3 ? "max-w-[90rem]" : twoCols ? "max-w-[60rem]" : "max-w-md"} flex-col items-center justify-center gap-3 px-4 pt-14 pb-2`} style={{ zoom, minHeight: `calc((100dvh - 4.5rem) / ${zoom})` }}>
       {/* logo grande arriba y centrado; el código de la mesa, en la esquina de arriba a la derecha de la pantalla */}
       <Logo className="w-[min(22rem,100%)] shrink-0" />
       {code && (
