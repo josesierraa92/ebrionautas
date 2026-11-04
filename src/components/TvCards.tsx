@@ -234,7 +234,7 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
           </p>
         </div>
       </div>
-      {!winner && !fill && <StateChips game={game} player={who} className="absolute" style={{ top: "calc(100% + 4px)", left: 8 }} />}
+      {!winner && !fill && <StateChips game={game} player={who} className="absolute z-20 w-max" style={{ bottom: 0, left: "calc(50% + 36px)", transform: "translate(-50%, 55%)" }} />}
     </div>
   );
 }
