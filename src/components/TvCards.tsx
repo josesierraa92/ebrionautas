@@ -183,10 +183,10 @@ export function StateChips({ game, player, className = "", style }: { game: Game
   return (
     <div className={`flex flex-wrap justify-center ${className}`} style={{ gap: 6, ...style }}>
       {states.map((c) => (
-        <span key={c.text} className="inline-flex items-center rounded-full font-display uppercase" style={{ gap: 5, padding: "3px 10px 3px 7px", fontSize: 15, background: "#1a0b38", border: "3px solid #452b8e", color: c.color, boxShadow: "0 4px 8px rgba(0,0,0,.4)" }}>
-          <MaskIcon name={c.icon} color={c.color} size="16px" />
-          {c.text}
-        </span>
+        <span key={c.text} className="inline-flex items-center rounded-full font-display uppercase" style={{ gap: 5, padding: "2px 11px 2px 8px", fontSize: 15, lineHeight: 1.15, background: `linear-gradient(180deg, ${shadeHex(c.color, 0.18)} 0%, ${c.color} 55%, ${shadeHex(c.color, -0.2)} 100%)`, color: "#14102e", boxShadow: "0 3px 6px rgba(0,0,0,.45)" }}>
+              <MaskIcon name={c.icon} color="#14102e" size="15px" />
+              {c.text}
+            </span>
       ))}
     </div>
   );
@@ -234,7 +234,7 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
           </p>
         </div>
       </div>
-      {!winner && !fill && <StateChips game={game} player={who} className="absolute z-20 w-max" style={{ bottom: 0, left: "calc(50% + 36px)", transform: "translate(-50%, 55%)" }} />}
+      {!winner && !fill && <StateChips game={game} player={who} className="absolute z-20 w-max" style={{ top: 0, left: "calc(50% + 36px)", transform: "translate(-50%, -60%)" }} />}
     </div>
   );
 }
