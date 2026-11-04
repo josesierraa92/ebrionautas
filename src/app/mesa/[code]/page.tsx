@@ -206,21 +206,21 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
         ) : (
           <CardPanel inline unit={lobbyUnit} width={36} kicker="Sala de espera" title="Usa tu celular como control" badge="QR">
             <CardText size={1.25}>Conecta tu celular para tirar el dado y decidir desde ahí, mientras el tablero se ve en esta pantalla.</CardText>
-            <div className="flex items-start justify-center" style={{ marginTop: c(1.3), gap: c(1.8) }}>
+            <div className="flex items-start justify-center" style={{ marginTop: c(1.3), gap: c(2.4) }}>
               <div className="flex flex-col items-center" style={{ gap: c(0.6) }}>
-                <p className="font-display uppercase" style={{ color: "#bffa58", fontSize: c(1.15), letterSpacing: "0.06em" }}>1 · Escanea el QR</p>
+                <p className="font-display uppercase" style={{ color: "#bffa58", fontSize: c(1.15), letterSpacing: "0.06em" }}>Escanea el QR</p>
                 {controlUrl && (
                   <div className="shrink-0 bg-white" style={{ width: c(10), padding: c(0.7), borderRadius: c(1) }}>
                     <QRCodeSVG value={controlUrl} size={256} style={{ width: "100%", height: "auto", display: "block" }} />
                   </div>
                 )}
               </div>
-              <div className="flex flex-col items-center" style={{ gap: c(0.6) }}>
-                <p className="font-display uppercase" style={{ color: "#bffa58", fontSize: c(1.15), letterSpacing: "0.06em" }}>O pon el código</p>
-                <div className="grid place-items-center font-display" style={{ height: c(10), minWidth: c(11), padding: `0 ${c(1.2)}`, borderRadius: c(1), background: GREEN, color: "#14260a", fontSize: c(4.2), letterSpacing: "0.12em", lineHeight: 1, paddingLeft: c(1.6) }}>
+              <div className="flex flex-col items-center" style={{ gap: c(0.6), width: c(14) }}>
+                <p className="font-display uppercase" style={{ color: "#bffa58", fontSize: c(1.15), letterSpacing: "0.06em" }}>¿No puedes escanear?</p>
+                <div className="grid place-items-center font-display" style={{ height: c(10), width: c(14), padding: 0, borderRadius: c(1), background: GREEN, color: "#14260a", fontSize: c(3.3), letterSpacing: "0.1em", lineHeight: 1, paddingLeft: c(0.5) }}>
                   {code}
                 </div>
-                <p style={{ color: "#d8d4f6", fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700, fontSize: c(0.95) }}>en la web del juego, «Unirse a mesa»</p>
+                <p className="text-center" style={{ color: "#d8d4f6", fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700, fontSize: c(0.95), maxWidth: c(14) }}>Abre el juego en tu celular, toca «Unirse a mesa» y escribe este código</p>
               </div>
             </div>
           </CardPanel>

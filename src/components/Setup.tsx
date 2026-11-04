@@ -175,12 +175,13 @@ export default function Setup({ onStart, busy = false, code, copas = true, backH
                 className={`flex flex-col items-center justify-center font-display ${cups === n ? "text-[#14260a]" : "bg-black/30 text-white/70"}`}
                 style={{ gap: u(0.5), padding: `${u(1.3)} 0`, borderRadius: u(1), ...(cups === n ? { background: "linear-gradient(160deg, #bffa58, #5fc34a)" } : {}) }}
               >
-                <span className="flex justify-center" style={{ gap: 2, minHeight: 34 }}>{Array.from({ length: n }, (_, i) => <TrophyIcon key={i} size={n === 1 ? 40 : n === 2 ? 30 : 24} stroke={70} />)}</span>
+                <span className="flex justify-center" style={{ gap: 2, minHeight: 34 }}>{Array.from({ length: n }, (_, i) => <TrophyIcon key={i} size={n === 1 ? 40 : n === 2 ? 30 : 24} stroke={140} />)}</span>
                 <span style={{ fontSize: u(1.9), lineHeight: 1 }}>{n}</span>
+                <span className="whitespace-nowrap uppercase" style={{ fontSize: u(0.8), lineHeight: 1, letterSpacing: "0.04em", opacity: 0.9 }}>{n === 1 ? "Corta" : n === 2 ? "Larga" : "Muy larga"}</span>
               </button>
             ))}
           </div>
-          <div className="text-center"><CardText size={1.05}>{cups === 1 ? "El primero que llegue a la meta gana." : `Gana quien consiga ${cups} copas: cada ronda se juega hasta la meta y se reinicia.`}</CardText></div>
+          <div className="text-center"><CardText size={1.05}>{cups === 1 ? <><b style={{ color: "#bffa58" }}>Partida corta:</b> el primero que llegue a la meta gana.</> : <><b style={{ color: "#bffa58" }}>Partida {cups === 2 ? "larga" : "muy larga"}:</b> gana quien llegue a la meta {cups} veces. Cada vez que alguien llega, la carrera empieza de nuevo.</>}</CardText></div>
         </CardPanel>
       )}
       {step === 1 && backHref && <BackButton href={backHref} size="0.95rem" />}
