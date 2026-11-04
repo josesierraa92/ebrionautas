@@ -101,7 +101,7 @@ export default function CardPanel({
             </div>
             )}
 
-            <div className="game-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain" style={{ paddingRight: u(0.3) }}>
+            <div className="game-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain" style={{ marginRight: u(-1.15), paddingRight: u(1.15) }}>
               {children}
             </div>
 
