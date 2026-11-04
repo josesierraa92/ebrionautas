@@ -121,8 +121,8 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
   );
 }
 
-// el «confeti» del ganador es oscuro: murciélagos casi negros que bajan aleteando con un resplandor morado y brasas moradas que suben flotando
-const BAT_COLORS = ["#0a0714", "#1a0b38", "#2a0f5c", "#0a0714"];
+// el «confeti» del ganador es oscuro: murciélagos totalmente negros (sin color, borde ni neón) que bajan aleteando y brasas moradas que suben flotando
+const BAT_COLORS = ["#000"];
 const EMBER_COLORS = ["#b98bf0", "#8a5af0", "#e53fd6", "#d2b4ff"];
 
 /** Lluvia de murciélagos y brasas para el ganador. Posiciones deterministas: nada de Math.random al renderizar. */

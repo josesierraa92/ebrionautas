@@ -234,7 +234,6 @@ body {
 .confetti-bat {
   border: 0;
   border-radius: 0;
-  filter: drop-shadow(0 0 4px #8a5af0) drop-shadow(0 0 1px #d2b4ff);
   animation-name: bat-fall;
   animation-timing-function: ease-in-out;
 }
