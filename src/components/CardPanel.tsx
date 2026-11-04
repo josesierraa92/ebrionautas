@@ -119,7 +119,7 @@ export default function CardPanel({
           {kicker}
         </div>}
         {cornerClose && (
-          <button onClick={cornerClose} aria-label="Cerrar" className="absolute grid place-items-center rounded-full text-white active:scale-95" style={{ right: u(0.15), top: u(-0.55), width: u(2.6), height: u(2.6), background: "radial-gradient(circle at 35% 30%, #ff6b73, #e5333f 60%, #b91c2a)", border: `${u(0.22)} solid #5a0f1a`, boxShadow: `0 ${u(0.15)} 0 #5a0f1a` }}>
+          <button onClick={cornerClose} aria-label="Cerrar" className="absolute grid place-items-center rounded-full text-white active:scale-95" style={{ right: u(-0.05), top: u(-0.4), width: u(2.6), height: u(2.6), background: "radial-gradient(circle at 35% 30%, #ff6b73, #e5333f 60%, #b91c2a)", border: `${u(0.22)} solid #5a0f1a`, boxShadow: `0 ${u(0.15)} 0 #5a0f1a` }}>
             <svg viewBox="0 0 24 24" style={{ width: u(1.3), height: u(1.3) }} fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" aria-hidden><path d="M5 5l14 14M19 5L5 19" /></svg>
           </button>
         )}
