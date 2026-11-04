@@ -50,7 +50,7 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
   // en pantallas grandes (PC, TV) todo el formulario se agranda (`zoom`); en el celular se queda como está
   const [zoom, setZoom] = useState(1);
   useEffect(() => {
-    const fit = () => setZoom(window.innerWidth < 700 ? 1 : Math.max(1, Math.min(1.6, Math.min(window.innerHeight / 680, window.innerWidth / 560))));
+    const fit = () => setZoom(window.innerWidth < 700 ? 1 : Math.max(1, Math.min(1.6, Math.min(window.innerHeight / 780, window.innerWidth / 560))));
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
@@ -59,15 +59,13 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
   const rowBg = "rgba(255,255,255,.08)";
   return (
     <main className="mx-auto flex max-w-md flex-col items-center justify-center gap-4 px-4 py-6" style={{ zoom, minHeight: `calc((100dvh - 4.5rem) / ${zoom})` }}>
-      {/* logo a la izquierda y código de mesa a la derecha, del ancho de la tarjeta */}
-      <div className="flex w-full items-center justify-between gap-3" style={{ maxWidth: "calc(17px * 24)" }}>
-        <Logo className="w-44 shrink-0" />
-        {code && (
-          <span className="font-display uppercase" style={{ padding: "0.2rem 0.9rem", borderRadius: 999, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: "1.15rem", letterSpacing: "0.08em" }}>
-            Mesa {code}
-          </span>
-        )}
-      </div>
+      {/* logo grande arriba y centrado; el código de la mesa, en la esquina de arriba a la derecha de la pantalla */}
+      <Logo className="w-[min(22rem,100%)] shrink-0" />
+      {code && (
+        <span className="fixed top-3 right-3 z-20 font-display uppercase" style={{ padding: "0.3rem 1.1rem", borderRadius: 999, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: "1.3rem", letterSpacing: "0.08em", zoom: 1 / zoom }}>
+          Mesa {code}
+        </span>
+      )}
       {step === 1 ? (
       <CardPanel
         inline

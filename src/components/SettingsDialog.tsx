@@ -10,7 +10,7 @@ import type { Action, GameState } from "@/game/engine";
 const u = (k: number) => `calc(var(--u) * ${k})`;
 const body = { fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700 } as const;
 
-export default function SettingsDialog({ game, busy, onAction, onRestart, onClose }: { game: GameState; busy: boolean; onAction: (a: Action) => void; onRestart?: () => void; onClose: () => void }) {
+export default function SettingsDialog({ code, game, busy, onAction, onRestart, onClose }: { /** Código de la mesa (se enseña arriba). */ code?: string; game: GameState; busy: boolean; onAction: (a: Action) => void; onRestart?: () => void; onClose: () => void }) {
   const [confirm, setConfirm] = useState<string | null>(null);
   const [muted, setMutedState] = useState(false);
   useEffect(() => setMutedState(isMuted()), []);
@@ -33,6 +33,13 @@ export default function SettingsDialog({ game, busy, onAction, onRestart, onClos
         </button>
       }
     >
+      {code && (
+        <p className="text-center" style={{ marginBottom: u(0.9) }}>
+          <span className="inline-block font-display uppercase" style={{ padding: `${u(0.2)} ${u(1)}`, borderRadius: 999, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: u(1.4), letterSpacing: "0.08em" }}>
+            Mesa {code}
+          </span>
+        </p>
+      )}
       <button
         onClick={() => { setMuted(!muted); setMutedState(!muted); unlock(); }}
         className={`btn-game w-full py-2 text-white ${muted ? "bg-btn-grey" : "bg-btn-green"}`}

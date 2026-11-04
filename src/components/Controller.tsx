@@ -343,14 +343,11 @@ export default function Controller({ code, room, secret, error, refresh, overlay
             </ul>
           </CardPanel>
         )}
-        {settings && <SettingsDialog game={game} busy={busy} onAction={act} onRestart={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))} onClose={() => setSettings(false)} />}
+        {settings && <SettingsDialog code={code} game={game} busy={busy} onAction={act} onRestart={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))} onClose={() => setSettings(false)} />}
         {menu && (
           <div className="fixed inset-0 z-[60] overflow-y-auto bg-[#0a0620]">
             <div className="mx-auto flex max-w-md flex-col items-center gap-5 px-4 py-4">
-              <div className="flex w-full items-center justify-between gap-3">
-                <span className="font-display uppercase" style={{ padding: "0.2rem 0.9rem", borderRadius: 999, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: "1.15rem", letterSpacing: "0.08em" }}>
-                  Mesa {code}
-                </span>
+              <div className="flex w-full items-center justify-end gap-3">
                 <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-7 py-3 text-3xl text-white">
                   CERRAR
                 </button>
@@ -484,15 +481,12 @@ export default function Controller({ code, room, secret, error, refresh, overlay
         </CardPanel>
       )}
 
-      {settings && <SettingsDialog game={game} busy={busy} onAction={act} onRestart={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))} onClose={() => setSettings(false)} />}
+      {settings && <SettingsDialog code={code} game={game} busy={busy} onAction={act} onRestart={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))} onClose={() => setSettings(false)} />}
 
       {menu && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0a0620]">
           <div className="mx-auto flex max-w-md flex-col items-center gap-5 px-4 py-4">
-            <div className="flex w-full items-center justify-between gap-3">
-              <span className="font-display uppercase" style={{ padding: "0.2rem 0.9rem", borderRadius: 999, background: "linear-gradient(160deg, #bffa58, #5fc34a)", color: "#14260a", fontSize: "1.15rem", letterSpacing: "0.08em" }}>
-                Mesa {code}
-              </span>
+            <div className="flex w-full items-center justify-end gap-3">
               <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-7 py-3 text-3xl text-white">
                 CERRAR
               </button>
