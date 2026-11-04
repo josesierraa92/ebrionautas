@@ -198,18 +198,78 @@ function note(freq: number, at: number, dur: number, type: OscillatorType, vol: 
   }
 }
 
+/** Violín: dos dientes de sierra apenas desafinados (efecto de sección de cuerdas), filtro suave y vibrato lento. */
+function violin(freq: number, at: number, dur: number, vol: number, attack = 0.07) {
+  const a = ctx;
+  if (!a || !musicGain) return;
+  const filter = a.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = Math.min(3200, freq * 5);
+  filter.Q.value = 0.6;
+  const gain = a.createGain();
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(vol, at + attack);
+  gain.gain.setValueAtTime(vol, at + Math.max(attack, dur - 0.18));
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  filter.connect(gain);
+  gain.connect(musicGain);
+  const lfo = a.createOscillator();
+  lfo.frequency.value = 5.4;
+  const lfoGain = a.createGain();
+  lfoGain.gain.value = 9; // cents de vibrato
+  lfo.connect(lfoGain);
+  for (const det of [-6, 6]) {
+    const osc = a.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.value = freq;
+    osc.detune.value = det;
+    lfoGain.connect(osc.detune);
+    osc.connect(filter);
+    osc.start(at);
+    osc.stop(at + dur + 0.05);
+  }
+  lfo.start(at);
+  lfo.stop(at + dur + 0.05);
+}
+
+/** Campanada lejana y grave, como de capilla o cripta: suena muy de vez en cuando. */
+function toll(at: number) {
+  const a = ctx;
+  if (!a || !musicGain) return;
+  for (const [mult, vol, dur] of [[1, 0.5, 3.4], [2.4, 0.2, 2.4], [3.1, 0.12, 1.6]] as const) {
+    const gain = a.createGain();
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.exponentialRampToValueAtTime(vol, at + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    gain.connect(musicGain);
+    const osc = a.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = 110 * mult;
+    osc.connect(gain);
+    osc.start(at);
+    osc.stop(at + dur + 0.05);
+  }
+}
+
 function scheduleStep(i: number, at: number) {
   const bar = BARS[Math.floor(i / 8) % BARS.length];
   const beat = i % 8;
+  const barNo = Math.floor(i / 8) % BARS.length;
   // bajo pizzicato: raíz en el 1, quinta en el 3 (corcheas 0 y 4), saltito en el 6
   if (beat === 0) note(midi(bar.root), at, 0.32, "triangle", 0.5);
   if (beat === 4) note(midi(bar.fifth), at, 0.28, "triangle", 0.4);
   if (beat === 6) note(midi(bar.root + 12), at, 0.16, "triangle", 0.22);
-  // acorde cortito a contratiempo (2 y 4)
-  if (beat === 2 || beat === 6) bar.chord.forEach((n) => note(midi(n), at, 0.16, "triangle", 0.1));
-  // caja de música
+  // sección de cuerdas: el acorde del compás sostenido, entrando despacio
+  if (beat === 0) bar.chord.forEach((n) => violin(midi(n - 12), at, STEP * 8, 0.05, 0.35));
+  // campanada grave en la entrada y a mitad del bucle (la cripta)
+  if (beat === 0 && (barNo === 0 || barNo === 4)) toll(at);
+  // violín solista: cada nota dura hasta la siguiente (máximo 3 corcheas), ligada
   const m = MELODY[i % MELODY.length];
-  if (m) note(midi(m), at, 0.9, "sine", 0.26, true);
+  if (m) {
+    let len = 1;
+    while (len < 3 && !MELODY[(i + len) % MELODY.length] && (i + len) % 8 !== 0) len++;
+    violin(midi(m - 12 + (m < 72 ? 12 : 0)), at, STEP * len + 0.08, 0.1);
+  }
 }
 
 function musicTick() {

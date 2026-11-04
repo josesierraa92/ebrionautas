@@ -47,12 +47,14 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   useEffect(() => {
     if (!playing) return;
     music.start();
+    // en el iPhone el audio solo se despierta con un toque «de verdad» (touchend/click): se intenta en cada toque hasta que suena
     const wake = () => void unlock();
-    window.addEventListener("pointerdown", wake, { once: true });
-    window.addEventListener("keydown", wake, { once: true });
+    const events = ["pointerdown", "pointerup", "touchend", "click", "keydown"] as const;
+    events.forEach((e) => window.addEventListener(e, wake));
+    document.addEventListener("visibilitychange", wake);
     return () => {
-      window.removeEventListener("pointerdown", wake);
-      window.removeEventListener("keydown", wake);
+      events.forEach((e) => window.removeEventListener(e, wake));
+      document.removeEventListener("visibilitychange", wake);
       music.stop();
     };
   }, [playing]);
