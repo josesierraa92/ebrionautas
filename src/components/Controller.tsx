@@ -350,12 +350,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
         {menu && (
           <div className="fixed inset-0 z-[60] overflow-y-auto bg-[#0a0620]">
             <div className="mx-auto flex max-w-md flex-col items-center gap-5 px-4 py-4">
-              <div className="flex w-full items-center justify-end gap-3">
-                <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-7 py-3 text-3xl text-white">
-                  CERRAR
-                </button>
-              </div>
-              <PlayersList game={game} onPenalty={(id) => act({ type: "PENALTY", id })} />
+              <PlayersList game={game} onClose={() => setMenu(false)} onPenalty={(id) => act({ type: "PENALTY", id })} />
               <GameLog log={game.log} max={10} />
               <button onClick={() => setMenu(false)} className="btn-game w-full bg-btn-green py-3 text-2xl text-white">
                 CERRAR
@@ -489,12 +484,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
       {menu && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0a0620]">
           <div className="mx-auto flex max-w-md flex-col items-center gap-5 px-4 py-4">
-            <div className="flex w-full items-center justify-end gap-3">
-              <button onClick={() => setMenu(false)} className="btn-game bg-btn-green px-7 py-3 text-3xl text-white">
-                CERRAR
-              </button>
-            </div>
-            <PlayersList game={game} onPenalty={(id) => act({ type: "PENALTY", id })} />
+            <PlayersList game={game} onClose={() => setMenu(false)} onPenalty={(id) => act({ type: "PENALTY", id })} />
             <GameLog log={game.log} max={10} />
             <CardPanel inline kicker="Tablero" unit="17px" width={30} maxH="none">
               <Board players={game.players} current={me.id} />

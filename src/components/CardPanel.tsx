@@ -29,6 +29,7 @@ export default function CardPanel({
   width = 30,
   maxH = "88dvh",
   centerTitle,
+  cornerClose,
 }: {
   /** Pastilla verde de arriba («SOLO PARA ADULTOS», «PRIVACIDAD»…). */
   kicker?: string;
@@ -56,6 +57,8 @@ export default function CardPanel({
   maxH?: string;
   /** Título centrado (para tarjetas sin icono ni pastilla, como el alta de jugadores). */
   centerTitle?: boolean;
+  /** Círculo rojo con una X en la esquina de arriba a la derecha, a la altura de la pastilla (cierra sin pasar por «CERRAR»). */
+  cornerClose?: () => void;
 }) {
   const downOnBackdrop = useRef(false);
   // se dibuja directamente en <body> (un portal): así nunca queda dentro de un <p>, de un contenedor con transform ni bajo otro z-index
@@ -115,6 +118,11 @@ export default function CardPanel({
         {kicker && <div className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap font-display uppercase" style={{ padding: `${u(0.2)} ${u(1)}`, borderRadius: u(9), background: GREEN, color: "#14260a", fontSize: u(0.95), letterSpacing: "0.04em" }}>
           {kicker}
         </div>}
+        {cornerClose && (
+          <button onClick={cornerClose} aria-label="Cerrar" className="absolute grid place-items-center rounded-full text-white active:scale-95" style={{ right: u(0.9), top: u(-0.55), width: u(2.6), height: u(2.6), background: "radial-gradient(circle at 35% 30%, #ff6b73, #e5333f 60%, #b91c2a)", border: `${u(0.22)} solid #5a0f1a`, boxShadow: `0 ${u(0.15)} 0 #5a0f1a` }}>
+            <svg viewBox="0 0 24 24" style={{ width: u(1.3), height: u(1.3) }} fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" aria-hidden><path d="M5 5l14 14M19 5L5 19" /></svg>
+          </button>
+        )}
       </div>
   );
   if (inline) return card;

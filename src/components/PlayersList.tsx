@@ -11,6 +11,8 @@ type Props = {
   game: GameState;
   /** Tamaño TV: letras y fichas más grandes. */
   big?: boolean;
+  /** Círculo rojo con X en la esquina de la tarjeta (menú del celular). */
+  onClose?: () => void;
   /** Si se pasa, muestra el botón +1 para penalizar a quien rompa la ley vigente. */
   onPenalty?: (id: string) => void;
 };
@@ -19,12 +21,12 @@ const ROW = "rgba(255,255,255,.08)";
 const body = { fontFamily: "var(--font-nunito), sans-serif", fontWeight: 700 } as const;
 
 /** Marcador con el diseño de las tarjetas: casilla, vasos bebidos, deudas y estados de cada jugador. Los nombres van muy grandes (se leen de noche y con copas). */
-export default function PlayersList({ game, big = false, onPenalty }: Props) {
+export default function PlayersList({ game, big = false, onPenalty, onClose }: Props) {
   const current = game.players[game.turn]?.id;
   const u = (k: number) => `calc(var(--u) * ${k})`;
   const nameOf = (id: string) => game.players.find((q) => q.id === id)?.name;
   return (
-    <CardPanel inline kicker="Marcador" unit={big ? "20px" : "17px"} width={big ? 34 : 30} maxH="none">
+    <CardPanel inline cornerClose={onClose} kicker="Marcador" unit={big ? "20px" : "17px"} width={big ? 34 : 30} maxH="none">
       {game.ronda && !game.winner && (
         <div className="flex items-start" style={{ gap: u(0.6), marginBottom: u(0.7), padding: u(0.7), borderRadius: u(0.9), background: "rgba(191,250,88,.16)", ...body, fontSize: u(1), color: "#d8d4f6" }}>
           <MaskIcon name="hourglass" color={GREEN_LIGHT} size={u(1.6)} />
