@@ -210,34 +210,37 @@ export default function Controller({ code, room, secret, error, refresh, overlay
           </>
           )
         ) : (
+        <>
         <div className="absolute top-[2%] right-[1.5%] z-50 flex items-center gap-3">
           {extra}
           {!winner && (
-            <button onClick={() => setAddDrink(true)} className="btn-game whitespace-nowrap bg-btn-red px-4 text-xl py-2 text-white" aria-label="Agregar un trago a un jugador">
+            <button onClick={() => setAddDrink(true)} className="btn-game whitespace-nowrap bg-btn-red px-3.5 text-lg py-1.5 text-white" aria-label="Agregar un trago a un jugador">
               + TRAGO
             </button>
           )}
-          <button onClick={() => setSettings(true)} className="btn-game flex items-center justify-center bg-btn-grey px-4 text-xl py-2 text-white" aria-label="Ajustes de la partida" title="Ajustes">
-            <GearIcon />
-          </button>
-          {onOverview && (
-            <button onClick={onOverview} className={`btn-game grid place-items-center ${overview ? "bg-btn-yellow" : "bg-btn-purple"} px-3 py-2 text-white`} aria-label={overview ? "Volver al jugador" : "Ver a todos los jugadores desde arriba"} aria-pressed={overview} title="Vista de arriba">
-              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
-                <circle cx="12" cy="12" r="3.2" />
-              </svg>
-            </button>
-          )}
-          <FullscreenButton />
-          <button onClick={() => setMenu(true)} className="btn-game whitespace-nowrap bg-btn-blue px-4 text-xl py-2 text-white" aria-label="Marcador e historial">
+          <button onClick={() => setMenu(true)} className="btn-game whitespace-nowrap bg-btn-blue px-3.5 text-lg py-1.5 text-white" aria-label="Marcador e historial">
             MARCADOR
           </button>
+          <button onClick={() => setSettings(true)} className="btn-game flex items-center justify-center bg-btn-grey px-3.5 text-lg py-1.5 text-white" aria-label="Ajustes de la partida" title="Ajustes">
+            <GearIcon />
+          </button>
+          <FullscreenButton />
         </div>
+        {/* el ojito: vista de arriba con todos los jugadores, en la esquina de abajo a la izquierda */}
+        {onOverview && (
+          <button onClick={onOverview} className={`btn-game absolute bottom-[3%] left-[1.5%] z-50 grid place-items-center ${overview ? "bg-btn-yellow" : "bg-btn-purple"} px-2.5 py-1.5 text-white`} aria-label={overview ? "Volver al jugador" : "Ver a todos los jugadores desde arriba"} aria-pressed={overview} title="Vista de arriba">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+              <circle cx="12" cy="12" r="3.2" />
+            </svg>
+          </button>
+        )}
+        </>
         )}
 
         {/* el dado: abajo a la izquierda (en celular vertical, abajo en el centro), lejos de la tarjeta de la casilla */}
         {!winner && game.phase === "ROLL" && (
-          <div className={`absolute bottom-[3%] z-50 ${narrow ? "left-1/2 -translate-x-1/2" : "left-[2%]"}`} style={{ width: "clamp(88px, 19vmin, 190px)" }}>
+          <div className={`absolute bottom-[3%] z-50 ${narrow ? "left-1/2 -translate-x-1/2" : "left-[calc(1.5%+5rem)]"}`} style={{ width: "clamp(88px, 19vmin, 190px)" }}>
             <button
               onClick={rollNow}
               disabled={dim}
