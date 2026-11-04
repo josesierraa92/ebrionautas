@@ -52,6 +52,8 @@ export type LiveState = {
   shown?: Record<string, number>;
   flying?: string | null;
   focus?: string | null;
+  /** Vista de arriba: la cámara se aleja y encuadra a todos los jugadores. */
+  overview?: boolean;
   characterScale: number;
 };
 
@@ -186,10 +188,22 @@ export class LiveBoard {
       t.label.style.setProperty("--c", p.color); // nombre blanco; la flechita, del color del jugador (el del cuadro de turno) y con luz neón
     }
     // la cámara sigue a la ficha que toca (o al jugador de turno)
-    const f = this.tokens.get(s.focus ?? s.current);
-    if (f) {
-      this.scene.lookAt(f.goal.clone().add(new THREE.Vector3(0, 0.6, 0)), this.first);
+    if (s.overview && this.tokens.size) {
+      // vista de arriba: centro de todos los jugadores y zoom para que quepan todos con margen (nunca más cerca que 0,6 del normal)
+      const pts = [...this.tokens.values()].map((t) => t.goal);
+      const c = pts.reduce((a, v) => a.add(v), new THREE.Vector3()).multiplyScalar(1 / pts.length);
+      const r = Math.max(...pts.map((v) => v.distanceTo(c)));
+      this.scene.lookAt(c.clone().add(new THREE.Vector3(0, 0.6, 0)), false);
+      const half = this.scene.viewWorldWidth() / 2;
+      this.scene.setZoom(Math.max(0.12, Math.min(0.6, half / (r + TILE_SIZE * 1.6))));
       this.first = false;
+    } else {
+      this.scene.setZoom(1);
+      const f = this.tokens.get(s.focus ?? s.current);
+      if (f) {
+        this.scene.lookAt(f.goal.clone().add(new THREE.Vector3(0, 0.6, 0)), this.first);
+        this.first = false;
+      }
     }
   }
 

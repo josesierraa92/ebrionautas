@@ -120,6 +120,8 @@ export class EditorScene {
   quality: Quality | null = null;
   private look = new THREE.Vector3();
   private lookGoal = new THREE.Vector3();
+  /** Visor: acercamiento de la cámara (1 = el normal; menos = más lejos, para la vista de arriba con todos los jugadores). */
+  private zoomGoal = 1;
   /** Se llama en cada fotograma del visor con los segundos desde el anterior (para animar las fichas). */
   onFrame: ((dt: number) => void) | null = null;
   /** Visor: después de dibujar, con la cámara ya colocada (para lo que se pone en HTML encima). */
@@ -255,6 +257,10 @@ export class EditorScene {
         this.onFrame?.(dt);
         // la cámara sigue el punto pedido con suavidad (como en Mario Party), sin saltos
         this.look.lerp(this.lookGoal, 1 - Math.exp(-dt * 2.6));
+        if (Math.abs(this.camera.zoom - this.zoomGoal) > 0.002) {
+          this.camera.zoom += (this.zoomGoal - this.camera.zoom) * (1 - Math.exp(-dt * 3));
+          this.camera.updateProjectionMatrix();
+        }
         this.placeViewerCamera();
         this.updateViewerLights(dt);
         this.renderer.render(this.scene, this.camera);
@@ -315,7 +321,7 @@ export class EditorScene {
       const vh = (vw * h) / w;
       // celular vertical: la ficha que sigue la cámara queda en el 38 % de la pantalla (no en el centro), para que la tarjeta de abajo no la tape
       const lift = h > w ? -0.12 * vh : 0;
-      Object.assign(this.camera, { left: -vw / 2, right: vw / 2, top: vh / 2 + lift, bottom: -vh / 2 + lift, zoom: 1 });
+      Object.assign(this.camera, { left: -vw / 2, right: vw / 2, top: vh / 2 + lift, bottom: -vh / 2 + lift, zoom: this.zoomGoal });
       this.camera.updateProjectionMatrix();
       return;
     }
@@ -338,6 +344,20 @@ export class EditorScene {
   lookAt(p: THREE.Vector3, instant = false) {
     this.lookGoal.copy(p);
     if (instant) this.look.copy(p);
+  }
+
+  /** Visor: acercamiento al que va la cámara con suavidad (o de golpe con `instant`). */
+  setZoom(z: number, instant = false) {
+    this.zoomGoal = z;
+    if (instant) {
+      this.camera.zoom = z;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  /** Visor: cuánto mundo cabe a lo ancho de la pantalla con el acercamiento normal. */
+  viewWorldWidth() {
+    return this.camera.right - this.camera.left;
   }
 
   /** Centro de la cara de arriba de la casilla n (1..62), donde se apoyan las fichas. */

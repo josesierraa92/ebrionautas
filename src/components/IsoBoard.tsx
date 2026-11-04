@@ -25,6 +25,8 @@ type Props = {
   flying?: string | null;
   /** Ficha que sigue la cámara (siempre con zoom); null = tablero entero. */
   focus?: string | null;
+  /** Vista de arriba con todos los jugadores (solo el tablero 3D). */
+  overview?: boolean;
 };
 
 type View = { x: number; y: number; w: number; h: number };
@@ -153,6 +155,7 @@ export default function IsoBoard(props: Props) {
           shown={props.shown}
           flying={props.flying}
           focus={props.focus}
+          overview={props.overview}
           characterScale={geo.characterScale}
           onReady={() => setMode("on")}
           onSmooth={() => {

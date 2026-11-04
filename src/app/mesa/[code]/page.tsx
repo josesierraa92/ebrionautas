@@ -43,6 +43,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const [portrait, setPortrait] = useState(false); // celular vertical: la tarjeta va casi a todo el ancho y el dado abajo en el centro
   const fx = useGameFx(room?.game ?? null);
   // música de fondo mientras hay partida (la TV o el aparato único; el celular de control no la pone); el navegador solo deja sonar tras un toque
+  const [overview, setOverview] = useState(false); // el ojito del celular: vista de arriba con todos los jugadores
   const playing = !!room?.game;
   useEffect(() => {
     if (!playing) return;
@@ -254,11 +255,13 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   if (soloActive) {
     return (
       <main className="fixed inset-0">
-        <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare className="h-full">
+        <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare overview={overview} className="h-full">
           {overlays(!game.decision)}
           <Controller
             overlay
             narrow={portrait}
+            overview={overview}
+            onOverview={portrait ? () => setOverview((v) => !v) : undefined}
             locked={!fx.settled || !!fx.banner || !!fx.dice}
             card={card}
             code={code}

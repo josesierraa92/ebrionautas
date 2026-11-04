@@ -42,6 +42,9 @@ type Props = {
   extra?: React.ReactNode;
   /** (overlay) Celular vertical: el dado va abajo en el centro. */
   narrow?: boolean;
+  /** (overlay, celular vertical) El ojito: vista de arriba con todos los jugadores. */
+  overview?: boolean;
+  onOverview?: () => void;
 };
 
 function GearIcon() {
@@ -54,7 +57,7 @@ function GearIcon() {
   );
 }
 
-export default function Controller({ code, room, secret, error, refresh, overlay = false, locked = false, card = null, extra, narrow = false }: Props) {
+export default function Controller({ code, room, secret, error, refresh, overlay = false, locked = false, card = null, extra, narrow = false, overview = false, onOverview }: Props) {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
@@ -169,6 +172,15 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               </button>
               <FullscreenButton />
             </div>
+            {/* el ojito: vista de arriba con todos los jugadores; al lado contrario del marcador (con el juego ganado, junto a él) */}
+            {onOverview && (
+              <button onClick={onOverview} className={`btn-game absolute z-50 ${winner ? "top-[4.5rem] right-[4.6rem]" : "bottom-[5%] left-3"} grid h-12 w-12 place-items-center ${overview ? "bg-btn-yellow" : "bg-btn-purple"} text-white`} aria-label={overview ? "Volver al jugador" : "Ver a todos los jugadores desde arriba"} aria-pressed={overview} title="Vista de arriba">
+                <svg viewBox="0 0 24 24" width="1.9rem" height="1.9rem" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                  <circle cx="12" cy="12" r="3.2" />
+                </svg>
+              </button>
+            )}
             {/* el marcador, un icono junto al dado (con el juego ganado sube a la fila de arriba para no chocar con los botones del final) */}
             <button onClick={() => setMenu(true)} className={`btn-game absolute right-2 z-50 ${winner ? "top-[4.5rem]" : "bottom-[5%]"} grid h-12 w-12 place-items-center bg-btn-blue text-white`} aria-label="Marcador e historial" title="Marcador">
               <svg viewBox="0 0 24 24" width="1.6rem" height="1.6rem" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
