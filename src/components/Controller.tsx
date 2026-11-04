@@ -153,20 +153,9 @@ export default function Controller({ code, room, secret, error, refresh, overlay
     return (
       <>
         {narrow ? (
-          <>
-            {/* celular vertical: los tres iconos (+ trago, ajustes y marcador) en una columna pegada a la esquina de arriba, cerquita unos de otros */}
+          winner ? (
+            // juego terminado: abajo van los botones del final, así que los iconos se juntan en una columna arriba a la derecha
             <div className="absolute top-2 right-2 z-50 flex flex-col items-end gap-2">
-              {!winner && (
-                <button onClick={() => setAddDrink(true)} className="btn-game relative grid h-12 w-12 place-items-center bg-btn-red text-white" aria-label="Agregar un trago a un jugador" title="+ Trago">
-                  <BeerIcon size="1.9rem" />
-                  {/* el + va dibujado (no es texto): el text-shadow del botón lo duplicaba y se veía doble */}
-                  <span className="absolute -top-2 -right-2 grid h-6 w-6 place-items-center rounded-full border-2 border-ink bg-white">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#14260a" strokeWidth="4.5" strokeLinecap="round" aria-hidden="true">
-                      <path d="M12 4v16M4 12h16" />
-                    </svg>
-                  </span>
-                </button>
-              )}
               <button onClick={() => setSettings(true)} className="btn-game grid h-12 w-12 place-items-center bg-btn-grey text-2xl text-white" aria-label="Ajustes de la partida" title="Ajustes">
                 <GearIcon />
               </button>
@@ -175,9 +164,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
                   <path d="M4 20V11h5v9M9.5 20V4h5v16M15 20v-6h5v6M3 20h18" />
                 </svg>
               </button>
-              <FullscreenButton />
-              {/* con el juego ganado, abajo van los botones del final: el ojito se une a la columna */}
-              {winner && onOverview && (
+              {onOverview && (
               <button onClick={onOverview} className={`btn-game grid h-12 w-12 place-items-center ${overview ? "bg-btn-yellow" : "bg-btn-purple"} text-white`} aria-label={overview ? "Volver al jugador" : "Ver a todos los jugadores desde arriba"} aria-pressed={overview} title="Vista de arriba">
                 <svg viewBox="0 0 24 24" width="1.9rem" height="1.9rem" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
@@ -185,10 +172,35 @@ export default function Controller({ code, room, secret, error, refresh, overlay
                 </svg>
               </button>
               )}
+              <FullscreenButton />
             </div>
-            {/* el ojito: vista de arriba con todos los jugadores, abajo a la izquierda junto al dado */}
-            {!winner && onOverview && (
-              <button onClick={onOverview} className={`btn-game absolute bottom-[5%] left-3 z-50 grid h-12 w-12 place-items-center ${overview ? "bg-btn-yellow" : "bg-btn-purple"} text-white`} aria-label={overview ? "Volver al jugador" : "Ver a todos los jugadores desde arriba"} aria-pressed={overview} title="Vista de arriba">
+          ) : (
+          <>
+            {/* celular vertical: iconos grandes, + trago y ajustes en la esquina de arriba */}
+            <div className="absolute top-2 right-2 z-50 flex items-center gap-1.5">
+              <button onClick={() => setAddDrink(true)} className="btn-game relative grid h-12 w-12 place-items-center bg-btn-red text-white" aria-label="Agregar un trago a un jugador" title="+ Trago">
+                <BeerIcon size="1.9rem" />
+                {/* el + va dibujado (no es texto): el text-shadow del botón lo duplicaba y se veía doble */}
+                <span className="absolute -top-2 -right-2 grid h-6 w-6 place-items-center rounded-full border-2 border-ink bg-white">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#14260a" strokeWidth="4.5" strokeLinecap="round" aria-hidden="true">
+                    <path d="M12 4v16M4 12h16" />
+                  </svg>
+                </span>
+              </button>
+              <button onClick={() => setSettings(true)} className="btn-game grid h-12 w-12 place-items-center bg-btn-grey text-2xl text-white" aria-label="Ajustes de la partida" title="Ajustes">
+                <GearIcon />
+              </button>
+              <FullscreenButton />
+            </div>
+            {/* el marcador, un icono junto al dado, abajo a la derecha */}
+            <button onClick={() => setMenu(true)} className="btn-game absolute right-2 bottom-[5%] z-50 grid h-12 w-12 place-items-center bg-btn-blue text-white" aria-label="Marcador e historial" title="Marcador">
+              <svg viewBox="0 0 24 24" width="1.6rem" height="1.6rem" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 20V11h5v9M9.5 20V4h5v16M15 20v-6h5v6M3 20h18" />
+                </svg>
+            </button>
+            {/* el ojito: vista de arriba con todos los jugadores, abajo a la izquierda */}
+            {onOverview && (
+            <button onClick={onOverview} className={`btn-game absolute bottom-[5%] left-3 z-50 grid h-12 w-12 place-items-center ${overview ? "bg-btn-yellow" : "bg-btn-purple"} text-white`} aria-label={overview ? "Volver al jugador" : "Ver a todos los jugadores desde arriba"} aria-pressed={overview} title="Vista de arriba">
                 <svg viewBox="0 0 24 24" width="1.9rem" height="1.9rem" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
                   <circle cx="12" cy="12" r="3.2" />
@@ -196,6 +208,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               </button>
             )}
           </>
+          )
         ) : (
         <div className="absolute top-[2%] right-[1.5%] z-50 flex items-center gap-2">
           {extra}
