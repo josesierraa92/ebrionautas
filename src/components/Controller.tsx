@@ -211,7 +211,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
           )
         ) : (
         <>
-        <div className="absolute top-[2%] right-[1.5%] z-50 flex items-center gap-3">
+        <div className="absolute top-[2%] right-[1.5%] z-50 flex items-center gap-1.5">
           {extra}
           {!winner && (
             <button onClick={() => setAddDrink(true)} className="btn-game whitespace-nowrap bg-btn-red px-3.5 text-lg py-1.5 text-white" aria-label="Agregar un trago a un jugador">
