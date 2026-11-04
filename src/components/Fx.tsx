@@ -121,30 +121,13 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
   );
 }
 
-// el «confeti» del ganador es oscuro: murciélagos totalmente negros (sin color, borde ni neón) que bajan aleteando y chispas de fuego (brasas naranjas) que suben flotando
-const BAT_COLORS = ["#000"];
+// el «confeti» del ganador: chispas de fuego (brasas naranjas) que suben flotando
 const EMBER_COLORS = ["#ff5a14", "#ff8a1f", "#ffb830", "#ffd96a", "#ff3d0a"];
 
-/** Lluvia de murciélagos y brasas para el ganador. Posiciones deterministas: nada de Math.random al renderizar. */
+/** Brasas que suben para el ganador. Posiciones deterministas: nada de Math.random al renderizar. */
 export function Confetti() {
-  const mask = iconMaskUrl("bat", 96);
   return (
     <div className="pointer-events-none fixed inset-0 z-[60] overflow-hidden" aria-hidden>
-      {Array.from({ length: 26 }, (_, i) => {
-        const size = 30 + (i % 4) * 8;
-        return (
-          <span
-            key={`b${i}`}
-            className="confetti confetti-bat"
-            style={{ left: `${(i * 41) % 100}%`, animationDelay: `${(i % 13) * 0.35}s`, animationDuration: `${4 + (i % 5) * 0.7}s`, width: size, height: size }}
-          >
-            <span
-              className="block h-full w-full"
-              style={{ background: BAT_COLORS[i % BAT_COLORS.length], WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" }}
-            />
-          </span>
-        );
-      })}
       {Array.from({ length: 34 }, (_, i) => {
         const size = 4 + (i % 3) * 3;
         const color = EMBER_COLORS[i % EMBER_COLORS.length];
