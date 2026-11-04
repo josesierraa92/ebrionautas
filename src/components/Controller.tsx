@@ -222,14 +222,14 @@ export default function Controller({ code, room, secret, error, refresh, overlay
             MARCADOR
           </button>
           {onOverview && (
-            <button onClick={onOverview} className={`btn-game grid place-items-center ${overview ? "bg-btn-yellow" : "bg-btn-purple"} px-2.5 py-1.5 text-white`} aria-label={overview ? "Volver al jugador" : "Ver a todos los jugadores desde arriba"} aria-pressed={overview} title="Vista de arriba">
+            <button onClick={onOverview} className={`btn-game grid h-[46px] w-[46px] place-items-center ${overview ? "bg-btn-yellow" : "bg-btn-purple"} p-0 text-white`} aria-label={overview ? "Volver al jugador" : "Ver a todos los jugadores desde arriba"} aria-pressed={overview} title="Vista de arriba">
               <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
                 <circle cx="12" cy="12" r="3.2" />
               </svg>
             </button>
           )}
-          <button onClick={() => setSettings(true)} className="btn-game flex items-center justify-center bg-btn-grey px-3.5 text-lg py-1.5 text-white" aria-label="Ajustes de la partida" title="Ajustes">
+          <button onClick={() => setSettings(true)} className="btn-game grid h-[46px] w-[46px] place-items-center bg-btn-grey p-0 text-lg text-white" aria-label="Ajustes de la partida" title="Ajustes">
             <GearIcon />
           </button>
           <FullscreenButton />
