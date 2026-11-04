@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
 import CardPanel, { CardText } from "@/components/CardPanel";
 import Controller from "@/components/Controller";
@@ -11,6 +12,11 @@ import { api, controlKey, epochKey, saved, useRoom } from "@/lib/room-client";
 export default function ControlPage({ params }: { params: Promise<{ code: string }> }) {
   const code = use(params).code.toUpperCase();
   const { room, error, refresh } = useRoom(code);
+  const router = useRouter();
+  // una mesa online no tiene «celular de control»: cada jugador entra a la sala desde su aparato
+  useEffect(() => {
+    if (room?.mode === "online") router.replace(`/mesa/${code}`);
+  }, [room?.mode, code, router]);
   const [secret, setSecret] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);

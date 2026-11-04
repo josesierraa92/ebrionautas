@@ -45,6 +45,11 @@ type Props = {
   /** (overlay, celular vertical) El ojito: vista de arriba con todos los jugadores. */
   overview?: boolean;
   onOverview?: () => void;
+  /**
+   * Mesa online: este aparato es un jugador (`playerId`), solo tira y decide en su turno (el anfitrión puede hacerlo por cualquiera y maneja los
+   * ajustes y el fin de partida). Sin `seat` (mesa local) el control manda sobre todo.
+   */
+  seat?: { playerId: string; host: boolean };
 };
 
 function GearIcon() {
@@ -57,7 +62,7 @@ function GearIcon() {
   );
 }
 
-export default function Controller({ code, room, secret, error, refresh, overlay = false, locked = false, card = null, extra, narrow = false, overview = false, onOverview }: Props) {
+export default function Controller({ code, room, secret, error, refresh, overlay = false, locked = false, card = null, extra, narrow = false, overview = false, onOverview, seat }: Props) {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
@@ -78,7 +83,8 @@ export default function Controller({ code, room, secret, error, refresh, overlay
   };
 
   // PC: la barra espaciadora tira el dado (solo en el modo de pantalla completa y sin ventanas abiertas)
-  const canRoll = overlay && !!room.game && room.game.phase === "ROLL" && !room.game.winner && !busy && !locked && !settings && !addDrink && !menu;
+  const seatOk = !seat || seat.host || (!!room.game && currentPlayer(room.game).id === seat.playerId);
+  const canRoll = overlay && seatOk && !!room.game && room.game.phase === "ROLL" && !room.game.winner && !busy && !locked && !settings && !addDrink && !menu;
   useEffect(() => {
     if (!canRoll) return;
     const onKey = (e: KeyboardEvent) => {
@@ -115,13 +121,19 @@ export default function Controller({ code, room, secret, error, refresh, overlay
   const winner = game.players.find((p) => p.id === game.winner);
   const act = (a: Action) => run(() => sendAction(code, secret, a));
 
+  const isHost = !seat || seat.host;
+  const myTurn = !seat || me.id === seat.playerId;
+  const canAct = myTurn || !!seat?.host;
   if (overlay) {
     const rollNow = () => run(() => sendAction(code, secret, { type: "ROLL" }));
     const dim = locked || busy;
     const nextRound = !matchOver(game);
     const onNext = () => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true, ...(nextRound ? { next: true } : {}) }));
     const onExit = () => run(async () => { await api(`/api/rooms/${code}/reset`, { secret }); window.location.href = "/"; });
-    const winnerButtons = winner && !game.ranking && (narrow ? (
+    const winnerButtons = winner && !game.ranking && !isHost && (
+      <div className="absolute inset-x-0 bottom-[3%] z-50 flex justify-center px-3"><span className="rounded-full bg-black/60 px-4 py-1 font-display text-lg uppercase text-white">Esperando al anfitrión…</span></div>
+    );
+    const hostWinnerButtons = winner && !game.ranking && isHost && (narrow ? (
       // celular vertical: clasificatoria arriba a todo el ancho; abajo, reiniciar a la izquierda y salir a la derecha
       <div className="absolute inset-x-0 bottom-[3%] z-50 flex flex-col gap-3 px-4">
         <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game w-full bg-btn-purple py-3 text-2xl text-white">
@@ -156,9 +168,9 @@ export default function Controller({ code, room, secret, error, refresh, overlay
           winner ? (
             // juego terminado: abajo van los botones del final, así que los iconos se juntan en una columna arriba a la derecha
             <div className="absolute top-2 right-2 z-50 flex flex-col items-end gap-2">
-              <button onClick={() => setSettings(true)} className="btn-game grid h-12 w-12 place-items-center bg-btn-grey text-2xl text-white" aria-label="Ajustes de la partida" title="Ajustes">
+              {isHost && (<button onClick={() => setSettings(true)} className="btn-game grid h-12 w-12 place-items-center bg-btn-grey text-2xl text-white" aria-label="Ajustes de la partida" title="Ajustes">
                 <GearIcon />
-              </button>
+              </button>)}
               <button onClick={() => setMenu(true)} className="btn-game grid h-12 w-12 place-items-center bg-btn-blue text-white" aria-label="Marcador e historial" title="Marcador">
                 <svg viewBox="0 0 24 24" width="1.6rem" height="1.6rem" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M4 20V11h5v9M9.5 20V4h5v16M15 20v-6h5v6M3 20h18" />
@@ -187,9 +199,9 @@ export default function Controller({ code, room, secret, error, refresh, overlay
                   </svg>
                 </span>
               </button>
-              <button onClick={() => setSettings(true)} className="btn-game grid h-12 w-12 place-items-center bg-btn-grey text-2xl text-white" aria-label="Ajustes de la partida" title="Ajustes">
+              {isHost && (<button onClick={() => setSettings(true)} className="btn-game grid h-12 w-12 place-items-center bg-btn-grey text-2xl text-white" aria-label="Ajustes de la partida" title="Ajustes">
                 <GearIcon />
-              </button>
+              </button>)}
               <FullscreenButton />
             </div>
             {/* el marcador, un icono junto al dado, abajo a la derecha */}
@@ -229,16 +241,16 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               </svg>
             </button>
           )}
-          <button onClick={() => setSettings(true)} className="btn-game grid h-[46px] w-[46px] place-items-center bg-btn-grey p-0 text-lg text-white" aria-label="Ajustes de la partida" title="Ajustes">
+          {isHost && (<button onClick={() => setSettings(true)} className="btn-game grid h-[46px] w-[46px] place-items-center bg-btn-grey p-0 text-lg text-white" aria-label="Ajustes de la partida" title="Ajustes">
             <GearIcon />
-          </button>
+          </button>)}
           <FullscreenButton />
         </div>
         </>
         )}
 
         {/* el dado: abajo a la izquierda (en celular vertical, abajo en el centro), lejos de la tarjeta de la casilla */}
-        {!winner && game.phase === "ROLL" && (
+        {!winner && game.phase === "ROLL" && canAct && (
           <div className={`absolute bottom-[3%] z-50 ${narrow ? "left-1/2 -translate-x-1/2" : "left-[2%]"}`} style={{ width: "clamp(88px, 19vmin, 190px)" }}>
             <button
               onClick={rollNow}
@@ -247,15 +259,22 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               className={`flex w-full flex-col items-center gap-1 transition-opacity ${dim ? "opacity-50" : "dice-pulse"}`}
             >
               <Die value={game.lastRoll ?? 1} className="w-full drop-shadow-[0_6px_0_rgba(0,0,0,.35)]" />
-              <span className="whitespace-nowrap rounded-full bg-black/60 px-3 py-0.5 font-display text-sm uppercase tracking-wide text-white">{dim ? "…" : narrow ? "Toca para tirar" : "Tirar · espacio"}</span>
+              <span className="whitespace-nowrap rounded-full bg-black/60 px-3 py-0.5 font-display text-sm uppercase tracking-wide text-white">{dim ? "…" : seat && !myTurn ? `Tirar por ${me.name}` : narrow ? "Toca para tirar" : "Tirar · espacio"}</span>
             </button>
           </div>
         )}
 
+        {/* mesa online: no es tu turno */}
+        {!winner && !canAct && (
+          <div className={`absolute bottom-[3%] z-50 ${narrow ? "inset-x-0 flex justify-center px-3" : "left-[2%]"}`}>
+            <span className="rounded-full bg-black/60 px-4 py-1.5 font-display text-lg uppercase text-white">{game.decision ? `${me.name} está decidiendo…` : `Le toca a ${me.name}`}</span>
+          </div>
+        )}
         {winnerButtons}
+        {hostWinnerButtons}
 
         {/* decisión: la tarjeta y lo que hay que marcar, en una ventana */}
-        {!winner && game.decision && !(overlay && locked) && (() => {
+        {!winner && game.decision && canAct && !(overlay && locked) && (() => {
           // una sola tarjeta: la de la casilla, con lo que hay que decidir dentro (no una tarjeta dentro de otra)
           const c = card ? cardContent(game, card.n, card.playerId, card.result) : null;
           const body = (
@@ -289,7 +308,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
             <ErrorBox text={actionError} />
           </div>
         )}
-        {winner && game.ranking && <Clasificatoria game={game} onClose={() => act({ type: "RANKING", on: false })} />}
+        {winner && game.ranking && <Clasificatoria game={game} onClose={isHost ? () => act({ type: "RANKING", on: false }) : undefined} />}
         {addDrink && !winner && (
           <CardPanel
             kicker="Un trago más"
@@ -357,9 +376,9 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               + TRAGO
             </button>
           )}
-          <button onClick={() => setSettings(true)} className="btn-game flex items-center justify-center bg-btn-grey px-2.5 py-1 text-base text-white" aria-label="Ajustes de la partida" title="Ajustes">
+          {isHost && (<button onClick={() => setSettings(true)} className="btn-game flex items-center justify-center bg-btn-grey px-2.5 py-1 text-base text-white" aria-label="Ajustes de la partida" title="Ajustes">
             <GearIcon />
-          </button>
+          </button>)}
         </div>
         <div className="flex items-center gap-2">
           <FullscreenButton />
@@ -376,9 +395,9 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game flex-1 bg-btn-blue py-3 text-xl text-white">
                 VER CLASIFICATORIA
               </button>
-              <button onClick={() => setSettings(true)} className="btn-game bg-btn-grey px-4 py-3 text-xl text-white" aria-label="Ajustes de la partida">
+              {isHost && (<button onClick={() => setSettings(true)} className="btn-game bg-btn-grey px-4 py-3 text-xl text-white" aria-label="Ajustes de la partida">
                 ⚙️
-              </button>
+              </button>)}
             </div>
             {!matchOver(game) && (
               <button

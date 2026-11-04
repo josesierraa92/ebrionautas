@@ -37,6 +37,9 @@ export const saved = {
 
 export const hostKey = (code: string) => `ebrionautas:host:${code}`;
 export const controlKey = (code: string) => `ebrionautas:control:${code}`;
+/** Online: la clave y el id con que este aparato se sentó en la sala (cada aparato es un jugador). */
+export const memberKey = (code: string) => `ebrionautas:member:${code}`;
+export type SavedMember = { secret: string; id: string };
 /** La «época» del control que tomó este celular (`PublicRoom.controlEpoch`): si la mesa ya va por otra, el control pasó a otro celular. */
 export const epochKey = (code: string) => `ebrionautas:epoch:${code}`;
 

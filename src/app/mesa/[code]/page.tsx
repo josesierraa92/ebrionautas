@@ -15,7 +15,8 @@ import Clasificatoria from "@/components/Clasificatoria";
 import { PanelCard, RuleCard, TurnChip } from "@/components/TvCards";
 import Winner from "@/components/Winner";
 import { currentPlayer, type Decision } from "@/game/engine";
-import { api, controlKey, epochKey, hostKey, saved, useRoom } from "@/lib/room-client";
+import OnlineLobby from "@/components/OnlineLobby";
+import { api, controlKey, epochKey, hostKey, memberKey, saved, useRoom, type SavedMember } from "@/lib/room-client";
 import { useAutoUpdate } from "@/lib/useAutoUpdate";
 import { usePublishedLayout } from "@/lib/usePublishedBoard";
 import { useGameFx } from "@/lib/useGameFx";
@@ -39,6 +40,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const [controlSecret, setControlSecret] = useState<string | null>(null);
   const [controlEpoch, setControlEpoch] = useState<number | null>(null);
   const triedClaim = useRef(false);
+  const [member, setMember] = useState<SavedMember | null>(null); // mesa online: con qué clave se sentó este aparato
   const [narrow, setNarrow] = useState(false); // pantalla estrecha (celular): lo que se dibuja sobre el tablero va más chico
   const [portrait, setPortrait] = useState(false); // celular vertical: la tarjeta va casi a todo el ancho y el dado abajo en el centro
   const fx = useGameFx(room?.game ?? null);
@@ -80,6 +82,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     onMp();
     mq.addEventListener("change", onMq);
     mp.addEventListener("change", onMp);
+    setMember(saved.get<SavedMember>(memberKey(code)));
     setControlSecret(saved.get<string>(controlKey(code)));
     setControlEpoch(saved.get<number>(epochKey(code)));
     return () => {
@@ -93,12 +96,12 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     if (!solo || !room || controlSecret || room.hasController || triedClaim.current) return;
     triedClaim.current = true;
     api<{ secret: string; epoch: number }>(`/api/rooms/${code}/control`, {})
-      .then((r) => {
+      .then(async (r) => {
         saved.set(controlKey(code), r.secret);
         saved.set(epochKey(code), r.epoch);
+        await refresh(); // primero la mesa ya con control y después la clave: si no, parecería que «te quitaron el control»
         setControlSecret(r.secret);
         setControlEpoch(r.epoch);
-        return refresh();
       })
       .catch(() => {});
   }, [solo, room, controlSecret, code, refresh]);
@@ -110,7 +113,12 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     saved.set(controlKey(code), null);
     setControlSecret(null);
   }, [lostControl, code]);
-  const soloActive = solo && !!room && !!controlSecret && !lostControl;
+  const soloActive = solo && !!room && !!controlSecret && !lostControl && room.mode !== "online";
+  // mesa online con la partida en marcha: si este aparato está sentado, juega con el mismo tablero a pantalla completa y su dado (solo en su turno)
+  const mySeat = room?.mode === "online" && member ? room.members.find((m) => m.id === member.id) : undefined;
+  const onlineActive = !!room?.game && !!mySeat?.playerId;
+  const playActive = soloActive || onlineActive;
+  const playSecret = onlineActive ? member!.secret : controlSecret!;
 
   const togglePanel = () => {
     saved.set(PANEL_KEY, !panelOpen);
@@ -158,7 +166,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   ) : null;
 
   // un solo aparato: mientras toma el control se espera un instante
-  if (solo && !soloActive && !room.hasController) return <Centered>Preparando la mesa…</Centered>;
+  if (solo && room.mode !== "online" && !soloActive && !room.hasController) return <Centered>Preparando la mesa…</Centered>;
 
   if (soloActive && (room.status === "LOBBY" || !room.game)) {
     return (
@@ -172,6 +180,11 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
         {claimPopup}
       </>
     );
+  }
+
+  // mesa online: sala de espera (cada quien entra con su aparato; el anfitrión empieza)
+  if (room.mode === "online" && (room.status === "LOBBY" || !room.game)) {
+    return <OnlineLobby code={code} room={room} hostSecret={hostSecret} member={member} onMember={setMember} refresh={refresh} />;
   }
 
   if (room.status === "LOBBY" || !room.game) {
@@ -208,6 +221,12 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
               </div>
             </div>
           </CardPanel>
+        )}
+        {/* local sin celular: la misma pantalla es el control (jugadores, dado, decisiones) */}
+        {!room.hasController && (
+          <a href={`/mesa/${code}?solo=1`} className="btn-game bg-btn-yellow text-white" style={{ fontSize: "max(1.1rem, min(1.8vw, 2.8vh))", padding: "0.6em 1.4em" }}>
+            JUGAR SIN CELULAR, EN ESTA PANTALLA
+          </a>
         )}
         {/* volver al inicio (en el celular no había cómo salir de esta pantalla) */}
         <Link href="/" className="font-display uppercase underline" style={{ color: "#bffa58", fontSize: "max(1rem, min(1.5vw, 2.4vh))", letterSpacing: "0.03em" }}>
@@ -246,13 +265,13 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   const overlays = (withCard: boolean) => (
     <>
       {/* hasta que llega el diseño publicado no se dibuja: con los valores de serie salía un instante la estrella en su sitio de antes y luego saltaba al configurado */}
-      {published !== undefined && <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} scale={(ui.chip / 100) * (soloActive && narrow ? 0.7 : 1)} chip={published?.chip} topAlign={soloActive && narrow} />}
-      {withCard && card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} scale={ui.card / 100} wide={soloActive && portrait} />}
+      {published !== undefined && <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} scale={(ui.chip / 100) * (playActive && narrow ? 0.7 : 1)} chip={published?.chip} topAlign={playActive && narrow} />}
+      {withCard && card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} scale={ui.card / 100} wide={playActive && portrait} />}
     </>
   );
 
   // Un solo aparato: el tablero a pantalla completa, como en la TV, con el control flotando encima (dado, decisiones, botones)
-  if (soloActive) {
+  if (playActive) {
     return (
       <main className="fixed inset-0">
         <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare overview={overview} className="h-full">
@@ -266,7 +285,8 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
             card={card}
             code={code}
             room={room}
-            secret={controlSecret!}
+            secret={playSecret}
+            seat={onlineActive ? { playerId: mySeat!.playerId!, host: !!mySeat!.host } : undefined}
             error={error}
             refresh={refresh}
           />

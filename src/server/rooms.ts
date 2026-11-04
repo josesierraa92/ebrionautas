@@ -4,7 +4,7 @@
 import { defaultAvatar } from "@/game/avatar";
 import { setLists } from "@/game/content";
 import { loadLists } from "./lists";
-import { applyAction, createGame, matchOver, type Action, type GameState, type Gender } from "@/game/engine";
+import { applyAction, createGame, currentPlayer, matchOver, type Action, type GameState, type Gender } from "@/game/engine";
 import { PLAYER_COLORS } from "@/game/tileStyle";
 import { SERIOUS_ROLLS, track } from "./stats";
 import { getStore } from "./store";
@@ -14,8 +14,18 @@ const CLAIM_REQUEST_TTL = 2 * 60 * 1000; // el aviso «otro celular quiere el co
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // sin I ni O para no confundir
 export const MAX_PLAYERS = PLAYER_COLORS.length;
 
+/** Mesa local: un anfitrión maneja la partida (pantalla sola, o pantalla + un celular). Online: cada jugador entra con su aparato y tira en su turno. */
+export type RoomMode = "local" | "online";
+
+/** Quien está sentado en una mesa online. `secret` nunca sale del servidor. */
+type Member = { id: string; secret: string; name: string; gender: Gender; look?: number; host?: boolean; playerId?: string };
+export type PublicMember = Omit<Member, "secret">;
+
 type Room = {
   code: string;
+  mode?: RoomMode; // sin dato = mesa local (las de antes)
+  members?: Member[]; // online
+  cups?: number;
   hostSecret: string; // la TV que creó la mesa
   controllerSecret: string | null; // el celular que la controla
   epoch?: number; // cuántas veces se ha tomado el control: el celular que lo tenía se entera de que ya no es suyo
@@ -27,6 +37,9 @@ type Room = {
 
 export type PublicRoom = {
   code: string;
+  mode: RoomMode;
+  /** Online: quién está en la sala (sin claves). Una vez empezada la partida, `playerId` dice qué jugador es cada uno. */
+  members: PublicMember[];
   status: Room["status"];
   hasController: boolean;
   /** Cuántas veces se ha tomado el control de esta mesa (no es un secreto): si no coincide con el que guardó un celular, ese celular ya no controla. */
@@ -58,6 +71,8 @@ export function normalizeCode(code: string) {
 export function toPublic(room: Room): PublicRoom {
   return {
     code: room.code,
+    mode: room.mode ?? "local",
+    members: (room.members ?? []).map(({ secret: _s, ...m }) => m),
     status: room.status,
     hasController: room.controllerSecret !== null,
     controlEpoch: room.epoch ?? 0,
@@ -103,16 +118,100 @@ function assertController(room: Room, who: string) {
     throw new RoomError("Este celular no controla la mesa.", 403);
 }
 
+const isOnline = (room: Room) => room.mode === "online";
+
+function memberOf(room: Room, who: string): Member | undefined {
+  return who ? room.members?.find((m) => m.secret === who) : undefined;
+}
+
+/** Online: el anfitrión es quien creó la sala (su clave de creador al entrar). */
+function assertHost(room: Room, who: string) {
+  if (!memberOf(room, who)?.host) throw new RoomError("Solo el anfitrión puede hacer eso.", 403);
+}
+
+/** Online: entra a la sala. Quien trae la clave de creador es el anfitrión. En partida ya no se puede entrar. */
+export async function joinRoom(code: string, player: NewPlayer, hostSecret?: string): Promise<{ secret: string; id: string }> {
+  const name = String(player?.name ?? "").trim().slice(0, 16);
+  if (!name) throw new RoomError("Escribe tu nombre.");
+  if (player?.gender !== "hombre" && player?.gender !== "mujer") throw new RoomError("Elige hombre o mujer.");
+  return withRoom(code, (room) => {
+    if (!isOnline(room)) throw new RoomError("Esta mesa es local: se maneja desde la pantalla de la mesa.", 409);
+    if (room.status !== "LOBBY") throw new RoomError("La partida ya empezó.", 409);
+    const members = (room.members ??= []);
+    if (members.length >= MAX_PLAYERS) throw new RoomError(`La sala está llena (máximo ${MAX_PLAYERS}).`, 409);
+    if (members.some((m) => m.name.toLowerCase() === name.toLowerCase())) throw new RoomError("Ya hay alguien con ese nombre en la sala.", 409);
+    const host = !!hostSecret && hostSecret === room.hostSecret && !members.some((m) => m.host);
+    const same = members.filter((m) => m.gender === player.gender).length;
+    const look = Number.isInteger(player.look) && player.look! >= 0 && player.look! < 6 ? player.look : same % 6;
+    const member: Member = { id: crypto.randomUUID().slice(0, 8), secret: secret(), name, gender: player.gender, look, ...(host ? { host: true } : {}) };
+    members.push(member);
+    return { secret: member.secret, id: member.id };
+  });
+}
+
+/** Online: el anfitrión saca a alguien de la sala (solo en la sala de espera) o alguien se va por su cuenta. */
+export async function leaveRoom(code: string, who: string, memberId?: string): Promise<void> {
+  await withRoom(code, (room) => {
+    if (!isOnline(room)) throw new RoomError("Esta mesa es local.", 409);
+    if (room.status !== "LOBBY") throw new RoomError("La partida ya empezó.", 409);
+    const me = memberOf(room, who);
+    if (!me) throw new RoomError("No estás en esta sala.", 403);
+    const target = memberId && memberId !== me.id ? room.members!.find((m) => m.id === memberId) : me;
+    if (!target) return;
+    if (target.id !== me.id && !me.host) throw new RoomError("Solo el anfitrión puede sacar a alguien.", 403);
+    room.members = room.members!.filter((m) => m.id !== target.id);
+    if (target.host) room.members = room.members.map((m, i) => (i === 0 ? { ...m, host: true } : m)); // si se va el anfitrión, lo hereda el más antiguo
+  });
+}
+
+/** Online: el anfitrión empieza con quienes están en la sala (mínimo 2). */
+export async function startOnline(code: string, who: string, cups = 1): Promise<void> {
+  const goal = [1, 2, 3].includes(cups) ? cups : 1;
+  let count = 0;
+  await withRoom(code, (room) => {
+    if (!isOnline(room)) throw new RoomError("Esta mesa es local.", 409);
+    assertHost(room, who);
+    if (room.status !== "LOBBY") throw new RoomError("La partida ya empezó.", 409);
+    const members = room.members ?? [];
+    if (members.length < 2) throw new RoomError("Hacen falta al menos 2 jugadores en la sala.");
+    room.cups = goal;
+    room.game = createGame(
+      members.map((m, i) => ({ name: m.name, gender: m.gender, look: m.look, color: PLAYER_COLORS[i], avatar: defaultAvatar(i, PLAYER_COLORS[i]) })),
+      goal,
+    );
+    members.forEach((m, i) => (m.playerId = `p${i + 1}`));
+    room.status = "PLAYING";
+    count = members.length;
+  });
+  await track("partida");
+  await track("jugadores", count);
+}
+
+/** Acciones que solo hace el anfitrión en una mesa online (manejar la partida). */
+const HOST_ONLY = new Set<Action["type"]>(["END_GAME", "REMOVE_PLAYER", "PAUSE_PLAYER", "REMOVE_DRINK", "RANKING"]);
+/** Acciones que cualquiera de la mesa puede hacer en cualquier momento (un trago suelto). */
+const ANYONE = new Set<Action["type"]>(["ADD_DRINK"]);
+
+function assertActor(room: Room, who: string, action: Action, game: GameState) {
+  const me = memberOf(room, who);
+  if (!me) throw new RoomError("No estás en esta mesa.", 403);
+  if (ANYONE.has(action.type)) return;
+  if (HOST_ONLY.has(action.type)) return assertHost(room, who);
+  // el resto (tirar, decidir, siguiente turno…): solo a quien le toca; el anfitrión puede hacerlo por cualquiera (si a alguien se le acabó la batería)
+  if (me.host || me.playerId === currentPlayer(game).id) return;
+  throw new RoomError("No es tu turno.", 403);
+}
+
 export async function getRoom(code: string): Promise<PublicRoom> {
   return toPublic(await load(code));
 }
 
-export async function createRoom(): Promise<{ code: string; hostSecret: string }> {
+export async function createRoom(mode: RoomMode = "local"): Promise<{ code: string; hostSecret: string }> {
   const store = getStore();
   for (let i = 0; i < 10; i++) {
     const code = Array.from({ length: 4 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join("");
     if (await store.get(key(code))) continue;
-    const room: Room = { code, hostSecret: secret(), controllerSecret: null, status: "LOBBY", game: null, version: 0 };
+    const room: Room = { code, mode: mode === "online" ? "online" : "local", members: [], hostSecret: secret(), controllerSecret: null, status: "LOBBY", game: null, version: 0 };
     await save(room);
     await track("mesa");
     return { code, hostSecret: room.hostSecret };
@@ -165,6 +264,7 @@ export async function startRoom(code: string, who: string, players: NewPlayer[],
   if (new Set(clean.map((p) => p.name.toLowerCase())).size !== clean.length) throw new RoomError("Hay nombres repetidos.");
 
   await withRoom(code, (room) => {
+    if (isOnline(room)) throw new RoomError("En una mesa online empieza el anfitrión desde la sala de espera.", 409);
     assertController(room, who);
     if (room.status !== "LOBBY") throw new RoomError("La partida ya empezó.", 409);
     room.game = createGame(
@@ -183,7 +283,8 @@ export async function startRoom(code: string, who: string, players: NewPlayer[],
  */
 export async function resetRoom(code: string, who: string, same = false, nextRound = false): Promise<void> {
   const started = await withRoom(code, (room) => {
-    assertController(room, who);
+    if (isOnline(room)) assertHost(room, who);
+    else assertController(room, who);
     if (same && room.game) {
       // siguiente ronda (modo de varias copas): mismos jugadores con sus copas y lo bebido; si no, partida nueva con las mismas copas por ganar
       room.game = createGame(
@@ -196,6 +297,7 @@ export async function resetRoom(code: string, who: string, same = false, nextRou
     }
     room.game = null;
     room.status = "LOBBY";
+    room.members?.forEach((m) => delete m.playerId);
     return 0;
   });
   if (started > 0) {
@@ -208,8 +310,9 @@ export async function actInRoom(code: string, who: string, action: Action): Prom
   // las listas que dejó el admin (categorías de La Ouija, trabalenguas y apodos: el motor las usa al caer alguien en la casilla)
   if (action.type === "ROLL" || action.type === "DUEL_ROLL") setLists(await loadLists().catch(() => null));
   const events = await withRoom(code, (room) => {
-    assertController(room, who);
+    if (!isOnline(room)) assertController(room, who);
     if (!room.game) throw new RoomError("La partida no ha empezado.", 409);
+    if (isOnline(room)) assertActor(room, who, action, room.game);
     const prev = room.game;
     const next = applyAction(prev, action);
     if (next === prev) throw new RoomError("Esa jugada no es válida ahora.", 409);
