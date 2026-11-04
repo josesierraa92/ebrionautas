@@ -285,7 +285,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               inline={!narrow}
               unit="min(17px, 2.7dvh)"
               width={22}
-              maxH="none"
+              maxH={narrow ? "92dvh" : "calc(100dvh - 2rem)"}
               z="z-50"
               label="Decisión"
               kicker={card ? `Casilla ${card.n}` : `Turno de ${me.name}`}
