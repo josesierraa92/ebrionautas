@@ -11,6 +11,7 @@
   --color-btn-grey: #8a9bb5;
   --color-btn-special: #e53fd6;
   --color-btn-purple: #6a3fd0;
+  --color-btn-pink: #f01f7a; /* el rosado de «SED» del logo */
   --font-display: var(--font-lilita), system-ui, sans-serif;
   --font-sans: var(--font-lilita), system-ui, sans-serif;
 }

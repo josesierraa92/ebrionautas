@@ -223,7 +223,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
         )}
         {/* local sin celular: la misma pantalla es el control (jugadores, dado, decisiones) */}
         {!room.hasController && (
-          <a href={`/mesa/${code}?solo=1`} className="btn-game bg-btn-yellow text-white" style={{ fontSize: "max(1rem, min(1.5vw, 2.3vh))", padding: "0.5em 1.3em" }}>
+          <a href={`/mesa/${code}?solo=1`} className="btn-game bg-btn-pink text-white" style={{ fontSize: "max(1rem, min(1.5vw, 2.3vh))", padding: "0.5em 1.3em" }}>
             JUGAR SIN CELULAR, EN ESTA PANTALLA
           </a>
         )}
