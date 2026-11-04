@@ -50,6 +50,8 @@ type Props = {
    * ajustes y el fin de partida). Sin `seat` (mesa local) el control manda sobre todo.
    */
   seat?: { playerId: string; host: boolean };
+  /** Alta de jugadores: dirección del botón «Volver» (solo en el modo «un solo dispositivo»). */
+  backHref?: string;
 };
 
 function GearIcon() {
@@ -62,7 +64,7 @@ function GearIcon() {
   );
 }
 
-export default function Controller({ code, room, secret, error, refresh, overlay = false, locked = false, card = null, extra, narrow = false, overview = false, onOverview, seat }: Props) {
+export default function Controller({ code, room, secret, error, refresh, overlay = false, locked = false, card = null, extra, narrow = false, overview = false, onOverview, seat, backHref }: Props) {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
@@ -104,6 +106,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
         <Setup
           busy={busy}
           code={code}
+          backHref={backHref}
           onStart={(players: { name: string; gender: Gender; look?: number }[], cups: number) => run(() => api(`/api/rooms/${code}/start`, { secret, players, cups }))}
         />
         {actionError && (

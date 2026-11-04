@@ -172,10 +172,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
   if (soloActive && (room.status === "LOBBY" || !room.game)) {
     return (
       <>
-        <Controller code={code} room={room} secret={controlSecret!} error={error} refresh={refresh} />
-        <p className="pb-6 text-center">
-          <BackButton href="/" size="0.95rem" />
-        </p>
+        <Controller code={code} room={room} secret={controlSecret!} error={error} refresh={refresh} backHref="/" />
         {claimPopup}
       </>
     );
