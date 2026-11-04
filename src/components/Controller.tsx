@@ -170,7 +170,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               <FullscreenButton />
             </div>
             {/* el marcador, un icono junto al dado (con el juego ganado sube a la fila de arriba para no chocar con los botones del final) */}
-            <button onClick={() => setMenu(true)} className={`btn-game absolute right-3 z-50 ${winner ? "top-[4.5rem]" : "bottom-[5%]"} grid h-12 w-12 place-items-center bg-btn-blue text-white`} aria-label="Marcador e historial" title="Marcador">
+            <button onClick={() => setMenu(true)} className={`btn-game absolute right-2 z-50 ${winner ? "top-[4.5rem]" : "bottom-[5%]"} grid h-12 w-12 place-items-center bg-btn-blue text-white`} aria-label="Marcador e historial" title="Marcador">
               <svg viewBox="0 0 24 24" width="1.6rem" height="1.6rem" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M4 20V11h5v9M9.5 20V4h5v16M15 20v-6h5v6M3 20h18" />
               </svg>
