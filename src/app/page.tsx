@@ -28,7 +28,7 @@ export default function Home() {
 
       <div className="relative z-10 mx-auto flex w-full max-w-md flex-col items-center gap-5 px-4 pb-8 text-center portrait:pb-[max(11rem,calc(15dvh+3.5rem))] landscape:max-w-5xl landscape:gap-2 landscape:pb-3">
         <HomeActions />
-        <p className="text-xs text-white/60 portrait:absolute portrait:inset-x-0 portrait:bottom-3 portrait:px-4">
+        <p className="text-xs text-white/60 portrait:absolute portrait:inset-x-0 portrait:bottom-[max(1.75rem,3.5dvh)] portrait:px-4">
           Juego para mayores de 18 años. Bebe con moderación. · <LegalLinks />
         </p>
       </div>
