@@ -20,11 +20,17 @@ function fit(el: HTMLElement) {
   range.selectNodeContents(el);
   // un botón que se ajusta solo a su texto (ancho automático) no necesita achicar la letra: ya mide lo que su texto pide
   const natural = range.getBoundingClientRect().width + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
-  if (el.offsetWidth <= natural + 2) return;
+  // el ancho que de verdad tiene para su texto: el del botón, pero nunca más que el sitio libre del contenedor (un botón de ancho automático
+  // con un texto largo se salía de la tarjeta y esta quedaba con barra horizontal)
+  const parent = el.parentElement;
+  const pcs = parent ? getComputedStyle(parent) : null;
+  const room = parent && pcs ? parent.clientWidth - (parseFloat(pcs.paddingLeft) || 0) - (parseFloat(pcs.paddingRight) || 0) : Infinity;
+  const avail = () => Math.min(el.clientWidth, room);
+  if (Math.abs(el.offsetWidth - natural) <= 2 && el.offsetWidth <= room + 1) return;
   // si la tarjeta está entrando con una animación de escala, el texto medido en pantalla sale más chico que el botón: se mide sin esa escala
   const tooWide = () => {
     const scale = (el.getBoundingClientRect().width / (el.offsetWidth || 1)) || 1;
-    return range.getBoundingClientRect().width / scale + 4 > el.clientWidth - 2 * margin;
+    return range.getBoundingClientRect().width / scale + 4 > avail() - 2 * margin;
   };
   if (!tooWide()) return;
   let size = parseFloat(cs.fontSize);
