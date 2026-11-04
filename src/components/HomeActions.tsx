@@ -24,7 +24,9 @@ export default function HomeActions() {
     try {
       const room = await api<{ code: string; hostSecret: string }>("/api/rooms", { mode });
       saved.set(hostKey(room.code), room.hostSecret);
-      router.push(`/mesa/${room.code}`);
+      // Local desde un celular: no tiene sentido enseñar el QR para «conectar otro celular»; se juega directo en este mismo celular
+      const phone = mode === "local" && window.matchMedia("(pointer: coarse) and (max-width: 900px)").matches;
+      router.push(`/mesa/${room.code}${phone ? "?solo=1" : ""}`);
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
