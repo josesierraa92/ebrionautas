@@ -121,27 +121,27 @@ export default function Controller({ code, room, secret, error, refresh, overlay
     const winnerButtons = winner && !game.ranking && (narrow ? (
       // celular vertical: clasificatoria arriba a todo el ancho; abajo, reiniciar a la izquierda y salir a la derecha
       <div className="absolute inset-x-0 bottom-[3%] z-50 flex flex-col gap-3 px-4">
-        <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game w-full bg-btn-special py-3 text-2xl text-white">
+        <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game w-full bg-btn-purple py-3 text-2xl text-white">
           CLASIFICATORIA
         </button>
         <div className="flex gap-3">
           <button disabled={busy} onClick={onNext} className="btn-game flex-1 bg-btn-green py-3 text-2xl text-white">
             {nextRound ? "SIGUIENTE RONDA" : "REINICIAR"}
           </button>
-          <button disabled={busy} onClick={onExit} className="btn-game flex-1 bg-btn-grey py-3 text-2xl text-white">
+          <button disabled={busy} onClick={onExit} className="btn-game flex-1 bg-btn-red py-3 text-2xl text-white">
             SALIR
           </button>
         </div>
       </div>
     ) : (
       <div className="absolute inset-x-0 bottom-[3%] z-50 flex flex-wrap items-center justify-center gap-3 px-3">
-        <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game bg-btn-special px-5 py-3 text-xl text-white">
+        <button onClick={() => act({ type: "RANKING", on: true })} className="btn-game bg-btn-purple px-5 py-3 text-xl text-white">
           VER CLASIFICATORIA
         </button>
         <button disabled={busy} onClick={onNext} className="btn-game bg-btn-green px-5 py-3 text-xl text-white">
           {nextRound ? "SIGUIENTE RONDA ▶" : "REINICIAR (MISMOS JUGADORES)"}
         </button>
-        <button disabled={busy} onClick={onExit} className="btn-game bg-btn-grey px-5 py-3 text-xl text-white">
+        <button disabled={busy} onClick={onExit} className="btn-game bg-btn-red px-5 py-3 text-xl text-white">
           SALIR
         </button>
       </div>
