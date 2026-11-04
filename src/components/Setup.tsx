@@ -142,7 +142,7 @@ export default function Setup({ onStart, busy = false, code, copas = true, backH
               </div>
               {players.length > 2 && (
                 <button aria-label={`Quitar jugador ${i + 1}`} onClick={() => setPlayers(players.filter((_, j) => j !== i))} className="btn-game size-10 shrink-0 bg-btn-red text-white">
-                  ✕
+                  <svg viewBox="0 0 24 24" className="mx-auto size-6" fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" aria-hidden><path d="M5 5l14 14M19 5L5 19" /></svg>
                 </button>
               )}
             </li>
