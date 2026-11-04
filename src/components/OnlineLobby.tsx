@@ -2,6 +2,7 @@
 
 // Sala de espera de una mesa online: cada jugador entra con su aparato (nombre + hombre/mujer), todos ven quién ya está y el anfitrión
 // da «¡A levantarse!» cuando estén todos. Usa el diseño de las tarjetas (`CardPanel`).
+import BackButton from "@/components/BackButton";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useState } from "react";
@@ -177,9 +178,7 @@ export default function OnlineLobby({ code, room, hostSecret, member, onMember, 
         </CardPanel>
       )}
 
-      <Link href="/" className="font-display uppercase underline" style={{ color: "#bffa58", fontSize: "max(1rem, min(1.5vw, 2.4vh))", letterSpacing: "0.03em" }}>
-        ← Volver
-      </Link>
+      <BackButton href="/" />
     </main>
   );
 }

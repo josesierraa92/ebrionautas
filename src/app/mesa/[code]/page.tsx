@@ -1,5 +1,6 @@
 "use client";
 
+import BackButton from "@/components/BackButton";
 import CardPanel, { CardText, GREEN } from "@/components/CardPanel";
 import Controller from "@/components/Controller";
 import Logo from "@/components/Logo";
@@ -173,9 +174,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
       <>
         <Controller code={code} room={room} secret={controlSecret!} error={error} refresh={refresh} />
         <p className="pb-6 text-center">
-          <Link href="/" className="font-display uppercase underline" style={{ color: "#bffa58", letterSpacing: "0.03em" }}>
-            ← Volver
-          </Link>
+          <BackButton href="/" size="1.15rem" />
         </p>
         {claimPopup}
       </>
@@ -229,9 +228,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
           </a>
         )}
         {/* volver al inicio (en el celular no había cómo salir de esta pantalla) */}
-        <Link href="/" className="font-display uppercase underline" style={{ color: "#bffa58", fontSize: "max(1rem, min(1.5vw, 2.4vh))", letterSpacing: "0.03em" }}>
-          ← Volver
-        </Link>
+        <BackButton href="/" />
         {claimPopup}
       </main>
     );

@@ -1,5 +1,6 @@
 "use client";
 
+import BackButton from "@/components/BackButton";
 import { characterOf } from "@/game/characters";
 import { useState } from "react";
 import CardPanel, { CardText } from "@/components/CardPanel";
@@ -139,9 +140,7 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
               <button disabled={busy} onClick={start} className="btn-game bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey">
                 {busy ? "LEVANTÁNDOSE…" : "¡A LEVANTARSE!"}
               </button>
-              <button onClick={() => setStep(1)} disabled={busy} className="font-display text-sm uppercase underline" style={{ color: "#bffa58" }}>
-                ← Atrás
-              </button>
+              <BackButton label="Atrás" onClick={() => setStep(1)} disabled={busy} size="1.15rem" className="self-center" />
             </>
           }
         >
