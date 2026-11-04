@@ -47,8 +47,8 @@ export default function FullscreenButton() {
 
   return (
     <>
-      <button onClick={toggle} aria-label={full ? "Salir de pantalla completa" : "Pantalla completa"} className="btn-game grid shrink-0 place-items-center bg-btn-grey px-2 py-1 text-white">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <button onClick={toggle} aria-label={full ? "Salir de pantalla completa" : "Pantalla completa"} className="btn-game grid shrink-0 place-items-center bg-btn-grey px-2 py-1 text-white md:px-3 md:py-2">
+        <svg viewBox="0 0 24 24" width="28" height="28" className="h-[22px] w-[22px] md:h-7 md:w-7" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           {full ? <path d="M9 3v6H3M15 3v6h6M9 21v-6H3M15 21v-6h6" /> : <path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6" />}
         </svg>
       </button>

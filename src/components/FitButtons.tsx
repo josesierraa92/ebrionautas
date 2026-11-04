@@ -18,6 +18,9 @@ function fit(el: HTMLElement) {
   const margin = Math.max(parseFloat(cs.paddingLeft) || 0, 14);
   const range = document.createRange();
   range.selectNodeContents(el);
+  // un botón que se ajusta solo a su texto (ancho automático) no necesita achicar la letra: ya mide lo que su texto pide
+  const natural = range.getBoundingClientRect().width + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+  if (el.offsetWidth <= natural + 2) return;
   const tooWide = () => range.getBoundingClientRect().width > el.clientWidth - 2 * margin;
   if (!tooWide()) return;
   let size = parseFloat(cs.fontSize);
