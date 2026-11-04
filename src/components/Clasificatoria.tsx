@@ -38,7 +38,7 @@ export default function Clasificatoria({ game, onClose, unit = "17px" }: { game:
               </p>
             </div>
 
-            <ol className="flex min-h-0 flex-1 flex-col overflow-y-auto" style={{ gap: u(0.6) }}>
+            <ol className="flex min-h-0 flex-1 flex-col game-scroll overflow-y-auto" style={{ gap: u(0.6) }}>
               {rows.map((p, i) => {
                 const won = p.id === game.winner;
                 return (

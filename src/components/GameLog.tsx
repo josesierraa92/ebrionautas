@@ -20,7 +20,7 @@ export default function GameLog({ log, max = 60, big = false }: { log: LogEntry[
   const u = (k: number) => `calc(var(--u) * ${k})`;
   return (
     <CardPanel inline kicker="Historial" unit={big ? "20px" : "17px"} width={big ? 34 : 30} maxH="none">
-      <ul className="flex flex-col overflow-y-auto" style={{ gap: u(0.7), maxHeight: u(22) }}>
+      <ul className="flex flex-col game-scroll overflow-y-auto" style={{ gap: u(0.7), maxHeight: u(22) }}>
         {log.slice(0, max).map((e) => {
           const { icon, text } = parse(e.text);
           return (

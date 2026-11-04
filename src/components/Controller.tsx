@@ -348,7 +348,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
         )}
         {settings && <SettingsDialog code={code} game={game} busy={busy} onAction={act} onRestart={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))} onClose={() => setSettings(false)} />}
         {menu && (
-          <div className="fixed inset-0 z-[60] overflow-y-auto bg-[#0a0620]">
+          <div className="game-scroll fixed inset-0 z-[60] overflow-y-auto bg-[#0a0620]">
             <div className="mx-auto flex min-h-full max-w-md flex-col items-center justify-center gap-5 px-4 py-4">
               <PlayersList game={game} onClose={() => setMenu(false)} onPenalty={(id) => act({ type: "PENALTY", id })} />
               <GameLog log={game.log} max={10} />
@@ -482,7 +482,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
       {settings && <SettingsDialog code={code} game={game} busy={busy} onAction={act} onRestart={() => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true }))} onClose={() => setSettings(false)} />}
 
       {menu && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0a0620]">
+        <div className="game-scroll fixed inset-0 z-50 overflow-y-auto bg-[#0a0620]">
           <div className="mx-auto flex min-h-full max-w-md flex-col items-center justify-center gap-5 px-4 py-4">
             <PlayersList game={game} onClose={() => setMenu(false)} onPenalty={(id) => act({ type: "PENALTY", id })} />
             <GameLog log={game.log} max={10} />

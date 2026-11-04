@@ -301,3 +301,22 @@ body {
   50% { transform: translateY(-6px) rotate(3deg); }
 }
 .dice-pulse { animation: dice-pulse 1.6s ease-in-out infinite; }
+
+/* barra de desplazamiento con el diseño del juego (tarjetas, ajustes, privacidad, menús) */
+.game-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #5fc34a #1a0b3d;
+}
+.game-scroll::-webkit-scrollbar {
+  width: 12px;
+}
+.game-scroll::-webkit-scrollbar-track {
+  background: #1a0b3d;
+  border-radius: 999px;
+  border: 2px solid #2b1566;
+}
+.game-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #bffa58, #5fc34a);
+  border-radius: 999px;
+  border: 2px solid #1a0b3d;
+}
