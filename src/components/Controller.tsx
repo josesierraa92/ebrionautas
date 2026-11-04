@@ -350,7 +350,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
         {menu && (
           <div className="game-scroll fixed inset-0 z-[60] overflow-y-auto bg-[#0a0620]">
             <div className="mx-auto flex min-h-full max-w-md flex-col items-center justify-center gap-5 px-4 py-4">
-              <PlayersList game={game} onClose={() => setMenu(false)} onPenalty={(id) => act({ type: "PENALTY", id })} />
+              <PlayersList game={game} onClose={() => setMenu(false)} />
               <GameLog log={game.log} max={10} />
               <button onClick={() => setMenu(false)} className="btn-game w-full bg-btn-green py-3 text-2xl text-white">
                 CERRAR
@@ -484,7 +484,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
       {menu && (
         <div className="game-scroll fixed inset-0 z-50 overflow-y-auto bg-[#0a0620]">
           <div className="mx-auto flex min-h-full max-w-md flex-col items-center justify-center gap-5 px-4 py-4">
-            <PlayersList game={game} onClose={() => setMenu(false)} onPenalty={(id) => act({ type: "PENALTY", id })} />
+            <PlayersList game={game} onClose={() => setMenu(false)} />
             <GameLog log={game.log} max={10} />
             <CardPanel inline kicker="Tablero" unit="17px" width={30} maxH="none">
               <Board players={game.players} current={me.id} />

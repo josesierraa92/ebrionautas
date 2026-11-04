@@ -2,6 +2,7 @@ import { shadeHex } from "@/lib/shadeHex";
 import { DEFAULT_CHIP, NUMBER_FONTS, type ChipStyle } from "@/editor/layout";
 import { characterOf } from "@/game/characters";
 import Marciano from "@/components/Marciano";
+import MaskIcon from "@/components/MaskIcon";
 import { Cups } from "@/components/Winner";
 import type { TrophyId } from "@/components/TrophyIcon";
 import { avatarOf, expressionFor } from "@/game/avatar";
@@ -177,6 +178,15 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
   const winner = game.players.find((p) => p.id === game.winner);
   const who = winner ?? game.players.find((p) => p.id === playerId) ?? (moving && roller ? roller : currentPlayer(game));
   const color = who.color;
+  // estados de quien se enseña (Poseído, Purgatorio, Pacto de Sangre): pastillas bajo la tarjeta, como en el marcador
+  const nameOf = (id: string) => game.players.find((q) => q.id === id)?.name ?? "";
+  const states: { icon: Parameters<typeof MaskIcon>[0]["name"]; text: string; color: string }[] = [];
+  if (!winner) {
+    if (who.status.hipnosis) states.push({ icon: "ghost", text: "Poseído", color: "#5be8d4" });
+    if (who.status.carcel) states.push({ icon: "flame", text: who.status.carcel.debt ? `Debe ${who.status.carcel.debt}` : "Purgatorio", color: "#ff6b3d" });
+    if (game.slave?.slave === who.id) states.push({ icon: "drop", text: `← ${nameOf(game.slave.master)}`, color: "#ff4f6b" });
+    if (game.slave?.master === who.id) states.push({ icon: "drop", text: `→ ${nameOf(game.slave.slave)}`, color: "#ff4f6b" });
+  }
   // Placa de HUD de videojuego: retrato enmarcado con el color del jugador que sobresale de una placa oscura ladeada,
   // «Turno de» en el verde neón de las tarjetas (`#bffa58`) y 3 px más abajo, nombre con sombra dura azul muy oscuro, sin filete (todo en CSS, mismo estilo
   // grueso y plano que las tarjetas).
@@ -212,6 +222,16 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
           </p>
         </div>
       </div>
+      {states.length > 0 && !fill && (
+        <div className="absolute flex flex-wrap" style={{ top: "calc(100% + 4px)", left: 8, gap: 6 }}>
+          {states.map((c) => (
+            <span key={c.text} className="inline-flex items-center rounded-full font-display uppercase" style={{ gap: 5, padding: "3px 10px 3px 7px", fontSize: 15, background: "#1a0b38", border: "3px solid #452b8e", color: c.color, boxShadow: "0 4px 8px rgba(0,0,0,.4)" }}>
+              <MaskIcon name={c.icon} color={c.color} size="16px" />
+              {c.text}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

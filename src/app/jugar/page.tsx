@@ -104,7 +104,7 @@ export default function JugarPage() {
             </div>
           )}
         </div>
-        <PlayersList game={game} onPenalty={(id) => act({ type: "PENALTY", id })} />
+        <PlayersList game={game} />
         <GameLog log={game.log} />
       </aside>
     </main>
