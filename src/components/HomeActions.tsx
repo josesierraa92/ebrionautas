@@ -54,7 +54,7 @@ export default function HomeActions() {
         <button disabled={busy} onClick={() => setChoosing(true)} className="btn-game bg-btn-green py-4 text-3xl text-white disabled:bg-btn-grey landscape:py-3">
           CREAR MESA
         </button>
-        <p className="text-sm text-white/70">Tú eres el anfitrión: juegan todos juntos o cada uno desde su dispositivo.</p>
+        <p className="text-sm text-white/70 portrait:[@media(max-height:720px)]:hidden">Tú eres el anfitrión: juegan todos juntos o cada uno desde su dispositivo.</p>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -71,7 +71,7 @@ export default function HomeActions() {
             UNIRSE A MESA
           </button>
         </form>
-        <p className="text-sm text-white/70">Pon el código de cuatro letras que te dio el anfitrión (o escanea su QR).</p>
+        <p className="text-sm text-white/70 portrait:[@media(max-height:720px)]:hidden">Pon el código de cuatro letras que te dio el anfitrión (o escanea su QR).</p>
       </div>
       {error && <p className="rounded-xl border-[3px] border-ink bg-btn-red px-3 py-2 text-white landscape:col-span-2">{error}</p>}
 
