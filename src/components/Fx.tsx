@@ -121,27 +121,39 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
   );
 }
 
-// el confeti del ganador son mini calaveras moradas y negras (con un resplandor morado para que las negras se vean sobre la noche)
-const CONFETTI_COLORS = ["#8a5af0", "#0a0714", "#b98bf0", "#1a0b38", "#6a3fd0", "#0a0714", "#d2b4ff", "#3a1d7a"];
+// el «confeti» del ganador es oscuro: murciélagos casi negros que bajan aleteando con un resplandor morado y brasas moradas que suben flotando
+const BAT_COLORS = ["#0a0714", "#1a0b38", "#2a0f5c", "#0a0714"];
+const EMBER_COLORS = ["#b98bf0", "#8a5af0", "#e53fd6", "#d2b4ff"];
 
-/** Lluvia de confeti para el ganador. Posiciones deterministas: nada de Math.random al renderizar. */
+/** Lluvia de murciélagos y brasas para el ganador. Posiciones deterministas: nada de Math.random al renderizar. */
 export function Confetti() {
-  const mask = iconMaskUrl("skull", 96);
+  const mask = iconMaskUrl("bat", 96);
   return (
     <div className="pointer-events-none fixed inset-0 z-[60] overflow-hidden" aria-hidden>
-      {Array.from({ length: 56 }, (_, i) => {
-        const size = 18 + (i % 4) * 5;
+      {Array.from({ length: 26 }, (_, i) => {
+        const size = 30 + (i % 4) * 8;
         return (
           <span
-            key={i}
-            className="confetti confetti-skull"
-            style={{ left: `${(i * 37) % 100}%`, animationDelay: `${(i % 14) * 0.18}s`, animationDuration: `${2.8 + (i % 5) * 0.45}s`, width: size, height: size }}
+            key={`b${i}`}
+            className="confetti confetti-bat"
+            style={{ left: `${(i * 41) % 100}%`, animationDelay: `${(i % 13) * 0.35}s`, animationDuration: `${4 + (i % 5) * 0.7}s`, width: size, height: size }}
           >
             <span
               className="block h-full w-full"
-              style={{ background: CONFETTI_COLORS[i % CONFETTI_COLORS.length], WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" }}
+              style={{ background: BAT_COLORS[i % BAT_COLORS.length], WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" }}
             />
           </span>
+        );
+      })}
+      {Array.from({ length: 34 }, (_, i) => {
+        const size = 4 + (i % 3) * 3;
+        const color = EMBER_COLORS[i % EMBER_COLORS.length];
+        return (
+          <span
+            key={`e${i}`}
+            className="ember"
+            style={{ left: `${(i * 29 + 7) % 100}%`, width: size, height: size, background: color, boxShadow: `0 0 ${size * 2}px ${color}`, animationDelay: `${(i % 11) * 0.45}s`, animationDuration: `${3.5 + (i % 6) * 0.6}s` }}
+          />
         );
       })}
     </div>
