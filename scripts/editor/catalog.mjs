@@ -25,6 +25,7 @@ const KITS = {
   supervivencia: { label: "Supervivencia", scale: 2 },
   ciudad: { label: "Ciudad", scale: 3 },
   halloween: { label: "Halloween", scale: 0.5 }, // KayKit Halloween Bits: vienen ~4 veces más grandes
+  mixed: { label: "Mixed Bag (KayKit)", scale: 0.6 }, // KayKit Mixed Bag 1 FREE (CC0)
   juego: { label: "Del juego", scale: 0.8 }, // modelos propios del juego (scripts/editor/botella.mjs)
 };
 
