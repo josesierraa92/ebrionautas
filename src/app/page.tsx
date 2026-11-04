@@ -26,7 +26,7 @@ export default function Home() {
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-[34%] bg-gradient-to-t from-[#0a0620] via-[#0a0620]/80 to-transparent landscape:block" />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 hidden h-[30%] bg-gradient-to-b from-[#0a0620]/40 to-transparent landscape:block" />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-md flex-col items-center gap-5 px-4 pb-8 text-center portrait:pb-[max(4.5rem,9dvh)] landscape:max-w-5xl landscape:gap-2 landscape:pb-3">
+      <div className="relative z-10 mx-auto flex w-full max-w-md flex-col items-center gap-5 px-4 pb-8 text-center portrait:pb-[max(7.5rem,15dvh)] landscape:max-w-5xl landscape:gap-2 landscape:pb-3">
         <HomeActions />
         <p className="text-xs text-white/60">
           Juego para mayores de 18 años. Bebe con moderación. · <LegalLinks />
