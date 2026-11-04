@@ -8,7 +8,7 @@ import Marciano from "@/components/Marciano";
 import { avatarOf, expressionFor } from "@/game/avatar";
 import { currentPlayer, jailBail, type GameState, type Player } from "@/game/engine";
 import { duelOutcome, jailOutcome, jailPaidOutcome } from "@/game/rules";
-import { PhoneRuleCard } from "@/components/TvCards";
+import { PhoneRuleCard, StateChips } from "@/components/TvCards";
 import { stepPath, type Landed } from "@/lib/useGameFx";
 import { useShake } from "@/lib/useShake";
 
@@ -263,6 +263,7 @@ function TurnBanner({ player, label, game, size, compact = false }: { player: Pl
       <h2 className="mt-1 max-w-full font-display uppercase leading-[0.95]" style={{ fontSize: nameSize, color: "#bffa58", textShadow: shadow, overflowWrap: "break-word" }}>
         {player.name}
       </h2>
+      <StateChips game={game} player={player} className="mt-3" />
     </div>
   );
 }
