@@ -360,6 +360,11 @@ export class EditorScene {
     return this.camera.right - this.camera.left;
   }
 
+  /** Visor: alto del mundo que cabe en la pantalla con el acercamiento normal. */
+  viewWorldHeight() {
+    return this.camera.top - this.camera.bottom;
+  }
+
   /** Centro de la cara de arriba de la casilla n (1..62), donde se apoyan las fichas. */
   tileCenter(n: number): THREE.Vector3 | null {
     const l = this.layout;

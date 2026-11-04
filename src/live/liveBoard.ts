@@ -189,13 +189,30 @@ export class LiveBoard {
     }
     // la cámara sigue a la ficha que toca (o al jugador de turno)
     if (s.overview && this.tokens.size) {
-      // vista de arriba: centro de todos los jugadores y zoom para que quepan todos con margen (nunca más cerca que 0,6 del normal)
+      // vista de arriba: se encuadra la caja que contiene a todos los jugadores medida EN PANTALLA (derecha y «hacia el fondo», este
+      // último acortado por la inclinación de la cámara), con un 25 % de margen, y se centra en ella; nunca más cerca que 0,6 del normal
+      const az = (this.layout.tvView.az * Math.PI) / 180;
+      const el = (this.layout.tvView.el * Math.PI) / 180;
+      const right = new THREE.Vector3(Math.cos(az), 0, -Math.sin(az));
+      const fwd = new THREE.Vector3(Math.sin(az), 0, Math.cos(az));
       const pts = [...this.tokens.values()].map((t) => t.goal);
-      const c = pts.reduce((a, v) => a.add(v), new THREE.Vector3()).multiplyScalar(1 / pts.length);
-      const r = Math.max(...pts.map((v) => v.distanceTo(c)));
-      this.scene.lookAt(c.clone().add(new THREE.Vector3(0, 0.6, 0)), false);
-      const half = this.scene.viewWorldWidth() / 2;
-      this.scene.setZoom(Math.max(0.12, Math.min(0.6, half / (r + TILE_SIZE * 1.6))));
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (const p of pts) {
+        const x = p.dot(right);
+        const y = p.dot(fwd) * Math.sin(el);
+        x0 = Math.min(x0, x); x1 = Math.max(x1, x);
+        y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+      }
+      const cx = (x0 + x1) / 2;
+      const cy = (y0 + y1) / 2 / Math.sin(el);
+      const c = new THREE.Vector3().addScaledVector(right, cx).addScaledVector(fwd, cy);
+      c.y = pts[0].y + 0.6;
+      this.scene.lookAt(c, false);
+      const needX = ((x1 - x0) / 2 + TILE_SIZE * 1.5) * 1.25;
+      const needY = ((y1 - y0) / 2 + TILE_SIZE * 1.5) * 1.25;
+      const halfX = this.scene.viewWorldWidth() / 2;
+      const halfY = this.scene.viewWorldHeight() * 0.38; // el punto central queda al 38 % de la pantalla (ver `lift` en el visor): arriba hay menos sitio
+      this.scene.setZoom(Math.max(0.03, Math.min(0.6, halfX / needX, halfY / needY)));
       this.first = false;
     } else {
       this.scene.setZoom(1);
