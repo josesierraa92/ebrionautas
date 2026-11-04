@@ -274,16 +274,19 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               </button>
             }
           >
-            <CardText size={1}>Toca el nombre para sumar un trago a quien debe beber fuera de su ronda (por ejemplo, si se equivocó con el apodo). Con el − se quita uno si hubo un error. No cambia el turno.</CardText>
+            <CardText size={1}>Con el + se suma un trago a quien debe beber fuera de su ronda (por ejemplo, si se equivocó con el apodo); con el − se quita uno si hubo un error. No cambia el turno.</CardText>
             <ul className="flex flex-col" style={{ gap: "0.7rem", marginTop: "0.9rem" }}>
               {game.players.map((p) => (
-                <li key={p.id} className="flex items-stretch gap-2">
-                  <button disabled={busy || p.drunk <= 0} onClick={() => act({ type: "REMOVE_DRINK", id: p.id })} className="btn-game grid w-16 shrink-0 place-items-center bg-btn-grey text-4xl text-white disabled:opacity-40" aria-label={`Quitar un trago a ${p.name}`}>
-                    −
+                <li key={p.id} className="flex items-center gap-2 rounded-2xl bg-white/10 p-2">
+                  <button disabled={busy || p.drunk <= 0} onClick={() => act({ type: "REMOVE_DRINK", id: p.id })} className="btn-game grid h-16 w-16 shrink-0 place-items-center bg-btn-grey text-white disabled:opacity-40" aria-label={`Quitar un trago a ${p.name}`}>
+                    <svg viewBox="0 0 24 24" width="2.2rem" height="2.2rem" fill="none" stroke="#fff" strokeWidth="5.5" strokeLinecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
                   </button>
-                  <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game flex min-w-0 flex-1 items-center justify-between gap-2 bg-btn-red px-4 py-3 text-white disabled:opacity-60" aria-label={`Sumar un trago a ${p.name}`}>
-                    <span className="min-w-0 break-words text-left font-display uppercase leading-none" style={{ fontSize: p.name.length <= 8 ? "2rem" : p.name.length <= 12 ? "1.6rem" : "1.3rem" }}>{p.name}</span>
-                    <span className="shrink-0 text-lg">+1 · lleva {p.drunk}</span>
+                  <div className="min-w-0 flex-1 text-center">
+                    <p className="break-words font-display uppercase leading-none text-white" style={{ fontSize: p.name.length <= 8 ? "1.9rem" : p.name.length <= 12 ? "1.5rem" : "1.2rem" }}>{p.name}</p>
+                    <p className="mt-1 font-display text-xl leading-none text-[#bffa58]">{p.drunk} {p.drunk === 1 ? "trago" : "tragos"}</p>
+                  </div>
+                  <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game grid h-16 w-16 shrink-0 place-items-center bg-btn-red text-white disabled:opacity-60" aria-label={`Sumar un trago a ${p.name}`}>
+                    <svg viewBox="0 0 24 24" width="2.2rem" height="2.2rem" fill="none" stroke="#fff" strokeWidth="5.5" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                   </button>
                 </li>
               ))}
@@ -411,16 +414,19 @@ export default function Controller({ code, room, secret, error, refresh, overlay
             </>
           }
         >
-          <CardText size={1}>Toca el nombre para sumar un trago a quien debe beber fuera de su ronda (por ejemplo, si se equivocó con el apodo). Con el − se quita uno si hubo un error. No cambia el turno.</CardText>
+          <CardText size={1}>Con el + se suma un trago a quien debe beber fuera de su ronda (por ejemplo, si se equivocó con el apodo); con el − se quita uno si hubo un error. No cambia el turno.</CardText>
           <ul className="flex flex-col" style={{ gap: "0.7rem", marginTop: "0.9rem" }}>
             {game.players.map((p) => (
-              <li key={p.id} className="flex items-stretch gap-2">
-                  <button disabled={busy || p.drunk <= 0} onClick={() => act({ type: "REMOVE_DRINK", id: p.id })} className="btn-game grid w-16 shrink-0 place-items-center bg-btn-grey text-4xl text-white disabled:opacity-40" aria-label={`Quitar un trago a ${p.name}`}>
-                    −
+              <li key={p.id} className="flex items-center gap-2 rounded-2xl bg-white/10 p-2">
+                  <button disabled={busy || p.drunk <= 0} onClick={() => act({ type: "REMOVE_DRINK", id: p.id })} className="btn-game grid h-16 w-16 shrink-0 place-items-center bg-btn-grey text-white disabled:opacity-40" aria-label={`Quitar un trago a ${p.name}`}>
+                    <svg viewBox="0 0 24 24" width="2.2rem" height="2.2rem" fill="none" stroke="#fff" strokeWidth="5.5" strokeLinecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
                   </button>
-                  <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game flex min-w-0 flex-1 items-center justify-between gap-2 bg-btn-red px-4 py-3 text-white disabled:opacity-60" aria-label={`Sumar un trago a ${p.name}`}>
-                    <span className="min-w-0 break-words text-left font-display uppercase leading-none" style={{ fontSize: p.name.length <= 8 ? "2rem" : p.name.length <= 12 ? "1.6rem" : "1.3rem" }}>{p.name}</span>
-                    <span className="shrink-0 text-lg">+1 · lleva {p.drunk}</span>
+                  <div className="min-w-0 flex-1 text-center">
+                    <p className="break-words font-display uppercase leading-none text-white" style={{ fontSize: p.name.length <= 8 ? "1.9rem" : p.name.length <= 12 ? "1.5rem" : "1.2rem" }}>{p.name}</p>
+                    <p className="mt-1 font-display text-xl leading-none text-[#bffa58]">{p.drunk} {p.drunk === 1 ? "trago" : "tragos"}</p>
+                  </div>
+                  <button disabled={busy} onClick={() => act({ type: "ADD_DRINK", id: p.id })} className="btn-game grid h-16 w-16 shrink-0 place-items-center bg-btn-red text-white disabled:opacity-60" aria-label={`Sumar un trago a ${p.name}`}>
+                    <svg viewBox="0 0 24 24" width="2.2rem" height="2.2rem" fill="none" stroke="#fff" strokeWidth="5.5" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                   </button>
                 </li>
             ))}
