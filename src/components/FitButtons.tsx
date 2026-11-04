@@ -13,6 +13,7 @@ function fit(el: HTMLElement) {
   // el tamaño que ya traía el botón (por clase de Tailwind, o inline en las tarjetas de la TV)
   if (el.dataset.fitInline === undefined) el.dataset.fitInline = el.style.fontSize;
   el.style.fontSize = el.dataset.fitInline;
+  el.style.minHeight = "";
   // ancho del texto contra el ancho del botón menos un margen a cada lado (el mayor entre su relleno y 28 px), para que la letra nunca roce el borde
   const cs = getComputedStyle(el);
   const margin = Math.max(parseFloat(cs.paddingLeft) || 0, 28);
@@ -36,10 +37,13 @@ function fit(el: HTMLElement) {
   let size = parseFloat(cs.fontSize);
   if (!Number.isFinite(size)) return;
   const min = size * MIN;
+  // la altura del botón con su letra normal: al achicar la letra se mantiene, así todos los botones miden lo mismo de alto
+  const height = el.offsetHeight;
   while (tooWide() && size > min) {
     size -= 0.5;
     el.style.fontSize = `${size}px`;
   }
+  if (el.offsetHeight < height) el.style.minHeight = `${height}px`;
 }
 
 export default function FitButtons() {
