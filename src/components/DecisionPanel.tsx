@@ -153,12 +153,12 @@ function Distribute({ amount, players, compact, onDone }: { amount: number; play
         <div key={p.id} className="flex items-center gap-2">
           <span className="size-4 shrink-0 rounded-full border-2 border-ink" style={{ background: p.color }} />
           <span className={`flex-1 text-white ${NAME_CLASS}`} style={{ fontSize: nameSize(p.name, true) }}>{p.name}</span>
-          <button aria-label={`Quitar a ${p.name}`} onClick={() => change(p.id, -1)} disabled={!drinks[p.id]} className="btn-game size-9 bg-btn-red text-white disabled:bg-btn-grey">
-            −
+          <button aria-label={`Quitar a ${p.name}`} onClick={() => change(p.id, -1)} disabled={!drinks[p.id]} className="btn-game grid size-12 shrink-0 place-items-center bg-btn-red text-white disabled:bg-btn-grey">
+            <svg viewBox="0 0 24 24" className="size-7" fill="none" stroke="currentColor" strokeWidth="5.5" strokeLinecap="round" aria-hidden><path d="M5 12h14" /></svg>
           </button>
           <span className="w-6 text-center font-display text-xl">{drinks[p.id] ?? 0}</span>
-          <button aria-label={`Dar a ${p.name}`} onClick={() => change(p.id, 1)} disabled={left === 0} className="btn-game size-9 bg-btn-green text-white disabled:bg-btn-grey">
-            +
+          <button aria-label={`Dar a ${p.name}`} onClick={() => change(p.id, 1)} disabled={left === 0} className="btn-game grid size-12 shrink-0 place-items-center bg-btn-green text-white disabled:bg-btn-grey">
+            <svg viewBox="0 0 24 24" className="size-7" fill="none" stroke="currentColor" strokeWidth="5.5" strokeLinecap="round" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
           </button>
         </div>
       ))}
