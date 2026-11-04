@@ -121,9 +121,9 @@ export function BannerOverlay({ banner }: { banner: Banner | null }) {
   );
 }
 
-// el «confeti» del ganador es oscuro: murciélagos totalmente negros (sin color, borde ni neón) que bajan aleteando y brasas moradas que suben flotando
+// el «confeti» del ganador es oscuro: murciélagos totalmente negros (sin color, borde ni neón) que bajan aleteando y chispas de fuego (brasas naranjas) que suben flotando
 const BAT_COLORS = ["#000"];
-const EMBER_COLORS = ["#b98bf0", "#8a5af0", "#e53fd6", "#d2b4ff"];
+const EMBER_COLORS = ["#ff5a14", "#ff8a1f", "#ffb830", "#ffd96a", "#ff3d0a"];
 
 /** Lluvia de murciélagos y brasas para el ganador. Posiciones deterministas: nada de Math.random al renderizar. */
 export function Confetti() {
@@ -152,7 +152,7 @@ export function Confetti() {
           <span
             key={`e${i}`}
             className="ember"
-            style={{ left: `${(i * 29 + 7) % 100}%`, width: size, height: size, background: color, boxShadow: `0 0 ${size * 2}px ${color}`, animationDelay: `${(i % 11) * 0.45}s`, animationDuration: `${3.5 + (i % 6) * 0.6}s` }}
+            style={{ left: `${(i * 29 + 7) % 100}%`, width: size, height: size, background: color, boxShadow: `0 0 ${size * 1.6}px ${size * 0.5}px ${color}`, animationDelay: `${(i % 11) * 0.45}s`, animationDuration: `${3.5 + (i % 6) * 0.6}s` }}
           />
         );
       })}
