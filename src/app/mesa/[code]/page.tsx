@@ -1,5 +1,6 @@
 "use client";
 
+import RoomBackdrop from "@/components/RoomBackdrop";
 import BackButton from "@/components/BackButton";
 import CardPanel, { CardText, GREEN } from "@/components/CardPanel";
 import Controller from "@/components/Controller";
@@ -189,6 +190,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     const c = (k: number) => `calc(var(--u) * ${k})`;
     return (
       <main className="mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center gap-[min(1.5rem,2.2vh)] px-4 py-[min(2rem,2vh)] text-center">
+        <RoomBackdrop />
         <Link href="/" aria-label="Muertos de Sed" className="block w-[min(34rem,70vw,50vh)]">
           <Logo className="w-full" />
         </Link>

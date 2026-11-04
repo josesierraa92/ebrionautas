@@ -2,6 +2,7 @@
 
 // Sala de espera de una mesa online: cada jugador entra con su aparato (nombre + hombre/mujer), todos ven quién ya está y el anfitrión
 // da «¡A levantarse!» cuando estén todos. Usa el diseño de las tarjetas (`CardPanel`).
+import RoomBackdrop from "@/components/RoomBackdrop";
 import BackButton from "@/components/BackButton";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
@@ -81,6 +82,7 @@ export default function OnlineLobby({ code, room, hostSecret, member, onMember, 
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center gap-5 px-4 py-8 text-center">
+      <RoomBackdrop />
       <Link href="/" aria-label="Muertos de Sed" className="block w-[min(30rem,64vw)]">
         <Logo className="w-full" />
       </Link>
