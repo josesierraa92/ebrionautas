@@ -46,7 +46,7 @@ export default function SettingsDialog({ game, busy, onAction, onRestart, onClos
       <ul className="flex flex-col" style={{ gap: u(0.7), marginTop: u(0.9) }}>
         {game.players.map((p) => (
           <li key={p.id} style={{ padding: u(0.8), borderRadius: u(1), background: "rgba(255,255,255,.08)" }}>
-            <div className="flex items-center" style={{ gap: u(0.7) }}>
+            <div className="flex items-center justify-between" style={{ gap: u(0.7) }}>
               <div className="min-w-0 flex-1">
                 <p className="font-display uppercase leading-[1.02] text-white" style={{ fontSize: u(p.name.length <= 8 ? 1.9 : p.name.length <= 12 ? 1.6 : 1.35), overflowWrap: "break-word" }}>
                   {p.name}
@@ -56,10 +56,10 @@ export default function SettingsDialog({ game, busy, onAction, onRestart, onClos
                     En pausa
                   </span>
                 )}
-                <p style={{ ...body, fontSize: u(1), color: "#d8d4f6", marginTop: u(0.2) }}>
-                  Lleva <b className="text-white">{p.drunk}</b> {p.drunk === 1 ? "vaso" : "vasos"}
-                </p>
               </div>
+              <p className="shrink-0 font-display uppercase leading-none" style={{ fontSize: u(1.5), color: GREEN_LIGHT }}>
+                {p.drunk} <span style={{ fontSize: u(1), color: "#d8d4f6" }}>{p.drunk === 1 ? "vaso" : "vasos"}</span>
+              </p>
             </div>
             {!finished && (p.paused || active > 1) && (
               <button
