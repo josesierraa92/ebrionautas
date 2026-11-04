@@ -174,7 +174,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
       <>
         <Controller code={code} room={room} secret={controlSecret!} error={error} refresh={refresh} />
         <p className="pb-6 text-center">
-          <BackButton href="/" size="1.15rem" />
+          <BackButton href="/" size="0.95rem" />
         </p>
         {claimPopup}
       </>

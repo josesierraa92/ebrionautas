@@ -2,7 +2,7 @@
 
 import BackButton from "@/components/BackButton";
 import { characterOf } from "@/game/characters";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CardPanel, { CardText } from "@/components/CardPanel";
 import Logo from "@/components/Logo";
 import Marciano from "@/components/Marciano";
@@ -47,10 +47,18 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
   const missingGender = filled.some((p) => !p.gender);
   const ready = filled.length >= 2 && !duplicated && !missingGender;
 
+  // en pantallas grandes (PC, TV) todo el formulario se agranda (`zoom`); en el celular se queda como está
+  const [zoom, setZoom] = useState(1);
+  useEffect(() => {
+    const fit = () => setZoom(window.innerWidth < 700 ? 1 : Math.max(1, Math.min(1.6, Math.min(window.innerHeight / 680, window.innerWidth / 560))));
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, []);
   const u = (k: number) => `calc(var(--u) * ${k})`;
   const rowBg = "rgba(255,255,255,.08)";
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-4 py-6">
+    <main className="mx-auto flex max-w-md flex-col items-center justify-center gap-4 px-4 py-6" style={{ zoom, minHeight: `calc((100dvh - 4.5rem) / ${zoom})` }}>
       {/* logo a la izquierda y código de mesa a la derecha, del ancho de la tarjeta */}
       <div className="flex w-full items-center justify-between gap-3" style={{ maxWidth: "calc(17px * 24)" }}>
         <Logo className="w-44 shrink-0" />
@@ -140,7 +148,7 @@ export default function Setup({ onStart, busy = false, code, copas = true }: Pro
               <button disabled={busy} onClick={start} className="btn-game bg-btn-green py-4 text-2xl text-white disabled:bg-btn-grey">
                 {busy ? "LEVANTÁNDOSE…" : "¡A LEVANTARSE!"}
               </button>
-              <BackButton label="Atrás" onClick={() => setStep(1)} disabled={busy} size="1.15rem" className="self-center" />
+              <BackButton label="Atrás" onClick={() => setStep(1)} disabled={busy} size="0.95rem" className="self-center" />
             </>
           }
         >

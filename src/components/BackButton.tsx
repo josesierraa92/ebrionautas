@@ -24,9 +24,9 @@ function Arrow() {
   );
 }
 
-export default function BackButton({ label = "Volver", href, onClick, disabled, size = "max(1.1rem, min(1.6vw, 2.6vh))", className = "" }: Props) {
+export default function BackButton({ label = "Volver", href, onClick, disabled, size = "max(0.9rem, min(1.15vw, 2vh))", className = "" }: Props) {
   const cls = `btn-game inline-flex items-center justify-center gap-[0.45em] whitespace-nowrap bg-btn-grey uppercase text-white disabled:opacity-50 ${className}`;
-  const style = { fontSize: size, padding: "0.45em 1.1em 0.45em 0.8em" };
+  const style = { fontSize: size, padding: "0.35em 0.95em 0.35em 0.7em" };
   const body = (
     <>
       <Arrow />
