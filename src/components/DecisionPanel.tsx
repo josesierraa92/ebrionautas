@@ -135,7 +135,7 @@ function Card({ title, text, children }: { title?: string; text?: string; childr
   return (
     <div className="flex flex-col gap-3">
       {title && <h3 className="font-display text-2xl text-btn-yellow">{title}</h3>}
-      {text && <p className="text-lg text-white/85">{text}</p>}
+      {text && <p className="text-lg" style={{ fontFamily: "var(--font-nunito), system-ui, sans-serif", fontWeight: 700, color: "#bffa58", textWrap: "balance" }}>{text}</p>}
       {children}
     </div>
   );
