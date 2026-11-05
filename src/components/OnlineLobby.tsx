@@ -92,7 +92,7 @@ export default function OnlineLobby({ code, room, hostSecret, member, onMember, 
           <CardText size={1.15}>{hostSecret ? "Ponte nombre para entrar a tu sala; los demás se unirán con el código." : "Escribe tu nombre y elige tu personaje."}</CardText>
           <input
             value={name}
-            onChange={(e) => setName(e.target.value.slice(0, 12))}
+            onChange={(e) => setName(e.target.value.slice(0, 10))}
             placeholder="TU NOMBRE"
             aria-label="Tu nombre"
             className="w-full rounded-2xl border-[3px] border-ink bg-white text-center font-display uppercase text-ink outline-none"
