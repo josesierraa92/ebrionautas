@@ -319,8 +319,8 @@ export class EditorScene {
       const tiles = this.layout ? tilesFor(this.layout.tvView, h > w) : 6;
       const vw = TILE_SIZE * Math.SQRT2 * tiles;
       const vh = (vw * h) / w;
-      // celular vertical: la ficha que sigue la cámara queda en el 38 % de la pantalla (no en el centro), para que la tarjeta de abajo no la tape
-      const lift = h > w ? -0.12 * vh : 0;
+      // la ficha que sigue la cámara queda en el centro de la pantalla, también en el celular vertical (la tarjeta de la casilla ahora se guarda en un botón y ya no tapa el tablero; antes se subía a ~38 %)
+      const lift = 0;
       Object.assign(this.camera, { left: -vw / 2, right: vw / 2, top: vh / 2 + lift, bottom: -vh / 2 + lift, zoom: this.zoomGoal });
       this.camera.updateProjectionMatrix();
       return;
