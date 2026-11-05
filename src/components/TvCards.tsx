@@ -211,8 +211,8 @@ export function StateChips({ game, player, className = "", style }: { game: Game
   const states: { icon: Parameters<typeof MaskIcon>[0]["name"]; text: string; color: string }[] = [];
   if (player.status.hipnosis) states.push({ icon: "ghost", text: "Poseído", color: "#5be8d4" });
   if (player.status.carcel) states.push({ icon: "flame", text: player.status.carcel.debt ? `Debe ${player.status.carcel.debt}` : "Purgatorio", color: "#ff6b3d" });
-  if (game.slave?.slave === player.id) states.push({ icon: "drop", text: `← ${nameOf(game.slave.master)}`, color: "#ff4f6b" });
-  if (game.slave?.master === player.id) states.push({ icon: "drop", text: `→ ${nameOf(game.slave.slave)}`, color: "#ff4f6b" });
+  if (game.slave?.slave === player.id) states.push({ icon: "drop", text: `Pacto ${nameOf(game.slave.master)}`, color: "#ff4f6b" });
+  if (game.slave?.master === player.id) states.push({ icon: "drop", text: `Pacto ${nameOf(game.slave.slave)}`, color: "#ff4f6b" });
   if (!states.length) return null;
   return (
     <div className={`flex flex-wrap justify-center ${className}`} style={{ gap: 6, ...style }}>
