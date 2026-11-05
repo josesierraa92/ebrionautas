@@ -166,7 +166,7 @@ export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide =
     <>
       {/* celular vertical (modo «un solo dispositivo» / online): pop-up centrado con fondo oscuro y la bolita roja, como las decisiones; al cerrarlo se guarda en el botón de la esquina */}
       {wide && collapsible && (
-        <div className="absolute inset-0 z-40 bg-black/55 transition-opacity duration-300" style={{ opacity: hidden ? 0 : 1, pointerEvents: "none" }} />
+        <div className="absolute inset-0 z-40 bg-black/55 transition-opacity duration-300" style={{ opacity: hidden ? 0 : 1, pointerEvents: hidden ? "none" : "auto" }} />
       )}
       <div
         className={wide ? (collapsible ? "pointer-events-none absolute top-1/2 left-1/2 z-40 w-[88%] -translate-x-1/2 -translate-y-1/2" : "pointer-events-none absolute bottom-[17%] left-1/2 z-40 w-[88%] -translate-x-1/2") : "pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]"}
