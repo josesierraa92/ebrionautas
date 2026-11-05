@@ -272,7 +272,7 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
           className="absolute z-20 text-2xl"
           style={{ top: `${chip.cupY}%`, left: `${chip.cupX}%` }}
         />
-        {!winner && !fill && <StateChips game={game} player={who} className="absolute z-30 w-max" style={{ bottom: 0, left: "50%", transform: "translate(-50%, 50%)" }} />}
+        {!winner && !fill && <StateChips game={game} player={who} className="absolute z-30 w-max" style={{ top: "calc(100% - 10px)", left: "50%", transform: "translateX(-50%)" }} />}
       </div>
       <div className={`relative ${fill ? "min-w-0 flex-1" : ""}`}>
       <div className="relative overflow-hidden rounded-2xl border-[5px] border-[#452b8e] py-1 pr-[26px] pl-[47px] shadow-[0_6px_12px_rgba(0,0,0,.45)]" style={{ background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
