@@ -307,7 +307,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               {c && <CardText size={1.05}>{c.rule.text}</CardText>}
               <div style={{ marginTop: c ? "0.9rem" : 0 }}>
                 <fieldset disabled={busy} className="contents">
-                  <DecisionPanel key={game.decisionSeq} decision={game.decision!} me={me} players={game.players.filter((p) => !p.paused)} onAction={(a) => { if (narrow) setDecisionOpen(false); return act(a); }} compact />
+                  <DecisionPanel key={game.decisionSeq} decision={game.decision!} me={me} players={game.players.filter((p) => !p.paused)} onAction={(a) => act(a)} compact />
                 </fieldset>
               </div>
               {actionError && <ErrorBox text={actionError} />}
@@ -318,7 +318,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
           if (!narrow) return <div className="absolute right-[1.5%] bottom-[3%] z-50">{body}</div>;
           return (
             <>
-              <div className="absolute inset-0 z-50 bg-black/55 transition-opacity duration-300" style={{ opacity: decisionOpen ? 1 : 0, pointerEvents: decisionOpen ? "auto" : "none" }} onClick={() => setDecisionOpen(false)} />
+              <div className="absolute inset-0 z-50 bg-black/55 transition-opacity duration-300" style={{ opacity: decisionOpen ? 1 : 0, pointerEvents: decisionOpen ? "auto" : "none" }} />
               <div className="pointer-events-none absolute inset-x-0 top-1/2 z-50 flex max-h-[92dvh] -translate-y-1/2 justify-center px-3">
                 <div className="w-full max-w-[22rem]" style={{ transformOrigin: "92% 118%", transform: decisionOpen ? "scale(1)" : "scale(0.05)", opacity: decisionOpen ? 1 : 0, transition: "transform .4s cubic-bezier(.5,-0.2,.4,1.2), opacity .3s ease", pointerEvents: decisionOpen ? "auto" : "none" }}>
                   {body}
