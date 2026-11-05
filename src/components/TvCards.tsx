@@ -150,16 +150,30 @@ export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide =
   return (
     // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.
     <>
+      {/* celular vertical (modo «un solo dispositivo» / online): pop-up centrado con fondo oscuro y la bolita roja, como las decisiones; al cerrarlo se guarda en el botón de la esquina */}
+      {wide && collapsible && (
+        <div className="absolute inset-0 z-40 bg-black/55 transition-opacity duration-300" style={{ opacity: hidden ? 0 : 1, pointerEvents: hidden ? "none" : "auto" }} onClick={() => setStored(true)} />
+      )}
       <div
-        className={wide ? "pointer-events-none absolute bottom-[17%] left-1/2 z-40 w-[88%] -translate-x-1/2" : "pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]"}
+        className={wide ? (collapsible ? "pointer-events-none absolute top-1/2 left-1/2 z-40 w-[88%] -translate-x-1/2 -translate-y-1/2" : "pointer-events-none absolute bottom-[17%] left-1/2 z-40 w-[88%] -translate-x-1/2") : "pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]"}
         style={!wide && scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "bottom right" } : undefined}
       >
         <div
           onClick={collapsible ? () => setStored(true) : undefined}
-          className={collapsible && !hidden ? "pointer-events-auto cursor-pointer" : undefined}
-          style={collapsible ? { transformOrigin: wide ? "92% 135%" : "100% 100%", transform: hidden ? "scale(0.08)" : "scale(1)", opacity: hidden ? 0 : 1, transition: "transform .4s cubic-bezier(.5,-0.2,.4,1.2), opacity .3s ease", pointerEvents: hidden ? "none" : undefined } : undefined}
+          className={`relative ${collapsible && !hidden ? "pointer-events-auto cursor-pointer" : ""}`}
+          style={collapsible ? { transformOrigin: wide ? "96% 330%" : "100% 100%", transform: hidden ? "scale(0.08)" : "scale(1)", opacity: hidden ? 0 : 1, transition: "transform .4s cubic-bezier(.5,-0.2,.4,1.2), opacity .3s ease", pointerEvents: hidden ? "none" : undefined } : undefined}
         >
           <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n}`} title={rule.title} text={rule.text} prompt={decision ? decisionPrompt(decision, player.name, game) : null} dice={game.lastRoll} unit={wide ? "3.52cqw" : "1cqw"} cardKey={cardKey} />
+          {wide && collapsible && (
+            <button
+              aria-label="Guardar la tarjeta"
+              onClick={(e) => { e.stopPropagation(); setStored(true); }}
+              className="absolute grid place-items-center rounded-full"
+              style={{ top: "-1%", right: "-3%", width: 44, height: 44, background: "radial-gradient(circle at 35% 30%, #ff6b6b 0%, #d4242f 60%, #9d1320 100%)", border: "4px solid #5a0f1a", boxShadow: "0 4px 8px rgba(0,0,0,.5)" }}
+            >
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" strokeWidth="4.5" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+          )}
         </div>
       </div>
       {collapsible && (
