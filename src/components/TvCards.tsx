@@ -147,11 +147,14 @@ export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide =
   const [gone, setGone] = useState(false);
   useEffect(() => { setStored0(closedCards.has(fresh)); setGone(false); }, [fresh]);
   // al resolver una decisión (marcar quiénes beben, etc.) la tarjeta no vuelve a salir grande: queda guardada en su botón
+  // (se decide durante el dibujado, no en un efecto: así la tarjeta nunca se ve abierta un instante detrás de la de la decisión que se está escondiendo)
   const hadDecision = useRef(false);
-  useEffect(() => {
-    if (hadDecision.current && !game.decision) setStored(true);
-    hadDecision.current = !!game.decision;
-  }, [game.decision]);
+  const [prevDecision, setPrevDecision] = useState(!!game.decision);
+  if (prevDecision !== !!game.decision) {
+    setPrevDecision(!!game.decision);
+    if (prevDecision) setStored(true);
+  }
+  useEffect(() => { hadDecision.current = !!game.decision; }, [game.decision]);
   // si la tarjeta se desmonta justo al resolver la decisión (la TV empieza a animar el vuelo), igual cuenta como guardada
   const freshRef = useRef(fresh);
   freshRef.current = fresh;
