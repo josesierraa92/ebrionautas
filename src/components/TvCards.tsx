@@ -160,6 +160,13 @@ export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide =
   freshRef.current = fresh;
   useEffect(() => () => { if (hadDecision.current) closedCards.add(freshRef.current); }, []);
   const hidden = collapsible && stored;
+  // mientras el pop-up de la casilla está abierto (celular vertical) no se puede tirar el dado: `Controller` lo lee de aquí
+  const popupOpen = wide && collapsible && !stored && !suppressed;
+  useEffect(() => {
+    if (!popupOpen) return;
+    document.body.dataset.cardPopup = "1";
+    return () => { delete document.body.dataset.cardPopup; };
+  }, [popupOpen]);
   if (suppressed) return null;
   return (
     // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.

@@ -112,6 +112,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== "Space" || (e.target as HTMLElement)?.closest?.("input, textarea, select")) return;
       e.preventDefault();
+      if (document.body.dataset.cardPopup) return;
       run(() => sendAction(code, secret, { type: "ROLL" }));
     };
     window.addEventListener("keydown", onKey);
@@ -148,7 +149,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
   const myTurn = !seat || me.id === seat.playerId;
   const canAct = myTurn || !!seat?.host;
   if (overlay) {
-    const rollNow = () => run(() => sendAction(code, secret, { type: "ROLL" }));
+    const rollNow = () => { if (document.body.dataset.cardPopup) return; return run(() => sendAction(code, secret, { type: "ROLL" })); };
     const dim = locked || busy;
     // duelo: el dado grande del tablero tira el dado de cada duelista (primero quien reta, luego su rival); la tarjeta de la decisión queda guardada en su botón
     const dd = game.decision?.kind === "DUEL_ROLL" ? game.decision : null;
@@ -282,7 +283,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               onClick={dd ? () => act({ type: "DUEL_ROLL" }) : rollNow}
               disabled={dim}
               aria-label={dd ? `Tirar el dado de ${duelRoller}` : "Tirar el dado"}
-              className={`flex w-full flex-col items-center gap-1 transition-opacity ${dim ? "opacity-50" : "dice-pulse"}`}
+              data-dice className={`flex w-full flex-col items-center gap-1 transition-opacity ${dim ? "opacity-50" : "dice-pulse"}`}
             >
               <Die value={game.lastRoll ?? 1} className="w-full drop-shadow-[0_6px_0_rgba(0,0,0,.35)]" />
               <span className="whitespace-nowrap rounded-full bg-black/60 px-3 py-0.5 font-display text-sm uppercase tracking-wide text-white">{dim ? "…" : dd ? `Tira ${duelRoller}` : seat && !myTurn ? `Tirar por ${me.name}` : narrow ? `Tira ${me.name}` : `Tira ${me.name} · espacio`}</span>

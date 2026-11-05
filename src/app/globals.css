@@ -320,3 +320,6 @@ body {
   border-radius: 999px;
   border: 2px solid #1a0b3d;
 }
+
+/* con el pop-up de la casilla abierto (celular) el dado no se puede tirar hasta cerrarlo con la X */
+body[data-card-popup] [data-dice] { pointer-events: none; opacity: .5; }
