@@ -16,6 +16,7 @@ import Clasificatoria from "@/components/Clasificatoria";
 import SettingsDialog from "@/components/SettingsDialog";
 import { Die } from "@/components/Fx";
 import { cardContent } from "@/components/TvCards";
+import MaskIcon from "@/components/MaskIcon";
 import type { Landed } from "@/lib/useGameFx";
 import Winner from "@/components/Winner";
 import { currentPlayer, matchOver, type Action, type Gender } from "@/game/engine";
@@ -70,6 +71,10 @@ export default function Controller({ code, room, secret, error, refresh, overlay
   const [menu, setMenu] = useState(false);
   const [settings, setSettings] = useState(false); // ⚙️ ajustes: quitar vasos / sacar a un jugador
   const [addDrink, setAddDrink] = useState(false); // «+ Trago»: sumar un vaso a mano a cualquier jugador
+  // celular vertical: la tarjeta de la decisión sale guardada en el botón de la esquina (el tablero queda libre) y se abre al tocarlo; cada decisión nueva vuelve a salir guardada
+  const [decisionOpen, setDecisionOpen] = useState(false);
+  const decisionSeq = room.game?.decisionSeq;
+  useEffect(() => setDecisionOpen(false), [decisionSeq]);
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -282,7 +287,8 @@ export default function Controller({ code, room, secret, error, refresh, overlay
           const c = card ? cardContent(game, card.n, card.playerId, card.result) : null;
           const body = (
             <CardPanel
-              inline={!narrow}
+              inline
+              cornerClose={narrow ? () => setDecisionOpen(false) : undefined}
               unit="min(17px, 2.7dvh)"
               width={22}
               maxH={narrow ? "92dvh" : "calc(100dvh - 2rem)"}
@@ -304,7 +310,27 @@ export default function Controller({ code, room, secret, error, refresh, overlay
           );
           // PC / celular horizontal: en la esquina de abajo a la derecha, donde sale siempre la tarjeta de la casilla (sin tapar el tablero ni oscurecerlo);
           // celular vertical: en una ventana centrada (no hay sitio en la esquina)
-          return narrow ? body : <div className="absolute right-[1.5%] bottom-[3%] z-50">{body}</div>;
+          if (!narrow) return <div className="absolute right-[1.5%] bottom-[3%] z-50">{body}</div>;
+          return (
+            <>
+              <div className="absolute inset-0 z-50 bg-black/55 transition-opacity duration-300" style={{ opacity: decisionOpen ? 1 : 0, pointerEvents: decisionOpen ? "auto" : "none" }} onClick={() => setDecisionOpen(false)} />
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 z-50 flex max-h-[92dvh] -translate-y-1/2 justify-center px-3">
+                <div className="w-full max-w-[22rem]" style={{ transformOrigin: "92% 118%", transform: decisionOpen ? "scale(1)" : "scale(0.05)", opacity: decisionOpen ? 1 : 0, transition: "transform .4s cubic-bezier(.5,-0.2,.4,1.2), opacity .3s ease", pointerEvents: decisionOpen ? "auto" : "none" }}>
+                  {body}
+                </div>
+              </div>
+              <button
+                onClick={() => setDecisionOpen(true)}
+                aria-label="Ver la tarjeta de la decisión"
+                title="Ver la tarjeta"
+                tabIndex={decisionOpen ? -1 : 0}
+                className="btn-game dice-pulse absolute right-2 bottom-[calc(5%+3.75rem)] z-50 grid h-12 w-12 place-items-center bg-btn-green p-0 text-white"
+                style={{ transform: decisionOpen ? "scale(0)" : "scale(1)", opacity: decisionOpen ? 0 : 1, pointerEvents: decisionOpen ? "none" : "auto", transition: "transform .35s cubic-bezier(.3,1.5,.5,1) .1s, opacity .2s ease .1s" }}
+              >
+                {c?.icon ? <MaskIcon name={c.icon} color="#14260a" size="30px" /> : <span className="text-2xl leading-none">!</span>}
+              </button>
+            </>
+          );
         })()}
         {actionError && !game.decision && (
           <div className="absolute inset-x-0 top-[10%] z-50 mx-auto w-fit max-w-[90%]">
