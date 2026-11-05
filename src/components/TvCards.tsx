@@ -230,7 +230,7 @@ export function StateChips({ game, player, className = "", style }: { game: Game
   if (!states.length) return null;
   return (
     // Con varias pastillas van en columna pegadas al borde izquierdo del retrato (centradas se salían de la pantalla por la izquierda).
-    <div className={`flex ${states.length > 1 ? "flex-col items-start" : "flex-wrap justify-center"} ${className}`} style={{ gap: 6, ...style, ...(states.length > 1 && style?.transform ? { left: 0, transform: "translateY(50%)" } : null) }}>
+    <div className={`flex ${states.length > 1 ? "flex-col items-start" : "flex-wrap justify-center"} ${className}`} style={{ gap: 6, ...style, ...(states.length > 1 && style?.transform ? { left: 0, top: "100%", bottom: "auto", transform: "translateY(2px)" } : null) }}>
       {states.map((c) => (
         <span key={c.text} className="inline-flex items-center rounded-full font-display uppercase" style={{ gap: 5, padding: "2px 9px 2px 7px", fontSize: 13, lineHeight: 1.15, background: `linear-gradient(180deg, ${shadeHex(c.color, 0.18)} 0%, ${c.color} 55%, ${shadeHex(c.color, -0.2)} 100%)`, color: "#14102e" }}>
               <MaskIcon name={c.icon} color="#14102e" size="13px" />
