@@ -2,7 +2,7 @@
 
 // El control del juego: alta de jugadores y, en partida, el dado, las decisiones, «+ TRAGO», ajustes y marcador.
 // Lo usan el celular que controla una mesa (`/c/[code]`) y el modo «un solo aparato» (`/mesa/[code]?solo=1`), donde la misma pantalla es la TV y el control.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Board from "@/components/Board";
 import CardPanel, { CardText } from "@/components/CardPanel";
 import FullscreenButton from "@/components/FullscreenButton";
@@ -76,7 +76,20 @@ export default function Controller({ code, room, secret, error, refresh, overlay
   const decisionSeq = room.game?.decisionSeq;
   const decisionKind = room.game?.decision?.kind;
   // cada decisión sale abierta (como siempre); la del duelo sale guardada porque se tira con el dado grande del tablero
-  useEffect(() => setDecisionOpen(decisionKind !== "DUEL_ROLL"), [decisionSeq, decisionKind]);
+  useEffect(() => { if (decisionKind) setDecisionOpen(decisionKind !== "DUEL_ROLL"); }, [decisionSeq, decisionKind]);
+  // al resolverse la decisión la tarjeta aún se queda ~0,6 s para terminar su animación hacia el botón (si se quitaba de golpe parecía un fallo)
+  const lastDecision = useRef(room.game?.decision ?? null);
+  if (room.game?.decision) lastDecision.current = room.game.decision;
+  const lastCardContent = useRef<ReturnType<typeof cardContent> | null>(null);
+  const [lingering, setLingering] = useState(false);
+  const hasDecision = !!room.game?.decision;
+  useEffect(() => {
+    if (hasDecision || !lastDecision.current) return;
+    setDecisionOpen(false);
+    setLingering(true);
+    const t = setTimeout(() => { setLingering(false); lastDecision.current = null; }, 650);
+    return () => clearTimeout(t);
+  }, [hasDecision]);
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -287,9 +300,11 @@ export default function Controller({ code, room, secret, error, refresh, overlay
         {hostWinnerButtons}
 
         {/* decisión: la tarjeta y lo que hay que marcar, en una ventana */}
-        {!winner && game.decision && canAct && !(overlay && locked) && (() => {
+        {!winner && ((game.decision && canAct && !(overlay && locked)) || (narrow && lingering && lastDecision.current)) && (() => {
           // una sola tarjeta: la de la casilla, con lo que hay que decidir dentro (no una tarjeta dentro de otra)
-          const c = card ? cardContent(game, card.n, card.playerId, card.result) : null;
+          const c0 = card ? cardContent(game, card.n, card.playerId, card.result) : null;
+          if (c0 && game.decision) lastCardContent.current = c0;
+          const c = c0 ?? (lingering ? lastCardContent.current : null);
           const body = (
             <CardPanel
               inline
@@ -299,15 +314,15 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               maxH={narrow ? "92dvh" : "calc(100dvh - 2rem)"}
               z="z-50"
               label="Decisión"
-              kicker={card ? `Casilla ${card.n}` : `Turno de ${me.name}`}
+              kicker={card ? `Casilla ${card.n}` : c ? "Casilla" : `Turno de ${me.name}`}
               title={c?.rule.title}
               icon={c?.icon ?? undefined}
               centerTitle={!c}
             >
               {c && <CardText size={1.05}>{c.rule.text}</CardText>}
               <div style={{ marginTop: c ? "0.9rem" : 0 }}>
-                <fieldset disabled={busy} className="contents">
-                  <DecisionPanel key={game.decisionSeq} decision={game.decision!} me={me} players={game.players.filter((p) => !p.paused)} onAction={(a) => { if (narrow) setDecisionOpen(false); return act(a); }} compact />
+                <fieldset disabled={busy || !game.decision} className="contents">
+                  <DecisionPanel key={game.decisionSeq} decision={(game.decision ?? lastDecision.current)!} me={me} players={game.players.filter((p) => !p.paused)} onAction={(a) => { if (narrow) setDecisionOpen(false); return act(a); }} compact />
                 </fieldset>
               </div>
               {actionError && <ErrorBox text={actionError} />}
@@ -330,7 +345,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
                 title="Ver la tarjeta"
                 tabIndex={decisionOpen ? -1 : 0}
                 className="btn-game dice-pulse absolute right-2 bottom-[calc(5%+3.75rem)] z-50 grid h-12 w-12 place-items-center bg-btn-green p-0 text-white"
-                style={{ transform: decisionOpen ? "scale(0)" : "scale(1)", opacity: decisionOpen ? 0 : 1, pointerEvents: decisionOpen ? "none" : "auto", transition: "transform .35s cubic-bezier(.3,1.5,.5,1) .1s, opacity .2s ease .1s" }}
+                style={{ transform: decisionOpen || !game.decision ? "scale(0)" : "scale(1)", opacity: decisionOpen || !game.decision ? 0 : 1, pointerEvents: decisionOpen || !game.decision ? "none" : "auto", transition: "transform .35s cubic-bezier(.3,1.5,.5,1) .1s, opacity .2s ease .1s" }}
               >
                 {c?.icon ? <MaskIcon name={c.icon} color="#14260a" size="30px" /> : <span className="text-2xl leading-none">!</span>}
               </button>
