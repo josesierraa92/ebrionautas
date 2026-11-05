@@ -135,6 +135,9 @@ export default function Controller({ code, room, secret, error, refresh, overlay
   if (overlay) {
     const rollNow = () => run(() => sendAction(code, secret, { type: "ROLL" }));
     const dim = locked || busy;
+    // duelo: el dado grande del tablero tira el dado de cada duelista (primero quien reta, luego su rival); la tarjeta de la decisión queda guardada en su botón
+    const dd = game.decision?.kind === "DUEL_ROLL" ? game.decision : null;
+    const duelRoller = dd ? (dd.a === null || dd.b !== null ? me.name : game.players.find((p) => p.id === dd.rivals[dd.i])?.name ?? "?") : null;
     const nextRound = !matchOver(game);
     const onNext = () => run(() => api(`/api/rooms/${code}/reset`, { secret, same: true, ...(nextRound ? { next: true } : {}) }));
     const onExit = () => run(async () => { await api(`/api/rooms/${code}/reset`, { secret }); window.location.href = "/"; });
@@ -258,16 +261,16 @@ export default function Controller({ code, room, secret, error, refresh, overlay
         )}
 
         {/* el dado: abajo a la izquierda (en celular vertical, abajo en el centro), lejos de la tarjeta de la casilla */}
-        {!winner && game.phase === "ROLL" && canAct && (
+        {!winner && (game.phase === "ROLL" || !!dd) && canAct && !(dd && locked) && (
           <div className={`absolute bottom-[3%] z-50 ${narrow ? "left-1/2 -translate-x-1/2" : "left-[2%]"}`} style={{ width: "clamp(88px, 19vmin, 190px)" }}>
             <button
-              onClick={rollNow}
+              onClick={dd ? () => act({ type: "DUEL_ROLL" }) : rollNow}
               disabled={dim}
-              aria-label="Tirar el dado"
+              aria-label={dd ? `Tirar el dado de ${duelRoller}` : "Tirar el dado"}
               className={`flex w-full flex-col items-center gap-1 transition-opacity ${dim ? "opacity-50" : "dice-pulse"}`}
             >
               <Die value={game.lastRoll ?? 1} className="w-full drop-shadow-[0_6px_0_rgba(0,0,0,.35)]" />
-              <span className="whitespace-nowrap rounded-full bg-black/60 px-3 py-0.5 font-display text-sm uppercase tracking-wide text-white">{dim ? "…" : seat && !myTurn ? `Tirar por ${me.name}` : narrow ? `Tira ${me.name}` : `Tira ${me.name} · espacio`}</span>
+              <span className="whitespace-nowrap rounded-full bg-black/60 px-3 py-0.5 font-display text-sm uppercase tracking-wide text-white">{dim ? "…" : dd ? `Tira ${duelRoller}` : seat && !myTurn ? `Tirar por ${me.name}` : narrow ? `Tira ${me.name}` : `Tira ${me.name} · espacio`}</span>
             </button>
           </div>
         )}
