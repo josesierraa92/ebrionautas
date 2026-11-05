@@ -183,8 +183,8 @@ export function StateChips({ game, player, className = "", style }: { game: Game
   return (
     <div className={`flex flex-wrap justify-center ${className}`} style={{ gap: 6, ...style }}>
       {states.map((c) => (
-        <span key={c.text} className="inline-flex items-center rounded-full font-display uppercase" style={{ gap: 5, padding: "2px 11px 2px 8px", fontSize: 15, lineHeight: 1.15, background: `linear-gradient(180deg, ${shadeHex(c.color, 0.18)} 0%, ${c.color} 55%, ${shadeHex(c.color, -0.2)} 100%)`, color: "#14102e" }}>
-              <MaskIcon name={c.icon} color="#14102e" size="15px" />
+        <span key={c.text} className="inline-flex items-center rounded-full font-display uppercase" style={{ gap: 5, padding: "2px 9px 2px 7px", fontSize: 13, lineHeight: 1.15, background: `linear-gradient(180deg, ${shadeHex(c.color, 0.18)} 0%, ${c.color} 55%, ${shadeHex(c.color, -0.2)} 100%)`, color: "#14102e" }}>
+              <MaskIcon name={c.icon} color="#14102e" size="13px" />
               {c.text}
             </span>
       ))}
@@ -223,6 +223,7 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
           className="absolute z-20 text-2xl"
           style={{ top: `${chip.cupY}%`, left: `${chip.cupX}%` }}
         />
+        {!winner && !fill && <StateChips game={game} player={who} className="absolute z-30 w-max" style={{ bottom: 0, left: "50%", transform: "translate(-50%, 50%)" }} />}
       </div>
       <div className={`relative ${fill ? "min-w-0 flex-1" : ""}`}>
       <div className="relative overflow-hidden rounded-2xl border-[5px] border-[#452b8e] py-1 pr-[26px] pl-[47px] shadow-[0_6px_12px_rgba(0,0,0,.45)]" style={{ background: "linear-gradient(180deg, #2f1768 0%, #29155a 50%, #210f4d 100%)" }}>
@@ -235,7 +236,6 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
           </p>
         </div>
       </div>
-      {!winner && !fill && <StateChips game={game} player={who} className="absolute z-20 w-max" style={{ top: 0, left: "calc(50% + 10px)", transform: "translate(-50%, -50%)" }} />}
       </div>
     </div>
   );
