@@ -132,21 +132,30 @@ export function cardContent(game: GameState, n: number, playerId: string, result
   return { player, style, decision, rule, drinks, light, accent, icon, emoji: style.icon };
 }
 
+/** tarjetas de casilla que el jugador ya guardó (por tarjeta), para que no reaparezcan al volver a montarse */
+const closedCards = new Set<string>();
+
 export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide = false, collapsible = false, suppressed = false }: Props & { scale?: number; /** celular vertical (modo «un solo aparato»): centrada y casi a todo el ancho, para que se lea */ wide?: boolean; /** mientras hay una decisión en marcha la tarjeta no se dibuja (la decisión lleva la suya) */ suppressed?: boolean; /** la tarjeta se guarda en un botón de la esquina al tocarla (y vuelve al tocar el botón): modo «un solo dispositivo» y online */ collapsible?: boolean }) {
   useCardTexts();
   const { player, decision, rule, accent, icon, emoji } = cardContent(game, n, playerId, result);
   // guardada = reducida al botón de la esquina; con una tarjeta nueva (otra casilla, otra tirada) vuelve a salir sola
-  const [stored, setStored] = useState(false);
+  const fresh = `${n}|${playerId}|${cardKey}|${game.rollSeq}`;
+  // la tarjeta se desmonta mientras la TV anima (vuelo del murciélago…) y al volver no debe salir otra vez: lo guardado se recuerda por tarjeta
+  const [stored, setStored0] = useState(() => closedCards.has(fresh));
+  const setStored = (v: boolean) => { if (v) closedCards.add(fresh); else closedCards.delete(fresh); setStored0(v); };
   // con decisión: al resolverla la tarjeta se oculta del todo (sin botón de la esquina); la sencilla sí deja el botón
   const [gone, setGone] = useState(false);
-  const fresh = `${n}|${playerId}|${cardKey}|${game.rollSeq}`;
-  useEffect(() => { setStored(false); setGone(false); }, [fresh]);
+  useEffect(() => { setStored0(closedCards.has(fresh)); setGone(false); }, [fresh]);
   // al resolver una decisión (marcar quiénes beben, etc.) la tarjeta no vuelve a salir grande: queda guardada en su botón
   const hadDecision = useRef(false);
   useEffect(() => {
     if (hadDecision.current && !game.decision) setStored(true);
     hadDecision.current = !!game.decision;
   }, [game.decision]);
+  // si la tarjeta se desmonta justo al resolver la decisión (la TV empieza a animar el vuelo), igual cuenta como guardada
+  const freshRef = useRef(fresh);
+  freshRef.current = fresh;
+  useEffect(() => () => { if (hadDecision.current) closedCards.add(freshRef.current); }, []);
   const hidden = collapsible && stored;
   if (suppressed) return null;
   return (
