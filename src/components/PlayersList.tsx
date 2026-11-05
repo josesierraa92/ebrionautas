@@ -28,7 +28,7 @@ export default function PlayersList({ game, big = false, onPenalty, onClose }: P
   return (
     <CardPanel inline cornerClose={onClose} kicker="Marcador" unit={big ? "20px" : "17px"} width={big ? 34 : 30} maxH="none">
       {game.ronda && !game.winner && (
-        <div className="flex items-start" style={{ gap: u(0.6), marginBottom: u(0.7), padding: u(0.7), borderRadius: u(0.9), background: "rgba(191,250,88,.16)", ...body, fontSize: u(1), color: "#d8d4f6" }}>
+        <div className="flex items-start" style={{ gap: u(0.6), marginBottom: u(0.7), padding: u(0.7), borderRadius: u(0.9), background: ROW, boxShadow: `inset 0 0 0 ${u(0.2)} #452b8e`, ...body, fontSize: u(1), color: "#d8d4f6" }}>
           <MaskIcon name="hourglass" color={GREEN_LIGHT} size={u(1.6)} />
           <span>
             <b style={{ color: GREEN_LIGHT }}>Ronda de {nameOf(game.ronda.by)}:</b> {game.ronda.text}
