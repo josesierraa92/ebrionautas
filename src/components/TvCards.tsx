@@ -252,7 +252,7 @@ export function TurnChip({ game, moving = false, scale = 1, chip = DEFAULT_CHIP,
   // «Turno de» en el verde neón de las tarjetas (`#bffa58`) y 3 px más abajo, nombre con sombra dura azul muy oscuro, sin filete (todo en CSS, mismo estilo
   // grueso y plano que las tarjetas).
   return (
-    <div className={`pointer-events-none z-30 flex items-center ${fill ? "w-full" : ""} ${inline ? "relative" : (topAlign ? "absolute top-[2%] left-[2%]" : "absolute top-[2%] left-[2%] max-md:top-16 max-md:scale-90 max-md:origin-top-left")}`} style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "top left" } : undefined}>
+    <div className={`pointer-events-none z-30 flex items-center ${fill ? "w-full" : ""} ${inline ? "relative" : (topAlign ? "absolute top-[2%] left-[2%] max-md:left-[6%]" : "absolute top-[2%] left-[2%] max-md:left-[6%] max-md:top-16 max-md:scale-90 max-md:origin-top-left")}`} style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "top left" } : undefined}>
       {/* anillo de color del jugador con degradado (más claro arriba a la izquierda, más oscuro abajo a la derecha) */}
       <div className="relative z-10 -mr-[30px] -ml-[5px] shrink-0" style={{ padding: 5, borderRadius: 21, background: `linear-gradient(150deg, ${shadeHex(color, 0.12)} 0%, ${color} 35%, ${shadeHex(color, -0.38)} 100%)`, boxShadow: "0 6px 12px rgba(0,0,0,.45)" }}>
         <div
