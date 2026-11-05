@@ -1,3 +1,5 @@
+"use client";
+import { useEffect, useState } from "react";
 import { shadeHex } from "@/lib/shadeHex";
 import { DEFAULT_CHIP, NUMBER_FONTS, type ChipStyle } from "@/editor/layout";
 import { characterOf } from "@/game/characters";
@@ -130,17 +132,42 @@ export function cardContent(game: GameState, n: number, playerId: string, result
   return { player, style, decision, rule, drinks, light, accent, icon, emoji: style.icon };
 }
 
-export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide = false }: Props & { scale?: number; /** celular vertical (modo «un solo aparato»): centrada y casi a todo el ancho, para que se lea */ wide?: boolean }) {
+export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide = false, collapsible = false }: Props & { scale?: number; /** celular vertical (modo «un solo aparato»): centrada y casi a todo el ancho, para que se lea */ wide?: boolean; /** la tarjeta se guarda en un botón de la esquina al tocarla (y vuelve al tocar el botón): modo «un solo dispositivo» y online */ collapsible?: boolean }) {
   useCardTexts();
   const { player, decision, rule, accent, icon, emoji } = cardContent(game, n, playerId, result);
+  // guardada = reducida al botón de la esquina; con una tarjeta nueva (otra casilla, otra tirada) vuelve a salir sola
+  const [stored, setStored] = useState(false);
+  const fresh = `${n}|${playerId}|${cardKey}|${game.rollSeq}`;
+  useEffect(() => setStored(false), [fresh]);
+  const hidden = collapsible && stored;
   return (
     // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.
-    <div
-      className={wide ? "pointer-events-none absolute bottom-[17%] left-1/2 z-40 w-[88%] -translate-x-1/2" : "pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]"}
-      style={!wide && scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "bottom right" } : undefined}
-    >
-      <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n}`} title={rule.title} text={rule.text} prompt={decision ? decisionPrompt(decision, player.name, game) : null} dice={game.lastRoll} unit={wide ? "3.52cqw" : "1cqw"} cardKey={cardKey} />
-    </div>
+    <>
+      <div
+        className={wide ? "pointer-events-none absolute bottom-[17%] left-1/2 z-40 w-[88%] -translate-x-1/2" : "pointer-events-none absolute right-[1.5%] bottom-[3%] z-40 w-[25%]"}
+        style={!wide && scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "bottom right" } : undefined}
+      >
+        <div
+          onClick={collapsible ? () => setStored(true) : undefined}
+          className={collapsible && !hidden ? "pointer-events-auto cursor-pointer" : undefined}
+          style={collapsible ? { transformOrigin: wide ? "92% 135%" : "100% 100%", transform: hidden ? "scale(0.08)" : "scale(1)", opacity: hidden ? 0 : 1, transition: "transform .4s cubic-bezier(.5,-0.2,.4,1.2), opacity .3s ease", pointerEvents: hidden ? "none" : undefined } : undefined}
+        >
+          <GameCard accent={accent} icon={icon} emoji={emoji} kicker={`Casilla ${n}`} title={rule.title} text={rule.text} prompt={decision ? decisionPrompt(decision, player.name, game) : null} dice={game.lastRoll} unit={wide ? "3.52cqw" : "1cqw"} cardKey={cardKey} />
+        </div>
+      </div>
+      {collapsible && (
+        <button
+          onClick={() => setStored(false)}
+          aria-label="Ver la tarjeta de la casilla"
+          title="Ver la tarjeta"
+          tabIndex={hidden ? 0 : -1}
+          className={`btn-game absolute z-40 grid h-12 w-12 place-items-center bg-btn-green p-0 text-white ${wide ? "right-2 bottom-[calc(5%+3.75rem)]" : "right-[1.5%] bottom-[3%]"}`}
+          style={{ transform: hidden ? "scale(1)" : "scale(0)", opacity: hidden ? 1 : 0, pointerEvents: hidden ? "auto" : "none", transition: "transform .35s cubic-bezier(.3,1.5,.5,1) .12s, opacity .2s ease .12s" }}
+        >
+          {icon ? <MaskIcon name={icon} color="#14260a" size="30px" /> : <span className="text-2xl leading-none">{emoji}</span>}
+        </button>
+      )}
+    </>
   );
 }
 
