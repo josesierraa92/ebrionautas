@@ -144,7 +144,7 @@ export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide =
   // al resolver una decisión (marcar quiénes beben, etc.) la tarjeta no vuelve a salir grande: queda guardada en su botón
   const hadDecision = useRef(false);
   useEffect(() => {
-    if (hadDecision.current && !game.decision) { setStored(true); if (wide) setGone(true); }
+    if (hadDecision.current && !game.decision) setStored(true);
     hadDecision.current = !!game.decision;
   }, [game.decision]);
   const hidden = collapsible && stored;
