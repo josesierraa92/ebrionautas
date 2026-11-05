@@ -137,12 +137,14 @@ export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide =
   const { player, decision, rule, accent, icon, emoji } = cardContent(game, n, playerId, result);
   // guardada = reducida al botón de la esquina; con una tarjeta nueva (otra casilla, otra tirada) vuelve a salir sola
   const [stored, setStored] = useState(false);
+  // con decisión: al resolverla la tarjeta se oculta del todo (sin botón de la esquina); la sencilla sí deja el botón
+  const [gone, setGone] = useState(false);
   const fresh = `${n}|${playerId}|${cardKey}|${game.rollSeq}`;
-  useEffect(() => setStored(false), [fresh]);
+  useEffect(() => { setStored(false); setGone(false); }, [fresh]);
   // al resolver una decisión (marcar quiénes beben, etc.) la tarjeta no vuelve a salir grande: queda guardada en su botón
   const hadDecision = useRef(false);
   useEffect(() => {
-    if (hadDecision.current && !game.decision && !wide) setStored(true);
+    if (hadDecision.current && !game.decision) { setStored(true); if (wide) setGone(true); }
     hadDecision.current = !!game.decision;
   }, [game.decision]);
   const hidden = collapsible && stored;
@@ -176,7 +178,7 @@ export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide =
           )}
         </div>
       </div>
-      {collapsible && (
+      {collapsible && !gone && (
         <button
           onClick={() => setStored(false)}
           aria-label="Ver la tarjeta de la casilla"

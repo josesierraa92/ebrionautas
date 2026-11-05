@@ -307,7 +307,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               {c && <CardText size={1.05}>{c.rule.text}</CardText>}
               <div style={{ marginTop: c ? "0.9rem" : 0 }}>
                 <fieldset disabled={busy} className="contents">
-                  <DecisionPanel key={game.decisionSeq} decision={game.decision!} me={me} players={game.players.filter((p) => !p.paused)} onAction={(a) => act(a)} compact />
+                  <DecisionPanel key={game.decisionSeq} decision={game.decision!} me={me} players={game.players.filter((p) => !p.paused)} onAction={(a) => { if (narrow) setDecisionOpen(false); return act(a); }} compact />
                 </fieldset>
               </div>
               {actionError && <ErrorBox text={actionError} />}
