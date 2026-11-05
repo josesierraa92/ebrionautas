@@ -131,7 +131,7 @@ function assertHost(room: Room, who: string) {
 
 /** Online: entra a la sala. Quien trae la clave de creador es el anfitrión. En partida ya no se puede entrar. */
 export async function joinRoom(code: string, player: NewPlayer, hostSecret?: string): Promise<{ secret: string; id: string }> {
-  const name = String(player?.name ?? "").trim().slice(0, 16);
+  const name = String(player?.name ?? "").trim().slice(0, 12);
   if (!name) throw new RoomError("Escribe tu nombre.");
   if (player?.gender !== "hombre" && player?.gender !== "mujer") throw new RoomError("Elige hombre o mujer.");
   return withRoom(code, (room) => {
@@ -256,7 +256,7 @@ export async function requestControl(code: string): Promise<{ free: boolean }> {
 export async function startRoom(code: string, who: string, players: NewPlayer[], cups = 1): Promise<void> {
   const goal = [1, 2, 3].includes(cups) ? cups : 1;
   const clean = players
-    .map((p) => ({ name: String(p?.name ?? "").trim().slice(0, 16), gender: p?.gender, look: Number.isInteger(p?.look) && p.look! >= 0 && p.look! < 6 ? p.look : undefined }))
+    .map((p) => ({ name: String(p?.name ?? "").trim().slice(0, 12), gender: p?.gender, look: Number.isInteger(p?.look) && p.look! >= 0 && p.look! < 6 ? p.look : undefined }))
     .filter((p) => p.name);
   if (clean.length < 2) throw new RoomError("Hacen falta al menos 2 jugadores.");
   if (clean.length > MAX_PLAYERS) throw new RoomError(`Máximo ${MAX_PLAYERS} jugadores.`);

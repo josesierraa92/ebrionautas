@@ -121,7 +121,7 @@ export default function Setup({ onStart, busy = false, code, copas = true, backH
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <input
                   value={p.name}
-                  maxLength={16}
+                  maxLength={12}
                   placeholder={`Muerto ${i + 1}`}
                   aria-label={`Nombre del jugador ${i + 1}`}
                   onChange={(e) => set(i, { name: e.target.value })}
