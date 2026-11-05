@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { shadeHex } from "@/lib/shadeHex";
 import { DEFAULT_CHIP, NUMBER_FONTS, type ChipStyle } from "@/editor/layout";
 import { characterOf } from "@/game/characters";
@@ -132,14 +132,21 @@ export function cardContent(game: GameState, n: number, playerId: string, result
   return { player, style, decision, rule, drinks, light, accent, icon, emoji: style.icon };
 }
 
-export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide = false, collapsible = false }: Props & { scale?: number; /** celular vertical (modo «un solo aparato»): centrada y casi a todo el ancho, para que se lea */ wide?: boolean; /** la tarjeta se guarda en un botón de la esquina al tocarla (y vuelve al tocar el botón): modo «un solo dispositivo» y online */ collapsible?: boolean }) {
+export function RuleCard({ game, n, playerId, cardKey, result, scale = 1, wide = false, collapsible = false, suppressed = false }: Props & { scale?: number; /** celular vertical (modo «un solo aparato»): centrada y casi a todo el ancho, para que se lea */ wide?: boolean; /** mientras hay una decisión en marcha la tarjeta no se dibuja (la decisión lleva la suya) */ suppressed?: boolean; /** la tarjeta se guarda en un botón de la esquina al tocarla (y vuelve al tocar el botón): modo «un solo dispositivo» y online */ collapsible?: boolean }) {
   useCardTexts();
   const { player, decision, rule, accent, icon, emoji } = cardContent(game, n, playerId, result);
   // guardada = reducida al botón de la esquina; con una tarjeta nueva (otra casilla, otra tirada) vuelve a salir sola
   const [stored, setStored] = useState(false);
   const fresh = `${n}|${playerId}|${cardKey}|${game.rollSeq}`;
   useEffect(() => setStored(false), [fresh]);
+  // al resolver una decisión (marcar quiénes beben, etc.) la tarjeta no vuelve a salir grande: queda guardada en su botón
+  const hadDecision = useRef(false);
+  useEffect(() => {
+    if (hadDecision.current && !game.decision) setStored(true);
+    hadDecision.current = !!game.decision;
+  }, [game.decision]);
   const hidden = collapsible && stored;
+  if (suppressed) return null;
   return (
     // Pequeña en la esquina: lo principal es que se vea el tablero. En el celular sale la misma tarjeta.
     <>

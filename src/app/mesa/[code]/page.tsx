@@ -269,7 +269,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     <>
       {/* hasta que llega el diseño publicado no se dibuja: con los valores de serie salía un instante la estrella en su sitio de antes y luego saltaba al configurado */}
       {published !== undefined && <TurnChip game={game} moving={!fx.settled || !!game.waiting} rolling={!!fx.dice?.rolling} scale={(ui.chip / 100) * (playActive && narrow ? 0.7 : 1)} chip={published?.chip} topAlign={playActive && narrow} />}
-      {withCard && card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} scale={ui.card / 100} wide={playActive && portrait} collapsible={playActive} />}
+      {withCard && card && <RuleCard game={game} n={card.n} playerId={card.playerId} cardKey={card.key} result={"result" in card ? card.result : undefined} scale={ui.card / 100} wide={playActive && portrait} collapsible={playActive} suppressed={playActive && !!game.decision} />}
     </>
   );
 
@@ -278,7 +278,7 @@ export default function MesaPage({ params }: { params: Promise<{ code: string }>
     return (
       <main className="fixed inset-0">
         <BoardStage players={game.players} current={me.id} winner={game.winner} fx={fx} bare overview={overview} className="h-full">
-          {overlays(!game.decision)}
+          {overlays(true)}
           <Controller
             overlay
             narrow={portrait}

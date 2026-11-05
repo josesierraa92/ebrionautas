@@ -72,9 +72,11 @@ export default function Controller({ code, room, secret, error, refresh, overlay
   const [settings, setSettings] = useState(false); // ⚙️ ajustes: quitar vasos / sacar a un jugador
   const [addDrink, setAddDrink] = useState(false); // «+ Trago»: sumar un vaso a mano a cualquier jugador
   // celular vertical: la tarjeta de la decisión sale guardada en el botón de la esquina (el tablero queda libre) y se abre al tocarlo; cada decisión nueva vuelve a salir guardada
-  const [decisionOpen, setDecisionOpen] = useState(false);
+  const [decisionOpen, setDecisionOpen] = useState(true);
   const decisionSeq = room.game?.decisionSeq;
-  useEffect(() => setDecisionOpen(false), [decisionSeq]);
+  const decisionKind = room.game?.decision?.kind;
+  // cada decisión sale abierta (como siempre); la del duelo sale guardada porque se tira con el dado grande del tablero
+  useEffect(() => setDecisionOpen(decisionKind !== "DUEL_ROLL"), [decisionSeq, decisionKind]);
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -305,7 +307,7 @@ export default function Controller({ code, room, secret, error, refresh, overlay
               {c && <CardText size={1.05}>{c.rule.text}</CardText>}
               <div style={{ marginTop: c ? "0.9rem" : 0 }}>
                 <fieldset disabled={busy} className="contents">
-                  <DecisionPanel key={game.decisionSeq} decision={game.decision!} me={me} players={game.players.filter((p) => !p.paused)} onAction={(a) => { if (narrow && a.type === "DUEL_ROLL") setDecisionOpen(false); return act(a); }} compact />
+                  <DecisionPanel key={game.decisionSeq} decision={game.decision!} me={me} players={game.players.filter((p) => !p.paused)} onAction={(a) => { if (narrow) setDecisionOpen(false); return act(a); }} compact />
                 </fieldset>
               </div>
               {actionError && <ErrorBox text={actionError} />}
